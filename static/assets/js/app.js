@@ -209,7 +209,7 @@ let locationData = {}; // Global variable to store the location data
 // Load CSV data and parse it
 async function loadCSV() {
     try {
-        const response = await fetch('https://usenlease-test.onrender.com//static/assets/data/usa.csv');
+        const response = await fetch('https://usenlease-test.onrender.com/static/assets/data/usa.csv');
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
