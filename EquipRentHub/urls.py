@@ -13,3 +13,7 @@ urlpatterns = [
 
     # path('api/v1/', include('equipment_management.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+# Serve static files only if DEBUG is False
+if not settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
