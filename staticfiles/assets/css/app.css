@@ -1,0 +1,2893 @@
+body {
+    background-color: whitesmoke;
+}
+
+/* Common Sticky Navigation Styling */
+.sticky-nav {
+    position: sticky;
+    top: 0;
+    z-index: 1000; /* Ensures the nav is above other content */
+    background-color: #fff; /* Ensure the background is solid for readability */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Optional: adds a subtle shadow */
+}
+
+.top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 8rem; /* Add horizontal padding */
+    background-color: #1c1c1c; /* Dark background color */
+    color: #fff; /* Light text color */
+  }
+  
+  .top-bar-left,
+  .top-bar-right {
+    flex: 1;
+    background-color: #1c1c1c; /* Dark background color */
+    color: #fff; /* Light text color */
+  }
+  
+  .top-bar-center {
+    flex: 2;
+    text-align: center;
+    background-color: #1c1c1c; /* Dark background color */
+    color: #fff; /* Light text color */
+  }
+
+
+/* Specific styling for the top bar's child elements */
+.top-bar-left ul,
+.top-bar-center ul,
+.top-bar-right ul {
+  list-style: none; /* Remove default bullets */
+  padding: 0; /* Remove default padding */
+  margin: 0; /* Remove default margin */
+  background-color: #1c1c1c; /* Dark background color */
+}
+
+
+.top-bar-left li,
+.top-bar-center li,
+.top-bar-right li {
+  margin: 0; /* Remove default margin */
+  padding: 0; /* Remove default padding */
+  background-color: #1c1c1c; /* Dark background color */
+  color: #fff; /* Light text color */
+}
+
+.top-bar-left a,
+.top-bar-center a,
+.top-bar-right a {
+  text-decoration: none; /* Remove underline from links */
+  color: #fff; /* White text color */
+  transition: color 0.3s ease; /* Smooth color transition on hover */
+}
+  
+.top-bar-left a:hover,
+.top-bar-center a:hover,
+.top-bar-right a:hover {
+  color: #007bff; /* Change link color on hover */
+}
+  
+  /* Additional styling for buttons */
+  .button {
+    display: inline-block; /* Ensures buttons are inline with text */
+    padding: 0.5rem 1rem; /* Add padding inside the button */
+    font-size: 0.8rem; /* Set font size */
+    border-radius: 4px; /* Round corners */
+    border: none; /* Remove default border */
+    cursor: pointer; /* Show pointer cursor on hover */
+    text-align: center; /* Center text inside the button */
+    transition: background-color 0.3s ease, color 0.3s ease; /* Smooth transitions */
+  }
+  
+  .button:hover {
+    background-color: #0056b3; /* Darker background on hover */
+    color: #fff; /* White text color on hover */
+  }
+  
+  /* Styling for buttons with different classes */
+  .button.warning {
+    background-color: #ffc107; /* Warning button background color */
+    color: #000; /* Warning button text color */
+  }
+  
+  .button.warning:hover {
+    background-color: #e0a800; /* Darker warning button background on hover */
+  }
+  
+  
+/* Responsive padding for top bar */
+@media (max-width: 1200px) {
+    .top-bar {
+      padding: 0 5rem; /* Reduce horizontal padding for medium devices */
+    }
+  }
+  
+  @media (max-width: 992px) {
+    .top-bar {
+      padding: 0 2rem; /* Further reduce horizontal padding for small devices */
+    }
+  }
+
+
+  /* Styles for the mobile navigation menu */
+.mobile-nav {
+    padding: 10px;
+    background-color: #000; /* Background color for the nav */
+}
+
+.logo {
+    height: 40px; /* Adjust logo size */
+}
+
+.list-equipment-button {
+    background-color: #FFC107; /* Button color */
+    color: #161513; /* Text color */
+    border-radius: 5px;
+    margin-bottom: 0;
+    font-size: 14px;
+}
+
+.list-equipment-button:hover {
+    background-color: #e0a800; /* Button hover color */
+}
+
+
+
+/* Styling for the cart icon and count */
+.cart-item {
+    position: relative;
+  }
+  
+  .cart-item i.bi-cart {
+    font-size: 1.5rem; /* Adjust the size as needed */
+    color: #fff; /* White color to match the navigation bar */
+  }
+  
+  .cart-count {
+    position: absolute;
+    top: -1px;
+    right: -1px;
+    background-color: #ffc107; /* Gold color */
+    color: #000;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 0.75rem; /* Adjust the size as needed */
+    font-weight: bold;
+  }
+
+  
+
+
+/* Adjust padding for medium devices (≥768px) */
+@media (max-width: 992px) {
+    /* Styling for the cart icon and count */
+.cart-item {
+    position: absolute;
+    right: 150px;
+    top: -5px;
+    
+  }
+  
+  .cart-item i.bi-cart {
+    font-size: 1.5rem; /* Adjust the size as needed */
+    color: #fff; /* White color to match the navigation bar */
+  }
+  
+  .cart-count {
+    position: absolute;
+    top: -.1rem;
+    right: 2px;
+    background-color: #ffc107; /* Gold color */
+    color: #000;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 0.75rem; /* Adjust the size as needed */
+    font-weight: bold;
+  }
+}
+
+
+
+/* Small screens (phones, 600px and down) */
+@media (max-width: 600px) {
+    /* Styling for the cart icon and count */
+.cart-item {
+    position: absolute;
+    right: 35px;
+    top: 15px;
+    
+  }
+  
+  .cart-item i.bi-cart {
+    font-size: 1.5rem; /* Adjust the size as needed */
+    color: #fff; /* White color to match the navigation bar */
+  }
+  
+  .cart-count {
+    position: absolute;
+    top: -.6rem;
+    right: -1rem;
+    background-color: #ffc107; /* Gold color */
+    color: #000;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 0.75rem; /* Adjust the size as needed */
+    font-weight: bold;
+  }
+
+}
+
+
+/* Hide the mobile nav on larger screens */
+@media (min-width: 40em) { /* Foundation's medium breakpoint */
+    .show-for-small-only {
+        display: none;
+    }
+}
+
+
+
+/* Input Group Rounded */
+.input-group-rounded .input-group-field {
+    border-radius: 5000px 0 0 5000px;
+    padding-left: 1rem;
+    background-color: #fff;
+    color: #1c1c1c;
+    font-size: 1rem;
+    box-shadow: none;
+}
+
+/* Input Group Rounded */
+.input-group-rounded-modal .input-group-field-modal {
+  border-radius: 5000px 5000px 5000px 5000px;
+  padding-left: 1rem;
+  background-color: #fff;
+  color: #1c1c1c;
+  font-size: 1rem;
+  box-shadow: none;
+}
+
+.input-group-field-modal {
+  border: 2px solid #FFC107; /* Accent color */
+  border-radius: 30px 0 30px 30px;
+  padding: 12px 20px;
+  width: 100%;
+  outline: none;
+  box-sizing: border-box; /* Prevent overflow */
+  font-size: 1rem;
+}
+
+
+.input-group-field {
+  border: 2px solid #FFC107; /* Accent color */
+  border-radius: 30px 0 0 30px;
+  padding: 12px 20px;
+  width: 100%;
+  outline: none;
+  box-sizing: border-box; /* Prevent overflow */
+  font-size: 1rem;
+}
+
+.input-group-field::placeholder {
+  color: #777;
+  font-style: italic;
+}
+
+.input-group-rounded .input-group-button .button {
+    border-radius: 0 5000px 5000px 0;
+    font-size: 0.8rem;
+    padding: 0.5rem 1rem; /* Consistent padding */
+}
+
+/* Small screens (phones, 600px and down) */
+@media (max-width: 600px) {
+    .input-group-rounded {
+        margin: 0.5rem;           /* Reduced margin */
+    }
+
+    .input-group-field {
+        padding: 0.4rem 0.8rem;  /* Reduced padding */
+        font-size: 0.75rem;      /* Smaller font size */
+    }
+
+    .input-group-button .button {
+        padding: 0.4rem 0.8rem;  /* Reduced padding */
+        font-size: 0.7rem;       /* Smaller font size */
+    }
+}
+
+/* Medium screens (tablets, 601px to 900px) */
+@media (min-width: 601px) and (max-width: 900px) {
+    .input-group-rounded {
+        margin: 0.75rem;         /* Medium margin */
+        padding-left: 0.5rem;    /* Adjusted padding */
+        padding-right: 0.5rem;   
+    }
+
+    .input-group-field {
+        padding: 0.45rem 0.9rem; /* Medium padding */
+        font-size: 0.8rem;       /* Medium font size */
+    }
+
+    .input-group-button .button {
+        padding: 0.45rem 0.9rem; /* Medium padding */
+        font-size: 0.725rem;     /* Medium font size */
+    }
+}
+
+/* Large screens (desktops, 901px and up) */
+@media (min-width: 901px) {
+    .input-group-rounded {
+        margin: 1rem;            /* Default margin */
+        padding-left: 0.75rem;   /* Consistent padding */
+        padding-right: 0.75rem;
+    }
+
+    .input-group-field {
+        padding: 0.5rem 1rem;   /* Default padding */
+        font-size: 0.875rem;    /* Default font size */
+    }
+
+    .input-group-button .button {
+        padding: 0.5rem 1rem;   /* Default padding */
+        font-size: 0.75rem;     /* Default font size */
+    }
+}
+
+/* Style for the hero section */
+.hero {
+    padding: 10px 0.8rem;  /* Consistent padding */
+    text-align: center;
+    background-color: #FFC107;
+}
+
+/* Additional padding for different sections inside hero */
+.hero-content {
+    margin-bottom: 1.5rem; /* Space between hero content and search box */
+}
+
+/* Style for the search box */
+.search-box {
+    padding: 1rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+    .hero {
+        padding: 2rem; /* Reduced padding on small screens */
+    }
+
+    .hero-content {
+        margin-bottom: 2rem; /* Reduced margin */
+    }
+
+    .search-box {
+        padding: 0.5rem; /* Reduced padding */
+    }
+}
+
+/* Base styles for custom hero content */
+.custom-hero-content {
+    text-align: center;
+    padding: 1rem 0;
+}
+
+/* Custom text styling */
+.custom-text {
+    color: #1c1c1c;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+/* Custom location box styling */
+.custom-location-box {
+    background-color: #1c1c1c;
+    color: #ffffff;
+    padding: 0.5rem;
+    border-radius: 5px;
+    margin: 0 auto;
+    display: inline-block;
+    text-align: left;
+}
+
+/* Location icon styling */
+.location-icon {
+    font-size: 1.25rem;
+    margin-right: 0.5rem;
+}
+
+/* Media queries */
+
+/* Small screens (phones, 600px and down) */
+@media (max-width: 600px) {
+    .custom-location-box {
+        font-size: 0.875rem;
+        padding: 0.4rem;
+        margin: 0 1rem; /* Adjusted the margin */
+    }
+
+    .location-icon {
+        font-size: 1rem;
+    }
+}
+
+/* Medium screens (tablets, 601px to 900px) */
+@media (min-width: 601px) and (max-width: 900px) {
+    .custom-location-box {
+        font-size: 1rem;
+        padding: 0.45rem;
+        margin: 0 3rem;
+    }
+
+    .location-icon {
+        font-size: 1.1rem;
+    }
+}
+
+/* Large screens (desktops, 901px and up) */
+@media (min-width: 901px) {
+    .custom-location-box {
+        font-size: 1rem;
+        padding: 0.5rem;
+        margin: 0 auto; /* Centered margin, no overflow */
+    }
+
+    .location-icon {
+        font-size: 1.25rem;
+    }
+}
+
+/* List Styles */
+#statesList, #citiesList {
+  padding: 0; /* Remove default padding */
+}
+
+#statesList li, #citiesList li {
+  list-style-type: none; /* Remove bullet points */
+  margin: .5rem; /* Space between items */
+  text-align: center; /* Center-align text */
+  border: 1px solid #ddd; /* Add border for visual separation */
+  border-radius: 4px; /* Rounded corners */
+  background-color: #f9f9f9; /* Light background */
+  transition: background-color 0.3s, transform 0.3s; /* Smooth transition */
+}
+
+#statesList li:hover, #citiesList li:hover {
+  background-color: #e0e0e0; /* Darker background on hover */
+  transform: scale(1.02); /* Slightly scale up on hover */
+}
+
+/* Link Styles */
+#statesList li a, #citiesList li a {
+  display: block; /* Make the link fill the list item */
+  padding: 10px; /* Padding for the link */
+  color: #333; /* Text color */
+  text-decoration: none; /* Remove underline */
+}
+
+#statesList li a:hover, #citiesList li a:hover {
+  color: #007bff; /* Change text color on hover */
+}
+
+/* Modal Styles */
+.reveal {
+  padding: 1rem; /* Padding for the modal */
+}
+
+
+
+
+/* Default padding */
+.main-section {
+    padding: 0 8.5rem;
+}
+
+/* Adjust padding for medium devices (≥768px) */
+@media (max-width: 992px) {
+    .main-section {
+        padding: 0 1.5rem; /* Adjust as needed for medium devices */
+    }
+}
+
+
+/* Sidebar Section Styling */
+.categories-sidebar {
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    max-height: 100vh;
+    overflow-y: auto;
+    position: relative; /* Ensure positioning context for child elements */
+}
+
+/* Category List Styling */
+.categories-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+.category-item {
+    margin-bottom: 20px;
+    position: relative; /* Position relative for child absolute positioning */
+}
+
+/* Category Icon Styling */
+.category-icon {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 50%;
+    margin-right: 15px;
+    border: 2px solid #ffc107;
+}
+
+/* Category Link Styling */
+.category-item > a {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    background-color: #ffffff;
+    border-radius: 8px;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    text-decoration: none;
+    color: #1c1c1c;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+/* Hover Effect for Category Link */
+.category-item > a:hover {
+    background-color: #ffe680;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Subcategories List Styling */
+.subcategories-list {
+    list-style-type: none;
+    padding: 0;
+    margin-top: 10px;
+    padding-left: 20px;
+    display: none; /* Hidden by default */
+}
+
+/* Show Subcategories on Hover */
+.category-item:hover .subcategories-list {
+    display: block;
+}
+
+/* Subcategory Item Styling */
+.subcategory-item {
+    margin-bottom: 10px;
+}
+
+.subcategory-item > a {
+    display: flex;
+    align-items: center;
+    padding: 8px;
+    background-color: #f1f1f1;
+    border-radius: 6px;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+    text-decoration: none;
+    color: #1c1c1c;
+}
+
+.subcategory-item > a:hover {
+    background-color: #ffe680;
+    transform: translateX(5px);
+}
+
+.subcategory-icon {
+    width: 35px;
+    height: 35px;
+    object-fit: cover;
+    border-radius: 50%;
+    margin-right: 10px;
+    border: 2px solid #ffc107;
+}
+
+.subcategory-name-container {
+    flex: 1;
+}
+
+.subcategory-name {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.subcategory-item .ad-count {
+    font-size: 12px;
+    color: #888;
+}
+
+/* Custom Scrollbar for Sidebar */
+.categories-sidebar::-webkit-scrollbar {
+    width: 8px;
+}
+
+.categories-sidebar::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.categories-sidebar::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 10px;
+}
+
+.categories-sidebar::-webkit-scrollbar-thumb:hover {
+    background: #999;
+}
+
+
+
+
+
+
+
+
+/* First Row Styles */
+.first-row {
+    margin-bottom: 2rem;
+}
+
+.slider-section {
+  padding-right: 1rem;
+}
+.slider-placeholder {
+  background-color: #e0e0e0;
+  border-radius: 1px;
+  height: 300px; /* Example height, adjust as needed */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1c1c1c;
+}
+.post-ad-button {
+  display: inline-flex;
+  align-items: center;
+  background-color: #1c1c1c; /* Primary dark background */
+  color: #ffffff; /* White text color */
+  padding: 1rem 0.8rem; /* Adjusted padding */
+  border-radius: 0.3rem; /* Rounded corners */
+  text-decoration: none; /* Remove underline */
+  font-size: 0.85rem; /* Smaller font size */
+  height: 300px; /* Match the height of the slider */
+  width: 100%; /* Full width */
+  transition: background-color 0.3s, transform 0.3s;
+  justify-content: center;
+  gap: 1rem; /* Space between icon and text */
+}
+.post-ad-button:hover {
+  background-color: #1c1c1c; /* Darker on hover */
+  color: #FFC107;
+  transform: scale(1.05); /* Slightly larger on hover */
+}
+
+.mobile-ad-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #0f1111; /* Dark background */
+  color: #ffffff; /* White text color */
+  padding: 1rem 0.8rem; /* Adjusted padding */
+  border-radius: 0.3rem; /* Rounded corners */
+  text-decoration: none; /* Remove underline */
+  font-size: 0.85rem; /* Font size */
+  width: 100%; /* Full width for mobile */
+  transition: background-color 0.3s, transform 0.3s;
+  gap: 0.4rem; /* Space between icon and text */
+}
+
+.mobile-ad-button:hover {
+  background-color: #0f1111; /* Darker on hover */
+  transform: scale(1.05); /* Slightly larger on hover */
+}
+
+
+.icon-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.main-text {
+    font-weight: 500; /* Semi-bold text for emphasis */
+}
+
+
+.card-section {
+    padding: 0px;
+}
+
+/* Ensure all cards are square */
+.card-section .card {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start; /* Align content to the top */
+    align-items: flex-start; /* Align content to the left */
+    height: 100%;
+    border: 1px solid #e0e0e0;
+    transition: border-color 0.3s ease-in-out;
+    overflow: hidden;
+}
+
+.card-section .card {
+    width: 100%;
+    height: 100%;
+}
+
+/* Square aspect ratio for the card image */
+.card-image {
+    position: relative;
+    width: 100%;
+    padding-top: 100%; /* Creates a square by matching height to width */
+    overflow: hidden;
+}
+
+.card-image img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Tag styling at the top left corner of the image */
+.card-image .tag {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background-color: #ffc107;
+    color: #000;
+    padding: 5px 10px;
+    font-size: 12px;
+    font-weight: bold;
+    z-index: 1;
+    border-radius: 5px;
+}
+
+.card-content {
+    width: 100%; /* Ensure full width for the content area */
+    padding: 10px; /* Add padding to space the content inside the card */
+    box-sizing: border-box; /* Include padding in the element's width and height */
+}
+
+/* Add to Cart button that appears on hover */
+.card-image .add-to-cart {
+    position: absolute;
+    bottom: 20px;
+    left: 30px;
+    background-color: #ffc107;
+    color: #000;
+    border: none;
+    padding: 10px 20px;
+    font-size: 14px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+    z-index: 2;
+    display: none; /* initially hidden */
+}
+
+/* Show Add to Cart button and apply goldish border on hover */
+.card:hover {
+    border-color: #ffc107;
+}
+
+.card:hover .add-to-cart {
+  opacity: 1; /* Hide button */
+  display: block; /* Ensure it takes space */
+  transition: opacity 0.3s ease; /* Smooth transition for opacity */
+  position: absolute; /* Position it within the card */
+  bottom: 10px; /* Adjust as needed */
+  left: 50%; /* Center horizontally */
+  transform: translateX(-50%); /* Center adjustment */
+}
+
+/* Styling for card title and price */
+.card-content h5 {
+    margin-top: 0; /* Remove top margin */
+    margin-bottom: 5px; /* Space below the heading */
+    font-size: 16px;
+    text-align: left;
+}
+
+.card-content p {
+    font-size: 18px;
+    color: #000;
+    text-align: left;
+    margin-bottom: 0; /* Remove bottom margin */
+    color: orangered;
+    font-weight: bold;
+}
+
+
+
+
+
+
+/* Slider Placeholder */
+.slider-section .orbit-container {
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.orbit-image {
+    width: 100%;
+    height: 150px; /* Fixed height */
+    object-fit: cover; /* Ensures image covers the area without distorting */
+    display: block;
+}
+
+
+.orbit-caption {
+    background-color: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    padding: 1rem;
+    text-align: center;
+}
+
+/* Adjust slider and button layout */
+.first-row {
+    margin-bottom: 2rem;
+}
+
+
+/* Categories Section Styles */
+.mobile-categories .card {
+    border: 1px solid #ddd;
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.mobile-categories .post-ad-button {
+    background-color: #ffc107;
+    border: none;
+    text-align: center;
+    cursor: pointer;
+    margin: .5rem 0;
+    margin-left: 6.5rem;
+    height: 80px;
+    width: 50%;    
+    border-radius: .1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.mobile-categories .post-ad-button .icon {
+    font-size: 2rem;
+    color: #fff;
+}
+
+.mobile-categories .post-ad-button .card-title {
+    margin-top: 0.5rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1c1c1c;
+}
+
+.mobile-categories .card-body {
+    padding: 1.5rem;
+}
+
+.mobile-categories .post-ad-card {
+    background-color: #ffc107;
+    text-align: center;
+}
+
+
+.mobile-categories .post-ad-card .card-divider {
+    border-bottom: 1px solid #ddd;
+    padding: 1rem;
+}
+
+.mobile-categories .post-ad-card .icon {
+    font-size: 2rem;
+    color: #007bff;
+    padding-top: 1rem;
+
+}
+
+.mobile-categories .text-center {
+    padding-top: 1rem;
+}
+
+.mobile-categories .category-card {
+    border: 1px solid #ddd;
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.mobile-categories .category-card img {
+    width: 100%;
+    height: auto;
+    border-bottom: 1px solid #ddd;
+}
+
+.mobile-categories .category-card .card-body {
+    padding: 1rem;
+}
+
+.mobile-categories .category-card .card-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+/* Trending Ads Section */
+.trending-ads .card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.trending-ads .card img {
+    height: 200px;
+    object-fit: cover;
+}
+
+/* Fixed Bottom Navbar */
+.bottom-navbar {
+    position: fixed; /* Change from sticky to fixed */
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: #f8f9fa;
+    box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+    z-index: 1000; /* Ensure it stays above other content */
+}
+
+.bottom-navbar .nav-link {
+    display: block;
+    padding: 10px;
+    text-align: center; /* Center the text */
+    color: #1c1c1c; /* Adjust color if needed */
+}
+
+.bottom-navbar .nav-link small {
+    display: block;
+    font-size: 0.75rem;
+}
+
+
+
+
+
+
+.product-filters {
+    padding: 0.5rem 1.5rem;
+    background-color: #fefefe;
+    margin-top: 2.5rem;
+    margin-left: 2rem;
+  }
+  
+  .product-filters label {
+    color: #8a8a8a;
+  }
+
+  a {
+    color: #0f1111;
+  }
+  
+  .product-filters .menu.nested {
+    margin-left: 0rem;
+    margin-bottom: 0.9rem;
+  }
+
+  #category-clear-all {
+    background-color: #ffc107;
+    color: #0f1111;
+
+  }
+
+  #size-clear-all {
+    background-color: #ffc107;
+    color: #0f1111;
+  }
+
+  #color-clear-all {
+    background-color: #ffc107;
+    color: #0f1111;
+
+  }
+  #price-clear-all {
+    background-color: #ffc107;
+    color: #0f1111;
+
+  }
+
+  
+  .product-filters .menu > li > a {
+    padding-left: 0;
+    color: #4a4a4a;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+  
+  .product-filters .is-accordion-submenu-parent > a::after {
+    border-color: #cacaca transparent transparent;
+  }
+  
+  .product-filters .clear-all {
+    font-size: 0.9rem;
+    color: #cacaca;
+  }
+  
+  .product-filters .more {
+    color: #fff;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+  
+  .product-filters-header {
+    font-size: 1.25rem;
+    padding-top: 0.5rem;
+  }
+  
+  .product-filters-tab {
+    border-top: 1px solid #e6e6e6;
+  }
+  
+  .product-filters-tab:last-child() {
+    border-bottom: 1px solid #e6e6e6;
+  }
+  
+  .mobile-product-filters {
+    border-bottom: 1px solid #e6e6e6;
+  }
+
+
+
+
+
+  
+  
+  .filter-row {
+    display: flex; /* Aligns items in a row */
+    overflow-x: auto; /* Enables horizontal scrolling */
+    white-space: nowrap; /* Prevents line breaks */
+    padding: 1rem 0; /* Adds padding for spacing */
+    max-width: 100%; /* Ensures it doesn't exceed the container width */
+}
+
+.product-filters-tab {
+    margin-right: 1rem; /* Adds spacing between filters */
+}
+
+.filter-dropdown {
+    width: 150px; /* Set a fixed width for dropdowns */
+    min-width: 100px; /* Minimum width to maintain usability */
+    border-color: #ffc107;
+    border-radius: 5px;
+}
+  
+  
+.review-item {
+  padding: 20px; /* Padding inside each review */
+  border-radius: 10px; /* Rounded corners */
+  background-color: #f9f9f9; /* Light gray background */
+  margin: 0 auto; /* Center the item */
+  max-width: 600px; /* Limit max width */
+}
+
+.star-rating {
+  direction: rtl; /* Left-to-right for stars */
+  display: inline-flex; /* Align stars horizontally */
+  margin: 20px auto; /* Center stars */
+}
+
+.star-rating input {
+  display: none; /* Hide radio buttons */
+}
+
+.star-rating label {
+  cursor: pointer;
+  font-size: 2rem; /* Size of the stars */
+  color: lightgray; /* Color of inactive stars */
+  margin: 0 2px; /* Space between stars */
+  transition: color 0.2s; /* Smooth transition for color change */
+}
+
+.star-rating input:checked ~ label,
+.star-rating label:hover,
+.star-rating label:hover ~ label {
+  color: #ffcc00; /* Bright gold for selected stars */
+}
+
+
+.card {
+  border: none; /* Remove default card border */
+  transition: transform 0.2s; /* Smooth scaling on hover */
+}
+
+.card:hover {
+  transform: scale(1.05); /* Slightly enlarge on hover */
+}
+
+.star {
+  font-size: 1.5rem; /* Size of the stars */
+  color: lightgray; /* Color for unfilled stars */
+  margin-right: 2px; /* Space between stars */
+}
+
+.star.filled {
+  color: #ffcc00; /* Gold color for filled stars */
+}
+
+
+
+
+/* Card title styling */
+.card-title {
+  font-weight: bold; /* Bold for user names */
+  color: #333; /* Darker color for better readability */
+}
+
+/* Card text styling */
+.card-text {
+  color: #555; /* Gray for review text */
+  line-height: 1.5; /* Improved line height for readability */
+}
+
+/* Card hover content styling */
+.card-hover-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    flex-direction: column; /* Stack items vertically */
+    justify-content: space-between; /* Space out items */
+    align-items: flex-start; /* Align items to the left */
+    padding: 10px;
+    color: #fff;
+    box-sizing: border-box;
+}
+
+/* Position the favorite button at the bottom right */
+.favorite-button {
+    font-size: 20px;
+    color: #ffffff;
+    transition: color 0.3s ease;
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    z-index: 3; /* Ensure it’s above other content */
+}
+
+.favorite-button i {
+    font-size: 24px; /* Adjust icon size */
+}
+
+.favorite-button.active i {
+    color: #ffc107; /* Goldish color when active */
+}
+
+/* Hide favorite button by default and only show on hover */
+.card-image .favorite-button {
+    display: none;
+}
+
+.card-image:hover .favorite-button {
+    display: block; /* Show only on hover */
+}
+
+/* Centered and styled "Rent Now" button */
+.rent-now-button {
+    font-size: 14px; /* Increase font size slightly */
+    text-align: center; /* Ensure the text is centered */
+    color: #ffffff; /* Text color */
+    background-color: #ffc107; /* Goldish color */
+    border: none;
+    border-radius: 5px; /* Optional: Rounded corners */
+    margin-bottom: 0px;
+}
+
+/* Centered and styled "Rent Now" button */
+.rent-now-button:hover {
+    font-size: 14px; /* Increase font size slightly */
+    text-align: center; /* Ensure the text is centered */
+    color: #ffffff; /* Text color */
+    background-color: #ffc107; /* Goldish color */
+    border: none;
+    border-radius: 5px; /* Optional: Rounded corners */
+}
+
+/* Padding adjustments for items below the image */
+.card-section {
+    padding: 5px; /* Reduced padding below the image */
+}
+
+
+.price {
+    font-size: 16px; /* Adjust font size for price */
+    font-weight: bold; /* Make the price text bold */
+    color: #000; /* Color for price text */
+    padding-bottom: 0px;
+}
+
+
+
+
+
+.breadcrumbs {
+  list-style: none;
+  padding: 1rem;
+  margin-left: 8rem;
+  display: flex; /* Use flex for horizontal alignment */
+  font-size: 1rem; /* Default font size */
+  white-space: nowrap; /* Prevent wrapping */
+}
+
+.breadcrumbs li {
+  margin-right: 0.75rem; /* Space between items */
+}
+
+.breadcrumbs li + li::before {
+  content: '/'; /* Separator between breadcrumbs */
+  margin: 0 0.75rem;
+  color: #6c757d; /* Gray color for separator */
+}
+
+.breadcrumbs li a {
+  color: #000; /* Link color */
+  text-decoration: none;
+  font-size: 1.1rem; /* Increase font size for links */
+}
+
+.breadcrumbs li a:hover {
+  text-decoration: underline;
+}
+
+.breadcrumbs li.current {
+  color: #6c757d; /* Gray color for current breadcrumb */
+  font-weight: bold;
+  font-size: 1.1rem; /* Increase font size for current breadcrumb */
+}
+
+/* Responsive adjustments */
+
+/* Small screens (phones, 600px and down) */
+@media (max-width: 600px) {
+  .breadcrumbs {
+      font-size: 0.875rem; /* Smaller font size on small screens */
+      justify-content: center; /* Center items horizontally */
+      overflow-x: auto; /* Allow horizontal scrolling if needed */
+  }
+
+  .breadcrumbs li {
+      margin-right: 0.5rem; /* Adjust space between items */
+  }
+
+  .breadcrumbs li + li::before {
+      margin: 0 0.5rem; /* Adjust separator margin */
+  }
+}
+
+/* Medium screens (tablets, 601px to 900px) */
+@media (min-width: 601px) and (max-width: 900px) {
+  .breadcrumbs {
+      font-size: 1rem; /* Medium font size */
+  }
+
+  .breadcrumbs li {
+      margin-right: 0.5rem; /* Adjust space between items */
+  }
+}
+
+/* Large screens (desktops, 901px and up) */
+@media (min-width: 901px) {
+  .breadcrumbs {
+      font-size: 1rem; /* Default font size */
+  }
+
+  .breadcrumbs li {
+      margin-right: 0.75rem; /* Default space between items */
+  }
+}
+
+ 
+
+
+/* Equipment Detail Section */
+.equipment-detail {
+    padding: 40px 0;
+}
+
+.main-image-wrapper {
+    position: relative;
+}
+
+.main-image img {
+    width: 100%;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    transition: transform 0.3s ease;
+}
+
+.main-image-wrapper:hover .main-image img {
+    transform: scale(1.1);
+}
+
+.zoom-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    display: none;
+}
+
+.main-image-wrapper:hover .zoom-overlay {
+    display: block;
+}
+
+.image-slider {
+    position: relative;
+    margin-top: 20px;
+}
+
+.image-thumbnails {
+    overflow: hidden;
+    white-space: nowrap;
+    position: relative;
+}
+
+.thumbnail-list {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    transition: transform 0.3s ease;
+    /* Remove transform to prevent movement */
+}
+
+.thumbnail-list li {
+    display: inline-block;
+    margin-right: 10px;
+}
+
+.thumbnail-list img {
+    width: 100px;
+    height: 75px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.thumbnail-list img:hover {
+    transform: scale(1.1);
+}
+
+.slider-button {
+    position: absolute;
+    top: 50%;
+    background: rgba(255, 255, 255, 0.8);
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    font-size: 24px;
+    cursor: pointer;
+    transform: translateY(-50%);
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.prev {
+    left: 10px;
+}
+
+.next {
+    right: 10px;
+}
+
+.product-name {
+    font-size: 2rem;
+    margin-bottom: 10px;
+}
+
+.rating-reviews {
+    margin-bottom: 10px;
+}
+
+.price {
+    font-size: 1.5rem;
+    color: #FF5722;
+    margin-bottom: 10px;
+}
+
+.description {
+    margin-bottom: 20px;
+}
+
+.equipment-options, .booking-form, .tags {
+    margin-bottom: 20px;
+}
+
+
+/* Your custom CSS here */
+        /* Main Tab Styles */
+        .tabs {
+          display: flex;
+          background-color: #fff; /* White background for the entire tabs container */
+          border-radius: 5px; /* Rounded corners for the entire tabs container */
+          margin-bottom: 20px; /* Space below the tabs */
+          padding: 0; /* Remove padding */
+      }
+
+      .tabs .tabs-title {
+          flex: 0 0 auto; /* Prevent flex from growing */
+          text-align: center;
+          background-color: #fff; /* White background for inactive tabs */
+          color: #000; /* Black text */
+          padding: 5px 10px;
+          margin: 0;
+          border-radius: 5px 5px 0 0;
+          transition: background-color 0.3s, color 0.3s;
+      }
+
+      .tabs .tabs-title a {
+          color: inherit;
+          text-decoration: none;
+          display: block;
+      }
+
+      .tabs .tabs-title.is-active a, 
+      .tabs .tabs-title:hover a {
+          background-color: #FFC107; /* Goldish background for active and hovered tabs */
+          color: #000; /* Black text for active and hovered tabs */
+      }
+
+      .tabs-content {
+          background-color: #fff; /* White background for tabs content */
+          padding: 20px;
+          border-radius: 0 0 5px 5px; /* Rounded corners at the bottom */
+          box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow for the tabs content */
+      }
+
+      /* Responsive Styles */
+      @media (max-width: 600px) {
+          .tabs {
+              flex-direction: row; /* Keep tabs in a row */
+          }
+
+          .tabs .tabs-title {
+              min-width: 100px; /* Minimum width for each tab */
+          }
+
+          .tabs-content {
+              padding: 15px; /* Reduce padding on small screens */
+          }
+      }
+
+
+/* Tag Styles */
+.tags .tag {
+    display: inline-block;
+    background-color: #FFC107; /* Goldish background for tags */
+    color: #000; /* Black text for tags */
+    padding: 5px 10px;
+    margin: 5px;
+    border-radius: 3px;
+    font-size: 14px;
+    text-transform: uppercase;
+}
+
+.tags .tag:hover {
+    background-color: #E0A800; /* Slightly darker goldish color on hover */
+    color: #000; /* Ensure text remains black on hover */
+}
+
+/* Image Slider Styles */
+.image-slider {
+    position: relative;
+    margin-top: 20px;
+}
+
+.image-slider .slider-button {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: #FFC107; /* Goldish background for buttons */
+    color: #000; /* Black text */
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+    border-radius: 50%;
+}
+
+.image-slider .prev {
+    left: 10px;
+}
+
+.image-slider .next {
+    right: 10px;
+}
+
+.image-slider .slider-button:hover {
+    background-color: #E0A800; /* Slightly darker goldish on hover */
+}
+
+.image-thumbnails {
+    margin-top: 15px;
+    display: flex;
+    justify-content: center;
+}
+
+.image-thumbnails ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    gap: 10px;
+}
+
+.image-thumbnails ul li {
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border 0.3s;
+}
+
+.image-thumbnails ul li:hover,
+.image-thumbnails ul li.active {
+    border-color: #FFC107; /* Goldish border for active and hovered thumbnails */
+}
+
+/* Buttons */
+.button {
+    background-color: #FFC107; /* Goldish background */
+    color: #000; /* Black text */
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: background-color 0.3s;
+}
+
+.button:hover {
+    background-color: #E0A800; /* Darker goldish on hover */
+}
+
+/* Equipment Options Select */
+.equipment-options select {
+    background-color: #fff; /* White background */
+    color: #000; /* Black text */
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin-top: 10px;
+    width: 100%;
+}
+
+
+/* Related Item Styles */
+.related-item {
+    border: 1px solid #ddd; /* Light border */
+    border-radius: 8px; /* Rounded corners */
+    overflow: hidden; /* Ensures content does not overflow */
+    transition: transform 0.3s ease, box-shadow 0.3s ease; /* Smooth transition for hover effects */
+    display: flex;
+    flex-direction: column; /* Stack content vertically */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow for 3D effect */
+    margin-bottom: 1rem;
+  }
+  
+  .related-item img {
+    width: 100%; /* Ensures image fills the container */
+    height: auto; /* Keeps aspect ratio */
+    display: block; /* Ensures the image behaves as a block element */
+  }
+  
+  .related-item-content {
+    padding: 15px; /* Padding around the content */
+    display: flex;
+    flex-direction: column; /* Stack content vertically */
+    justify-content: space-between; /* Space between content */
+  }
+  
+  .related-item-header {
+    flex: 1; /* Allows header to take available space */
+  }
+  
+  .related-item-footer {
+    display: flex;
+    justify-content: space-between; /* Space between price and button */
+    align-items: center; /* Align items vertically */
+    margin-top: 10px; /* Space above footer */
+  }
+  
+  .related-item h5 {
+    margin: 0; /* Remove margin from the title */
+    font-size: 1rem; /* Slightly larger font size */
+  }
+  
+  .related-item p.price {
+    font-size: 1rem; /* Font size for price */
+    color: #1c1c1c; /* Dark color for readability */
+    margin: 0; /* Remove margin from price */
+  }
+  
+  .related-item .button {
+    background-color: #FFC107; /* Goldish background */
+    color: #fff; /* White text */
+    border: none; /* Remove default border */
+    border-radius: 5px; /* Rounded corners */
+    padding: 10px 15px; /* Padding for button */
+    text-align: center; /* Center text */
+    text-decoration: none; /* Remove underline */
+    display: inline-block; /* Make button inline */
+  }
+  
+  .related-item:hover {
+    transform: scale(1.03); /* Slight zoom effect */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Enhanced shadow on hover */
+    border-color: #FFC107; /* Goldish border on hover */
+  }
+  
+  
+  
+.reviews-list {
+  margin-bottom: 20px;
+}
+
+.review {
+  margin-bottom: 15px;
+}
+
+
+.review-form {
+  margin-top: 20px;
+}
+
+button.button {
+  background-color: #ffc107;
+  color: #1c1c1c;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+button.button:hover {
+  background-color: #ffc107;
+}
+
+input[type="number"] {
+  font-size: 1rem;
+  padding: 5px;
+  margin-top: 5px;
+  width: 80px;
+}
+/* Star Rating Styles */
+.rating-stars {
+    display: flex;
+    font-size: 2rem; /* Adjust size as needed */
+    color: #ddd; /* Color for unfilled stars */
+  }
+  
+  .star {
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+  
+  .star.filled, .star.hovered {
+    color: #FF5722; /* Color for filled stars */
+  }
+  
+  .star.half-filled {
+    background: linear-gradient(90deg, #FF5722 50%, #ddd 50%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  
+
+
+
+.sidebar {
+    background-color: #f5f5f5;
+    padding: 1rem;
+    border-radius: 8px;
+}
+
+.profile-pic {
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.user-name {
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+}
+
+.logout button {
+    background-color: #FFC107; /* Goldish color */
+    color: white;
+    border: none;
+    padding: 0.75rem;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.logout button:hover {
+    background-color: #e0a800; /* Darker gold on hover */
+}
+
+.nav-item {
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    background-color: #FFC107; /* Goldish color */
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+    font-weight: bold;
+    text-align: center;
+}
+
+.nav-item:hover {
+    background-color: #e0a800; /* Darker gold on hover */
+    color: #fff;
+}
+
+.nav-item.active {
+    background-color: #161513; /* Dark background for active item */
+    color: white;
+}
+
+.section-content {
+    display: none;
+    padding: 1rem;
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.section-content.active {
+    display: block;
+}
+
+h3 {
+    color: #FFC107; /* Goldish color for headings */
+    margin-bottom: 1rem;
+}
+
+
+.sidebar {
+  background-color: #f5f5f5;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.profile-pic {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.user-name {
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+.logout a {
+  background-color: #cc4b37;
+  /* Goldish color */
+  color: white;
+  border: none;
+  padding: 0.75rem;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  width: 100%;
+  /* Full width */
+  margin-bottom: 1rem;
+  /* Spacing below the button */
+}
+
+
+.mobile-nav-item {
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  background-color: #FFC107;
+  /* Goldish color */
+  border-radius: 5px;
+  transition: background-color 0.3s ease;
+  font-weight: bold;
+  text-align: center;
+}
+
+.mobile-nav-item:hover {
+  background-color: #e0a800;
+  /* Darker gold on hover */
+  color: #fff;
+}
+
+.mobile-nav-item.active {
+  background-color: #161513;
+  /* Dark background for active item */
+  color: white;
+}
+
+.section-content {
+  display: none;
+  padding: 1rem;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.section-content.active {
+  display: block;
+}
+
+h3 {
+  color: #FFC107;
+  /* Goldish color for headings */
+  margin-bottom: 1rem;
+}
+
+
+
+/* Specific styles for the My Equipments section */
+#mobile-my-equipments {
+    background-color: #f9f9f9; /* Light background for visibility */
+    padding: 20px;
+    border-radius: 8px;
+}
+
+#mobile-my-equipments h2 {
+    color: #333; /* Darker text for the heading */
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+}
+
+#mobile-my-equipments .accordion-title {
+    background-color: #007bff; /* Primary color for accordion headers */
+    color: white; /* White text */
+    padding: 10px;
+    border-radius: 5px;
+    text-align: left; /* Align text to the left */
+}
+
+#mobile-my-equipments .accordion-title:hover {
+    background-color: #0056b3; /* Darker shade on hover */
+}
+
+#mobile-my-equipments .accordion-content {
+    background-color: #ffffff; /* White background for content */
+    padding: 15px;
+    border: 1px solid #ddd; /* Light border */
+    border-radius: 5px;
+    margin-top: 5px; /* Space between title and content */
+}
+
+#mobile-my-equipments table {
+    width: 100%; /* Full width for tables */
+    border-collapse: collapse; /* Remove gaps between cells */
+}
+
+#mobile-my-equipments th, 
+#mobile-my-equipments td {
+    padding: 10px; /* Padding for table cells */
+    text-align: left; /* Left align text */
+}
+
+#mobile-my-equipments th {
+    background-color: #f1f1f1; /* Light gray for header */
+}
+
+/* Specific styles for the My Orders section */
+#mobile-my-orders {
+    background-color: #f9f9f9; /* Light background for visibility */
+    padding: 20px;
+    border-radius: 8px;
+}
+
+#mobile-my-orders h2 {
+    color: #333; /* Darker text for the heading */
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+}
+
+#mobile-my-orders .accordion-title {
+    background-color: #28a745; /* Green for accordion headers */
+    color: white; /* White text */
+    padding: 10px;
+    border-radius: 5px;
+    text-align: left; /* Align text to the left */
+}
+
+#mobile-my-orders .accordion-title:hover {
+    background-color: #218838; /* Darker shade on hover */
+}
+
+#mobile-my-orders .accordion-content {
+    background-color: #ffffff; /* White background for content */
+    padding: 15px;
+    border: 1px solid #ddd; /* Light border */
+    border-radius: 5px;
+    margin-top: 5px; /* Space between title and content */
+}
+
+#mobile-my-orders table {
+    width: 100%; /* Full width for tables */
+    border-collapse: collapse; /* Remove gaps between cells */
+}
+
+#mobile-my-orders th, 
+#mobile-my-orders td {
+    padding: 10px; /* Padding for table cells */
+    text-align: left; /* Left align text */
+}
+
+#mobile-my-orders th {
+    background-color: #f1f1f1; /* Light gray for header */
+}
+
+/* Button styles */
+#mobile-my-equipments .button,
+#mobile-my-orders .button {
+    background-color: #007bff; /* Primary button color */
+    color: white; /* White text */
+}
+
+#mobile-my-equipments .button.alert,
+#mobile-my-orders .button.alert {
+    background-color: #dc3545; /* Red for alert buttons */
+}
+
+#mobile-my-equipments .button:hover,
+#mobile-my-orders .button:hover {
+    background-color: #0056b3; /* Darker shade on hover */
+}
+
+
+
+
+
+
+
+
+
+
+
+#chats {
+  max-width: 500px;
+  margin: 20px auto;
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+h3 {
+  margin-bottom: 10px;
+  text-align: center;
+}
+.chat-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 300px;
+  overflow-y: auto; /* Scrollable chat list */
+}
+.chat-item {
+  padding: 15px;
+  border-bottom: 1px solid #ddd;
+  cursor: pointer;
+  transition: background 0.3s;
+  background: #ffffff; /* White background for each chat */
+}
+.chat-item:hover {
+  background: #f0f0f0;
+}
+.chat-info {
+  margin-left: 10px;
+}
+.chat-name {
+  font-weight: bold;
+}
+.chat-last-seen {
+  font-size: 0.9em;
+  color: #999;
+}
+.chat-message {
+  margin: 5px 0;
+}
+.message-box {
+  display: none;
+  margin-top: 20px;
+  border-radius: 5px;
+  padding: 10px;
+  background: #ffffff;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+.message-content {
+  max-height: 300px;
+  overflow-y: auto;
+  margin-bottom: 10px;
+  padding: 10px;
+  border-radius: 5px;
+  background: #f9f9f9; /* Light background for messages */
+}
+.message-input {
+  display: flex;
+  margin-top: 10px;
+}
+.message-input input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  margin-right: 10px;
+  font-size: 14px; /* Increased font size for better visibility */
+}
+.message-input button {
+  padding: 10px 15px;
+  border: none;
+  background: #007bff; /* Primary button color */
+  color: white;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px; /* Increased font size for better visibility */
+}
+.message-input button:hover {
+  background: #0056b3; /* Darker shade on hover */
+}
+.message-bubble {
+  max-width: 70%;
+  padding: 10px;
+  border-radius: 20px;
+  margin: 5px 0;
+  position: relative;
+  display: inline-block;
+}
+.message-bubble.lessor {
+  background: #dcf8c6; /* Light green for lessor messages */
+  align-self: flex-start;
+}
+.message-bubble.lessee {
+  background: #ffffff; /* White for lessee messages */
+  align-self: flex-end;
+}
+.message-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 10px;
+  width: 10px;
+  height: 10px;
+  background: transparent;
+}
+.message-bubble.lessor::after {
+  border-left: 10px solid #dcf8c6;
+  border-top: 10px solid transparent;
+}
+.message-bubble.lessee::after {
+  border-right: 10px solid #ffffff;
+  border-top: 10px solid transparent;
+}
+.timestamp {
+  font-size: 0.8em;
+  color: #999;
+  text-align: right;
+  margin-top: 2px;
+}
+.read-status {
+  font-size: 0.8em;
+  color: #007bff;
+  margin-left: 5px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  #chats {
+      width: 90%;
+      margin: 10px;
+  }
+  .message-bubble {
+      max-width: 85%; /* Make messages wider on mobile */
+  }
+}
+
+
+
+
+/* Specific styling for the reports section */
+.reports-section {
+  font-family: Arial, sans-serif;
+  padding: .5rem;
+  background-color: #f4f4f4;
+}
+
+.reports-section h2 {
+  text-align: center;
+  color: #333;
+  margin-bottom: 2rem;
+  font-size: 2rem;
+}
+
+.report-container {
+  background-color: #fff;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: .5rem;
+  margin-bottom: 2rem;
+}
+
+.report-container h3 {
+  color: #333;
+  font-size: 1.75rem;
+  margin-bottom: 1rem;
+  border-bottom: 2px solid #FFC107;
+  padding-bottom: 0.5rem;
+}
+
+.report-stats {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.stat-item {
+  background-color: #f9f9f9;
+  width: 100%; /* Default width for larger screens */
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  text-align: center;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+.stat-item h4 {
+  font-size: 1.2em; /* Default size for larger screens */
+  color: #333;
+  margin: 0;
+}
+
+.stat-item p {
+  color: #777;
+  margin: 0.5rem 0 0;
+}
+
+.highlight {
+  background-color: #fff8dc; /* Light gold background for highlighting important stats */
+  border: 2px solid #FFC107;
+}
+
+/* Responsive styling */
+
+/* For tablets and small screens (max-width: 1024px) */
+@media (max-width: 1024px) {
+  .stat-item {
+      width: 30%;
+  }
+  .reports-section h2 {
+      font-size: 1.75rem;
+  }
+  .report-container h3 {
+      font-size: 1.5rem;
+  }
+  .stat-item h4 {
+      font-size: 1.75em;
+  }
+}
+
+/* For mobile screens (max-width: 768px) */
+@media (max-width: 768px) {
+  .stat-item {
+      width: 48%; /* Adjust width to fit two items per row */
+  }
+  .reports-section h2 {
+      font-size: 1.5rem;
+  }
+  .report-container h3 {
+      font-size: 1.3rem;
+  }
+  .stat-item h4 {
+      font-size: 1.5em;
+  }
+}
+
+/* For very small screens (max-width: 480px) */
+@media (max-width: 480px) {
+  .stat-item {
+      width: 100%; /* Full width on very small screens */
+  }
+  .reports-section h2 {
+      font-size: 1.25rem;
+  }
+  .report-container h3 {
+      font-size: 1.2rem;
+  }
+  .stat-item h4 {
+      font-size: 1em;
+  }
+}
+
+
+
+/* 13. cart page css here */
+.header_cart_page {
+  border-bottom: 1px solid #ededed;
+}
+
+.other_bread {
+  padding: 41px 0;
+}
+
+.table_desc {
+  border: 1px solid #ededed;
+  margin-bottom: 60px;
+}
+
+.table_desc .cart_page table {
+  width: 100%;
+}
+
+.table_desc .cart_page table thead tr th {
+  border-bottom: 3px solid #fdb813;
+  border-right: 1px solid #ededed;
+  font-size: 16px;
+  font-weight: 600;
+  text-transform: capitalize;
+  padding: 10px;
+  text-align: center;
+}
+
+.table_desc .cart_page table tbody tr td {
+  border-bottom: 1px solid #ededed;
+  border-right: 1px solid #ededed;
+  text-align: center;
+  padding: 10px;
+}
+
+.table_desc .cart_page table tbody tr td.product_remove {
+  min-width: 100px;
+}
+
+.table_desc .cart_page table tbody tr td.product_remove a {
+  font-size: 20px;
+  color: #1c1c1c;
+}
+
+.table_desc .cart_page table tbody tr td.product_remove a:hover {
+  color: #fdb813;
+}
+
+.table_desc .cart_page table tbody tr td.product_thumb {
+  max-width: 180px;
+}
+
+.table_desc .cart_page table tbody tr td.product_thumb::before {
+  display: none;
+}
+
+.table_desc .cart_page table tbody tr td.product_name {
+  min-width: 180px;
+}
+
+.table_desc .cart_page table tbody tr td.product_name a {
+  color: #1c1c1c;
+  text-transform: capitalize;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.table_desc .cart_page table tbody tr td.product_name a:hover {
+  color: #fdb813;
+}
+
+.table_desc .cart_page table tbody tr td.product-price {
+  min-width: 130px;
+  color: #1c1c1c;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.table_desc .cart_page table tbody tr td.product_quantity {
+  min-width: 180px;
+}
+
+.table_desc .cart_page table tbody tr td.product_quantity label {
+  font-weight: 600;
+  margin-right: 5px;
+}
+
+.table_desc .cart_page table tbody tr td.product_quantity input {
+  width: 60px;
+  height: 40px;
+  padding: 0 5px 0 10px;
+  background: none;
+  border: 1px solid #ededed;
+}
+
+.table_desc .cart_page table tbody tr td.product_total {
+  min-width: 120px;
+}
+
+.cart_page table thead tr:last-child th,
+.table_desc table tbody tr td:last-child {
+  border-right: 0;
+}
+
+.cart_submit {
+  text-align: right;
+  padding: 12px;
+}
+
+.cart_submit button {
+  background: #1c1c1c;
+  border: 0;
+  color: #ffffff;
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  height: 38px;
+  line-height: 18px;
+  padding: 10px 15px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: 0.3s;
+  border-radius: 3px;
+}
+
+.cart_submit button:hover {
+  background: #fdb813;
+}
+
+.coupon_inner {
+  padding: 10px 20px 25px;
+}
+
+.coupon_inner p {
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+
+.coupon_inner button {
+  background: #1c1c1c;
+  border: 0;
+  color: #ffffff;
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  height: 38px;
+  line-height: 18px;
+  padding: 10px 15px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: 0.3s;
+  border-radius: 3px;
+}
+
+.coupon_inner button:hover {
+  background: #fdb813;
+}
+
+.coupon_inner input {
+  border: 1px solid #ededed;
+  height: 42px;
+  background: none;
+  padding: 0 20px;
+  margin-right: 20px;
+  font-size: 12px;
+  color: #1c1c1c;
+}
+
+.coupon_inner a {
+  display: block;
+  text-align: right;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #ededed;
+  padding-bottom: 10px;
+  border-radius: 3px;
+}
+
+.coupon_inner a:hover {
+  color: #fdb813;
+}
+
+.coupon_code {
+  border: 1px solid #ededed;
+}
+
+.coupon_code h3 {
+  color: #ffffff;
+  line-height: 36px;
+  padding: 5px 15px;
+  background: #1c1c1c;
+  text-transform: uppercase;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.cart_subtotal {
+  display: flex;
+  justify-content: space-between;
+}
+
+.cart_subtotal p {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.cart_subtotal p.cart_amount {
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.checkout_btn {
+  text-align: right;
+}
+
+.checkout_btn a {
+  background: #fdb813;
+  font-size: 15px;
+  padding: 3px 14px;
+  line-height: 30px;
+  font-weight: 500;
+  display: inline-block;
+  text-transform: capitalize;
+  margin-bottom: 0;
+}
+
+.checkout_btn a:hover {
+  background: #1c1c1c;
+  color: #ffffff;
+}
+
+.coupon_area {
+  margin-bottom: 60px;
+}
+
+/* Responsive Styles */
+@media only screen and (max-width: 767px) {
+  .table_desc .cart_page table thead tr th,
+  .table_desc .cart_page table tbody tr td {
+      font-size: 12px; /* Smaller font for mobile */
+  }
+
+  .table_desc .cart_page table tbody tr td.product_thumb {
+      max-width: 120px; /* Reduce image size */
+  }
+
+  .table_desc .cart_page table tbody tr td.product_quantity input {
+      width: 50px; /* Adjust input field size */
+  }
+
+  .cart_submit button {
+      font-size: 10px; /* Smaller buttons */
+      padding: 8px 12px;
+  }
+
+  .coupon_inner input {
+      margin-bottom: 24px;
+      width: 100%;
+  }
+
+  .coupon_inner h3 {
+      line-height: 28px;
+      padding: 5px 10px;
+      font-size: 15px;
+  }
+
+  .cart_subtotal p.cart_amount {
+      font-size: 14px; /* Adjust total amount font size */
+  }
+
+  .checkout_btn a {
+      font-size: 14px; /* Smaller font for checkout */
+  }
+}
+
+@media only screen and (min-width: 768px) and (max-width: 991px) {
+  .table_desc .cart_page table thead tr th,
+  .table_desc .cart_page table tbody tr td {
+      font-size: 14px; /* Adjust font size for tablets */
+  }
+
+  .cart_submit button {
+      font-size: 12px; /* Button font for tablets */
+  }
+
+  .coupon_inner input {
+      margin-bottom: 24px;
+      width: 100%;
+  }
+
+  .coupon_inner h3 {
+      line-height: 30px; /* Slightly larger header */
+  }
+}
+
+
+.table-responsive {
+  overflow-x: auto; /* Allows horizontal scrolling */
+}
+
+.table-responsive table {
+  min-width: 600px; /* Minimum width to ensure columns are not squished */
+}
+
+.product_thumb img {
+  max-width: 100%; /* Ensures images are responsive */
+  height: auto; /* Maintain aspect ratio */
+}
+
+
+
+
+
+
+
+  /* 14. checkout page css here */
+.user-actions {
+    margin-bottom: 20px;
+  }
+  .user-actions h3 {
+    font-size: 13px;
+    font-weight: 400;
+    background-color: #f7f6f7;
+    padding: 15px 10px;
+    border-top: 3px solid #fdb813;
+    margin-bottom: 0;
+  }
+  .user-actions h3 a {
+    color: #fdb813;
+  }
+  
+  .checkout_info {
+    border: 1px solid #ededed;
+    margin-top: 25px;
+    padding: 20px 30px;
+  }
+  .checkout_info p {
+    margin-bottom: 15px;
+  }
+  .checkout_info a {
+    color: #fdb813;
+    margin-top: 15px;
+    display: block;
+  }
+  
+  .form_group {
+    margin-bottom: 20px;
+  }
+  .form_group label {
+    font-size: 14px;
+    display: block;
+    line-height: 18px;
+  }
+  .form_group input {
+    border: 1px solid #ededed;
+    background: none;
+    height: 45px;
+    width: 350px;
+    padding: 0 20px;
+  }
+  @media only screen and (max-width: 767px) {
+    .form_group input {
+      width: 100%;
+    }
+  }
+  .form_group button {
+    display: inline-block;
+    width: 80px;
+    background: #1c1c1c;
+    border: 0;
+    color: #ffffff;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 13px;
+    -webkit-transition: 0.3s;
+    transition: 0.3s;
+    margin-right: 20px;
+    cursor: pointer;
+    height: 40px;
+    line-height: 40px;
+    border-radius: 3px;
+  }
+  .form_group button:hover {
+    background: #fdb813;
+  }
+  
+  .form_group input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    margin-right: 10px;
+    position: relative;
+    top: 3px;
+  }
+  
+  .form_group.group_3 {
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-align: center;
+    -ms-flex-align: center;
+    align-items: center;
+  }
+  .form_group.group_3 label {
+    margin-bottom: 0;
+    line-height: 34px;
+    cursor: pointer;
+  }
+  .form_group.group_3 label:hover {
+    color: #fdb813;
+  }
+  
+  #checkout_coupon input {
+    background: none;
+    border: 1px solid #ededed;
+    width: 200px;
+    height: 45px;
+    font-size: 12px;
+    padding: 0 20px;
+    color: #1c1c1c;
+  }
+  #checkout_coupon button {
+    width: 130px;
+    background: #1c1c1c;
+    color: #ffffff;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 13px;
+    cursor: pointer;
+    -webkit-transition: 0.3s;
+    transition: 0.3s;
+    border: 0;
+    height: 45px;
+    line-height: 45px;
+    border-radius: 3px;
+    margin-left: 5px;
+  }
+  @media only screen and (max-width: 767px) {
+    #checkout_coupon button {
+      margin-top: 20px;
+    }
+  }
+  #checkout_coupon button:hover {
+    background: #fdb813;
+  }
+  
+  .mb-20 {
+    margin-bottom: 20px;
+  }
+  
+  .checkout_form h3 {
+    font-size: 16px;
+    line-height: 30px;
+    padding: 5px 10px;
+    text-transform: uppercase;
+    color: #ffffff;
+    background: #1c1c1c;
+    font-weight: 500;
+  }
+  .checkout_form input {
+    border: 1px solid #ededed;
+    background: none;
+    height: 40px;
+    width: 100%;
+    padding: 0 20px;
+    color: #1c1c1c;
+  }
+  .checkout_form .nice-select {
+    width: 100%;
+  }
+  .checkout_form .nice-select ul.list {
+    width: 100%;
+    height: 180px;
+    overflow: auto;
+  }
+  .checkout_form .nice-select::after {
+    top: 56%;
+  }
+  .checkout_form label {
+    font-weight: 600;
+  }
+  .checkout_form label span {
+    color: #fdb813;
+  }
+  .checkout_form label.righ_0 {
+    cursor: pointer;
+    font-size: 15px;
+    line-height: 27px;
+    padding: 5px 10px;
+    text-transform: capitalize;
+    color: #ffffff;
+    background: #1c1c1c;
+    font-weight: 500;
+    -webkit-transition: 0.3s;
+    transition: 0.3s;
+    margin-bottom: 0;
+    border-radius: 5px;
+  }
+  @media only screen and (max-width: 767px) {
+    .checkout_form label.righ_0 {
+      font-size: 13px;
+      line-height: 25px;
+      padding: 3px 10px;
+    }
+  }
+  .checkout_form label.righ_0:hover {
+    background: #757575;
+  }
+  
+  .checkout_form input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    position: relative;
+    top: 2px;
+    margin-right: 10px;
+  }
+  
+  .order_button button {
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 30px;
+    padding: 5px 10px;
+    text-transform: capitalize;
+    color: #ffffff;
+    background: #fdb813;
+    font-weight: 500;
+    -webkit-transition: 0.3s;
+    transition: 0.3s;
+    margin-bottom: 0;
+    border-radius: 5px;
+  }
+  .order_button button:hover {
+    background: #1c1c1c;
+  }
+  
+  @media only screen and (max-width: 767px) {
+    .order-notes {
+      margin-bottom: 58px;
+    }
+  }
+  .order-notes textarea {
+    border: 1px solid #e5e5e5;
+    border-radius: 0;
+    height: 45px;
+    max-width: 100%;
+    padding: 0 30px 0 20px;
+    background: none;
+    font-size: 13px;
+    resize: none;
+    line-height: 45px;
+    width: 100%;
+    color: #1c1c1c;
+  }
+  .order-notes label {
+    line-height: 13px;
+  }
+  
+  .Checkout_section {
+    margin-bottom: 56px;
+  }
+  @media only screen and (max-width: 767px) {
+    .Checkout_section {
+      margin-bottom: 60px;
+    }
+  }
+  
+  .order_table {
+    margin-bottom: 35px;
+  }
+  .order_table table {
+    width: 100%;
+  }
+  .order_table table thead tr th {
+    min-width: 50%;
+    text-align: center;
+    padding: 15px 0;
+    border-bottom: 1px solid #ddd;
+  }
+  .order_table table tbody tr td {
+    min-width: 50%;
+    text-align: center;
+    padding: 15px 0;
+    border-bottom: 1px solid #ddd;
+  }
+  .order_table table tfoot tr th {
+    min-width: 50%;
+    text-align: center;
+    padding: 15px 0;
+    border-bottom: 1px solid #ddd;
+  }
+  .order_table table tfoot tr td {
+    min-width: 50%;
+    text-align: center;
+    padding: 15px 0;
+    border-bottom: 1px solid #ddd;
+  }
+  
+  .panel-default input[type="radio"] {
+    width: 15px;
+    height: 15px;
+    position: relative;
+    top: 2px;
+    margin-right: 10px;
+  }
+  
+  .panel-default img {
+    width: 160px;
+  }
+  
+  .order_button button {
+    border: 0;
+  }
+  
+  .card-body1 {
+    margin-bottom: 15px;
+  }
+  
+  /*checkout page css end*/
+  
+
+
+
+.footer {
+    background-color: #1c1c1c;
+    color: #fff;
+    text-align: center;
+    padding: 2rem 0;
+    position: relative;
+  }
+  .footer a {
+    color: #fff;
+  }
+  .footer a:hover {
+    text-decoration: underline;
+  }
+  .footer .footer-links {
+    list-style: none;
+    padding: 0;
+  }
+  .footer .footer-links li {
+    margin-bottom: 0.5rem;
+  }
+  .footer .footer-links a {
+    color: #fff;
+  }
+  .footer .social-links {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+  }
+  .footer .social-links a {
+    color: #fff;
+    font-size: 1.5rem;
+  }
+  .footer .social-links a:hover {
+    color: #FFC107;
+  }
+  .footer-toggle-icon {
+    font-size: 1.5rem;
+    color: #FFC107;
+    cursor: pointer;
+  }
+  .footer-content {
+    display: block;
+  }
+  .footer-content.hidden {
+    display: none;
+  }
