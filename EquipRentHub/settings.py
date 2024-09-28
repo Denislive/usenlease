@@ -158,15 +158,18 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
+# Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'  # Directory where collectstatic will collect files
 
-STATICFILES_DIRS = [BASE_DIR / 'static']
+# Additional directories to look for static files (optional)
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',  # Directory for additional static files
+]
 
+# Media files (Uploaded files)
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media/'
-
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
+MEDIA_ROOT = BASE_DIR / 'media/'  # Directory where uploaded media files will be stored
 
 
 # Default primary key field type
