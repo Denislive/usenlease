@@ -1,0 +1,183 @@
+<!doctype html>
+{% load static %}
+
+{% load crispy_forms_tags %}
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Company Name - Equipment Listing</title>
+    <link rel="stylesheet" href="{% static 'assets/css/foundation.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/css/app.css' %}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{% static 'assets/css/custom.css' %}"> <!-- Custom styles -->
+</head>
+<body>
+
+<!-- Navigation for large devices -->
+<nav class="top-bar hide-for-small-only sticky-nav" data-topbar role="navigation">
+    <div class="top-bar-left">
+        <ul class="menu" data-dropdown-menu>
+            <li class="menu-text">
+                <img src="{% static 'assets/images/logo-white.png' %}" alt="Logo" class="logo">
+            </li>
+        </ul>
+    </div>
+    <div class="top-bar-right">
+        <ul class="menu" data-dropdown-menu>
+            <li class="cart-item">
+                <a href="{% url 'cart' %}">
+                    <i class="bi bi-cart"></i>
+                    <span class="cart-count">3</span>
+                </a>
+            </li>
+
+            {% if user.is_authenticated %}
+            <li><a href="{% url 'user:logout' %}">Logout</a></li>
+            {% else %}
+                <li><a href="{% url 'user:login' %}" class="hide-for-medium-only" style="margin-right: 1em;">Login</a></li>
+            {% endif %}
+
+            <li><a href="#" class="button warning" data-open="listEquipmentModal">List Equipment</a></li>
+        </ul>
+    </div>
+</nav>
+
+
+
+<!-- Modal for Listing Equipment -->
+<div class="reveal" id="listEquipmentModal" data-reveal>
+    <div class="grid-container">
+        <form method="post" action="{% url 'equipment-create' %}">
+            {% csrf_token %}
+            {{ eform|crispy }}
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+    </div>
+</div>
+
+<!-- Mobile Navigation -->
+<div class="show-for-small-only mobile-nav sticky-nav">
+    <div class="grid-x align-middle">
+        <div class="cell auto">
+            <img src="{% static 'assets/images/logo-white.png' %}" alt="Logo" class="logo">
+        </div>
+        <div class="cell auto">
+            {% if user.is_authenticated %}
+            {% else %}
+            <a href="{% url 'user:login' %}" class="button list-equipment-button">Login</a>
+            {% endif %}
+
+
+
+        </div>
+        <div class="cell shrink">
+            <a href="{% url 'cart' %}" class="cart-item">
+                <i class="bi bi-cart"></i>
+                <span class="cart-count">3</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+
+<!-- Sticky Navbar for Mobile -->
+<nav class="sticky bottom-navbar show-for-small-only">
+    <div class="grid-x align-center-middle">
+        <div class="cell auto text-center">
+            <a href="{% url 'home' %}" class="nav-link">
+                <i class="bi bi-house-door"></i>
+                <small>Home</small>
+            </a>
+        </div>
+        <div class="cell auto text-center">
+            <a href="#" class="nav-link">
+                <i class="bi bi-bookmark"></i>
+                <small>Saved</small>
+            </a>
+        </div>
+        <div class="cell auto text-center">
+            <a href="#" class="nav-link" data-open="listEquipmentModal">
+                <i class="bi bi-plus"></i>
+                <small>Sell</small>
+            </a>
+        </div>
+        <div class="cell auto text-center">
+            <a href="#" class="nav-link">
+                <i class="bi bi-chat-dots"></i>
+                <small>Messages</small>
+            </a>
+        </div>
+        <div class="cell auto text-center">
+            <a href="{% url 'user:profile' %}" class="nav-link">
+                <i class="bi bi-person"></i>
+                <small>Profile</small>
+            </a>
+        </div>
+    </div>
+</nav>
+
+<!-- Main Content Section -->
+{% block content %}
+<!-- Page-specific content goes here -->
+{% endblock %}
+
+<!-- Footer -->
+<footer class="footer">
+    <div class="grid-container">
+        <div class="grid-x grid-margin-x">
+            <div class="cell text-center show-for-small-only" style="margin-bottom: 1.5rem;">
+                <i class="bi bi-chevron-down footer-toggle-icon" id="footerToggle" title="Toggle Footer"></i>
+            </div>
+        </div>
+        <div class="footer-content" id="footerContent">
+            <div class="grid-x grid-margin-x">
+                <!-- Contact Information -->
+                <div class="cell small-12 medium-4">
+                    <h4>Contact Us</h4>
+                    <p>
+                        <strong>Phone:</strong> (123) 456-7890<br>
+                        <strong>Email:</strong> <a href="mailto:info@yourcompany.com">info@yourcompany.com</a><br>
+                        <strong>Address:</strong> 1234 Equipment Lane, Suite 100, City, State, 12345
+                    </p>
+                </div>
+                <!-- Quick Links -->
+                <div class="cell small-12 medium-4">
+                    <h4>Quick Links</h4>
+                    <ul class="footer-links">
+                        <li><a href="#">Home</a></li>
+                        <li><a href="#">About Us</a></li>
+                        <li><a href="#">Services</a></li>
+                        <li><a href="#">Equipment</a></li>
+                        <li><a href="#">Contact Us</a></li>
+                    </ul>
+                </div>
+                <!-- Social Media -->
+                <div class="cell small-12 medium-4">
+                    <h4>Follow Us</h4>
+                    <ul class="social-links">
+                        <li><a href="#" aria-label="Facebook"><i class="bi bi-facebook"></i></a></li>
+                        <li><a href="#" aria-label="Twitter"><i class="bi bi-twitter"></i></a></li>
+                        <li><a href="#" aria-label="Instagram"><i class="bi bi-instagram"></i></a></li>
+                        <li><a href="#" aria-label="LinkedIn"><i class="bi bi-linkedin"></i></a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="grid-x grid-margin-x">
+                <div class="cell text-center" style="margin-bottom: 1rem;">
+                    <p>&copy; 2024 Your Company Name. All Rights Reserved.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<script src="{% static 'assets/js/vendor/jquery.js' %}"></script>
+<script src="{% static 'assets/js/vendor/what-input.js' %}"></script>
+<script src="{% static 'assets/js/vendor/foundation.js' %}"></script>
+<script src="{% static 'assets/js/vendor/foundation.min.js' %}"></script>
+
+<script src="{% static 'assets/js/app.js' %}"></script>
+</body>
+</html>

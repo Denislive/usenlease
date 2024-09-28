@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}EquiHub Home{% endblock %}
+
+{% block content %}
+
+<div class="grid-container">
+    <!-- Shopping Cart Area Start -->
+<div class="shopping_cart_area mt-32">
+    <div class="grid-container">
+        <form action="#">
+            <div class="grid-x grid-margin-x">
+                <div class="cell small-12">
+                    <div class="table_desc">
+                        <div class="cart_page">
+                            <div class="table-responsive">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th class="product_remove">Delete</th>
+                                            <th class="product_thumb">Image</th>
+                                            <th class="product_name">Product</th>
+                                            <th class="product-price">Price</th>
+                                            <th class="product_quantity">Quantity</th>
+                                            <th class="product_total">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="product_remove"><a href="#"><i class="bi bi-trash"></i></a></td>
+                                            <td class="product_thumb"><a href="#"><img src="{% static 'assets/img/s-product/product.jpg' %}" alt=""></a></td>
+                                            <td class="product_name"><a href="#">Handbag fringilla</a></td>
+                                            <td class="product-price">£65.00</td>
+                                            <td class="product_quantity"><label>Quantity</label> <input min="1" max="100" value="1" type="number"></td>
+                                            <td class="product_total">£130.00</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="product_remove"><a href="#"><i class="bi bi-trash"></i></a></td>
+                                            <td class="product_thumb"><a href="#"><img src="{% static 'assets/img/s-product/product2.jpg' %}" alt=""></a></td>
+                                            <td class="product_name"><a href="#">Handbags justo</a></td>
+                                            <td class="product-price">£90.00</td>
+                                            <td class="product_quantity"><label>Quantity</label> <input min="1" max="100" value="1" type="number"></td>
+                                            <td class="product_total">£180.00</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="product_remove"><a href="#"><i class="bi bi-trash"></i></a></td>
+                                            <td class="product_thumb"><a href="#"><img src="{% static 'assets/img/s-product/product5.jpg' %}" alt=""></a></td>
+                                            <td class="product_name"><a href="#">Handbag elit</a></td>
+                                            <td class="product-price">£80.00</td>
+                                            <td class="product_quantity"><label>Quantity</label> <input min="1" max="100" value="1" type="number"></td>
+                                            <td class="product_total">£160.00</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="cart_submit text-right">
+                            <button type="submit" class="button">Update Cart</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coupon Code Area Start -->
+            <div class="coupon_area mt-32">
+                <div class="grid-x grid-margin-x">
+                    <div class="cell small-12 medium-6">
+                        <div class="coupon_code">
+                            <h3>Cart Totals</h3>
+                            <div class="coupon_inner">
+                                <div class="cart_subtotal">
+                                    <p>Subtotal</p>
+                                    <p class="cart_amount">£215.00</p>
+                                </div>
+                                <div class="cart_subtotal">
+                                    <p>Shipping</p>
+                                    <p class="cart_amount"><span>Flat Rate:</span> £255.00</p>
+                                </div>
+                                <a href="#">Calculate Shipping</a>
+                                <div class="cart_subtotal">
+                                    <p>Total</p>
+                                    <p class="cart_amount">£215.00</p>
+                                </div>
+                                <div class="checkout_btn text-right">
+                                    <a href="#" class="button alert">Proceed to Checkout</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Coupon Code Area End -->
+        </form>
+    </div>
+</div>
+<!-- Shopping Cart Area End -->
+</div>
+
+
+{% endblock content %}

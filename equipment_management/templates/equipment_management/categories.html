@@ -1,0 +1,470 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}EquiHub Home{% endblock %}
+
+{% block content %}
+
+<section class="hero">
+    <div class="grid-container">
+        <div class="grid-x grid-margin-x align-middle text-center">
+            <!-- Hero Content -->
+            <div class="cell large-12">
+                <div class="hero-content">
+                    <div class="grid-x align-center custom-hero-content">
+                        <div class="cell">
+                            <span class="custom-text">Find Equipment</span>
+                        </div>
+                        <div class="cell">
+                            <div class="custom-location-box">
+                                <i class="bi bi-geo-alt location-icon"></i>
+                                <span data-open="usaLocationModal">All in USA</span>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search Box -->
+            <div class="cell large-12">
+                <div class="grid-x align-center">
+                    <div class="cell small-12 medium-10 large-8 search-box">
+                        <div class="input-group input-group-rounded">
+                            <input class="input-group-field" type="search"
+                                placeholder="It's here, whatever you're looking for">
+                            <div class="input-group-button">
+                                <input type="submit" style="background-color: #1c1c1c; color: white;"
+                                    class="button warning" value="Search">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- USA Location Modal -->
+<div class="reveal" id="usaLocationModal" data-reveal>
+    <div id="state-selection">
+        <h2>Select a State</h2>
+        <ul class="vertical menu" id="statesList">
+            <!-- Example State List -->
+            <li><a href="#" data-state="california">California</a></li>
+            <li><a href="#" data-state="texas">Texas</a></li>
+            <li><a href="#" data-state="new-york">New York</a></li>
+            <!-- Add more states as needed -->
+        </ul>
+    </div>
+
+    <div id="city-selection" style="display: none;">
+        <h2>Select a City in <span id="selectedStateName"></span></h2>
+        <ul class="vertical menu" id="citiesList">
+            <!-- Cities will be dynamically inserted here -->
+        </ul>
+        <button class="button" id="backToStates">Back to States</button>
+    </div>
+
+    <button class="close-button" data-close aria-label="Close modal" type="button">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+
+
+<!-- Breadcrumb Navigation -->
+<div class="hide-for-small-only">
+    <div class="cell">
+        <nav aria-label="Breadcrumb" class="text-center">
+            <ul class="breadcrumbs">
+                <li><a href="#">Home</a></li>
+                <li><a href="#">Categories</a></li>
+                <li><a href="#">Subcategory</a></li>
+                <li class="current">Current Page</li>
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<div class="main-section">
+    <div class="grid-x grid-margin-x" style="padding: 1rem 0;">
+
+        <div class="cell medium-12 large-3">
+            <!-- Mobile Filters -->
+<h2 class="show-for-small-only">Filters</h2>
+<a href="#" class="clear-all" id="clear-all-filters">Clear All</a>
+
+<div class="filter-row overflow-auto show-for-small-only">
+    <div class="product-filters-tab">
+        <div class="dropdown">
+            <button class="button" id="filter-dropdown" onclick="toggleDropdown('category-dropdown-menu')">Category</button>
+            <div class="dropdown-menu" id="category-dropdown-menu" style="display: none;">
+                <label><input type="checkbox" value="category1" onchange="filterItems()"> Category 1</label><br>
+                <label><input type="checkbox" value="category2" onchange="filterItems()"> Category 2</label><br>
+                <label><input type="checkbox" value="category3" onchange="filterItems()"> Category 3</label><br>
+                <label><input type="checkbox" value="category4" onchange="filterItems()"> Category 4</label><br>
+                <label><input type="checkbox" value="category5" onchange="filterItems()"> Category 5</label><br>
+                <label><input type="checkbox" value="category6" onchange="filterItems()"> Category 6</label>
+            </div>
+        </div>
+    </div>
+    
+    <div class="product-filters-tab">
+        <div class="dropdown">
+            <button class="button" id="filter-dropdown" onclick="toggleDropdown('size-dropdown-menu')">Size</button>
+            <div class="dropdown-menu" id="size-dropdown-menu" style="display: none;">
+                <label><input type="checkbox" value="small" onchange="filterItems()"> Small</label><br>
+                <label><input type="checkbox" value="medium" onchange="filterItems()"> Medium</label><br>
+                <label><input type="checkbox" value="large" onchange="filterItems()"> Large</label><br>
+                <label><input type="checkbox" value="xlarge" onchange="filterItems()"> X-Large</label><br>
+                <label><input type="checkbox" value="xxlarge" onchange="filterItems()"> XX-Large</label>
+            </div>
+        </div>
+    </div>
+
+    <div class="product-filters-tab">
+        <div class="dropdown">
+            <button class="button" id="filter-dropdown" onclick="toggleDropdown('color-dropdown-menu')">Color</button>
+            <div class="dropdown-menu" id="color-dropdown-menu" style="display: none;">
+                <label><input type="checkbox" value="black" onchange="filterItems()"> Black</label><br>
+                <label><input type="checkbox" value="white" onchange="filterItems()"> White</label><br>
+                <label><input type="checkbox" value="grey" onchange="filterItems()"> Grey</label><br>
+                <label><input type="checkbox" value="red" onchange="filterItems()"> Red</label><br>
+                <label><input type="checkbox" value="blue" onchange="filterItems()"> Blue</label><br>
+                <label><input type="checkbox" value="green" onchange="filterItems()"> Green</label><br>
+                <label><input type="checkbox" value="purple" onchange="filterItems()"> Purple</label><br>
+                <label><input type="checkbox" value="multi-color" onchange="filterItems()"> Multi-color</label>
+            </div>
+        </div>
+    </div>
+
+    <div class="product-filters-tab">
+        <div class="dropdown">
+            <button class="button" id="filter-dropdown" onclick="toggleDropdown('price-dropdown-menu')">Price Range</button>
+            <div class="dropdown-menu" id="price-dropdown-menu" style="display: none;">
+                <label><input type="checkbox" value="under-25" onchange="filterItems()"> Under $25</label><br>
+                <label><input type="checkbox" value="25-50" onchange="filterItems()"> $25–$50</label><br>
+                <label><input type="checkbox" value="50-250" onchange="filterItems()"> $50–$250</label><br>
+                <label><input type="checkbox" value="250-600" onchange="filterItems()"> $250–$600</label><br>
+                <label><input type="checkbox" value="600-1000" onchange="filterItems()"> $600–$1,000</label>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleDropdown(menuId) {
+        const menu = document.getElementById(menuId);
+        menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function filterItems() {
+        // Gather checked values for each category
+        const categories = Array.from(document.querySelectorAll('input[type="checkbox"]:checked'))
+            .map(checkbox => checkbox.value);
+
+        console.log(`Selected filters: ${categories.join(', ')}`);
+        // Add your filtering logic here
+    }
+
+    document.getElementById('clear-all-filters').addEventListener('click', function(e) {
+        e.preventDefault();
+        // Uncheck all checkboxes
+        document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.checked = false;
+        });
+
+        // Call filterItems to refresh the displayed items
+        filterItems();
+    });
+
+    // Close dropdowns when clicking outside
+    window.onclick = function(event) {
+        if (!event.target.matches('.button')) {
+            document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                menu.style.display = 'none';
+            });
+        }
+    };
+</script>
+
+            <!-- Desktop Filters -->
+            <h1 class="product-filters-header hide-for-small-only"><i class="bi bi-filter"></i> Filters</h1>
+            <ul class="vertical menu hide-for-small-only" data-accordion-menu>
+                <li class="product-filters-tab">
+                    <a href="#">Category</a>
+                    <ul class="categories-menu menu vertical nested is-active">
+                        <a href="#" class="clear-all" id="category-clear-all">Clear All</a>
+                        <li><input id="category-checkbox1" type="checkbox"><label for="category-checkbox1">Category
+                                1</label></li>
+                        <li><input id="category-checkbox2" type="checkbox"><label for="category-checkbox2">Category
+                                2</label></li>
+                        <li><input id="category-checkbox3" type="checkbox"><label for="category-checkbox3">Category
+                                3</label></li>
+                        <li><input id="category-checkbox4" type="checkbox"><label for="category-checkbox4">Category
+                                4</label></li>
+                        <li><input id="category-checkbox5" type="checkbox"><label for="category-checkbox5">Category
+                                5</label></li>
+                        <li><input id="category-checkbox6" type="checkbox"><label for="category-checkbox6">Category
+                                6</label></li>
+                    </ul>
+                </li>
+                <li class="product-filters-tab">
+                    <a href="#">Size</a>
+                    <ul class="categories-menu menu vertical nested is-active">
+                        <a href="#" class="clear-all" id="size-clear-all">Clear All</a>
+                        <li><input id="size-checkbox1" type="checkbox"><label for="size-checkbox1">Small</label></li>
+                        <li><input id="size-checkbox2" type="checkbox"><label for="size-checkbox2">Medium</label></li>
+                        <li><input id="size-checkbox3" type="checkbox"><label for="size-checkbox3">Large</label></li>
+                        <li><input id="size-checkbox4" type="checkbox"><label for="size-checkbox4">X-Large</label></li>
+                        <li><input id="size-checkbox5" type="checkbox"><label for="size-checkbox5">XX-Large</label></li>
+                    </ul>
+                </li>
+                <li class="product-filters-tab">
+                    <a href="#">Color</a>
+                    <ul class="categories-menu menu vertical nested">
+                        <a href="#" class="clear-all" id="color-clear-all">Clear All</a>
+                        <li><input id="color-checkbox1" type="checkbox"><label for="color-checkbox1">All Color</label>
+                        </li>
+                        <li><input id="color-checkbox2" type="checkbox"><label for="color-checkbox2">Black</label></li>
+                        <li><input id="color-checkbox3" type="checkbox"><label for="color-checkbox3">White</label></li>
+                        <li><input id="color-checkbox4" type="checkbox"><label for="color-checkbox4">Grey</label></li>
+                        <li><input id="color-checkbox5" type="checkbox"><label for="color-checkbox5">Red</label></li>
+                        <li><input id="color-checkbox6" type="checkbox"><label for="color-checkbox6">Blue</label></li>
+                        <li><input id="color-checkbox7" type="checkbox"><label for="color-checkbox7">Green</label></li>
+                        <li><input id="color-checkbox8" type="checkbox"><label for="color-checkbox8">Purple</label></li>
+                        <li><input id="color-checkbox9" type="checkbox"><label for="color-checkbox9">Multi-color</label>
+                        </li>
+                    </ul>
+                </li>
+                <li class="product-filters-tab">
+                    <a href="#">Price</a>
+                    <ul class="categories-menu menu vertical nested">
+                        <a href="#" class="clear-all" id="price-clear-all">Clear All</a>
+                        <li><input id="price-checkbox1" type="checkbox"><label for="price-checkbox1">Under $25</label>
+                        </li>
+                        <li><input id="price-checkbox2" type="checkbox"><label for="price-checkbox2">$25–$50</label>
+                        </li>
+                        <li><input id="price-checkbox3" type="checkbox"><label for="price-checkbox3">$50–$250</label>
+                        </li>
+                        <li><input id="price-checkbox4" type="checkbox"><label for="price-checkbox4">$250–$600</label>
+                        </li>
+                        <li><input id="price-checkbox5" type="checkbox"><label for="price-checkbox5">$600–$1,000</label>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+
+
+
+
+
+        <main class="cell medium-12 large-9 main-content" style="margin-top: 1rem;">
+            
+
+            <!-- Equipment Cards Section -->
+            <div class="grid-x grid-margin-x medium-8">
+                <!-- Card 1 -->
+                <div class="cell small-12 medium-4 mb-4">
+                    <div class="card">
+                        <div class="card-image">
+                            <img src="https://picsum.photos/300/200" alt="Equipment Image">
+                            <span class="tag">20% Off</span>
+                            <div class="card-hover-content">
+                                <div class="custom-rating">
+                                    <span class="stars">★★★★☆</span> <!-- Star rating -->
+                                    <span class="reviews">30 Reviews</span> <!-- Reviews below stars -->
+                                </div>
+                                <a href="#" class="favorite-button">
+                                    <i class="bi bi-heart"></i> <!-- Heart icon -->
+                                </a>
+                            </div>
+                        </div>
+                        <div class="card-section">
+                            <h5 class="card-title">Equipment Title</h5>
+                            <p class="card-text">Description of the equipment goes here. It includes key features and
+                                details.</p>
+                            <div class="grid-x grid-margin-x align-middle">
+                                <div class="cell small-6">
+                                    <span class="price">$200/hr</span>
+                                </div>
+                                <div class="cell small-6 text-right">
+                                    <a href="#" class="button rent-now-button">Rent Now</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="cell small-12 medium-4 mb-4">
+                    <div class="card">
+                        <div class="card-image">
+                            <img src="https://picsum.photos/300/200" alt="Equipment Image">
+                            <span class="tag">15% Off</span>
+                            <div class="card-hover-content">
+                                <div class="custom-rating">
+                                    <span class="stars">★★★★☆</span> <!-- Star rating -->
+                                    <span class="reviews">25 Reviews</span> <!-- Reviews below stars -->
+                                </div>
+                                <a href="#" class="favorite-button">
+                                    <i class="bi bi-heart"></i> <!-- Heart icon -->
+                                </a>
+                            </div>
+                        </div>
+                        <div class="card-section">
+                            <h5 class="card-title">Equipment Title</h5>
+                            <p class="card-text">Description of the equipment goes here. It includes key features and
+                                details.</p>
+                            <div class="grid-x grid-margin-x align-middle">
+                                <div class="cell small-6">
+                                    <span class="price">$150/hr</span>
+                                </div>
+                                <div class="cell small-6 text-right">
+                                    <a href="#" class="button rent-now-button">Rent Now</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="cell small-12 medium-4 mb-4">
+                    <div class="card">
+                        <div class="card-image">
+                            <img src="https://picsum.photos/300/200" alt="Equipment Image">
+                            <span class="tag">10% Off</span>
+                            <div class="card-hover-content">
+                                <div class="custom-rating">
+                                    <span class="stars">★★★★★</span> <!-- Star rating -->
+                                    <span class="reviews">40 Reviews</span> <!-- Reviews below stars -->
+                                </div>
+                                <a href="#" class="favorite-button">
+                                    <i class="bi bi-heart"></i> <!-- Heart icon -->
+                                </a>
+                            </div>
+                        </div>
+                        <div class="card-section">
+                            <h5 class="card-title">Equipment Title</h5>
+                            <p class="card-text">Description of the equipment goes here. It includes key features and
+                                details.</p>
+                            <div class="grid-x grid-margin-x align-middle">
+                                <div class="cell small-6">
+                                    <span class="price">$180/hr</span>
+                                </div>
+                                <div class="cell small-6 text-right">
+                                    <a href="#" class="button rent-now-button">Rent Now</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 4 -->
+                <div class="cell small-12 medium-4 mb-4">
+                    <div class="card">
+                        <div class="card-image">
+                            <img src="https://picsum.photos/300/200" alt="Equipment Image">
+                            <span class="tag">10% Off</span>
+                            <div class="card-hover-content">
+                                <div class="custom-rating">
+                                    <span class="stars">★★★★★</span> <!-- Star rating -->
+                                    <span class="reviews">40 Reviews</span> <!-- Reviews below stars -->
+                                </div>
+                                <a href="#" class="favorite-button">
+                                    <i class="bi bi-heart"></i> <!-- Heart icon -->
+                                </a>
+                            </div>
+                        </div>
+                        <div class="card-section">
+                            <h5 class="card-title">Equipment Title</h5>
+                            <p class="card-text">Description of the equipment goes here. It includes key features and
+                                details.</p>
+                            <div class="grid-x grid-margin-x align-middle">
+                                <div class="cell small-6">
+                                    <span class="price">$180/hr</span>
+                                </div>
+                                <div class="cell small-6 text-right">
+                                    <a href="#" class="button rent-now-button">Rent Now</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 5 -->
+                <div class="cell small-12 medium-4 mb-4">
+                    <div class="card">
+                        <div class="card-image">
+                            <img src="https://picsum.photos/300/200" alt="Equipment Image">
+                            <span class="tag">10% Off</span>
+                            <div class="card-hover-content">
+                                <div class="custom-rating">
+                                    <span class="stars">★★★★★</span> <!-- Star rating -->
+                                    <span class="reviews">40 Reviews</span> <!-- Reviews below stars -->
+                                </div>
+                                <a href="#" class="favorite-button">
+                                    <i class="bi bi-heart"></i> <!-- Heart icon -->
+                                </a>
+                            </div>
+                        </div>
+                        <div class="card-section">
+                            <h5 class="card-title">Equipment Title</h5>
+                            <p class="card-text">Description of the equipment goes here. It includes key features and
+                                details.</p>
+                            <div class="grid-x grid-margin-x align-middle">
+                                <div class="cell small-6">
+                                    <span class="price">$180/hr</span>
+                                </div>
+                                <div class="cell small-6 text-right">
+                                    <a href="#" class="button rent-now-button">Rent Now</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 6 -->
+                <div class="cell small-12 medium-4 mb-4">
+                    <div class="card">
+                        <div class="card-image">
+                            <img src="https://picsum.photos/300/200" alt="Equipment Image">
+                            <span class="tag">10% Off</span>
+                            <div class="card-hover-content">
+                                <div class="custom-rating">
+                                    <span class="stars">★★★★★</span> <!-- Star rating -->
+                                    <span class="reviews">40 Reviews</span> <!-- Reviews below stars -->
+                                </div>
+                                <a href="#" class="favorite-button">
+                                    <i class="bi bi-heart"></i> <!-- Heart icon -->
+                                </a>
+                            </div>
+                        </div>
+                        <div class="card-section">
+                            <h5 class="card-title">Equipment Title</h5>
+                            <p class="card-text">Description of the equipment goes here. It includes key features and
+                                details.</p>
+                            <div class="grid-x grid-margin-x align-middle">
+                                <div class="cell small-6">
+                                    <span class="price">$180/hr</span>
+                                </div>
+                                <div class="cell small-6 text-right">
+                                    <a href="#" class="button rent-now-button">Rent Now</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+
+    </div>
+</div>
+
+
+
+{% endblock content %}

@@ -1,0 +1,20 @@
+<!-- create_user.html -->
+
+{% extends 'base.html' %}
+
+{% load static crispy_forms_tags %}
+
+{% block title %}Create User{% endblock %}
+
+{% block content %}
+    <div class="grid-container">
+        <h1>Create User</h1>
+    <form method="POST" enctype="multipart/form-data" action="{% url 'user:create_user' %}">
+        {% csrf_token %}
+        {{ form|crispy }}
+        <button class="button primary" type="submit">Create User</button>
+        <a href="{% url 'user:login' %}">Cancel</a> <!-- Adjust URL name accordingly -->
+    </form>
+    <br/>
+    </div>
+{% endblock content %}

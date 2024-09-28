@@ -10,22 +10,6 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
-import os
-from dotenv import load_dotenv
-
-import dj_database_url
-
-
-load_dotenv()
-
-# Existing settings
-SECRET_KEY = os.getenv('SECRET_KEY')
-DEBUG = os.getenv('DEBUG') == 'True'  # Convert to boolean if needed
-STRIPE_PUBLIC_KEY = os.getenv('STRIPE_PUBLIC_KEY')
-STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY')
-STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET')
-
-
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -36,9 +20,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = 'django-insecure-^5zv2&aef@n*hi0icmu7lji6bqf0r&d@!x)%*gq-e^w)2e^kl!'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-
+DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
@@ -51,7 +36,9 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 AUTH_USER_MODEL = 'user_management.User'
 
-
+STRIPE_PUBLIC_KEY = "pk_test_51PoseE050JE89jJG85ZUGTXvcXNgziBRdyCNzPydQ7ngbEAUCyOzF3Lvz7JkX8qePludxNIigvTMHwqotpRCrA4E00NJ7VgSfd"
+STRIPE_SECRET_KEY = "sk_test_51PoseE050JE89jJGUypP7IdYiTdb7bD1da6baheYVgmGSOqNbFUVR7KD04RWrq0WMTTtpI3vrxovwwA1PjCG5TLS00FkXZUgTc"
+STRIPE_WEBHOOK_SECRET = ""
 
 
 # Application definition
@@ -120,7 +107,10 @@ WSGI_APPLICATION = 'EquipRentHub.wsgi.application'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 DATABASES = {
-	"default": dj_database_url.parse(os.getenv('DATABASE_URL'))
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
 }
 
 

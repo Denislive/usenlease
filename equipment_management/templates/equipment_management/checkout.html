@@ -1,0 +1,239 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}EquiHub - User Profile{% endblock %}
+
+{% block content %}
+
+<div class="grid-container" style="margin: 1rem;">
+
+    <!-- Checkout page section -->
+    <div class="grid-x grid-margin-x mt-3">
+        <div class="cell medium-6">
+            <form action="#">
+                <h3 style="color: #1c1c1c;">Billing Details</h3>
+                <div class="grid-x grid-margin-x">
+
+                    <div class="cell medium-6">
+                        <label>First Name <span>*</span>
+                            <input type="text" required>
+                        </label>
+                    </div>
+                    <div class="cell medium-6">
+                        <label>Last Name <span>*</span>
+                            <input type="text" required>
+                        </label>
+                    </div>
+                    <div class="cell">
+                        <label>Company Name
+                            <input type="text">
+                        </label>
+                    </div>
+                    <div class="cell">
+                        <label for="country">Country <span>*</span></label>
+                        <select name="country" id="country" required>
+                            <option value="">Select Country</option>
+                            <option value="2">USA</option>
+                        </select>
+                    </div>
+
+                    <div class="cell">
+                        <label>Street address <span>*</span>
+                            <input placeholder="House number and street name" type="text" required>
+                        </label>
+                    </div>
+                    <div class="cell">
+                        <input placeholder="Apartment, suite, unit etc. (optional)" type="text">
+                    </div>
+                    <div class="cell">
+                        <label>Town / City <span>*</span>
+                            <input type="text" required>
+                        </label>
+                    </div>
+                    <div class="cell">
+                        <label>State / County <span>*</span>
+                            <input type="text" required>
+                        </label>
+                    </div>
+                    <div class="cell medium-6">
+                        <label>Phone<span>*</span>
+                            <input type="text" required>
+                        </label>
+                    </div>
+                    <div class="cell medium-6">
+                        <label>Email Address <span>*</span>
+                            <input type="email" required>
+                        </label>
+                    </div>
+                    
+                    <div class="cell">
+                        <input id="address" type="checkbox">
+                        <label for="address">Ship to a different address?</label>
+
+                        <div id="shipping-address" class="hidden">
+                            <div class="grid-x grid-margin-x">
+                                <div class="cell medium-6">
+                                    <label>First Name <span>*</span>
+                                        <input type="text" required>
+                                    </label>
+                                </div>
+                                <div class="cell medium-6">
+                                    <label>Last Name <span>*</span>
+                                        <input type="text" required>
+                                    </label>
+                                </div>
+                                <div class="cell">
+                                    <label>Company Name
+                                        <input type="text">
+                                    </label>
+                                </div>
+                                <div class="cell">
+                                    <label for="country_name">Country <span>*</span></label>
+                                    <select name="country" id="country_name" required>
+                                        <option value="">Select Country</option>
+                                        <option value="2">Bangladesh</option>
+                                        <option value="3">Algeria</option>
+                                        <option value="4">Afghanistan</option>
+                                        <option value="5">Ghana</option>
+                                        <option value="6">Albania</option>
+                                        <option value="7">Bahrain</option>
+                                        <option value="8">Colombia</option>
+                                        <option value="9">Dominican Republic</option>
+                                    </select>
+                                </div>
+
+                                <div class="cell">
+                                    <label>Street address <span>*</span>
+                                        <input placeholder="House number and street name" type="text" required>
+                                    </label>
+                                </div>
+                                <div class="cell">
+                                    <input placeholder="Apartment, suite, unit etc. (optional)" type="text">
+                                </div>
+                                <div class="cell">
+                                    <label>Town / City <span>*</span>
+                                        <input type="text" required>
+                                    </label>
+                                </div>
+                                <div class="cell">
+                                    <label>State / County <span>*</span>
+                                        <input type="text" required>
+                                    </label>
+                                </div>
+                                <div class="cell medium-6">
+                                    <label>Phone<span>*</span>
+                                        <input type="text" required>
+                                    </label>
+                                </div>
+                                <div class="cell medium-6">
+                                    <label>Email Address <span>*</span>
+                                        <input type="email" required>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="cell">
+                        <label for="order_note">Order Notes</label>
+                        <textarea id="order_note" placeholder="Notes about your order, e.g. special notes for delivery."></textarea>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="cell medium-6">
+            <form action="#">
+                <div class="table-scroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Handbag fringilla <strong> × 2</strong></td>
+                                <td>$165.00</td>
+                            </tr>
+                            <tr>
+                                <td>Handbag justo <strong> × 2</strong></td>
+                                <td>$50.00</td>
+                            </tr>
+                            <tr>
+                                <td>Handbag elit <strong> × 2</strong></td>
+                                <td>$50.00</td>
+                            </tr>
+                            <tr>
+                                <td>Handbag Rutrum <strong> × 1</strong></td>
+                                <td>$50.00</td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th>Cart Subtotal</th>
+                                <td>$215.00</td>
+                            </tr>
+                            <tr>
+                                <th>Shipping</th>
+                                <td><strong>$5.00</strong></td>
+                            </tr>
+                            <tr class="order_total">
+                                <th>Order Total</th>
+                                <td><strong>$220.00</strong></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                <div class="payment_method">
+                    <div class="panel-default">
+                        <input id="payment_default" name="check_method" type="radio" required>
+                        <label for="payment_default" data-toggle="collapse" data-target="#collapse_default">PayPal <img src="{% static 'img/icon/paypal.png' %}" alt=""></label>
+                
+                        <div id="collapse_default" class="collapse">
+                            <div class="card-body1">
+                                <p>Pay via PayPal; you can pay with your credit card if you don’t have a PayPal account.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="panel-default">
+                        <input id="stripe_payment" name="check_method" type="radio" required>
+                        <label for="stripe_payment" data-toggle="collapse" data-target="#collapse_stripe">Stripe <img src="{% static 'img/icon/stripe.png' %}" alt=""></label>
+                
+                        <div id="collapse_stripe" class="collapse">
+                            <div class="card-body1">
+                                <p>Pay securely using your credit card via Stripe.</p>
+                            </div>
+                        </div>
+                    </div>
+                
+                    <div class="order_button">
+                        <button type="submit" class="button">Proceed to Payment</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- Checkout page section end -->
+
+</div>
+
+<script>
+    document.getElementById('address').addEventListener('change', function() {
+        const shippingAddress = document.getElementById('shipping-address');
+        if (this.checked) {
+            shippingAddress.classList.remove('hidden');
+        } else {
+            shippingAddress.classList.add('hidden');
+        }
+    });
+</script>
+
+<style>
+    .hidden {
+        display: none;
+    }
+</style>
+
+{% endblock content %}

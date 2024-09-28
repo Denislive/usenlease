@@ -1,0 +1,778 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}EquiHub - User Profile{% endblock %}
+
+{% block content %}
+
+<div class="grid-container hide-for-small-only" style="margin: 2rem 8rem;">
+    <div class="grid-x grid-padding-x">
+        <!-- Sidebar -->
+        <div class="cell small-12 medium-4 large-4">
+            <div class="sidebar">
+                <div class="profile-pic">
+                    <i class="bi bi-person" style="color: black; font-size: 2rem;"></i>
+                </div>
+                <div class="user-name">
+                    Welcome, John Doe
+                </div>
+
+                <hr>
+                <div class="nav-item active" data-section="personal-info">Personal Information</div>
+                <div class="nav-item" data-section="change-email">Change Email</div>
+                <div class="nav-item" data-section="change-phone">Phone</div>
+                <div class="nav-item" data-section="change-password">Change Password</div>
+                <div class="nav-item" data-section="my-addresses">My Addresses</div>
+
+                <div class="nav-item" data-section="my-equipments">My Equipments</div>
+                <div class="nav-item" data-section="my-orders">My Orders</div>
+                <div class="nav-item" data-section="settings">Settings</div>
+                <div class="nav-item" data-section="wishlist">Wishlist</div>
+                <div class="nav-item" data-section="chats">Chats</div>
+                <div class="nav-item" data-section="reports">Reports</div>
+
+                <!-- Add other necessary fields as needed -->
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="cell small-12 medium-8 large-8">
+            <div class="main-content">
+                <!-- Personal Information Section -->
+                <div id="personal-info" class="section-content active">
+                    <h3>Personal Information</h3>
+                    <p>Manage your personal information here...</p>
+                    <!-- Add personal information form or details here -->
+                </div>
+
+                <!-- Change Email Section -->
+                <div id="change-email" class="section-content">
+                    <h3>Change Email</h3>
+                    <p>Update your email address...</p>
+                    <!-- Add email change form or details here -->
+                </div>
+
+                <!-- Change Phone Section -->
+                <div id="change-phone" class="section-content">
+                    <h3>Change Phone</h3>
+                    <p>Update your phone number...</p>
+                    <!-- Add phone change form or details here -->
+                </div>
+
+                <!-- Change Password Section -->
+                <div id="change-password" class="section-content">
+                    <h3>Change Password</h3>
+                    <p>Update your password...</p>
+                    <!-- Add password change form or details here -->
+                </div>
+
+                <!-- Address Section -->
+                <div id="my-addresses" class="section-content">
+                    <h3>My addresses</h3>
+                    <p>Update your address...</p>
+                    <!-- Add address form or details here -->
+                </div>
+
+
+
+                <!-- My Equipments Section -->
+                <div id="my-equipments" class="section-content">
+
+
+                    <!-- Tabs -->
+                    <ul class="tabs" data-tabs id="equipment-tabs">
+                        <li class="tabs-title is-active"><a href="#all-equipments" aria-selected="true">All
+                                Equipments</a></li>
+                        <li class="tabs-title"><a href="#active-equipments">Active <i
+                                    class="bi bi-check-circle"></i></a></li>
+                        <li class="tabs-title"><a href="#rented-out">Rented Out <i class="bi bi-clock"></i></a></li>
+                    </ul>
+
+                    <!-- Tabs Content -->
+                    <div class="tabs-content" data-tabs-content="equipment-tabs">
+                        <!-- All Equipments Tab -->
+                        <div class="tabs-panel is-active" id="all-equipments">
+                            <table class="hover">
+                                <thead>
+                                    <tr>
+                                        <th width="200">Equipment Name</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Excavator</td>
+                                        <td>Available</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Cranes</td>
+                                        <td>Under Maintenance</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Active Equipments Tab -->
+                        <div class="tabs-panel" id="active-equipments">
+                            <table class="hover">
+                                <thead>
+                                    <tr>
+                                        <th width="200">Equipment Name</th>
+                                        <th width="150">Options</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Excavator</td>
+                                        <td>
+                                            <button class="button tiny"><i class="bi bi-pencil"></i> Edit</button>
+                                            <button class="button tiny alert"><i class="bi bi-trash"></i>
+                                                Delete</button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Bulldozer</td>
+                                        <td>
+                                            <button class="button tiny"><i class="bi bi-pencil"></i> Edit</button>
+                                            <button class="button tiny alert"><i class="bi bi-trash"></i>
+                                                Delete</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Rented Out Equipments Tab -->
+                        <div class="tabs-panel" id="rented-out">
+                            <table class="hover">
+                                <thead>
+                                    <tr>
+                                        <th width="200">Equipment Name</th>
+                                        <th width="150">Options</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Backhoe Loader</td>
+                                        <td>
+                                            <button class="button tiny"><i class="bi bi-arrow-clockwise"></i>
+                                                Extend</button>
+                                            <button class="button tiny alert"><i class="bi bi-x-circle"></i>
+                                                Terminate</button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Forklift</td>
+                                        <td>
+                                            <button class="button tiny"><i class="bi bi-arrow-clockwise"></i>
+                                                Extend</button>
+                                            <button class="button tiny alert"><i class="bi bi-x-circle"></i>
+                                                Terminate</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+
+
+                <!-- My Orders Section -->
+                <div id="my-orders" class="section-content">
+
+                    <!-- Tabs -->
+                    <ul class="tabs" data-tabs id="order-tabs">
+                        <li class="tabs-title is-active"><a href="#panel1" aria-selected="true">Unpaid</a></li>
+                        <li class="tabs-title"><a href="#panel2">To Be Shipped</a></li>
+                        <li class="tabs-title"><a href="#panel3">Returned</a></li>
+                        <li class="tabs-title"><a href="#panel4">Completed</a></li>
+                        <li class="tabs-title"><a href="#panel5">Cancelled</a></li>
+                    </ul>
+
+                    <!-- Tabs Content -->
+                    <div class="tabs-content" data-tabs-content="order-tabs">
+                        <!-- Unpaid Orders Tab -->
+                        <div class="tabs-panel is-active" id="panel1">
+                            <table class="hover">
+                                <thead>
+                                    <tr>
+                                        <th width="200">Product Info</th>
+                                        <th>Order Amount</th>
+                                        <th width="150">Options</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Product 1</td>
+                                        <td>$100.00</td>
+                                        <td><button class="button small">Pay Now</button></td>
+                                    </tr>
+                                    <!-- Add more rows as needed -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- To Be Shipped Orders Tab -->
+                        <div class="tabs-panel" id="panel2">
+                            <table class="hover">
+                                <thead>
+                                    <tr>
+                                        <th width="200">Product Info</th>
+                                        <th>Order Amount</th>
+                                        <th width="150">Options</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Product 2</td>
+                                        <td>$150.00</td>
+                                        <td><button class="button small">Track</button></td>
+                                    </tr>
+                                    <!-- Add more rows as needed -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Returned Orders Tab -->
+                        <div class="tabs-panel" id="panel3">
+                            <table class="hover">
+                                <thead>
+                                    <tr>
+                                        <th width="200">Product Info</th>
+                                        <th>Order Amount</th>
+                                        <th width="150">Options</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Product 3</td>
+                                        <td>$200.00</td>
+                                        <td><button class="button small">View Details</button></td>
+                                    </tr>
+                                    <!-- Add more rows as needed -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Completed Orders Tab -->
+                        <div class="tabs-panel" id="panel4">
+                            <table class="hover">
+                                <thead>
+                                    <tr>
+                                        <th width="200">Product Info</th>
+                                        <th>Order Amount</th>
+                                        <th width="150">Options</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Product 4</td>
+                                        <td>$300.00</td>
+                                        <td><button class="button small">Order Again</button></td>
+                                    </tr>
+                                    <!-- Add more rows as needed -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Cancelled Orders Tab -->
+                        <div class="tabs-panel" id="panel5">
+                            <table class="hover">
+                                <thead>
+                                    <tr>
+                                        <th width="200">Product Info</th>
+                                        <th>Order Amount</th>
+                                        <th width="150">Options</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Product 5</td>
+                                        <td>$50.00</td>
+                                        <td><button class="button small">Reorder</button></td>
+                                    </tr>
+                                    <!-- Add more rows as needed -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- Settings Section -->
+                <div id="settings" class="section-content">
+                    <h3>Settings</h3>
+                    <p>Manage your account settings here...</p>
+                    <!-- Add settings management options here -->
+                </div>
+
+                <!-- Wishlist Section -->
+                <div id="wishlist" class="section-content">
+                    <h3>Wishlist</h3>
+                    <p>View and manage your wishlist...</p>
+                    <!-- Add wishlist items or management options here -->
+                </div>
+
+                <!-- Chats Section -->
+                <div id="chats" class="section-content">
+                    <h3>Chats</h3>
+
+                    <div class="accordion" data-accordion>
+                        <div class="accordion-item" data-accordion-item>
+                            <a href="#" class="accordion-title" data-chat-id="1">
+                                Chat with John Doe
+                            </a>
+                            <div class="accordion-content" data-tab-content="panel1" style="display: none;">
+                                <div class="message-content" id="message-content-1">
+                                    <div class="message-bubble lessor">
+                                        Hello, I hope you are well!
+                                        <div class="timestamp"><i class="bi bi-dot" title="Sent"></i>10:30 AM</div>
+
+                                    </div>
+                                    <div class="message-bubble lessee">
+                                        I am good, thank you! Looking forward to tomorrow.
+                                        <div class="timestamp"> <i class="bi bi-check-all" title="Seen"></i>10:32 AM
+                                        </div>
+
+                                    </div>
+                                </div>
+                                <div class="message-input">
+                                    <input type="text" placeholder="Type your message..." />
+                                    <button class="send-button">Send</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item" data-accordion-item>
+                            <a href="#" class="accordion-title" data-chat-id="2">
+                                Chat with Jane Smith
+                            </a>
+                            <div class="accordion-content" data-tab-content="panel2" style="display: none;">
+                                <div class="message-content" id="message-content-2">
+                                    <div class="message-bubble lessor">
+                                        Did you receive the updated contract?
+                                        <div class="timestamp"><i class="bi bi-dot" title="Sent"></i>10:35 AM</div>
+                                    </div>
+                                    <div class="message-bubble lessee">
+                                        Not yet. Can you resend it?
+                                        <div class="timestamp"> <i class="bi bi-check-all" title="Seen"></i>10:37 AM
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="message-input">
+                                    <input type="text" placeholder="Type your message..." />
+                                    <button class="send-button">Send</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reports Section -->
+                <div id="reports" class="section-content">
+                    <section class="reports-section">
+                        <h2 class="text-center">Reports Overview</h2>
+
+                        <!-- Lessor Report -->
+                        <div class="report-container">
+                            <div class="grid-x grid-margin-x">
+                                <div class="cell small-6 medium-4">
+                                    <div class="stat-item callout text-center">
+                                        <h4>12</h4>
+                                        <p>Total Equipments Rented</p>
+                                    </div>
+                                </div>
+                                <div class="cell small-6 medium-4">
+                                    <div class="stat-item callout text-center highlight">
+                                        <h4>5 Days</h4>
+                                        <p>Average Rental Duration</p>
+                                    </div>
+                                </div>
+                                <div class="cell small-6 medium-4">
+                                    <div class="stat-item callout text-center highlight">
+                                        <h4>80%</h4>
+                                        <p>Occupancy Rate</p>
+                                    </div>
+                                </div>
+                                <div class="cell small-6 medium-4">
+                                    <div class="stat-item callout text-center">
+                                        <h4>$3,500</h4>
+                                        <p>Total Earnings</p>
+                                    </div>
+                                </div>
+                                <div class="cell small-6 medium-4">
+                                    <div class="stat-item callout text-center">
+                                        <h4>$800</h4>
+                                        <p>Earnings This Month</p>
+                                    </div>
+                                </div>
+                                <div class="cell small-6 medium-4">
+                                    <div class="stat-item callout text-center">
+                                        <h4>Excavator Excavator</h4>
+                                        <p>Highest Earning Equipment</p>
+                                    </div>
+                                </div>
+                                <div class="cell small-6 medium-4">
+                                    <div class="stat-item callout text-center highlight">
+                                        <h4>Loader</h4>
+                                        <p>Most Popular Equipment</p>
+                                    </div>
+                                </div>
+                                <div class="cell small-6 medium-4">
+                                    <div class="stat-item callout text-center">
+                                        <h4>3</h4>
+                                        <p>Pending Rental Requests</p>
+                                    </div>
+                                </div>
+                                <div class="cell small-6 medium-4">
+                                    <div class="stat-item callout text-center">
+                                        <h4>90%</h4>
+                                        <p>Return Rate</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Lessee Report -->
+                        <div class="report-container">
+                            <div class="grid-x grid-margin-x">
+                                <div class="cell small-6 medium-4">
+                                    <div class="stat-item callout text-center">
+                                        <h4>6</h4>
+                                        <p>Total Equipments Rented</p>
+                                    </div>
+                                </div>
+                                <div class="cell small-6 medium-4">
+                                    <div class="stat-item callout text-center highlight">
+                                        <h4>$150</h4>
+                                        <p>Average Rental Cost</p>
+                                    </div>
+                                </div>
+                                <div class="cell small-6 medium-4">
+                                    <div class="stat-item callout text-center">
+                                        <h4>$900</h4>
+                                        <p>Total Amount Spent</p>
+                                    </div>
+                                </div>
+                                <div class="cell small-6 medium-4">
+                                    <div class="stat-item callout text-center">
+                                        <h4>$200</h4>
+                                        <p>Amount Spent This Month</p>
+                                    </div>
+                                </div>
+                                <div class="cell small-6 medium-4">
+                                    <div class="stat-item callout text-center">
+                                        <h4>2/Month</h4>
+                                        <p>Rental Frequency</p>
+                                    </div>
+                                </div>
+                                <div class="cell small-6 medium-4">
+                                    <div class="stat-item callout text-center">
+                                        <h4>Drill</h4>
+                                        <p>Most Frequently Rented</p>
+                                    </div>
+                                </div>
+                                <div class="cell small-6 medium-4">
+                                    <div class="stat-item callout text-center highlight">
+                                        <h4>$500</h4>
+                                        <p>Cost Savings</p>
+                                    </div>
+                                </div>
+                                <div class="cell small-6 medium-4">
+                                    <div class="stat-item callout text-center">
+                                        <h4>1</h4>
+                                        <p>Pending Rentals</p>
+                                    </div>
+                                </div>
+                                <div class="cell small-6 medium-4">
+                                    <div class="stat-item callout text-center">
+                                        <h4>4 Days</h4>
+                                        <p>Average Rental Duration</p>
+                                    </div>
+                                </div>
+                                <div class="cell small-6 medium-4">
+                                    <div class="stat-item callout text-center">
+                                        <h4>None</h4>
+                                        <p>Damage History</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+
+            </div>
+        </div>
+    </div>
+
+</div>
+
+
+<!-- Sidebar Section -->
+<div class="cell small-12 sidebar show-for-small-only">
+    <div class="profile-pic">
+        <i class="bi bi-person" style="color: black; font-size: 2rem;"></i>
+    </div>
+    <div class="user-name">
+        Welcome, John Doe
+    </div>
+
+    <div class="logout">
+        <a class="button" href="{% url 'user:logout' %}">Logout</a>
+    </div>
+
+    <hr>
+    <div class="mobile-nav-item active" data-section="personal-info">Personal Information</div>
+    <div class="mobile-nav-item" data-section="change-email">Change Email</div>
+    <div class="mobile-nav-item" data-section="change-phone">Phone</div>
+    <div class="mobile-nav-item" data-section="change-password">Change Password</div>
+    <div class="mobile-nav-item" data-section="my-addresses">My Addresses</div>
+    <div class="mobile-nav-item" data-section="mobile-my-equipments">My Equipments</div>
+    <div class="mobile-nav-item" data-section="mobile-my-orders">My Orders</div>
+    <div class="mobile-nav-item" data-section="settings">Settings</div>
+    <div class="mobile-nav-item" data-section="wishlist">Wishlist</div>
+    <div class="mobile-nav-item" data-section="chats">Chats</div>
+    <div class="mobile-nav-item" data-section="reports">Reports</div>
+</div>
+
+
+<!-- My Equipments Section -->
+<div id="mobile-my-equipments" class="section-content" style="display: none;">
+    <h2>My Equipments</h2>
+    <ul class="accordion" data-accordion>
+        <li class="accordion-item is-active" data-accordion-item>
+            <a href="#" class="accordion-title">All Equipments</a>
+            <div class="accordion-content" data-tab-content>
+                <table class="hover">
+                    <thead>
+                        <tr>
+                            <th width="200">Equipment Name</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Excavator</td>
+                            <td>Available</td>
+                        </tr>
+                        <tr>
+                            <td>Cranes</td>
+                            <td>Under Maintenance</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </li>
+        <li class="accordion-item" data-accordion-item>
+            <a href="#" class="accordion-title">Active Equipments</a>
+            <div class="accordion-content" data-tab-content>
+                <table class="hover">
+                    <thead>
+                        <tr>
+                            <th width="200">Equipment Name</th>
+                            <th width="150">Options</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Excavator</td>
+                            <td>
+                                <button class="button"><i class="bi bi-pencil"></i></button>
+                                <button class="button alert"><i class="bi bi-trash"></i></button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Bulldozer</td>
+                            <td>
+                                <button class="button"><i class="bi bi-pencil"></i></button>
+                                <button class="button alert"><i class="bi bi-trash"></i></button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </li>
+        <li class="accordion-item" data-accordion-item>
+            <a href="#" class="accordion-title">Rented Out Equipments</a>
+            <div class="accordion-content" data-tab-content>
+                <table class="hover">
+                    <thead>
+                        <tr>
+                            <th width="200">Equipment Name</th>
+                            <th width="150">Options</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Backhoe Loader</td>
+                            <td>
+                                <button class="button"><i class="bi bi-arrow-clockwise"></i></button>
+                                <button class="button alert"><i class="bi bi-x-circle"></i></button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Forklift</td>
+                            <td>
+                                <button class="button"><i class="bi bi-arrow-clockwise"></i></button>
+                                <button class="button alert"><i class="bi bi-x-circle"></i></button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </li>
+    </ul>
+</div>
+
+<!-- My Orders Section -->
+<div id="mobile-my-orders" class="section-content" style="display: none;">
+    <h2>My Orders</h2>
+    <ul class="accordion" data-accordion>
+        <li class="accordion-item is-active" data-accordion-item>
+            <a href="#" class="accordion-title">Unpaid</a>
+            <div class="accordion-content" data-tab-content>
+                <table class="hover">
+                    <thead>
+                        <tr>
+                            <th width="200">Product Info</th>
+                            <th>Order Amount</th>
+                            <th width="150">Options</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Product 1</td>
+                            <td>$100.00</td>
+                            <td><button class="button small">Pay Now</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </li>
+        <li class="accordion-item" data-accordion-item>
+            <a href="#" class="accordion-title">To Be Shipped</a>
+            <div class="accordion-content" data-tab-content>
+                <table class="hover">
+                    <thead>
+                        <tr>
+                            <th width="200">Product Info</th>
+                            <th>Order Amount</th>
+                            <th width="150">Options</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Product 2</td>
+                            <td>$150.00</td>
+                            <td><button class="button small">Track</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </li>
+        <li class="accordion-item" data-accordion-item>
+            <a href="#" class="accordion-title">Returned</a>
+            <div class="accordion-content" data-tab-content>
+                <table class="hover">
+                    <thead>
+                        <tr>
+                            <th width="200">Product Info</th>
+                            <th>Order Amount</th>
+                            <th width="150">Options</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Product 3</td>
+                            <td>$200.00</td>
+                            <td><button class="button small">View Details</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </li>
+        <li class="accordion-item" data-accordion-item>
+            <a href="#" class="accordion-title">Completed</a>
+            <div class="accordion-content" data-tab-content>
+                <table class="hover">
+                    <thead>
+                        <tr>
+                            <th width="200">Product Info</th>
+                            <th>Order Amount</th>
+                            <th width="150">Options</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Product 4</td>
+                            <td>$300.00</td>
+                            <td><button class="button small">Order Again</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </li>
+        <li class="accordion-item" data-accordion-item>
+            <a href="#" class="accordion-title">Cancelled</a>
+            <div class="accordion-content" data-tab-content>
+                <table class="hover">
+                    <thead>
+                        <tr>
+                            <th width="200">Product Info</th>
+                            <th>Order Amount</th>
+                            <th width="150">Options</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Product 5</td>
+                            <td>$50.00</td>
+                            <td><button class="button small">Reorder</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </li>
+    </ul>
+</div>
+
+<!-- Modal -->
+<div class="reveal" id="modal" data-reveal>
+    <div class="modal-content" id="modal-content">
+        <!-- Dynamic content will be inserted here -->
+    </div>
+    <button class="close-button" data-close aria-label="Close modal" type="button">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+
+
+<script>
+    // Handle accordion title clicks
+    document.querySelectorAll('.accordion-title').forEach(item => {
+        item.addEventListener('click', function (event) {
+            event.preventDefault(); // Prevent default anchor behavior
+
+            // Remove active class from all titles and hide their content
+            document.querySelectorAll('.accordion-title').forEach(title => {
+                title.classList.remove('is-active'); // Remove active state
+                const contentDiv = title.nextElementSibling;
+                contentDiv.style.display = 'none'; // Hide all content
+            });
+
+            // Add active class to the clicked title
+            this.classList.add('is-active');
+
+            // Show the corresponding content
+            const contentDiv = this.nextElementSibling;
+            contentDiv.style.display = 'block'; // Show the content
+
+            // Initialize Foundation before opening modal
+            $('#modal').foundation('open'); // Open the modal
+        });
+    });
+</script>
+
+{% endblock content %}

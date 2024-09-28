@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}Equipment Detail{% endblock %}
+
+{% block content %}
+
+<section class="equipment-detail">
+  <div class="grid-container">
+    <div class="grid-x grid-margin-x">
+      <!-- Main Image and Image Slider -->
+      <div class="cell medium-8 large-8">
+        <div class="main-image-wrapper">
+          <div class="main-image">
+            <img src="https://picsum.photos/600/400" alt="Equipment Image" id="mainImage" class="responsive-img">
+          </div>
+          <div class="zoom-overlay" id="zoomOverlay"></div>
+        </div>
+        <div class="image-slider">
+          <button class="slider-button prev" id="prevButton">&#10094;</button>
+          <button class="slider-button next" id="nextButton">&#10095;</button>
+          <div class="image-thumbnails">
+            <ul class="thumbnail-list" id="thumbnailList">
+              <li><img src="https://picsum.photos/100/75?random=1" alt="Equipment Image 1"
+                  data-large="https://picsum.photos/600/400?random=1"></li>
+              <li><img src="https://picsum.photos/100/75?random=2" alt="Equipment Image 2"
+                  data-large="https://picsum.photos/600/400?random=2"></li>
+              <li><img src="https://picsum.photos/100/75?random=3" alt="Equipment Image 3"
+                  data-large="https://picsum.photos/600/400?random=3"></li>
+              <li><img src="https://picsum.photos/100/75?random=4" alt="Equipment Image 4"
+                  data-large="https://picsum.photos/600/400?random=4"></li>
+              <!-- Add more images as needed -->
+            </ul>
+          </div>
+          <div class="tags">
+            <span class="tag">Outdoor</span>
+            <span class="tag">Heavy Duty</span>
+            <!-- Add more tags as needed -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Equipment Details -->
+      <div class="cell medium-4 large-4">
+        <h1 class="product-name">Equipment Name</h1>
+        <div class="rating-reviews">
+          <span class="rating">★★★★☆</span> <!-- Example rating -->
+          <span class="reviews">(25 Reviews)</span>
+        </div>
+        <p class="price">$120/day</p>
+
+        <div class="equipment-options">
+          <h4>Equipment Options:</h4>
+          <label for="fuel-type">Fuel Type:</label>
+          <select id="fuel-type">
+            <option value="petrol">Petrol</option>
+            <option value="diesel">Diesel</option>
+          </select>
+          <!-- Add more options as needed -->
+        </div>
+
+        <div class="booking-form">
+          <label for="start-date">Start Date:</label>
+          <input type="date" id="start-date">
+          <label for="end-date">End Date:</label>
+          <input type="date" id="end-date">
+          <label for="quantity">Number of Equipments:</label>
+          <input type="number" id="quantity" min="1" value="1">
+          <button class="button add-to-cart">Add to Cart</button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Tabs for Description, Specification, Terms, Reviews -->
+    <div class="grid-x grid-margin-x">
+      <div class="cell">
+        <ul class="tabs" data-tabs id="equipment-tabs">
+          <li class="tabs-title is-active"><a href="#description">Description</a></li>
+          <li class="tabs-title"><a href="#specification">Specification</a></li>
+          <li class="tabs-title"><a href="#terms">Terms</a></li>
+          <li class="tabs-title"><a href="#reviews">Reviews</a></li>
+        </ul>
+        <div class="tabs-content" data-tabs-content="equipment-tabs">
+          <div class="tabs-panel is-active" id="description">
+            <p>Detailed description of the equipment goes here.</p>
+          </div>
+          <div class="tabs-panel" id="specification">
+            <ul>
+              <li>Specification 1: Value</li>
+              <li>Specification 2: Value</li>
+              <!-- Add more specifications as needed -->
+            </ul>
+          </div>
+          <div class="tabs-panel" id="terms">
+            <p>Terms and conditions related to the equipment rental.</p>
+          </div>
+          <div class="tabs-panel" id="reviews">
+            <h3 class="text-center mb-4">Reviews</h3>
+            <div class="grid-x grid-margin-x small-up-1 medium-up-2 large-up-3">
+                {% for review in reviews %}
+                <div class="cell">
+                    <div class="card shadow-sm">
+                        <div class="card-divider d-flex align-items-center">
+                            <div>
+                                <h5 class="mb-0">{{ review.user }}</h5>
+                                <span class="text-warning">
+                                    {% for i in "12345" %}
+                                        <span class="star {% if forloop.counter <= review.rating %}filled{% endif %}">★</span>
+                                    {% endfor %}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="card-section">
+                            <p>{{ review.review_text }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <h3>Review {{ equipment.name }}</h3>
+            <form method="POST">
+                {% csrf_token %}
+                <div class="star-rating mb-3">
+                    <input type="radio" id="star1" name="rating" value="5" required />
+                    <label for="star1">★</label>
+                    <input type="radio" id="star2" name="rating" value="4" />
+                    <label for="star2">★</label>
+                    <input type="radio" id="star3" name="rating" value="3" />
+                    <label for="star3">★</label>
+                    <input type="radio" id="star4" name="rating" value="2" />
+                    <label for="star4">★</label>
+                    <input type="radio" id="star5" name="rating" value="1" />
+                    <label for="star5">★</label>
+                </div>
+                <div class="form-group">
+                    <textarea class="form-control" name="review_text" placeholder="Write your review..." rows="3"></textarea>
+                </div>
+                <button type="submit" class="button">Submit</button>
+            </form>
+        </div>
+
+        </div>
+      </div>
+    </div>
+
+
+
+    {% endblock content %}

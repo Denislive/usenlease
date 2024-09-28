@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% load static crispy_forms_tags %}
+
+{% block title %}EquiHub - Login{% endblock %}
+
+{% block content %}
+<div class="grid-container">
+    <h2 class="text-center">Login to Your Account</h2>
+    <form method="POST" action="{% url 'user:login' %}">
+        {% csrf_token %}
+        {{ form|crispy }}
+        
+        <!-- Login Button -->
+        <div class="text-center mt-4">
+            <button type="submit" class="button secondary">Login</button>
+        </div>
+    </form>
+
+    <!-- Registration Link -->
+    <div class="text-center mt-3">
+        <p>Don't have an account? <a href="{% url 'user:create_user' %}">Create one here</a></p>
+    </div>
+</div>
+{% endblock content %}

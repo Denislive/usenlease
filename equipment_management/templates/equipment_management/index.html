@@ -1,0 +1,273 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}EquiHub Home{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="grid-container">
+        <div class="grid-x grid-margin-x align-middle text-center">
+            <div class="cell large-12">
+                <div class="hero-content">
+                    <div class="grid-x align-center custom-hero-content">
+                        <div class="cell">
+                            <span class="custom-text">Find Equipment</span>
+                        </div>
+                        <div class="cell">
+                            <div class="custom-location-box">
+                                <i class="bi bi-geo-alt location-icon"></i>
+                                <span data-open="usaLocationModal" id="allButton">All in USA</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search Box -->
+            <div class="cell large-12">
+                <div class="grid-x align-center">
+                    <div class="cell small-12 medium-10 large-8 search-box">
+                        <div class="input-group input-group-rounded">
+                            <input class="input-group-field" type="search" id="searchInput"
+                                placeholder="Search anything..." oninput="filterLocations()">
+                            <div class="input-group-button">
+                                <input type="submit" class="button" style="background-color: #1c1c1c; color: white;"
+                                    value="Search">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- USA Location Modal -->
+<div class="reveal" id="usaLocationModal" data-reveal>
+    <div id="state-selection">
+        <div class="grid-x grid-margin-x">
+            <div class="cell small-12 medium-10 large-8 search-box">
+                <div class="input-group input-group-rounded-modal">
+                    <div class="cell small-12">
+                        <input class="input-group-field-modal" type="search" id="modalSearchInput"
+                            placeholder="Search States or Cities..." oninput="filterModalLocations()">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="grid-container">
+            <li class="grid-x grid-margin-x small-up-1 medium-up-2 large-up-3" id="statesList" style="margin: 1px;">
+                <!-- States will be dynamically inserted here -->
+            </li>
+        </div>
+    </div>
+
+    <div id="city-selection" style="display: none;">
+        <h2><span id="selectedStateName"></span></h2>
+        <div class="grid-x">
+            <div class="cell small-8 medium-8 large-8 search-box">
+                <div class="input-group input-group-rounded-modal">
+                    <div class="input-group-button">
+                        <a id="backToStates" aria-label="Back to States">
+                            <i class="bi bi-arrow-left" style="font-size: 2rem; margin-right: 2rem;"></i>
+                            <!-- Bootstrap back arrow icon -->
+                        </a>
+                    </div>
+                    <div class="cell small-4 medium-4 large-4 ">
+                        <input class="input-group-field-modal" type="search" id="cityModalSearchInput"
+                            placeholder="Search Cities..." oninput="filterCityLocations()">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="grid-x grid-margin-x" id="citiesListContainer">
+            <li class="grid-x grid-margin-x small-up-1 medium-up-2 large-up-3" id="citiesList" style="margin: 1px;">
+                <!-- Cities will be dynamically inserted here -->
+            </li>
+        </div>
+    </div>
+
+    <button class="close-button" data-close aria-label="Close modal" type="button">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+
+
+<div class="main-section hide-for-small-only">
+    <div class="grid-x grid-margin-x" style="padding: 1rem 0;">
+        <!-- Sidebar Section -->
+        <aside class="cell medium-4 large-3 categories-sidebar">
+            <div class="sidebar-content">
+                <ul class="categories-list">
+                    {% for category in categories %}
+                    <li class="category-item">
+                        <a href="{{ category.get_absolute_url }}">
+                            <img src="https://picsum.photos/100/150" alt="{{ category.name }} Image"
+                                class="category-icon">
+                            <div class="category-name-container">
+                                <span class="category-name">{{ category.name }}</span>
+                                <span class="ad-count">({{ category.equipments.count }} Ads)</span>
+                            </div>
+                        </a>
+                        <ul class="subcategories-list">
+                            {% for subcategory in category.subcategories.all %}
+                            <li class="subcategory-item">
+                                <a href="{{ subcategory.get_absolute_url }}">
+                                    <img src="https://picsum.photos/100/150" alt="{{ subcategory.name }} Image"
+                                        class="subcategory-icon">
+                                    <div class="category-name-container">
+                                        <span class="category-name">{{ subcategory.name }}</span>
+                                        <span class="ad-count">({{ subcategory.equipments.count }} Ads)</span>
+                                    </div>
+                                </a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </aside>
+
+
+
+        <!-- Main Content Section -->
+        <main class="cell medium-8 large-9 main-content">
+            <!-- First Row with Slider and Button -->
+            <!-- First Row with Slider and Button -->
+            <div class="grid-x grid-margin-x align-middle first-row">
+                <div class="cell medium-8 slider-section">
+                    <!-- Orbit Slider -->
+                    <div class="orbit" role="region" aria-label="Equipment Slider" data-orbit>
+                        <ul class="orbit-container">
+                            <li class="is-active orbit-slide">
+                                <img class="orbit-image" src="https://picsum.photos/100/150" alt="Slide 1">
+                                <figcaption class="orbit-caption">Slide 1 Description</figcaption>
+                            </li>
+                            <li class="orbit-slide">
+                                <img class="orbit-image" src="https://picsum.photos/100/150" alt="Slide 2">
+                                <figcaption class="orbit-caption">Slide 2 Description</figcaption>
+                            </li>
+                            <li class="orbit-slide">
+                                <img class="orbit-image" src="https://picsum.photos/100/150" alt="Slide 3">
+                                <figcaption class="orbit-caption">Slide 3 Description</figcaption>
+                            </li>
+                            <!-- Add more slides as needed -->
+                        </ul>
+                        <!-- <nav class="orbit-bullets">
+                            <button class="is-active" data-slide="0"><span class="show-for-sr">Slide 1</span><span
+                                    class="show-for-sr">Current Slide</span></button>
+                            <button data-slide="1"><span class="show-for-sr">Slide 2</span></button>
+                            <button data-slide="2"><span class="show-for-sr">Slide 3</span></button>
+                        </nav> -->
+                    </div>
+                </div>
+                <div class="cell medium-4 button-section">
+                    <a class="post-ad-button" style="padding: 1rem; margin-bottom: 0rem; height: max-content;"
+                        data-open="listEquipmentModal">
+                        <div class="button-content">
+                            <div class="icon-container">
+                                <i class="bi bi-plus-circle" style="font-size: 3rem;"></i>
+                            </div>
+                            <span class="main-text">Equipment</span>
+                        </div>
+                    </a>
+
+                </div>
+
+            </div>
+
+            <!-- Second Row with Cards -->
+            <div class="grid-x grid-margin-x card-row">
+                {% for equipment in equipments %}
+                <div class="cell medium-3 large-3 card-section">
+                    <a href="{{ equipment.get_absolute_url }}">
+                        <div class="card">
+                            <div class="card-image">
+                                <span class="tag">{{ equipment.is_available|yesno:"Available,Unavailable" }}</span>
+                                <img src="https://picsum.photos/350/350" alt="{{ equipment.name }} Image">
+                                <a href="{% url 'cart' %}" class="button add-to-cart">
+                                    <i class="bi bi-cart"></i>
+                                </a>
+                            </div>
+                            <div class="card-content">
+                                <h5>{{ equipment.name }}</h5>
+                                <p>${{ equipment.hourly_rate }} / Hr</p>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+
+
+        </main>
+    </div>
+</div>
+
+
+
+<!-- Categories Section for Mobile -->
+<section class="mobile-categories py-3 show-for-small-only">
+    <div class="grid-container grid-margin-y">
+        <!-- Category Cards -->
+        <div class="grid-x grid-margin-x small-up-3">
+            <!-- Post Ad Button -->
+            <div class="cell">
+                <a class="mobile-ad-button">
+                    <div class="button-content">
+                        <div class="icon-container">
+                            <i class="bi bi-plus-circle" style="font-size: 3rem;"></i>
+                        </div>
+                        <span class="main-text" style="text-align: center;">Equipment</span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Dynamic Category Cards -->
+            {% for category in categories %}
+            <div class="cell">
+                <div class="card">
+                    <img src="https://picsum.photos/300/200" alt="{{ category.name }} Image">
+                    <div class="card-section text-center">
+                        <h5 class="card-title">{{ category.name }}</h5>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Trending Ads Section -->
+<section class="trending-ads py-3 show-for-small-only">
+    <div class="grid-container">
+        <h4 class="text-center mb-3">Trending Ads</h4>
+        <div class="grid-x grid-margin-x grid-margin-y small-up-2">
+            <!-- Dynamic Trending Ads Cards -->
+            {% for ad in trending_ads %}
+            <div class="cell medium-3 large-3 card-section">
+                <div class="card">
+                    <div class="card-image">
+                        <span class="tag">{{ ad.is_available|yesno:"Available,Unavailable" }}</span>
+                        <img src="https://picsum.photos/350/350" alt="{{ ad.name }} Image">
+                        <a href="{% url 'cart' %}">
+                            <i class="bi bi-cart"></i>
+                        </a>
+                    </div>
+                    <div class="card-content">
+                        <h5>{{ ad.name }}</h5>
+                        <p>${{ ad.hourly_rate }} / hr</p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+
+
+
+{% endblock content %}
