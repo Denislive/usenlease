@@ -11,13 +11,17 @@ WORKDIR /app
 # Copy the requirements file to the working directory
 COPY requirements.txt /app/
 
-# Install system dependencies and Python dependencies
+# Update the package list and install system dependencies
 RUN apt-get update && apt-get install -y \
     libpq-dev \
-    && pip install --upgrade pip \
-    && pip install -r requirements.txt \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && apt-get clean
+
+# Upgrade pip and install Python dependencies
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
+
+# Clean up
+RUN rm -rf /var/lib/apt/lists/*
 
 # Copy the rest of the application code to the working directory
 COPY . /app/
