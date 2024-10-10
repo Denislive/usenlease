@@ -1,13 +1,14 @@
 pipeline {
     agent {
         docker {
-            image 'python:3.2'  // Use the appropriate Python version
+            image 'python:3.9'  // Using a more recent Python version
             args '-v /var/run/docker.sock:/var/run/docker.sock' // If you need to run Docker inside the container
         }
     }
 
     environment {
         VIRTUAL_ENV = '.venv'
+        PATH = "$VIRTUAL_ENV/bin:$PATH"  // Adding virtualenv to the PATH
     }
 
     stages {
