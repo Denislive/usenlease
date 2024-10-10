@@ -13,15 +13,13 @@ COPY requirements.txt /app/
 
 # Update the package list and install system dependencies
 RUN apt-get update && apt-get install -y \
-    libpq-dev \
-    && apt-get clean
+    libpq-dev \  # Required for psycopg2
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Upgrade pip and install Python dependencies
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
-
-# Clean up
-RUN rm -rf /var/lib/apt/lists/*
 
 # Copy the rest of the application code to the working directory
 COPY . /app/
