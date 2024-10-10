@@ -1,5 +1,5 @@
 # Use an official Python runtime as a parent image
-FROM python:3.9-slim
+FROM python:3.9  # Changed to a larger base image
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -12,10 +12,10 @@ WORKDIR /app
 COPY requirements.txt /app/
 
 # Update the package list and install system dependencies
-RUN apt-get update && apt-get install -y \
-    libpq-dev \  # Required for psycopg2 \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && \
+    apt-get install -y libpq-dev && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* || (cat /var/log/apt/term.log && exit 1)  # Print logs on failure
 
 # Upgrade pip and install Python dependencies
 RUN pip install --upgrade pip
