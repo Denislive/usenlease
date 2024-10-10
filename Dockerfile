@@ -13,13 +13,13 @@ COPY requirements.txt /app/
 
 # Update the package list and install system dependencies
 RUN apt-get update && \
-    apt-get install -y libpq-dev && \
+    apt-get install -y libpq-dev build-essential && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* || (cat /var/log/apt/term.log && exit 1)  # Print logs on failure
 
 # Upgrade pip and install Python dependencies
 RUN pip install --upgrade pip
-RUN pip install -r requirements.txt
+RUN pip install -r requirements.txt || (echo "Retrying..." && pip install -r requirements.txt)
 
 # Copy the rest of the application code to the working directory
 COPY . /app/
