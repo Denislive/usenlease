@@ -2,17 +2,16 @@ pipeline {
     agent any
 
     stages {
-        stage('Install Docker if not found') {
+        stage('Check Docker Installation') {
             steps {
-                sh '''
-                if ! [ -x "$(command -v docker)" ]; then
-                  echo "Docker not installed. Installing Docker..."
-                  curl -fsSL https://get.docker.com -o get-docker.sh
-                  sh get-docker.sh
-                else
-                  echo "Docker is already installed."
-                fi
-                '''
+                script {
+                    def dockerInstalled = sh(script: 'command -v docker', returnStatus: true) == 0
+                    if (!dockerInstalled) {
+                        error "Docker is not installed on this system."
+                    } else {
+                        echo "Docker is already installed."
+                    }
+                }
             }
         }
 
@@ -22,6 +21,7 @@ pipeline {
             }
         }
 
+        // Add additional stages for your pipeline as needed
         stage('Checkout') {
             steps {
                 git 'https://github.com/Denislive/usenlease'
