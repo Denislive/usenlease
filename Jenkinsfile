@@ -1,17 +1,27 @@
 pipeline {
-    agent {
-        docker {
-            image 'python:3.9'  // Using a more recent Python version
-            args '-v /var/run/docker.sock:/var/run/docker.sock' // If you need to run Docker inside the container
-        }
-    }
-
-    environment {
-        VIRTUAL_ENV = '.venv'
-        PATH = "$VIRTUAL_ENV/bin:$PATH"  // Adding virtualenv to the PATH
-    }
+    agent any
 
     stages {
+        stage('Install Docker if not found') {
+            steps {
+                sh '''
+                if ! [ -x "$(command -v docker)" ]; then
+                  echo "Docker not installed. Installing Docker..."
+                  curl -fsSL https://get.docker.com -o get-docker.sh
+                  sh get-docker.sh
+                else
+                  echo "Docker is already installed."
+                fi
+                '''
+            }
+        }
+
+        stage('Run Docker Commands') {
+            steps {
+                sh 'docker pull python:3.9'
+            }
+        }
+
         stage('Checkout') {
             steps {
                 git 'https://github.com/Denislive/usenlease'
@@ -20,14 +30,14 @@ pipeline {
 
         stage('Setup Python Environment') {
             steps {
-                sh 'python -m venv $VIRTUAL_ENV'
+                sh 'python -m venv .venv'
             }
         }
 
         stage('Install Dependencies') {
             steps {
                 sh '''
-                source $VIRTUAL_ENV/bin/activate
+                source .venv/bin/activate
                 pip install --upgrade pip
                 pip install -r requirements.txt
                 '''
@@ -37,7 +47,7 @@ pipeline {
         stage('Run Migrations') {
             steps {
                 sh '''
-                source $VIRTUAL_ENV/bin/activate
+                source .venv/bin/activate
                 python manage.py migrate
                 '''
             }
@@ -46,7 +56,7 @@ pipeline {
         stage('Run Tests') {
             steps {
                 sh '''
-                source $VIRTUAL_ENV/bin/activate
+                source .venv/bin/activate
                 python manage.py test
                 '''
             }
@@ -55,7 +65,7 @@ pipeline {
         stage('Run Server') {
             steps {
                 sh '''
-                source $VIRTUAL_ENV/bin/activate
+                source .venv/bin/activate
                 gunicorn usenlease.wsgi:application --bind 0.0.0.0:8000 --daemon
                 '''
             }
