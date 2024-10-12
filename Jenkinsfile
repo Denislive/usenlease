@@ -2,61 +2,64 @@ pipeline {
     agent any
 
     stages {
-        stage('Check Docker Installation') {
+        stage('Install Docker') {
             steps {
                 script {
                     def dockerInstalled = sh(script: 'command -v docker', returnStatus: true) == 0
                     if (!dockerInstalled) {
-                        error "Docker is not installed on this system."
+                        echo "Docker is not installed. Installing Docker..."
+                        sh '''
+                        if [ -x "$(command -v apt-get)" ]; then
+                            sudo apt-get update
+                            sudo apt-get install -y docker.io
+                            sudo systemctl start docker
+                        elif [ -x "$(command -v yum)" ]; then
+                            sudo yum install -y docker
+                            sudo systemctl start docker
+                        else
+                            echo "Unsupported package manager. Please install Docker manually."
+                            exit 1
+                        fi
+                        '''
                     } else {
                         echo "Docker is already installed."
                     }
                 }
             }
         }
-
-        stage('Checkout') {
+        
+        stage('Run Docker Commands') {
             steps {
-                git 'https://github.com/Denislive/usenlease'
+                echo "Pulling Docker image..."
+                sh 'docker pull python:3.9'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                script {
-                    sh 'docker build -t usenlease-app .'
-                }
+                echo "Building Docker image..."
+                sh 'docker build -t usenlease-app .'
             }
         }
 
         stage('Run Docker Container') {
             steps {
-                script {
-                    // Run the container in detached mode and map port 8000
-                    sh 'docker run -d -p 8000:8000 --name usenlease-container usenlease-app'
-                }
+                echo "Running Docker container..."
+                sh 'docker run -d -p 8000:8000 --name usenlease-container usenlease-app'
             }
         }
 
         stage('Run Tests in Docker') {
             steps {
-                script {
-                    // Run tests inside the Docker container
-                    sh 'docker exec usenlease-container python manage.py test'
-                }
+                echo "Running tests inside Docker..."
+                sh 'docker exec usenlease-container python manage.py test'
             }
         }
     }
 
     post {
-        success {
-            echo 'Build succeeded!'
-        }
-        failure {
-            echo 'Build failed.'
-        }
         always {
-            echo 'Stopping and cleaning up Docker container...'
+            echo "Stopping and cleaning up Docker container..."
             sh 'docker stop usenlease-container || echo "No running container to stop"'
             sh 'docker rm usenlease-container || echo "No container to remove"'
         }
