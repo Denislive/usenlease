@@ -1,39 +1,67 @@
 pipeline {
-    agent {
-        docker { 
-            image 'python:3.9'  // Specify the Docker image
-            args '-v /path/to/cache:/root/.cache'  // Optional: Caching dependencies
-        }
-    }
+    agent any
 
     stages {
-        stage('Checkout') {  // Step to clone the repository
+        stage('Install Docker') {
             steps {
-                git 'https://github.com/Denislive/usenlease'  // Replace with your repository URL
+                script {
+                    def dockerInstalled = sh(script: 'command -v docker', returnStatus: true) == 0
+                    if (!dockerInstalled) {
+                        echo "Docker is not installed. Installing Docker..."
+                        sh '''
+                        if [ -x "$(command -v apt-get)" ]; then
+                            sudo apt-get update
+                            sudo apt-get install -y docker.io
+                            sudo systemctl start docker
+                        elif [ -x "$(command -v yum)" ]; then
+                            sudo yum install -y docker
+                            sudo systemctl start docker
+                        else
+                            echo "Unsupported package manager. Please install Docker manually."
+                            exit 1
+                        fi
+                        '''
+                    } else {
+                        echo "Docker is already installed."
+                    }
+                }
+            }
+        }
+        
+        stage('Run Docker Commands') {
+            steps {
+                echo "Pulling Docker image..."
+                sh 'docker pull python:3.9'
             }
         }
 
-        stage('Install Dependencies') {  // Installing the required Python packages
+        stage('Build Docker Image') {
             steps {
-                sh 'python --version'  // Checking Python version
-                sh 'pip install --upgrade pip'  // Upgrading pip
-                sh 'pip install -r requirements.txt'  // Installing the dependencies
+                echo "Building Docker image..."
+                sh 'docker build -t usenlease-app .'
             }
         }
 
-        stage('Run Tests') {  // Running Django tests
+        stage('Run Docker Container') {
             steps {
-                sh 'python manage.py test'  // Running the test suite
+                echo "Running Docker container..."
+                sh 'docker run -d -p 8000:8000 --name usenlease-container usenlease-app'
+            }
+        }
+
+        stage('Run Tests in Docker') {
+            steps {
+                echo "Running tests inside Docker..."
+                sh 'docker exec usenlease-container python manage.py test'
             }
         }
     }
 
     post {
-        success {
-            echo 'Build succeeded!'  // Notify success
-        }
-        failure {
-            echo 'Build failed.'  // Notify failure
+        always {
+            echo "Stopping and cleaning up Docker container..."
+            sh 'docker stop usenlease-container || echo "No running container to stop"'
+            sh 'docker rm usenlease-container || echo "No container to remove"'
         }
     }
 }
