@@ -15,59 +15,35 @@ pipeline {
             }
         }
 
-        stage('Run Docker Commands') {
-            steps {
-                sh 'docker pull python:3.9'
-            }
-        }
-
-        // Add additional stages for your pipeline as needed
         stage('Checkout') {
             steps {
                 git 'https://github.com/Denislive/usenlease'
             }
         }
 
-        stage('Setup Python Environment') {
+        stage('Build Docker Image') {
             steps {
-                sh 'python -m venv .venv'
+                script {
+                    sh 'docker build -t usenlease-app .'
+                }
             }
         }
 
-        stage('Install Dependencies') {
+        stage('Run Docker Container') {
             steps {
-                sh '''
-                source .venv/bin/activate
-                pip install --upgrade pip
-                pip install -r requirements.txt
-                '''
+                script {
+                    // Run the container in detached mode and map port 8000
+                    sh 'docker run -d -p 8000:8000 --name usenlease-container usenlease-app'
+                }
             }
         }
 
-        stage('Run Migrations') {
+        stage('Run Tests in Docker') {
             steps {
-                sh '''
-                source .venv/bin/activate
-                python manage.py migrate
-                '''
-            }
-        }
-
-        stage('Run Tests') {
-            steps {
-                sh '''
-                source .venv/bin/activate
-                python manage.py test
-                '''
-            }
-        }
-
-        stage('Run Server') {
-            steps {
-                sh '''
-                source .venv/bin/activate
-                gunicorn usenlease.wsgi:application --bind 0.0.0.0:8000 --daemon
-                '''
+                script {
+                    // Run tests inside the Docker container
+                    sh 'docker exec usenlease-container python manage.py test'
+                }
             }
         }
     }
@@ -78,6 +54,11 @@ pipeline {
         }
         failure {
             echo 'Build failed.'
+        }
+        always {
+            echo 'Stopping and cleaning up Docker container...'
+            sh 'docker stop usenlease-container || echo "No running container to stop"'
+            sh 'docker rm usenlease-container || echo "No container to remove"'
         }
     }
 }
