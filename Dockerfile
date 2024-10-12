@@ -1,31 +1,20 @@
-# Use an official Python runtime as a parent image
-FROM python:3.9-slim
+# Use the official Python image as the base
+FROM python:3.9
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+# Set environment variables to avoid Python output buffering
+ENV PYTHONUNBUFFERED 1
 
-# Set the working directory in the container
+# Create a working directory
 WORKDIR /app
 
-# Copy the requirements file to the working directory
-COPY requirements.txt /app/
+# Copy requirements.txt first for better caching of Docker layers
+COPY requirements.txt .
 
-# Update the package list and install system dependencies
-RUN apt-get update && \
-    apt-get install -y libpq-dev build-essential && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* || (cat /var/log/apt/term.log && exit 1)  # Print logs on failure
+# Install dependencies
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Upgrade pip and install Python dependencies
-RUN pip install --upgrade pip
-RUN pip install -r requirements.txt || (echo "Retrying..." && pip install -r requirements.txt)
+# Copy the rest of the application code
+COPY . .
 
-# Copy the rest of the application code to the working directory
-COPY . /app/
-
-# Expose the port the app runs on
-EXPOSE 8000
-
-# Command to run the application
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "usenlease.wsgi:application"]
+# Specify the command to run your application
+CMD ["gunicorn", "EquipRentHub.wsgi:application", "--bind", "0.0.0.0:8000"]
