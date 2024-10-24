@@ -19,7 +19,7 @@ media/
 # Virtual Environment
 env/
 EQUIP_HUB/
-venv/
+myvenv/
 ENV/
 env.bak/
 venv.bak/
