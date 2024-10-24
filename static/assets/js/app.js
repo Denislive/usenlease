@@ -40,50 +40,91 @@ $('#footerToggle').on('click', function() {
 });
 
 
+document.getElementById('addSpecificationButton').addEventListener('click', function() {
+    const container = document.createElement('div');
+    container.classList.add('specification-item', 'grid-x', 'grid-margin-x');
+
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.name = 'specName';
+    nameInput.placeholder = 'Specification Name';
+    nameInput.required = true;
+    nameInput.classList.add('cell', 'medium-5');
+
+    const valueInput = document.createElement('input');
+    valueInput.type = 'text';
+    valueInput.name = 'specValue';
+    valueInput.placeholder = 'Specification Value';
+    valueInput.required = true;
+    valueInput.classList.add('cell', 'medium-5');
+
+    const removeButton = document.createElement('button');
+    removeButton.type = 'button';
+    removeButton.classList.add('remove-specification', 'button', 'alert', 'cell', 'medium-2');
+    removeButton.innerHTML = '<i class="bi bi-trash" style="font-size: 1rem;"></i>';
+    
+    // Add event listener to remove the specification item
+    removeButton.addEventListener('click', function() {
+        container.remove(); // Remove the specification item
+    });
+
+    container.appendChild(nameInput);
+    container.appendChild(valueInput);
+    container.appendChild(removeButton);
+    document.querySelector('.specifications-container').appendChild(container);
+});
 
 
-  document.addEventListener('DOMContentLoaded', function() {
-    const thumbnails = document.querySelectorAll('.thumbnail-list img');
-    const mainImage = document.getElementById('mainImage');
-    const thumbnailList = document.getElementById('thumbnailList');
-    const prevButton = document.getElementById('prevButton');
-    const nextButton = document.getElementById('nextButton');
 
-    let currentIndex = 0;
+document.addEventListener('DOMContentLoaded', function() {
+    const thumbnails = document.querySelectorAll('.images'); // Select all thumbnail images
+    const mainImage = document.getElementById('mainImage'); // Main image element
+    const thumbnailList = document.getElementById('thumbnailList'); // Thumbnail list container
+    const prevButton = document.getElementById('prevButton'); // Previous button
+    const nextButton = document.getElementById('nextButton'); // Next button
+
+    const itemsToShow = 3; // Number of images to display at once
+    let currentIndex = 0; // Current index for the slider
 
     function updateMainImage(src) {
-        mainImage.src = src;
+        mainImage.src = src; // Update the main image source
     }
 
     function updateSlider() {
-        const offset = -currentIndex * (100 + 10); // 100px width + 10px margin
-        thumbnailList.style.transform = `translateX(${offset}px)`;
+        const offset = -currentIndex * (100 + 10); // 100px width + 10px margin (adjust as necessary)
+        thumbnailList.style.transform = `translateX(${offset}px)`; // Slide the thumbnail list
     }
 
+    // Click event for each thumbnail
     thumbnails.forEach((thumbnail, index) => {
         thumbnail.addEventListener('click', function() {
             const largeImageSrc = this.getAttribute('data-large');
-            updateMainImage(largeImageSrc);
+            updateMainImage(largeImageSrc); // Update the main image when a thumbnail is clicked
         });
     });
 
+    // Previous button functionality
     prevButton.addEventListener('click', function() {
         if (currentIndex > 0) {
-            currentIndex--;
-            updateSlider();
+            currentIndex--; // Decrease index
+            updateSlider(); // Update the slider position
             const src = thumbnails[currentIndex].getAttribute('data-large');
-            updateMainImage(src);
+            updateMainImage(src); // Update main image
         }
     });
 
+    // Next button functionality
     nextButton.addEventListener('click', function() {
-        if (currentIndex < thumbnails.length - 1) {
-            currentIndex++;
-            updateSlider();
+        if (currentIndex < thumbnails.length - itemsToShow) { // Ensure we don't exceed the number of images
+            currentIndex++; // Increase index
+            updateSlider(); // Update the slider position
             const src = thumbnails[currentIndex].getAttribute('data-large');
-            updateMainImage(src);
+            updateMainImage(src); // Update main image
         }
     });
+
+    // Initially display the main image
+    updateMainImage(thumbnails[currentIndex].getAttribute('data-large'));
 });
 
 
@@ -209,7 +250,7 @@ let locationData = {}; // Global variable to store the location data
 // Load CSV data and parse it
 async function loadCSV() {
     try {
-        const response = await fetch('https://usenlease-test.onrender.com/static/assets/data/usa.csv');
+        const response = await fetch('http://127.0.0.1:8000/static/assets/data/usa.csv');
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -379,3 +420,62 @@ document.addEventListener('DOMContentLoaded', loadCSV);
 
 
 
+
+
+
+const uploadArea = document.getElementById('uploadArea');
+const fileInput = document.getElementById('images');
+const fileList = document.getElementById('fileList');
+
+// Open file input when the upload area is clicked
+uploadArea.addEventListener('click', () => {
+    fileInput.click();
+});
+
+// Prevent default behavior when dragging files
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    uploadArea.addEventListener(eventName, preventDefaults, false);
+    document.body.addEventListener(eventName, preventDefaults, false);
+});
+
+// Highlight the upload area when dragging files over it
+uploadArea.addEventListener('dragover', () => {
+    uploadArea.classList.add('highlight');
+});
+uploadArea.addEventListener('dragleave', () => {
+    uploadArea.classList.remove('highlight');
+});
+
+// Handle dropped files
+uploadArea.addEventListener('drop', (event) => {
+    const dt = event.dataTransfer;
+    const files = dt.files;
+
+    handleFiles(files);
+});
+
+// Handle file input change
+fileInput.addEventListener('change', () => {
+    handleFiles(fileInput.files);
+});
+
+// Function to handle selected files
+function handleFiles(files) {
+    fileList.innerHTML = ''; // Clear previous file list
+
+    if (files.length > 0) {
+        Array.from(files).forEach(file => {
+            const listItem = document.createElement('div');
+            listItem.textContent = file.name; // Display file name
+            fileList.appendChild(listItem);
+        });
+    } else {
+        fileList.textContent = 'No files selected.'; // Message when no files are selected
+    }
+}
+
+// Prevent default behavior (Prevent file from being opened)
+function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+}

@@ -20,10 +20,6 @@
 
                 <hr>
                 <div class="nav-item active" data-section="personal-info">Personal Information</div>
-                <div class="nav-item" data-section="change-email">Change Email</div>
-                <div class="nav-item" data-section="change-phone">Phone</div>
-                <div class="nav-item" data-section="change-password">Change Password</div>
-                <div class="nav-item" data-section="my-addresses">My Addresses</div>
 
                 <div class="nav-item" data-section="my-equipments">My Equipments</div>
                 <div class="nav-item" data-section="my-orders">My Orders</div>
@@ -42,37 +38,49 @@
                 <!-- Personal Information Section -->
                 <div id="personal-info" class="section-content active">
                     <h3>Personal Information</h3>
-                    <p>Manage your personal information here...</p>
-                    <!-- Add personal information form or details here -->
-                </div>
+                    <p>{{ user.username }}</p>
+                    <p>{{ user.role }}</p>
+                    <p>{{ user.email }}</p>
+                    <p>{{ user.phone_number }}</p>  
+                    <p>{{ user.document_type }}</p>
+                    <p>{{ user.is_verified }}</p>
+                    <p>{{ user.company_name }}</p>
 
-                <!-- Change Email Section -->
-                <div id="change-email" class="section-content">
+
+
+
+
+                    <!-- Change Email Section -->
+                <div id="change-email" class="email-section">
                     <h3>Change Email</h3>
                     <p>Update your email address...</p>
                     <!-- Add email change form or details here -->
                 </div>
 
                 <!-- Change Phone Section -->
-                <div id="change-phone" class="section-content">
+                <div id="change-phone" class="phone-section">
                     <h3>Change Phone</h3>
                     <p>Update your phone number...</p>
                     <!-- Add phone change form or details here -->
                 </div>
 
                 <!-- Change Password Section -->
-                <div id="change-password" class="section-content">
+                <div id="change-password" class="password-section">
                     <h3>Change Password</h3>
                     <p>Update your password...</p>
                     <!-- Add password change form or details here -->
                 </div>
 
                 <!-- Address Section -->
-                <div id="my-addresses" class="section-content">
+                <div id="my-addresses" class="address-section">
                     <h3>My addresses</h3>
                     <p>Update your address...</p>
                     <!-- Add address form or details here -->
                 </div>
+                    <!-- Add personal information form or details here -->
+                </div>
+
+                
 
 
 
@@ -525,10 +533,6 @@
 
     <hr>
     <div class="mobile-nav-item active" data-section="personal-info">Personal Information</div>
-    <div class="mobile-nav-item" data-section="change-email">Change Email</div>
-    <div class="mobile-nav-item" data-section="change-phone">Phone</div>
-    <div class="mobile-nav-item" data-section="change-password">Change Password</div>
-    <div class="mobile-nav-item" data-section="my-addresses">My Addresses</div>
     <div class="mobile-nav-item" data-section="mobile-my-equipments">My Equipments</div>
     <div class="mobile-nav-item" data-section="mobile-my-orders">My Orders</div>
     <div class="mobile-nav-item" data-section="settings">Settings</div>

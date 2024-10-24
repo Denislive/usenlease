@@ -12,6 +12,9 @@ urlpatterns = [
     path('accounts/', include('user_management.urls')),
     path('api/v1/', include('djoser.urls')),
     path('api/v1/', include('djoser.urls.authtoken')),
+    path('api/accounts/', include('user_management.api_urls')),
+    path('api/', include('equipment_management.api_urls')),
+
 
     # path('api/v1/', include('equipment_management.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

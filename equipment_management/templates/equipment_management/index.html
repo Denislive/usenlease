@@ -5,43 +5,7 @@
 {% block title %}EquiHub Home{% endblock %}
 
 {% block content %}
-<section class="hero">
-    <div class="grid-container">
-        <div class="grid-x grid-margin-x align-middle text-center">
-            <div class="cell large-12">
-                <div class="hero-content">
-                    <div class="grid-x align-center custom-hero-content">
-                        <div class="cell">
-                            <span class="custom-text">Find Equipment</span>
-                        </div>
-                        <div class="cell">
-                            <div class="custom-location-box">
-                                <i class="bi bi-geo-alt location-icon"></i>
-                                <span data-open="usaLocationModal" id="allButton">All in USA</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Search Box -->
-            <div class="cell large-12">
-                <div class="grid-x align-center">
-                    <div class="cell small-12 medium-10 large-8 search-box">
-                        <div class="input-group input-group-rounded">
-                            <input class="input-group-field" type="search" id="searchInput"
-                                placeholder="Search anything..." oninput="filterLocations()">
-                            <div class="input-group-button">
-                                <input type="submit" class="button" style="background-color: #1c1c1c; color: white;"
-                                    value="Search">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
 
 <!-- USA Location Modal -->
 <div class="reveal" id="usaLocationModal" data-reveal>
@@ -187,7 +151,7 @@
                             <div class="card-image">
                                 <span class="tag">{{ equipment.is_available|yesno:"Available,Unavailable" }}</span>
                                 <img src="https://picsum.photos/350/350" alt="{{ equipment.name }} Image">
-                                <a href="{% url 'cart' %}" class="button add-to-cart">
+                                <a href="{{ equipment.get_absolute_url }}" class="button add-to-cart">
                                     <i class="bi bi-cart"></i>
                                 </a>
                             </div>
@@ -252,7 +216,7 @@
                     <div class="card-image">
                         <span class="tag">{{ ad.is_available|yesno:"Available,Unavailable" }}</span>
                         <img src="https://picsum.photos/350/350" alt="{{ ad.name }} Image">
-                        <a href="{% url 'cart' %}">
+                        <a href="{{ equipment.get_absolute_url }}">
                             <i class="bi bi-cart"></i>
                         </a>
                     </div>

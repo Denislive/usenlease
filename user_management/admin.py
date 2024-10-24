@@ -9,13 +9,12 @@ class CreditCardInline(admin.TabularInline):
     model = CreditCard
     extra = 1
     fields = ('holder_name', 'card_number', 'expiry_date', 'cvc', 'bank_name', 'account_number', 'routing_number', 'bank_address', 'paypal_email', 'is_default')
-    readonly_fields = ('is_default',)  # Make is_default field read-only
 
 
 class AddressAdmin(admin.ModelAdmin):
     list_display = ('address_type', 'street_address', 'city', 'zip_code')
     search_fields = ('address_type', 'city', 'state', 'country')
-    list_filter = ('address_type', 'country')
+    list_filter = ('address_type', 'city', 'state', 'country')
     ordering = ('-updated_at',)
 
 
@@ -23,13 +22,13 @@ class AddressAdmin(admin.ModelAdmin):
 class PhysicalAddressAdmin(admin.ModelAdmin):
     list_display = ('full_name', 'street_address', 'city', 'zip_code')
     search_fields = ('user__username', 'full_name', 'city', 'state', 'country')
-    list_filter = ('country',)
+    list_filter = ('country', 'full_name', 'city', 'state')
     ordering = ('-updated_at',)
 
 
 class CreditCardAdmin(admin.ModelAdmin):
     list_display = ('user', 'holder_name', 'card_number', 'expiry_date', 'cvc', 'bank_name', 'account_number', 'routing_number', 'bank_address', 'paypal_email', 'is_default')
-    search_fields = ('user__username', 'holder_name', 'bank_name', 'paypal_email')
+    search_fields = ('user__username', 'holder_name', 'bank_name', 'paypal_email', 'card_number', 'account_number')
     list_filter = ('is_default', 'user')
     ordering = ('-updated_at', 'is_default')
 

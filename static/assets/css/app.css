@@ -2,6 +2,200 @@ body {
     background-color: whitesmoke;
 }
 
+/* Global hover effect for all anchor tags */
+a:hover {
+  color: #ffc107; /* Replace with your desired color */
+}
+
+
+
+
+/* General Modal Styles */
+.reveal {
+  bottom: 0;
+  left: 0;
+  position: fixed;
+  right: 0;
+  top: -50%;
+  z-index: 1000;
+  padding: 20px; /* Add padding for the content */
+  border-radius: 12px; /* Rounded corners */
+  border: 1px solid #ddd; /* Light border */
+  background-color: #ffffff; /* White background */
+  color: #333; /* Dark text color */
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* Soft shadow */
+  transition: transform 0.3s ease, opacity 0.3s ease; /* Smooth animation */
+}
+
+/* Show Modal */
+.reveal.show {
+  transform: translateY(75%); /* Slide from bottom */
+  opacity: 1; /* Fully opaque */
+}
+
+/* Close Button Styles */
+.close-button {
+  background: none; /* No background */
+  border: none; /* No border */
+  font-size: 2rem; /* Larger font size */
+  cursor: pointer; /* Pointer cursor */
+  position: absolute; /* Position absolutely */
+  top: 15px; /* Distance from top */
+  right: 20px; /* Distance from right */
+  color: #555; /* Dark color for visibility */
+  transition: color 0.3s, transform 0.3s; /* Smooth transition */
+}
+
+.close-button:hover {
+  transform: scale(1.2); /* Scale effect on hover */
+  color: #e74c3c; /* Change color on hover */
+}
+
+/* Title Style */
+h2 {
+  text-align: center; /* Center title */
+  margin-bottom: 20px; /* Space below title */
+  font-size: 2rem; /* Title font size */
+  color: #333; /* Dark text color */
+}
+
+/* Label Styles */
+label {
+  font-weight: bold; /* Bold labels for visibility */
+  margin-bottom: 5px; /* Spacing below labels */
+  display: block; /* Block display for labels */
+  color: #555; /* Dark label color */
+  transition: transform 0.2s ease, color 0.2s ease; /* Smooth animation */
+}
+
+/* Focus Animation for Labels */
+input[type="text"]:focus + label,
+input[type="number"]:focus + label,
+select:focus + label,
+textarea:focus + label {
+  transform: translateY(-20px); /* Move label up */
+  color: #FFC107; /* Change label color */
+  font-size: 0.9rem; /* Slightly reduce font size */
+}
+
+/* Input, Select, and Textarea Styles */
+input[type="text"],
+input[type="number"],
+select,
+textarea {
+  width: 100%; /* Full width inputs */
+  padding: 0.75rem; /* Increased padding for comfort */
+  border: 1px solid #ccc; /* Light border */
+  background-color: #f9f9f9; /* Light background */
+  color: #333; /* Dark text */
+  border-radius: 6px; /* Rounded corners */
+  font-size: 1rem; /* Consistent font size */
+  transition: border 0.3s, background-color 0.3s; /* Smooth transitions */
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+select:focus,
+textarea:focus {
+  border-color: #FFC107; /* Change border color on focus */
+  background-color: #fff; /* White background on focus */
+  outline: none; /* Remove default outline */
+}
+
+/* Button Styles */
+button {
+  padding: 0.75rem 1.5rem; /* Padding for buttons */
+  border-radius: 6px; /* Rounded corners */
+  cursor: pointer; /* Pointer cursor */
+  margin-top: 15px; /* Space above buttons */
+  font-weight: bold; /* Bold text */
+  transition: background-color 0.3s, transform 0.3s; /* Smooth transitions */
+}
+
+button.primary {
+  background-color: #FFC107; /* Amber background */
+  color: #1c1c1c; /* Dark text */
+  border: none; /* No border */
+  width: 100%; /* Full width for primary button */
+}
+
+button.primary:hover {
+  background-color: #ffca28; /* Lighter amber on hover */
+  transform: scale(1.05); /* Slight scale effect on hover */
+}
+
+/* Error Message Styles */
+.error {
+  color: #e74c3c; /* Red color for error messages */
+  font-size: 0.9rem; /* Smaller font size */
+  margin-top: 5px; /* Space above error message */
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+  .reveal {
+    padding: 15px; /* Less padding on small screens */
+  }
+
+  h2 {
+    font-size: 1.5rem; /* Smaller title on small screens */
+  }
+}
+
+
+
+
+/* Centered Form Container */
+#user-form-container {
+  position: relative; /* Positioned relative to the page */
+  top: 50%; /* Center vertically */
+  left: 50%; /* Center horizontally */
+  transform: translate(-50%, 1%); /* Adjust to keep it centered */
+  background-color: #ffffff; /* White background for the form */
+  padding: 20px; /* Padding around the form */
+  border-radius: 10px; /* Rounded corners */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); /* Box shadow for depth */
+  width: 500px; /* Fixed width for the form */
+  text-align: center; /* Center text inside the form */
+  margin: 40px;
+}
+
+@media (max-width: 768px) {
+  /* Centered Form Container */
+  #user-form-container {
+    position: relative; /* Positioned relative to the page */
+    top: 50%; /* Center vertically */
+    left: 38%; /* Center horizontally */
+    transform: translate(-50%, 1%); /* Adjust to keep it centered */
+    background-color: #ffffff; /* White background for the form */
+    padding: 20px; /* Padding around the form */
+    border-radius: 10px; /* Rounded corners */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); /* Box shadow for depth */
+    width: 300px; /* Fixed width for the form */
+    text-align: center; /* Center text inside the form */
+    margin: 40px;
+}
+
+}
+
+/* Form Title */
+#form-title {
+  text-align: center; /* Center the title */
+  color: #333; /* Dark text color */
+  margin-bottom: 20px; /* Space below the title */
+}
+
+label {
+  text-align: start;
+}
+
+small {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+
+
 /* Common Sticky Navigation Styling */
 .sticky-nav {
     position: sticky;

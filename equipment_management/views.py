@@ -1,29 +1,26 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from user_management.forms import CheckoutForm
 from django.utils import timezone
-from datetime import timedelta
 from django.contrib import messages
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Count
+from django.db.models import Q
+from django.db import transaction
+from django.views.generic import View
+from django.http import JsonResponse
+from django.conf import settings
+from django.contrib.auth.decorators import login_required
+from django.urls import reverse
+
+
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from user_management.models import Address
-from .models import Equipment, Order, OrderItem, Cart, CartItem, Tag, Category, Review
-from .serializers import EquipmentSerializer
-from django.db.models import Q
-from django.db import transaction
-from django.views.generic import ListView, DetailView, View
-from django.http import JsonResponse, HttpResponse
-from django.urls import reverse
-from django.core.mail import send_mail
-from django.conf import settings
-from django.utils.text import slugify
 
-import json
-from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth.decorators import login_required
-from .forms import EquipmentForm, EquipmentReviewForm
+
+from user_management.models import Address
+from user_management.forms import CheckoutForm
+from .models import Equipment, Order, OrderItem, Cart, CartItem, Tag, Category, Review, Image, Specification
+from .forms import EquipmentReviewForm
 
 import stripe
 
@@ -69,7 +66,6 @@ def create_payment(request):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
 
-
 @login_required
 def successMsg(request):
     token = request.GET.get('payment_intent')
@@ -95,45 +91,32 @@ def successMsg(request):
     except Order.DoesNotExist:
         return redirect('order_summary')  # Redirect if no matching order is found
 
-
-# def submit_equipment_review(request, equipment_id):
-#     equipment = get_object_or_404(Equipment, id=equipment_id)
-#     if request.method == 'POST':
-#         form = EquipmentReviewForm(request.POST)
-#         if form.is_valid():
-#             review = form.save(commit=False)
-#             review.equipment = equipment
-#             review.user = request.user
-#             review.save()
-#             return redirect(equipment.get_absolute_url())  # Redirect to equipment detail page
-#     else:
-#         form = EquipmentReviewForm()
-#     return render(request, 'submit_equipment_review.html', {'form': form, 'equipment': equipment})
-
-def submit_owner_review(request, owner_id):
-    owner = get_object_or_404(settings.AUTH_USER_MODEL, id=owner_id)
+@login_required
+def stripe_view(request):
     if request.method == 'POST':
-        form = OwnerReviewForm(request.POST)
-        if form.is_valid():
-            review = form.save(commit=False)
-            review.owner = owner
-            review.user = request.user
-            review.save()
-            return redirect('profile_orders')  # Redirect to the orders page
-    else:
-        form = OwnerReviewForm()
-    return render(request, 'submit_owner_review.html', {'form': form, 'owner': owner})
+        print(request.POST)
+    try:
+        order = Order.objects.get(user=request.user, ordered=False)
+    except ObjectDoesNotExist:
+        return redirect('cart-summary')
+    context = {
+        'order': order,
+        'STRIPE_PUBLIC_KEY': settings.STRIPE_PUBLIC_KEY
+    }
+    return render(request, 'equipment_management/stripe.html', context)
 
-class LatestEquipmentList(APIView):
-    def get(self, request, format=None):
-        equipments = Equipment.objects.all()[0:4]
-        serializer = EquipmentSerializer(equipments, many=True)
-        return Response(serializer.data)
+@login_required
+def paypal_view(request):
+    return render(request, 'equipment_management/paypal.html')
+
 
 
 def search_view(request):
     query = request.GET.get('query')  # Get the search query from the request
     results = Equipment.objects.all()  # Start with all Equipment objects
+
+    referer_url = request.META.get('HTTP_REFERER', '/')  # Default URL
+
 
     if query:
         # Perform a search on the relevant fields
@@ -145,119 +128,95 @@ def search_view(request):
         ).distinct()  # Ensure results are distinct to avoid duplicates
 
     context = {
+        'referer_url': referer_url,
         'results': results,
         'query': query,
     }
     return render(request, 'equipment_management/search_results.html', context)
 
 
-
+@login_required
 def equipment_create_view(request):
+    user = request.user
+
     if request.method == 'POST':
-        form = EquipmentForm(request.POST)
-        if form.is_valid():
-            data = form.cleaned_data
+        # Extracting data from the POST request
+        name = request.POST.get('name')
+        description = request.POST.get('description')
+        category_id = request.POST.get('category')
+        hourly_rate = request.POST.get('hourly_rate')
+        street_address = request.POST.get('street_address')
+        street_address2 = request.POST.get('street_address2')
+        city = request.POST.get('city')
+        state = request.POST.get('state')
+        zip_code = request.POST.get('zip_code')
+        country = request.POST.get('country')
+        is_available = request.POST.get('is_available') == 'on'
+        terms = request.POST.get('terms')
+        tags = request.POST.get('tags', '').split(',')
+        # Process specifications
+        spec_names = request.POST.getlist('specName')
+        spec_values = request.POST.getlist('specValue')
 
-            # Create a new PhysicalAddress from form data
-            address = Address.objects.create(
-                street_address=data['street_address'],
-                street_address2=data.get('street_address2'),
-                city=data['city'],
-                state=data['state'],
-                zip_code=data['zip_code'],
-                user=request.user  # Assume the user is the owner of the address
-            )
+        for name, value in zip(spec_names, spec_values):
+            Specification.objects.create(equipment=equipment, name=name, value=value)
 
-            # Create the Equipment instance
-            equipment = Equipment(
-                owner=request.user,
-                name=data['name'],
-                description=data['description'],
-                category=data['category'],
-                hourly_rate=data['hourly_rate'],
-                address=address,
-                is_available=data.get('is_available', True),
-                terms=data['terms']
-            )
-            equipment.save()
+        # Create a new Address instance
+        address = Address.objects.create(
+            street_address=street_address,
+            street_address2=street_address2,
+            city=city,
+            state=state,
+            zip_code=zip_code,
+            country=country,
+            user=user,  # Assuming the user is the owner of the address
+            is_default=False  # Adjust as needed
+        )
 
-            # Handle tags
-            tags = [tag.strip() for tag in data['tags'].split(',') if tag.strip()]
-            for tag_name in tags:
+        # Create the Equipment instance
+        equipment = Equipment(
+            owner=user,
+            name=name,
+            description=description,
+            category_id=category_id,
+            hourly_rate=hourly_rate,
+            address=address,  # Save the address instance
+            is_available=is_available,
+            terms=terms
+        )
+        equipment.save()
+
+        slug = equipment.slug
+        id = equipment.id
+
+        # Handle tags
+        for tag_name in tags:
+            tag_name = tag_name.strip()
+            if tag_name:  # Only add non-empty tags
                 tag, created = Tag.objects.get_or_create(name=tag_name)
                 equipment.tags.add(tag)
 
-            messages.success(request, 'Equipment added successfully.')
-            return redirect('equipments')  # Redirect to an appropriate page
+        # Handle multiple image uploads
+        images = request.FILES.getlist('images')
+        for img in images:
+            Image.objects.create(equipment=equipment, image=img)
 
-    else:
-        form = EquipmentForm()
-
-    return render(request, 'equipment_management/create_equipment.html', {'form': form})
-
-
-def cart(request):
-    form = EquipmentForm()
-    context = {
-        'eform': form
-    }
-    return render(request, 'equipment_management/cart.html', context)
-
-
-def checkout(request):
-    form = EquipmentForm()
-    context = {
-        'eform': form
-    }
-    return render(request, 'equipment_management/checkout.html', context)
+        messages.success(request, 'Equipment added successfully.')
+        return redirect(reverse('equipment_detail', kwargs={'slug': slug, 'id': id}))  # Redirect to an appropriate page
+    
+    return render(request, 'equipment_management/index.html')
 
 
 def home(request):
+    cart_items = get_cart_items(request)
+
     trending_ads = Equipment.objects.filter(is_available=True).order_by('-date_created')[:4]  # Fetch trending ads
     equipments = Equipment.objects.all()  # Fetch all equipment
     categories = Category.objects.filter(parent=None)
-    if request.method == 'POST':
-        form = EquipmentForm(request.POST)
-        if form.is_valid():
-            data = form.cleaned_data
-
-            # Create a new PhysicalAddress from form data
-            address = Address.objects.create(
-                street_address=data['street_address'],
-                street_address2=data.get('street_address2'),
-                city=data['city'],
-                state=data['state'],
-                zip_code=data['zip_code'],
-                user=request.user  # Assume the user is the owner of the address
-            )
-
-            # Create the Equipment instance
-            equipment = Equipment(
-                owner=request.user,
-                name=data['name'],
-                description=data['description'],
-                category=data['category'],
-                hourly_rate=data['hourly_rate'],
-                address=address,
-                is_available=data.get('is_available', True),
-                terms=data['terms']
-            )
-            equipment.save()
-
-            # Handle tags
-            tags = [tag.strip() for tag in data['tags'].split(',') if tag.strip()]
-            for tag_name in tags:
-                tag, created = Tag.objects.get_or_create(name=tag_name)
-                equipment.tags.add(tag)
-
-            messages.success(request, 'Equipment added successfully.')
-            return redirect('equipments')  # Redirect to an appropriate page
-
-    else:
-        form = EquipmentForm()
-
+    
+    
     context = {
-        'eform': form,
+        'cart_items': cart_items,
         'categories': categories,
         'equipments': equipments,
         'trending_ads': trending_ads
@@ -273,6 +232,12 @@ def services(request):
 def service_detail(request):
     return render(request, 'equipment_management/service_detail.html')
 
+def contact_us(request):
+    return render(request, 'equipment_management/contact_us.html')
+
+
+
+
 def equipment_list(request):
     equipments = Equipment.objects.prefetch_related('images').all()
     categories = Category.objects.filter(parent=None)
@@ -282,10 +247,8 @@ def equipment_list(request):
         'equipments': equipments,
         'categories': categories,
         'cities': cities,
-        'eform': EquipmentForm()
     }
     return render(request, 'equipment_management/categories.html', context)
-
 
 def equipment_detail(request, slug, id):
 
@@ -313,21 +276,6 @@ def equipment_detail(request, slug, id):
     return render(request, 'equipment_management/equipment_detail.html', context)
 
 
-# def profile(request):
-
-#     return render(request, 'equipment_management/profile.html')
-
-# def equipment_detail(request, slug, id):
-#     equipment = get_object_or_404(Equipment, id=id)
-
-#     related_equipments = Equipment.objects.filter(category=equipment.category)
-#     context = {
-#         'equipment': equipment,
-#         'related_equipments': related_equipments
-#     }
-#     return render(request, 'equipment_management/equipment_detail.html', context)
-
-
 def get_or_create_cart(request):
     session_key = request.session.session_key
     if not session_key:
@@ -337,8 +285,14 @@ def get_or_create_cart(request):
     cart, created = Cart.objects.get_or_create(session_key=session_key)
     return cart
 
-
-
+def cart(request):
+    cart_items = get_cart_items(request)
+    total_price = sum(item.get_total for item in cart_items)  # Calculate total price
+    context = {
+        'cart_items': cart_items,
+        'total_price': total_price,
+    }
+    return render(request, 'equipment_management/cart.html', context)
 
 def add_to_cart(request, slug, id):
     item = get_object_or_404(Equipment, slug=slug, id=id)
@@ -372,7 +326,6 @@ def add_to_cart(request, slug, id):
             messages.info(request, 'This item was added to your cart.')
 
     return redirect('cart-summary')
-
 
 def add_single_item_to_cart(request, slug, id):
     cart = get_or_create_cart(request)
@@ -439,29 +392,10 @@ def remove_single_item_from_cart(request, slug, id):
 
     return redirect('cart-summary')
 
-
-def contact_us(request):
-    return render(request, 'equipment_management/contact_us.html')
-
-
-@login_required
-def stripe_view(request):
-    if request.method == 'POST':
-        print(request.POST)
-    try:
-        order = Order.objects.get(user=request.user, ordered=False)
-    except ObjectDoesNotExist:
-        return redirect('cart-summary')
-    context = {
-        'order': order,
-        'STRIPE_PUBLIC_KEY': settings.STRIPE_PUBLIC_KEY
-    }
-    return render(request, 'equipment_management/stripe.html', context)
-
-@login_required
-def paypal_view(request):
-    return render(request, 'equipment_management/paypal.html')
-
+def get_cart_items(request):
+    cart = get_or_create_cart(request)
+    cart_items = CartItem.objects.filter(cart=cart, ordered=False)  # Fetch items that are not ordered
+    return cart_items
 
 class CartSummaryView(View):
 
@@ -487,7 +421,6 @@ class CartSummaryView(View):
             context = {
                 'cart': cart,
                 'cart_items': cart_items,
-                'eform': EquipmentForm()
             }
             return render(self.request, 'equipment_management/cart.html', context)
 
@@ -495,10 +428,9 @@ class CartSummaryView(View):
             return redirect('equipments')
 
 
+
 def is_valid_form(values):
     return all(field and field.strip() for field in values)
-
-
 
 class CheckoutView(View):
     def get(self, *args, **kwargs):
@@ -532,7 +464,6 @@ class CheckoutView(View):
         context = {
             'form': form,
             'order': order,
-            'eform': EquipmentForm()
         }
 
         # Default shipping address
@@ -672,3 +603,110 @@ class CheckoutView(View):
         except Order.DoesNotExist:
             messages.warning(self.request, "You do not have an active order")
             return redirect('checkout')
+
+def checkout(request):
+    context = {
+    }
+    return render(request, 'equipment_management/checkout.html', context)
+
+def submit_owner_review(request, owner_id):
+    owner = get_object_or_404(settings.AUTH_USER_MODEL, id=owner_id)
+    if request.method == 'POST':
+        form = OwnerReviewForm(request.POST)
+        if form.is_valid():
+            review = form.save(commit=False)
+            review.owner = owner
+            review.user = request.user
+            review.save()
+            return redirect('profile_orders')  # Redirect to the orders page
+    else:
+        form = OwnerReviewForm()
+    return render(request, 'submit_owner_review.html', {'form': form, 'owner': owner})
+
+
+
+
+
+
+
+
+
+
+
+# def profile(request):
+
+#     return render(request, 'equipment_management/profile.html')
+
+# def equipment_detail(request, slug, id):
+#     equipment = get_object_or_404(Equipment, id=id)
+
+#     related_equipments = Equipment.objects.filter(category=equipment.category)
+#     context = {
+#         'equipment': equipment,
+#         'related_equipments': related_equipments
+#     }
+#     return render(request, 'equipment_management/equipment_detail.html', context)
+
+
+
+
+
+
+# def submit_equipment_review(request, equipment_id):
+#     equipment = get_object_or_404(Equipment, id=equipment_id)
+#     if request.method == 'POST':
+#         form = EquipmentReviewForm(request.POST)
+#         if form.is_valid():
+#             review = form.save(commit=False)
+#             review.equipment = equipment
+#             review.user = request.user
+#             review.save()
+#             return redirect(equipment.get_absolute_url())  # Redirect to equipment detail page
+#     else:
+#         form = EquipmentReviewForm()
+#     return render(request, 'submit_equipment_review.html', {'form': form, 'equipment': equipment})
+
+
+
+# def equipment_create_view(request):
+#     if request.method == 'POST':
+#         form = EquipmentForm(request.POST)
+#         if form.is_valid():
+#             data = form.cleaned_data
+
+#             # Create a new PhysicalAddress from form data
+#             address = Address.objects.create(
+#                 street_address=data['street_address'],
+#                 street_address2=data.get('street_address2'),
+#                 city=data['city'],
+#                 state=data['state'],
+#                 zip_code=data['zip_code'],
+#                 user=request.user  # Assume the user is the owner of the address
+#             )
+
+#             # Create the Equipment instance
+#             equipment = Equipment(
+#                 owner=request.user,
+#                 name=data['name'],
+#                 description=data['description'],
+#                 category=data['category'],
+#                 hourly_rate=data['hourly_rate'],
+#                 address=address,
+#                 is_available=data.get('is_available', True),
+#                 terms=data['terms']
+#             )
+#             equipment.save()
+
+#             # Handle tags
+#             tags = [tag.strip() for tag in data['tags'].split(',') if tag.strip()]
+#             for tag_name in tags:
+#                 tag, created = Tag.objects.get_or_create(name=tag_name)
+#                 equipment.tags.add(tag)
+
+#             messages.success(request, 'Equipment added successfully.')
+#             return redirect('equipments')  # Redirect to an appropriate page
+
+#     else:
+#         form = EquipmentForm()
+
+#     return render(request, 'equipment_management/create_equipment.html', {'form': form})

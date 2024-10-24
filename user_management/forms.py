@@ -3,9 +3,6 @@ from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 from .models import User, Address, PhysicalAddress, CreditCard
 from django.contrib.auth.forms import AuthenticationForm
 
-from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Layout, Row, Column, Submit
-
 
 class EmailAuthenticationForm(AuthenticationForm):
     username = forms.EmailField(label='Email Address', max_length=254)
@@ -13,6 +10,7 @@ class EmailAuthenticationForm(AuthenticationForm):
     class Meta:
         model = User
         fields = ['username', 'password']
+
 
 class UserRegistrationForm(UserCreationForm):
     class Meta:
@@ -26,13 +24,10 @@ class UserUpdateForm(UserChangeForm):
         fields = ['phone_number', 'document_type', 'identity_document', 'proof_of_address']
 
 
-
 class AddressForm(forms.ModelForm):
     class Meta:
         model = Address
         fields =  ['street_address', 'street_address2', 'city', 'state', 'zip_code', 'country', 'address_type', 'is_default']
-
-    
 
 
 class CheckoutForm(forms.Form):
@@ -73,10 +68,6 @@ class CheckoutForm(forms.Form):
     payment_method = forms.ChoiceField(choices=PAYMENT_METHODS)
 
     
-
-    
-
-
 class PhysicalAddressForm(forms.ModelForm):
 
     same_as_billing = forms.BooleanField(required=False, label="Same as Billing Address", widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}))
@@ -87,9 +78,6 @@ class PhysicalAddressForm(forms.ModelForm):
         fields = ['full_name', 'company_name', 'street_address', 'street_address2', 'city', 'state', 'zip_code', 'country']
 
     
-    
-
-
 class CreditCardForm(forms.ModelForm):
     class Meta:
         model = CreditCard

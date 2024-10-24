@@ -10,8 +10,23 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
+import os
+from dotenv import load_dotenv
+
+import dj_database_url
+
+
+load_dotenv()
+
+# Existing settings
+SECRET_KEY = os.getenv('SECRET_KEY')
+DEBUG = os.getenv('DEBUG') == 'True'  # Convert to boolean if needed
+STRIPE_PUBLIC_KEY = os.getenv('STRIPE_PUBLIC_KEY')
+STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY')
+STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET')
+
+
 from pathlib import Path
-from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -21,14 +36,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'equiprentsecure-okgE-0f1jZv0y4FtyxOcOKwwgp3Ag65Q_WQxr4lxdmU='
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+
 
 ALLOWED_HOSTS = ['*']
 
-
+LOGIN_REDIRECT_URL = '/accounts/user/login'
 LOGIN_URL = '/accounts/user/login'
 
 
@@ -37,9 +51,7 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 AUTH_USER_MODEL = 'user_management.User'
 
-STRIPE_PUBLIC_KEY = "pk_test_51PoseE050JE89jJG85ZUGTXvcXNgziBRdyCNzPydQ7ngbEAUCyOzF3Lvz7JkX8qePludxNIigvTMHwqotpRCrA4E00NJ7VgSfd"
-STRIPE_SECRET_KEY = "sk_test_51PoseE050JE89jJGUypP7IdYiTdb7bD1da6baheYVgmGSOqNbFUVR7KD04RWrq0WMTTtpI3vrxovwwA1PjCG5TLS00FkXZUgTc"
-STRIPE_WEBHOOK_SECRET = ""
+
 
 
 # Application definition
@@ -68,42 +80,6 @@ CRISPY_TEMPLATE_PACK = 'bootstrap4'
 
 CORS_ALLOW_ALL_ORIGINS = True  # For development only
 
-# Rest jwt
-
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ),
-    'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.AllowAny',  # Default permission
-    ),
-}
-
-# Simple JWT settings 
-
-SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-    'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': True,
-    'AUTH_HEADER_TYPES': ('Bearer',),  # The default authorization header value is 'Bearer'
-}
-
-
-###
-# DJOSER = {
-#     'LOGIN_FIELD': 'email',  # Use 'username' if you want to use username for login
-#     'USER_CREATE_PASSWORD_RETYPE': True,  # Confirm password during user registration
-#     'PASSWORD_RESET_CONFIRM_URL': '#/password/reset/confirm/{uid}/{token}',
-#     'ACTIVATION_URL': '#/activate/{uid}/{token}',
-#     'SEND_ACTIVATION_EMAIL': True,
-#     'TOKEN_MODEL': 'rest_framework.authtoken.models.Token',  # Use DRF token model
-#     'SERIALIZERS': {
-#         'user': 'user_management.serializers.UserSerializer',
-#         'user_create': 'user_management.serializers.UserCreateSerializer',
-#     },
-# }
-###
 
 
 MIDDLEWARE = [
@@ -144,10 +120,7 @@ WSGI_APPLICATION = 'EquipRentHub.wsgi.application'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+	"default": dj_database_url.parse(os.getenv('DATABASE_URL'))
 }
 
 
@@ -185,12 +158,18 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
+# Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'  # Directory where collectstatic will collect files
 
-STATICFILES_DIRS = [BASE_DIR / 'static']
+# Additional directories to look for static files (optional)
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',  # Directory for additional static files
+]
 
+# Media files (Uploaded files)
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media/'
+MEDIA_ROOT = BASE_DIR / 'media/'  # Directory where uploaded media files will be stored
 
 
 # Default primary key field type

@@ -4,6 +4,8 @@ from .models import Equipment, Order, OrderItem, Category, Tag, Image, Review
 from django.contrib.auth import get_user_model
 from user_management.models import Address, PhysicalAddress
 
+
+
 User = get_user_model()
 
 
@@ -16,43 +18,6 @@ class EquipmentReviewForm(forms.ModelForm):
         }
 
 
-class EquipmentForm(forms.Form):
-    name = forms.CharField(max_length=255)
-    description = forms.CharField(widget=forms.Textarea(attrs={'rows': 4}))
-    category = forms.ModelChoiceField(queryset=Category.objects.all())
-    tags = forms.CharField(
-        widget=forms.TextInput(attrs={'placeholder': 'Type tags separated by commas'}),
-        required=False
-    )
-    hourly_rate = forms.DecimalField(max_digits=10, decimal_places=2)
-    street_address = forms.CharField(max_length=255)
-    street_address2 = forms.CharField(max_length=255, required=False)
-    city = forms.CharField(max_length=255)
-    state = forms.CharField(max_length=255)
-    zip_code = forms.CharField(max_length=10)
-    is_available = forms.BooleanField(required=False)
-    terms = forms.CharField(widget=forms.Textarea(attrs={'rows': 4}), required=False)
-
-    def clean(self):
-        cleaned_data = super().clean()
-        
-        # Ensure all address fields are provided
-        if not cleaned_data.get('street_address') or \
-           not cleaned_data.get('city') or \
-           not cleaned_data.get('state') or \
-           not cleaned_data.get('zip_code'):
-            raise forms.ValidationError('Please provide complete address details.')
-
-        return cleaned_data
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['category'].queryset = Category.objects.filter(parent=None)  # Only show top-level categories
-
-class ImageForm(forms.ModelForm):
-    class Meta:
-        model = Image
-        fields = ['image']
 
 class OrderForm(forms.ModelForm):
     class Meta:

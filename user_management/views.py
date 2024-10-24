@@ -1,12 +1,21 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from .forms import UserRegistrationForm, UserUpdateForm, PhysicalAddressForm, CreditCardForm, EmailAuthenticationForm, AddressForm
-from equipment_management.forms import EquipmentForm
-from .models import User, Address, PhysicalAddress, CreditCard
-from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-
 from django.contrib import messages
+
+from .forms import UserRegistrationForm, UserUpdateForm, PhysicalAddressForm, CreditCardForm, EmailAuthenticationForm, AddressForm
+from .models import User, Address, PhysicalAddress, CreditCard
+
+def create_user_view(request):
+    if request.method == 'POST':
+        form = UserRegistrationForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            return redirect('user:login')  # Replace with your success URL
+    else:
+        form = UserRegistrationForm()
+    return render(request, 'user_management/create_user.html', {'form': form})
+
 
 def user_login_view(request):
     if request.method == 'POST':
@@ -19,9 +28,9 @@ def user_login_view(request):
 
             if user is not None:
                 login(request, user)
-                print(request.user.email)
+                
 
-                return redirect('user:profile')
+                return redirect('/')
             else:
                 messages.error(request, 'Invalid email or password.')
         else:
@@ -33,24 +42,6 @@ def user_login_view(request):
         form = EmailAuthenticationForm()
 
     return render(request, 'user_management/user_login.html', {'form': form})
-
-
-
-def user_logout(request):
-    logout(request)  # Log the user out
-    return redirect('user:login')
-
-
-
-def create_user_view(request):
-    if request.method == 'POST':
-        form = UserRegistrationForm(request.POST, request.FILES)
-        if form.is_valid():
-            form.save()
-            return redirect('user:login')  # Replace with your success URL
-    else:
-        form = UserRegistrationForm()
-    return render(request, 'user_management/create_user.html', {'form': form})
 
 
 @login_required
@@ -66,6 +57,16 @@ def update_user_view(request, pk):
     return render(request, 'user_management/update_user.html', {'form': form})
 
 
+def user_logout(request):
+    logout(request)  # Log the user out
+    return redirect('user:login')
+
+
+
+
+
+
+
 @login_required
 def create_address_view(request):
     if request.method == 'POST':
@@ -78,6 +79,16 @@ def create_address_view(request):
     else:
         form = AddressForm()
     return render(request, 'user_management/create_address.html', {'form': form})
+
+
+@login_required
+def delete_address_view(request, pk):
+    address = get_object_or_404(Address, pk=pk)
+    if request.method == 'POST':
+        address.delete()
+        return redirect('user:profile')  # Replace with the actual name of the URL for the address list page
+
+    return render(request, 'user_management/delete_address.html', {'object': address})
 
 
 @login_required
@@ -155,6 +166,8 @@ def sync_shipping_address(user, address):
             is_default=True
         )
         user.shipping_addresses.add(new_shipping_address)
+
+
 
 
 @login_required
@@ -266,17 +279,6 @@ def update_credit_card_view(request):
     return render(request, 'user_management/update_credit_card.html', {'form': form})
 
 
-# View to delete an address
-@login_required
-def delete_address_view(request, pk):
-    address = get_object_or_404(Address, pk=pk)
-    if request.method == 'POST':
-        address.delete()
-        return redirect('user:profile')  # Replace with the actual name of the URL for the address list page
-
-    return render(request, 'user_management/delete_address.html', {'object': address})
-
-# View to delete a credit card
 @login_required
 def delete_credit_card_view(request, pk):
     credit_card = get_object_or_404(CreditCard, pk=pk)
@@ -302,7 +304,6 @@ def profile(request):
         'billing_address': billing_address,
         'shipping_address': shipping_address,
         'payment_info': payment_info,
-        'eform': EquipmentForm()
 
     }
     
