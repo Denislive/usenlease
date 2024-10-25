@@ -12,7 +12,6 @@ class TagSerializer(serializers.ModelSerializer):
         fields = ['name']
 
 
-
 class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Review

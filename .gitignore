@@ -21,6 +21,7 @@ env/
 EQUIP_HUB/
 myvenv/
 ENV/
+venv/
 env.bak/
 venv.bak/
 
