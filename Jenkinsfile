@@ -2,7 +2,7 @@ pipeline {
     agent {
         docker {
             image 'python:3.11'
-            // args '-u root' // Run as root if necessary
+            args '-u root' // Run as root if necessary
         }
     }
 
@@ -29,7 +29,7 @@ pipeline {
             steps {
                 script {
                     // Retrieve Docker password from Jenkins credentials
-                    def dockerPassword = credentials('gitconnect') // Use the ID you set in Step 1
+                    def dockerPassword = credentials('docker_password') // Use the ID you set in Step 1
                     sh "echo ${dockerPassword} | docker login -u ${DOCKER_USERNAME} --password-stdin"
                 }
             }
