@@ -7,7 +7,7 @@ pipeline {
     }
 
     environment {
-        DOCKER_USERNAME = 'denislive' // Replace with your actual Docker username
+        DOCKER_USERNAME = 'denislive'
     }
 
     stages {
@@ -28,8 +28,7 @@ pipeline {
         stage('Login to Docker') {
             steps {
                 script {
-                    // Retrieve Docker password from Jenkins credentials
-                    def dockerPassword = credentials('dockerconnect') // Use the ID you set in Step 1
+                    def dockerPassword = credentials('dockerconnect')
                     sh "echo ${dockerPassword} | docker login -u ${DOCKER_USERNAME} --password-stdin"
                 }
             }
@@ -37,7 +36,6 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                // Build the Docker image
                 sh 'docker build -t equiprenthub_image .'
                 echo 'Docker image built successfully.'
             }
@@ -45,7 +43,6 @@ pipeline {
 
         stage('Run Tests') {
             steps {
-                // Run tests using Docker
                 sh 'docker run --rm equiprenthub_image python manage.py test'
                 echo 'Tests completed successfully.'
             }
@@ -53,7 +50,6 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                // Deploy the application by running the Docker container in detached mode
                 sh 'docker run -d --name equiprenthub_container -p 8000:8000 equiprenthub_image'
                 echo 'Application deployed successfully.'
             }
@@ -68,9 +64,10 @@ pipeline {
             echo 'Pipeline failed.'
         }
         always {
-            // Cleanup: Stop and remove the container if it exists
-            sh 'docker stop equiprenthub_container || true'
-            sh 'docker rm equiprenthub_container || true'
+            script {
+                sh 'docker stop equiprenthub_container || true'
+                sh 'docker rm equiprenthub_container || true'
+            }
         }
     }
 }
