@@ -14,11 +14,10 @@ pipeline {
             }
         }
 
-        stage('Checkout') {
+        stage('Clone repo') {
             steps {
                 echo "Clone this repository..."
                 git credentialsId: 'gitconnect-jenkins', url: 'https://github.com/Denislive/usenlease.git'
-                ])
             }
         }
 
