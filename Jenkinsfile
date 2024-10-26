@@ -16,11 +16,8 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                // Checkout code from Git repository
-                checkout([
-                    $class: 'GitSCM', 
-                    branches: [[name: '*/master']], // Update branch if necessary
-                    userRemoteConfigs: [[url: 'https://github.com/Denislive/usenlease.git']]
+                echo "Clone this repository..."
+                git credentialsId: 'gitconnect-jenkins', url: 'https://github.com/Denislive/usenlease.git'
                 ])
             }
         }
