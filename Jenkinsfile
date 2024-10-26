@@ -22,7 +22,7 @@ pipeline {
                     branches: [[name: '*/master']], // Replace 'main' if using a different branch
                     userRemoteConfigs: [[
                         url: 'https://github.com/Denislive/usenlease.git', 
-                        credentialsId: 'gitconnect'
+                        credentialsId: 'gitconnect-jenkins'
                     ]]
                 ])
             }
