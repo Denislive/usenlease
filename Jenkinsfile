@@ -2,8 +2,12 @@ pipeline {
     agent {
         docker {
             image 'python:3.11'
-            //args '-u root' // Run as root if necessary
+            // args '-u root' // Run as root if necessary
         }
+    }
+
+    environment {
+        DOCKER_USERNAME = 'denislive' // Replace with your actual Docker username
     }
 
     stages {
@@ -14,10 +18,20 @@ pipeline {
             }
         }
 
-        stage('Clone repo') {
+        stage('Clone Repo') {
             steps {
-                echo "Clone this repository..."
+                echo "Cloning the repository..."
                 git credentialsId: 'gitconnect', url: 'https://github.com/Denislive/usenlease.git'
+            }
+        }
+
+        stage('Login to Docker') {
+            steps {
+                script {
+                    // Retrieve Docker password from Jenkins credentials
+                    def dockerPassword = credentials('docker_password') // Use the ID you set in Step 1
+                    sh "echo ${dockerPassword} | docker login -u ${DOCKER_USERNAME} --password-stdin"
+                }
             }
         }
 
