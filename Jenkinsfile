@@ -29,7 +29,7 @@ pipeline {
             steps {
                 script {
                     // Retrieve Docker password from Jenkins credentials
-                    def dockerPassword = credentials('docker_password') // Use the ID you set in Step 1
+                    def dockerPassword = credentials('gitconnect') // Use the ID you set in Step 1
                     sh "echo ${dockerPassword} | docker login -u ${DOCKER_USERNAME} --password-stdin"
                 }
             }
