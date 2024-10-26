@@ -48,7 +48,7 @@ pipeline {
             steps {
                 // Deploy the application by running the Docker container in detached mode
                 sh 'docker run -d --name equiprenthub_container -p 8000:8000 equiprenthub_image'
-                echo 'Deploying application...'
+                echo 'Deploy application...'
             }
         }
     }
