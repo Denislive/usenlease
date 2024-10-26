@@ -2,7 +2,7 @@ pipeline {
     agent {
         docker {
             image 'python:3.11'
-            args '-u root' // Runs as root if necessary
+            args '-u root' // Run as root if necessary
         }
     }
 
@@ -19,11 +19,8 @@ pipeline {
                 // Checkout code from Git repository
                 checkout([
                     $class: 'GitSCM', 
-                    branches: [[name: '*/master']], // Replace 'main' if using a different branch
-                    userRemoteConfigs: [[
-                        url: 'https://github.com/Denislive/usenlease.git', 
-                        credentialsId: 'gitconnect-jenkins'
-                    ]]
+                    branches: [[name: '*/master']], // Update branch if necessary
+                    userRemoteConfigs: [[url: 'https://github.com/Denislive/usenlease.git']]
                 ])
             }
         }
@@ -48,7 +45,7 @@ pipeline {
             steps {
                 // Deploy the application by running the Docker container in detached mode
                 sh 'docker run -d --name equiprenthub_container -p 8000:8000 equiprenthub_image'
-                echo 'Deploy application...'
+                echo 'Application deployed successfully.'
             }
         }
     }
