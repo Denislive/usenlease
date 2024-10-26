@@ -7,7 +7,7 @@ pipeline {
     }
 
     environment {
-        DOCKER_USERNAME = 'ngumonelson123' // Replace with your actual Docker username
+        DOCKER_USERNAME = 'denislive' // Replace with your actual Docker username
     }
 
     stages {
@@ -29,7 +29,7 @@ pipeline {
             steps {
                 script {
                     // Retrieve Docker password from Jenkins credentials
-                    def dockerPassword = credentials('docker_password') // Use the ID you set in Step 1
+                    def dockerPassword = credentials('dockerconnect') // Use the ID you set in Step 1
                     sh "echo ${dockerPassword} | docker login -u ${DOCKER_USERNAME} --password-stdin"
                 }
             }
