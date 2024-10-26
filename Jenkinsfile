@@ -2,7 +2,7 @@ pipeline {
     agent {
         docker {
             image 'python:3.11'
-            args '-u root' // Run as root if necessary
+            //args '-u root' // Run as root if necessary
         }
     }
 
