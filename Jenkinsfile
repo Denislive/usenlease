@@ -1,32 +1,52 @@
 pipeline {
     agent {
         docker {
-            image 'python:3.9' // Use the Python 3.9 image
-            args '-u root' // Optional: If you need root access inside the container
+            image 'python:3.11'
+            args '-u root' // Runs as root if necessary
         }
     }
+
     stages {
-        stage('Build') {
+        stage('Check Docker Installation') {
             steps {
-                // Clone the repository or checkout the code
-                checkout scm
-                
+                sh 'docker --version || exit 1'
+                echo 'Docker is installed. Proceeding with the build...'
+            }
+        }
+
+        stage('Checkout') {
+            steps {
+                // Checkout code from Git repository
+                checkout([
+                    $class: 'GitSCM', 
+                    branches: [[name: '*/master']], // Replace 'main' if using a different branch
+                    userRemoteConfigs: [[
+                        url: 'https://github.com/Denislive/usenlease.git', 
+                        credentialsId: 'gitconnect'
+                    ]]
+                ])
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
                 // Build the Docker image
                 sh 'docker build -t equiprenthub_image .'
+                echo 'Docker image built successfully.'
             }
         }
 
         stage('Run Tests') {
             steps {
-                // Run tests using pytest or your test runner
+                // Run tests using Docker
                 sh 'docker run --rm equiprenthub_image python manage.py test'
+                echo 'Tests completed successfully.'
             }
         }
 
         stage('Deploy') {
             steps {
-                // Add your deployment steps here
-                // For example, run the container in the background
+                // Deploy the application by running the Docker container in detached mode
                 sh 'docker run -d --name equiprenthub_container -p 8000:8000 equiprenthub_image'
                 echo 'Deploying application...'
             }
@@ -35,13 +55,13 @@ pipeline {
 
     post {
         success {
-            echo 'Build succeeded!'
+            echo 'Pipeline completed successfully!'
         }
         failure {
-            echo 'Build failed.'
+            echo 'Pipeline failed.'
         }
         always {
-            // Optional cleanup steps, e.g., stopping/removing containers
+            // Cleanup: Stop and remove the container if it exists
             sh 'docker stop equiprenthub_container || true'
             sh 'docker rm equiprenthub_container || true'
         }
