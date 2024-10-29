@@ -39,8 +39,16 @@ from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.exceptions import TokenError
 
 
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework import status
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth import authenticate
+from .serializers import UserSerializer  # Adjust the import as necessary
 
 class LoginView(APIView):
+    permission_classes = [AllowAny]  # Allow any user to access this view
 
     def post(self, request):
         email = request.data.get("email")
@@ -48,8 +56,9 @@ class LoginView(APIView):
         user = authenticate(request, email=email, password=password)
 
         if user:
+            # Create refresh token for the user
             refresh = RefreshToken.for_user(user)
-            
+
             # Serialize the user details
             user_data = UserSerializer(user).data
 
@@ -63,29 +72,29 @@ class LoginView(APIView):
                 key="access_token", 
                 value=str(refresh.access_token),
                 httponly=True,
-                secure=False,  # Set to True if using HTTPS
-                samesite='None',
+                secure=False,  # Change to True if using HTTPS in production
+                samesite='Lax',
                 path="/"
             )
 
-            # Set the refresh token as well
+            # Set the refresh token as an HTTP-only cookie
             response.set_cookie(
-                key="refresh", 
+                key="refresh_token", 
                 value=str(refresh),
                 httponly=True,
-                secure=False,
-                samesite='None',
+                secure=False,  # Change to True if using HTTPS in production
+                samesite='Lax',
                 path="/"
             )
 
-            # Print tokens directly for verification
+            # Log tokens for verification
             print("Tokens before setting cookies:")
             print(f"Access Token: {refresh.access_token}")
             print(f"Refresh Token: {refresh}")
 
-            # Attempt to retrieve tokens from cookies in response
+            # Retrieve and log tokens from cookies in the response
             access_cookie = response.cookies.get('access_token')
-            refresh_cookie = response.cookies.get('refresh')
+            refresh_cookie = response.cookies.get('refresh_token')  # Updated to 'refresh_token'
 
             print("Cookies set in the response:")
             print(f"Access Token Cookie: {access_cookie}")
@@ -94,136 +103,47 @@ class LoginView(APIView):
             return response
         else:
             return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
-        
-
-User = get_user_model()
-
-class CustomTokenRefreshView(TokenRefreshView):
-    def post(self, request, *args, **kwargs):
-        access_token = request.COOKIES.get('access_token')
-        print(f"Access Token from cookies: {access_token}")
-
-        # Blacklist the access token if present
-        if access_token:
-            try:
-                parsed_access_token = AccessToken(access_token)
-                user_id = request.user.id
-                print(f"Extracted user ID: {user_id}")
-
-                # Ensure the user exists
-                user = User.objects.filter(id=user_id).first()
-                if not user:
-                    print(f"User with ID {user_id} not found.")
-                    return Response({"error": "Invalid token user."}, status=status.HTTP_400_BAD_REQUEST)
-
-                # Create or get OutstandingToken entry
-                outstanding_access_token, created = OutstandingToken.objects.get_or_create(
-                    jti=parsed_access_token['jti'],
-                    defaults={
-                        'token': access_token,  # Store the string representation
-                        'user': user,
-                        'expires_at': timezone.now(),  # Short lifetime
-                    }
-                )
-
-                # Blacklist the token if it wasn't already blacklisted
-                if not created:
-                    print("Outstanding token already exists; blacklisting existing token.")
-                    if not BlacklistedToken.objects.filter(token=outstanding_access_token).exists():
-                        BlacklistedToken.objects.create(token=outstanding_access_token)
-                        print("Access token blacklisted.")
-                    else:
-                        print("Access token is already blacklisted.")
-            except Exception as e:
-                print("Error blacklisting access token:", e)
-                return Response({"error": "Failed to blacklist access token."}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Proceed with the token refresh process
-        response = super().post(request, *args, **kwargs)
-
-        # Set the new access token in an HTTP-only cookie if the refresh was successful
-        if response.status_code == status.HTTP_200_OK:
-            new_access_token = response.data.get('access')
-            response.set_cookie(
-                key='access_token',
-                value=new_access_token,
-                httponly=True,
-                secure=True,  # Change as needed for your environment
-                samesite='Lax'
-            )
-
-        return response
 
 
-class CustomBlacklistView(TokenBlacklistView):
-    authentication_classes = [JWTAuthentication]
+class CustomLogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def post(self, request):
-        self.permission_classes = [IsAuthenticated]
-        # Log all cookies for debugging
-        print("Cookies received:", request.COOKIES)
-        
-        # Retrieve the tokens from cookies
-        refresh_token = request.COOKIES.get('refresh')
+        # Retrieve the refresh token from the cookies
         access_token = request.COOKIES.get('access_token')
+        refresh_token = request.COOKIES.get('refresh_token')
 
-        print(f"Received refresh_token: {refresh_token}")
-        print(f"Received access_token: {access_token}")
+        if access_token is None:
+            return Response({'detail': 'No access token provided.'}, status=400)
+
+        if refresh_token is None:
+            return Response({'detail': 'No refresh token provided.'}, status=400)
 
         try:
+            # Create a RefreshToken object
+            token = RefreshToken(refresh_token)
 
-           # Create and blacklist the access token
-            if access_token:
-                try:
-                    access_token = AccessToken(access_token)
-                    
-                    # Create OutstandingToken entry for the access token if it doesn't exist
-                    outstanding_access_token, created = OutstandingToken.objects.get_or_create(
-                        jti=access_token['jti'],
-                        defaults={
-                            'token': access_token,
-                            'user': request.user,
-                            'expires_at': timezone.now(),  # Short lifetime
-                        }
-                    )
-                    
-                    # Add to BlacklistedToken if not already blacklisted
-                    if not BlacklistedToken.objects.filter(token=outstanding_access_token).exists():
-                        BlacklistedToken.objects.create(token=outstanding_access_token)
-                        print("Access token blacklisted.")
-                    else:
-                        print("Access token is already blacklisted.")
-                except Exception as e:
-                    print("Error blacklisting access token:", e)
+            # Retrieve the OutstandingToken instance
+            outstanding_token = OutstandingToken.objects.get(token=token)
 
+            # Blacklist the outstanding token
+            BlacklistedToken.objects.create(token=outstanding_token)
 
-            # Blacklist the refresh token if it exists
-            if refresh_token:
-                outstanding_refresh_token = OutstandingToken.objects.filter(token=refresh_token).first()
-                if outstanding_refresh_token:
-                    # Check if the token is already blacklisted
-                    if not BlacklistedToken.objects.filter(token=outstanding_refresh_token).exists():
-                        BlacklistedToken.objects.create(token=outstanding_refresh_token)
-                        print(f"Blacklisted refresh_token: {outstanding_refresh_token.token}")
-                    else:
-                        print("Refresh token is already blacklisted.")
-                else:
-                    print("No outstanding refresh token found.")
-
-            
-            # Clear cookies after logout
-            response = Response({"success": "Successfully logged out."}, status=status.HTTP_205_RESET_CONTENT)
-            response.delete_cookie('access_token')  # Clear the access token cookie
-            response.delete_cookie('refresh')  # Clear the refresh token cookie
-            print("Cookies cleared.")
-
+            # Optional: Clear the refresh token cookie
+            response = Response({'detail': 'Token has been blacklisted.'})
+            response.delete_cookie('refresh_token')  # Ensure the correct cookie name is used
+            response.delete_cookie('access_token')  # Ensure the correct cookie name is used
             return response
 
+        except OutstandingToken.DoesNotExist:
+            return Response({'detail': 'Outstanding token not found.'}, status=404)
+        except TokenError as e:
+            print(f'TokenError: {str(e)}')
+            return Response({'detail': f'Token error: {str(e)}'}, status=400)
         except Exception as e:
-            print("An error occurred during logout:", str(e))
-            return Response({
-                "error": "An error occurred during logout.",
-                "details": str(e),
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            print(f'General Exception: {str(e)}')
+            return Response({'detail': f'An error occurred: {str(e)}'}, status=500) 
+
 
 class UserViewSet(viewsets.ViewSet):
     """

@@ -85,7 +85,7 @@ REST_FRAMEWORK = {
 # Simple JWT settings 
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=3),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
@@ -96,10 +96,10 @@ SIMPLE_JWT = {
 #Security Settings
 
 # CSRF_COOKIE_SECURE = True           # Only sent over HTTPS
-# CSRF_COOKIE_HTTPONLY = True         # Not accessible via JavaScript
+CSRF_COOKIE_HTTPONLY = False        # accessible via JavaScript
 # CSRF_COOKIE_SAMESITE = 'Lax'     # CSRF protection
 # SESSION_COOKIE_SECURE = True        # Only sent over HTTPS
-# SESSION_COOKIE_HTTPONLY = True      # Not accessible via JavaScript
+SESSION_COOKIE_HTTPONLY = True      # Not accessible via JavaScript
 CORS_ALLOW_CREDENTIALS = True  # This allows cookies to be sent with requests
 CORS_ALLOW_HEADERS = ['*']
 
