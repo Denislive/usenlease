@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
+
 from pathlib import Path
 from datetime import timedelta
 
@@ -58,9 +59,11 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'corsheaders',
     'djoser',
+    'rest_framework_simplejwt.token_blacklist',
 
     'equipment_management.apps.EquipmentManagementConfig',
     'user_management.apps.UserManagementConfig',
+    
 
 ]
 
@@ -82,7 +85,7 @@ REST_FRAMEWORK = {
 # Simple JWT settings 
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=3),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
@@ -90,20 +93,15 @@ SIMPLE_JWT = {
 }
 
 
-###
-# DJOSER = {
-#     'LOGIN_FIELD': 'email',  # Use 'username' if you want to use username for login
-#     'USER_CREATE_PASSWORD_RETYPE': True,  # Confirm password during user registration
-#     'PASSWORD_RESET_CONFIRM_URL': '#/password/reset/confirm/{uid}/{token}',
-#     'ACTIVATION_URL': '#/activate/{uid}/{token}',
-#     'SEND_ACTIVATION_EMAIL': True,
-#     'TOKEN_MODEL': 'rest_framework.authtoken.models.Token',  # Use DRF token model
-#     'SERIALIZERS': {
-#         'user': 'user_management.serializers.UserSerializer',
-#         'user_create': 'user_management.serializers.UserCreateSerializer',
-#     },
-# }
-###
+#Security Settings
+
+# CSRF_COOKIE_SECURE = True           # Only sent over HTTPS
+# CSRF_COOKIE_HTTPONLY = True         # Not accessible via JavaScript
+# CSRF_COOKIE_SAMESITE = 'Lax'     # CSRF protection
+# SESSION_COOKIE_SECURE = True        # Only sent over HTTPS
+# SESSION_COOKIE_HTTPONLY = True      # Not accessible via JavaScript
+CORS_ALLOW_CREDENTIALS = True  # This allows cookies to be sent with requests
+CORS_ALLOW_HEADERS = ['*']
 
 
 MIDDLEWARE = [
