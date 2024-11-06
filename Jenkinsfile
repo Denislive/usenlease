@@ -23,9 +23,8 @@ pipeline {
         stage('Check GCloud Installation') {
             steps {
                 script {
-                    // Update PATH to include Google Cloud SDK
-                    withEnv(["PATH+EXTRA=/home/nelson-ngumo/google-cloud-sdk/bin"]) {
-                        // Check the version of Google Cloud SDK (gcloud)
+                    // Check the version of Google Cloud SDK (gcloud) with updated PATH
+                    withEnv(["PATH=${tool('google-cloud-sdk')}/bin:${env.PATH}"]) {
                         sh 'gcloud --version || exit 1'
                         echo 'Google Cloud SDK is installed. Proceeding with the deployment...'
                     }
