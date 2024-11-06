@@ -17,6 +17,13 @@ variable "backend_image" {
   type        = string
 }
 
+# Declare the missing variable for Google Application Credentials
+variable "GOOGLE_APPLICATION_CREDENTIALS" {
+  description = "The path to the Google Cloud service account credentials file"
+  type        = string
+  default     = ""  # If no default is provided, you must pass it in via the command line or environment variable
+}
+
 # Create the Google Compute instance
 resource "google_compute_instance" "default" {
   name         = "usenlease-docker-vm"
