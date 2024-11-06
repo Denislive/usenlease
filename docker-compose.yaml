@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    env_file:
+      - .env  # Load environment variables for the frontend (if needed)
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mongodb
+    env_file:
+      - .env  # Load environment variables for the backend
+
+  mongodb:
+    image: mongo:latest
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: "${MONGO_INITDB_ROOT_USERNAME}" # From .env
+      MONGO_INITDB_ROOT_PASSWORD: "${MONGO_INITDB_ROOT_PASSWORD}" # From .env
+    ports:
+      - "27017:27017"  # Exposes MongoDB
+    volumes:
+      - mongo_data:/data/db  # Persistent storage for MongoDB
+
+volumes:
+  mongo_data:  # Defines a volume for MongoDB data persistence

@@ -1,57 +1,109 @@
 pipeline {
-    agent {
-        docker {
-            image 'python:3.11'
-            args '-u root' // Run as root if necessary
-        }
-    }
+    agent any
 
     environment {
-        DOCKER_USERNAME = 'denislive'
+        FRONTEND_IMAGE = 'ngumonelson123/frontend-image'
+        BACKEND_IMAGE = 'ngumonelson123/backend-image'
+        GOOGLE_CLOUD_PROJECT = 'burnished-ether-439413-s1'
+        GOOGLE_CLOUD_ZONE = 'us-central1-a'
+        GOOGLE_APPLICATION_CREDENTIALS = credentials('google-cloud-service-account-json')
     }
 
     stages {
         stage('Check Docker Installation') {
             steps {
-                sh 'docker --version || exit 1'
-                echo 'Docker is installed. Proceeding with the build...'
+                script {
+                    // Verify Docker installation
+                    sh 'docker --version || exit 1'
+                    echo 'Docker is installed. Proceeding with the build...'
+                }
             }
         }
 
         stage('Clone Repo') {
             steps {
                 echo "Cloning the repository..."
-                git credentialsId: 'gitconnect', url: 'https://github.com/Denislive/usenlease.git'
+                git url: 'https://github.com/Denislive/usenlease.git'
             }
         }
 
-        stage('Login to Docker') {
+        stage('Build Frontend Image') {
             steps {
                 script {
-                    def dockerPassword = credentials('dockerconnect')
-                    sh "echo ${dockerPassword} | docker login -u ${DOCKER_USERNAME} --password-stdin"
+                    echo 'Building the frontend Docker image...'
+                    sh "docker build -t ${FRONTEND_IMAGE}:latest ./frontend"
                 }
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Build Backend Image') {
             steps {
-                sh 'docker build -t equiprenthub_image .'
-                echo 'Docker image built successfully.'
+                script {
+                    echo 'Building the backend Docker image...'
+                    sh "docker build -t ${BACKEND_IMAGE}:latest ./backend"
+                }
             }
         }
 
-        stage('Run Tests') {
+        stage('Push Frontend Image to Docker Hub') {
             steps {
-                sh 'docker run --rm equiprenthub_image python manage.py test'
-                echo 'Tests completed successfully.'
+                script {
+                    echo 'Pushing frontend Docker image to Docker Hub...'
+                    sh "docker push ${FRONTEND_IMAGE}:latest"
+                }
             }
         }
 
-        stage('Deploy') {
+        stage('Push Backend Image to Docker Hub') {
             steps {
-                sh 'docker run -d --name equiprenthub_container -p 8000:8000 equiprenthub_image'
-                echo 'Application deployed successfully.'
+                script {
+                    echo 'Pushing backend Docker image to Docker Hub...'
+                    sh "docker push ${BACKEND_IMAGE}:latest"
+                }
+            }
+        }
+
+        stage('Set Up Infrastructure with Terraform') {
+            steps {
+                script {
+                    def retries = 3
+                    def success = false
+                    def attempt = 1
+                    while (attempt <= retries && !success) {
+                        try {
+                            echo "Attempt #${attempt} to apply Terraform..."
+                            // Apply Terraform to create the infrastructure
+                            sh 'terraform apply -auto-approve -var="frontend_image=${FRONTEND_IMAGE}" -var="backend_image=${BACKEND_IMAGE}"'
+                            success = true
+                        } catch (Exception e) {
+                            if (attempt == retries) {
+                                currentBuild.result = 'FAILURE'
+                                echo "Terraform failed after ${retries} attempts."
+                                throw e
+                            }
+                            echo "Attempt #${attempt} failed. Retrying..."
+                            attempt++
+                            sleep(time: 10, unit: 'SECONDS')  // Retry delay
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to Google Cloud') {
+            steps {
+                script {
+                    echo 'Deploying Docker containers to Google Cloud...'
+                    // Assuming Terraform has set up the VM and firewall
+                    sh '''
+                        gcloud compute instances describe my-docker-vm --zone=${GOOGLE_CLOUD_ZONE} || exit 1
+                        gcloud compute ssh my-docker-vm --zone=${GOOGLE_CLOUD_ZONE} --command="
+                            docker pull ${FRONTEND_IMAGE}:latest
+                            docker pull ${BACKEND_IMAGE}:latest
+                            docker run -d -p 8000:8000 ${FRONTEND_IMAGE}:latest
+                            docker run -d -p 3000:3000 ${BACKEND_IMAGE}:latest"
+                    '''
+                }
             }
         }
     }
@@ -59,15 +111,16 @@ pipeline {
     post {
         success {
             echo 'Pipeline completed successfully!'
+            slackSend(channel: '#devops', color: 'good', message: "Build succeeded: ${currentBuild.fullDisplayName}")
         }
         failure {
             echo 'Pipeline failed.'
-        }
-        always {
-            script {
-                sh 'docker stop equiprenthub_container || true'
-                sh 'docker rm equiprenthub_container || true'
-            }
+            slackSend(channel: '#devops', color: 'danger', message: "Build failed in stage: ${env.STAGE_NAME}")
+            emailext(
+                subject: "Build Failure: ${currentBuild.fullDisplayName}",
+                body: "The pipeline has failed at stage ${env.STAGE_NAME}. Please check the logs for details.",
+                to: 'nelsonmbui88@gmail.com'
+            )
         }
     }
 }
