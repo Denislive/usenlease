@@ -24,12 +24,12 @@ pipeline {
             steps {
                 script {
                     // Define Google Cloud SDK path
-                    def gcloudPath = '/home/nelson-ngumo/google-cloud-sdk/bin'
+                    def gcloudPath = '/usr/local/bin/google-cloud-sdk/bin'
                     def currentPath = sh(script: 'echo $PATH', returnStdout: true).trim()
 
                     // Only append if it's not already in the PATH
                     if (!currentPath.contains(gcloudPath)) {
-                        withEnv(["PATH+EXTRA=${gcloudPath}"]) {
+                        withEnv(["PATH=${gcloudPath}:${env.PATH}"]) {
                             // Ensure gcloud has execute permissions
                             sh "chmod +x ${gcloudPath}/gcloud"
                             sh 'gcloud --version || exit 1'
