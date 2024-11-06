@@ -7,7 +7,7 @@ pipeline {
         GOOGLE_CLOUD_PROJECT = 'burnished-ether-439413-s1'
         GOOGLE_CLOUD_ZONE = 'us-central1-a'
         GOOGLE_APPLICATION_CREDENTIALS = credentials('google-cloud-service-account-json')
-        PATH = "/home/nelson-ngumo/google-cloud-sdk/bin:$PATH" // Ensure gcloud is in the PATH
+        PATH+EXTRA = "/home/nelson-ngumo/google-cloud-sdk/bin" 
     }
 
     stages {
