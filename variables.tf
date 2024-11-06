@@ -12,3 +12,13 @@ variable "backend_image" {
   description = "Docker image for the backend"
   type        = string
 }
+
+variable "GOOGLE_CLOUD_PROJECT" {
+  description = "burnished-ether-439413-s1"
+  type        = string
+}
+
+variable "GOOGLE_CLOUD_ZONE" {
+  description = "us-central1-a"
+  type        = string
+}

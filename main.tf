@@ -1,16 +1,16 @@
 # Specify the Terraform provider for Google Cloud
 provider "google" {
   credentials = file(var.GOOGLE_APPLICATION_CREDENTIALS)
-  project     = "burnished-ether-439413-s1"
+  project     = var.GOOGLE_CLOUD_PROJECT
   region      = "us-central1"
-  zone        = "us-central1-a"
+  zone        = var.GOOGLE_CLOUD_ZONE
 }
 
 # Create the Google Compute instance
 resource "google_compute_instance" "default" {
   name         = "usenlease-docker-vm"
   machine_type = "e2-medium"
-  zone         = "us-central1-a"
+  zone         = var.GOOGLE_CLOUD_ZONE
   
   boot_disk {
     initialize_params {

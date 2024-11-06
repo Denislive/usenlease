@@ -56,7 +56,7 @@ pipeline {
                 script {
                     echo 'Building the frontend Docker image...'
                     sh '''#!/bin/bash
-                        docker build -t ${FRONTEND_IMAGE}:latest ./frontend
+                        docker build -t ${env.FRONTEND_IMAGE}:latest ./frontend
                     '''
                 }
             }
@@ -67,7 +67,7 @@ pipeline {
                 script {
                     echo 'Building the backend Docker image...'
                     sh '''#!/bin/bash
-                        docker build -t ${BACKEND_IMAGE}:latest ./backend
+                        docker build -t ${env.BACKEND_IMAGE}:latest ./backend
                     '''
                 }
             }
@@ -79,8 +79,8 @@ pipeline {
                     echo 'Pushing frontend Docker image to Docker Hub...'
                     withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                         sh '''#!/bin/bash
-                            docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
-                            docker push ${FRONTEND_IMAGE}:latest
+                            docker login -u ${env.DOCKER_USERNAME} -p ${env.DOCKER_PASSWORD}
+                            docker push ${env.FRONTEND_IMAGE}:latest
                         '''
                     }
                 }
@@ -93,8 +93,8 @@ pipeline {
                     echo 'Pushing backend Docker image to Docker Hub...'
                     withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                         sh '''#!/bin/bash
-                            docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
-                            docker push ${BACKEND_IMAGE}:latest
+                            docker login -u ${env.DOCKER_USERNAME} -p ${env.DOCKER_PASSWORD}
+                            docker push ${env.BACKEND_IMAGE}:latest
                         '''
                     }
                 }
@@ -116,79 +116,95 @@ pipeline {
             steps {
                 script {
                     echo 'Running Terraform plan to see the changes...'
-                    // Make sure to properly escape variables in bash syntax
+                    // Run terraform plan to preview the changes, passing the GOOGLE_APPLICATION_CREDENTIALS variable
                     sh '''#!/bin/bash
-                        terraform plan -var="frontend_image=${FRONTEND_IMAGE}" -var="backend_image=${BACKEND_IMAGE}" -var="GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}" -var="GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}" -var="GOOGLE_CLOUD_ZONE=${GOOGLE_CLOUD_ZONE}"
+                        terraform plan -var="GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}" \
+                                       -var="GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}" \
+                                       -var="GOOGLE_CLOUD_ZONE=${GOOGLE_CLOUD_ZONE}"
                     '''
                 }
             }
         }
 
-        stage('Set Up Infrastructure with Terraform') {
+        stage('Terraform Apply') {
             steps {
                 script {
-                    echo 'Setting up infrastructure with Terraform...'
-                    def retries = 3
-                    def success = false
-                    def attempt = 1
-                    while (attempt <= retries && !success) {
-                        try {
-                            sh '''#!/bin/bash
-                                terraform apply -auto-approve -var="frontend_image=${FRONTEND_IMAGE}" -var="backend_image=${BACKEND_IMAGE}" -var="GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}" -var="GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}" -var="GOOGLE_CLOUD_ZONE=${GOOGLE_CLOUD_ZONE}"
-                            '''
-                            success = true
-                        } catch (Exception e) {
-                            if (attempt == retries) {
-                                currentBuild.result = 'FAILURE'
-                                echo "Terraform failed after ${retries} attempts."
-                                throw e
-                            }
-                            echo "Attempt #${attempt} failed. Retrying..."
-                            attempt++
-                            sleep(time: 10, unit: 'SECONDS')  // Retry delay
-                        }
-                    }
+                    echo 'Applying Terraform changes...'
+                    // Apply the Terraform plan to provision the resources
+                    sh '''#!/bin/bash
+                        terraform apply -auto-approve \
+                                       -var="GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}" \
+                                       -var="GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}" \
+                                       -var="GOOGLE_CLOUD_ZONE=${GOOGLE_CLOUD_ZONE}"
+                    '''
                 }
             }
         }
 
         stage('Authenticate with GCloud') {
             steps {
-                withCredentials([file(credentialsId: 'google-cloud-service-account-json', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
-                    script {
-                        sh '''#!/bin/bash
-                            gcloud auth activate-service-account --key-file=${GOOGLE_APPLICATION_CREDENTIALS}
-                            gcloud config set project ${GOOGLE_CLOUD_PROJECT}
-                        '''
-                    }
+                script {
+                    echo 'Authenticating with GCloud...'
+                    // Authenticate with Google Cloud using the service account key
+                    sh '''#!/bin/bash
+                        gcloud auth activate-service-account --key-file=${GOOGLE_APPLICATION_CREDENTIALS}
+                        gcloud config set project ${GOOGLE_CLOUD_PROJECT}
+                    '''
                 }
             }
         }
 
-        stage('Deploying to Google Cloud') {
+        stage('Deploy to Google Cloud') {
             steps {
                 script {
-                    echo 'Deploying Docker containers to Google Cloud...'
+                    echo 'Deploying to Google Cloud...'
+                    // Assuming you're deploying Docker images or resources, like the Compute instance
                     sh '''#!/bin/bash
-                        gcloud compute instances describe usenlease-docker-vm --zone=${GOOGLE_CLOUD_ZONE} || exit 1
-                        gcloud compute ssh usenlease-docker-vm --zone=${GOOGLE_CLOUD_ZONE} --command="docker pull ${FRONTEND_IMAGE}:latest && docker pull ${BACKEND_IMAGE}:latest && docker run -d -p 8000:8000 ${FRONTEND_IMAGE}:latest && docker run -d -p 3000:3000 ${BACKEND_IMAGE}:latest"
+                        # Example: Deploying a Docker container to a Google Compute Engine VM
+                        # This could involve gcloud commands, docker run, or any other required steps
+                        gcloud compute instances create ${env.FRONTEND_IMAGE}-vm \
+                            --image-family debian-11 --image-project debian-cloud \
+                            --zone ${GOOGLE_CLOUD_ZONE} \
+                            --tags http-server,https-server \
+                            --metadata startup-script="#!/bin/bash
+                            docker pull ${env.FRONTEND_IMAGE}:latest
+                            docker run -d -p 80:80 ${env.FRONTEND_IMAGE}:latest"
                     '''
                 }
+            }
+        }
+
+        stage('Clean Up') {
+            steps {
+                script {
+                    echo 'Cleaning up...'
+                    // Example cleanup steps, if necessary, like removing temporary files or resources
+                    sh '''#!/bin/bash
+                        docker system prune -f
+                    '''
+                }
+            }
+        }
+
+        stage('Post Actions') {
+            steps {
+                echo 'Sending email notification on failure...'
+                emailext(
+                    to: 'nelsonmbui88@gmail.com',
+                    subject: "Jenkins Pipeline: ${currentBuild.currentResult}",
+                    body: "The Jenkins pipeline has finished with status: ${currentBuild.currentResult}."
+                )
             }
         }
     }
 
     post {
-        success {
-            echo 'Pipeline completed successfully!!'
-        }
         failure {
-            echo 'Pipeline failed.'
-            emailext(
-                subject: "Build Failure: ${currentBuild.fullDisplayName}",
-                body: "The pipeline has failed at stage ${env.STAGE_NAME}. Please check the logs for details.",
-                to: 'nelsonmbui88@gmail.com'
-            )
+            echo "Pipeline failed!"
+            // More failure handling or notifications can go here
+        }
+        success {
+            echo "Pipeline succeeded!"
         }
     }
 }
