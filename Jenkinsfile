@@ -104,6 +104,16 @@ pipeline {
             }
         }
 
+        stage('Terraform Plan') {
+            steps {
+                script {
+                    echo 'Running Terraform plan to see the changes...'
+                    // Run terraform plan to preview the changes
+                    sh 'terraform plan -var="frontend_image=${FRONTEND_IMAGE}" -var="backend_image=${BACKEND_IMAGE}"'
+                }
+            }
+        }
+
         stage('Set Up Infrastructure with Terraform') {
             steps {
                 script {
