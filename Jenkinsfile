@@ -111,7 +111,7 @@ pipeline {
     post {
         success {
             echo 'Pipeline completed successfully!'
-            slackSend(channel: '#devops', color: 'good', message: "Build succeeded: ${currentBuild.fullDisplayName}")
+            //slackSend(channel: '#devops', color: 'good', message: "Build succeeded: ${currentBuild.fullDisplayName}")
         }
         failure {
             echo 'Pipeline failed.'
