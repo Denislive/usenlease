@@ -115,7 +115,7 @@ pipeline {
         }
         failure {
             echo 'Pipeline failed.'
-            slackSend(channel: '#devops', color: 'danger', message: "Build failed in stage: ${env.STAGE_NAME}")
+            //slackSend(channel: '#devops', color: 'danger', message: "Build failed in stage: ${env.STAGE_NAME}")
             emailext(
                 subject: "Build Failure: ${currentBuild.fullDisplayName}",
                 body: "The pipeline has failed at stage ${env.STAGE_NAME}. Please check the logs for details.",
