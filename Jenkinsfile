@@ -104,7 +104,7 @@ pipeline {
         stage('Deploy to Google Cloud') {
             steps {
                 script {
-                    echo 'Deploying Docker containers to Google Cloud...'
+                    echo 'Deploying Docker containers to Google Cloud.....'
                     // Assuming Terraform has set up the VM and firewall
                     sh '''
                         gcloud compute instances describe my-docker-vm --zone=${GOOGLE_CLOUD_ZONE} || exit 1
