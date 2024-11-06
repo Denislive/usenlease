@@ -23,10 +23,19 @@ pipeline {
         stage('Check GCloud Installation') {
             steps {
                 script {
-                    // Check the version of Google Cloud SDK (gcloud) with updated PATH
-                    withEnv(["PATH=${tool('google-cloud-sdk')}/bin:${env.PATH}"]) {
-                        sh 'gcloud --version || exit 1'
-                        echo 'Google Cloud SDK is installed. Proceeding with the deployment...'
+                    // Remove duplicate paths by ensuring the correct one is set
+                    // We will append Google Cloud SDK path to PATH if it's not already there
+                    def gcloudPath = '/home/nelson-ngumo/google-cloud-sdk/bin'
+                    def currentPath = sh(script: 'echo $PATH', returnStdout: true).trim()
+
+                    // Only append if it's not already in the PATH
+                    if (!currentPath.contains(gcloudPath)) {
+                        withEnv(["PATH=${gcloudPath}:${env.PATH}"]) {
+                            sh 'gcloud --version || exit 1'
+                            echo 'Google Cloud SDK is installed. Proceeding with the deployment...'
+                        }
+                    } else {
+                        echo 'Google Cloud SDK path already set. Proceeding...'
                     }
                 }
             }
