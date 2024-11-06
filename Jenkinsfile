@@ -13,8 +13,11 @@ pipeline {
         stage('Check Shell') {
             steps {
                 script {
-                    // Ensure we are using bash
-                    sh 'echo "Current shell: $SHELL"'
+                    echo "Checking shell being used..."
+                    // Explicitly call bash to ensure we are using bash for this command
+                    sh '''#!/bin/bash
+                        echo "Current shell: $SHELL"
+                    '''
                 }
             }
         }
@@ -23,8 +26,9 @@ pipeline {
             steps {
                 script {
                     echo 'Checking if Docker is installed...'
-                    // Force bash for Docker version check
-                    sh 'bash -c "docker --version || exit 1"'
+                    sh '''#!/bin/bash
+                        docker --version || exit 1
+                    '''
                 }
             }
         }
@@ -33,8 +37,9 @@ pipeline {
             steps {
                 script {
                     echo 'Checking if GCloud is installed...'
-                    // Force bash for GCloud version check
-                    sh 'bash -c "gcloud --version || exit 1"'
+                    sh '''#!/bin/bash
+                        gcloud --version || exit 1
+                    '''
                 }
             }
         }
@@ -50,8 +55,9 @@ pipeline {
             steps {
                 script {
                     echo 'Building the frontend Docker image...'
-                    // Force bash for Docker build
-                    sh 'bash -c "docker build -t ${FRONTEND_IMAGE}:latest ./frontend"'
+                    sh '''#!/bin/bash
+                        docker build -t ${FRONTEND_IMAGE}:latest ./frontend
+                    '''
                 }
             }
         }
@@ -60,8 +66,9 @@ pipeline {
             steps {
                 script {
                     echo 'Building the backend Docker image...'
-                    // Force bash for Docker build
-                    sh 'bash -c "docker build -t ${BACKEND_IMAGE}:latest ./backend"'
+                    sh '''#!/bin/bash
+                        docker build -t ${BACKEND_IMAGE}:latest ./backend
+                    '''
                 }
             }
         }
@@ -71,9 +78,10 @@ pipeline {
                 script {
                     echo 'Pushing frontend Docker image to Docker Hub...'
                     withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        sh 'docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}'
-                        // Force bash for Docker push
-                        sh 'bash -c "docker push ${FRONTEND_IMAGE}:latest"'
+                        sh '''#!/bin/bash
+                            docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
+                            docker push ${FRONTEND_IMAGE}:latest
+                        '''
                     }
                 }
             }
@@ -84,9 +92,10 @@ pipeline {
                 script {
                     echo 'Pushing backend Docker image to Docker Hub...'
                     withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        sh 'docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}'
-                        // Force bash for Docker push
-                        sh 'bash -c "docker push ${BACKEND_IMAGE}:latest"'
+                        sh '''#!/bin/bash
+                            docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
+                            docker push ${BACKEND_IMAGE}:latest
+                        '''
                     }
                 }
             }
@@ -96,8 +105,9 @@ pipeline {
             steps {
                 script {
                     echo 'Initializing Terraform...'
-                    // Force bash for terraform initialization
-                    sh 'bash -c "terraform init"'
+                    sh '''#!/bin/bash
+                        terraform init
+                    '''
                 }
             }
         }
@@ -106,8 +116,10 @@ pipeline {
             steps {
                 script {
                     echo 'Running Terraform plan to see the changes...'
-                    // Force bash for Terraform plan with necessary variable substitutions
-                    sh 'bash -c "terraform plan -var=\\"frontend_image=${FRONTEND_IMAGE}\\" -var=\\"backend_image=${BACKEND_IMAGE}\\" -var=\\"GOOGLE_APPLICATION_CREDENTIALS=${env.GOOGLE_APPLICATION_CREDENTIALS}\\" -var=\\"GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}\\" -var=\\"GOOGLE_CLOUD_ZONE=${GOOGLE_CLOUD_ZONE}\\""'
+                    // Make sure to properly escape variables in bash syntax
+                    sh '''#!/bin/bash
+                        terraform plan -var="frontend_image=${FRONTEND_IMAGE}" -var="backend_image=${BACKEND_IMAGE}" -var="GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}" -var="GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}" -var="GOOGLE_CLOUD_ZONE=${GOOGLE_CLOUD_ZONE}"
+                    '''
                 }
             }
         }
@@ -121,8 +133,9 @@ pipeline {
                     def attempt = 1
                     while (attempt <= retries && !success) {
                         try {
-                            // Force bash for Terraform apply
-                            sh 'bash -c "terraform apply -auto-approve -var=\\"frontend_image=${FRONTEND_IMAGE}\\" -var=\\"backend_image=${BACKEND_IMAGE}\\" -var=\\"GOOGLE_APPLICATION_CREDENTIALS=${env.GOOGLE_APPLICATION_CREDENTIALS}\\" -var=\\"GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}\\" -var=\\"GOOGLE_CLOUD_ZONE=${GOOGLE_CLOUD_ZONE}\\""'
+                            sh '''#!/bin/bash
+                                terraform apply -auto-approve -var="frontend_image=${FRONTEND_IMAGE}" -var="backend_image=${BACKEND_IMAGE}" -var="GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}" -var="GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}" -var="GOOGLE_CLOUD_ZONE=${GOOGLE_CLOUD_ZONE}"
+                            '''
                             success = true
                         } catch (Exception e) {
                             if (attempt == retries) {
@@ -143,9 +156,10 @@ pipeline {
             steps {
                 withCredentials([file(credentialsId: 'google-cloud-service-account-json', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
                     script {
-                        // Force bash for Google Cloud authentication
-                        sh 'bash -c "gcloud auth activate-service-account --key-file=${GOOGLE_APPLICATION_CREDENTIALS}"'
-                        sh 'bash -c "gcloud config set project ${GOOGLE_CLOUD_PROJECT}"'
+                        sh '''#!/bin/bash
+                            gcloud auth activate-service-account --key-file=${GOOGLE_APPLICATION_CREDENTIALS}
+                            gcloud config set project ${GOOGLE_CLOUD_PROJECT}
+                        '''
                     }
                 }
             }
@@ -155,9 +169,10 @@ pipeline {
             steps {
                 script {
                     echo 'Deploying Docker containers to Google Cloud...'
-                    // Force bash for Google Cloud deployment
-                    sh 'bash -c "gcloud compute instances describe usenlease-docker-vm --zone=${GOOGLE_CLOUD_ZONE} || exit 1"'
-                    sh 'bash -c "gcloud compute ssh usenlease-docker-vm --zone=${GOOGLE_CLOUD_ZONE} --command=\\"docker pull ${FRONTEND_IMAGE}:latest && docker pull ${BACKEND_IMAGE}:latest && docker run -d -p 8000:8000 ${FRONTEND_IMAGE}:latest && docker run -d -p 3000:3000 ${BACKEND_IMAGE}:latest\\""'
+                    sh '''#!/bin/bash
+                        gcloud compute instances describe usenlease-docker-vm --zone=${GOOGLE_CLOUD_ZONE} || exit 1
+                        gcloud compute ssh usenlease-docker-vm --zone=${GOOGLE_CLOUD_ZONE} --command="docker pull ${FRONTEND_IMAGE}:latest && docker pull ${BACKEND_IMAGE}:latest && docker run -d -p 8000:8000 ${FRONTEND_IMAGE}:latest && docker run -d -p 3000:3000 ${BACKEND_IMAGE}:latest"
+                    '''
                 }
             }
         }
