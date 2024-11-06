@@ -109,10 +109,7 @@ pipeline {
                 script {
                     echo 'Running Terraform plan to see the changes...'
                     // Run terraform plan to preview the changes, passing the GOOGLE_APPLICATION_CREDENTIALS variable
-                    sh """
-                        export GOOGLE_APPLICATION_CREDENTIALS=${env.GOOGLE_APPLICATION_CREDENTIALS}
-                        terraform plan -var="frontend_image=${FRONTEND_IMAGE}" -var="backend_image=${BACKEND_IMAGE}" -var="GOOGLE_APPLICATION_CREDENTIALS=${env.GOOGLE_APPLICATION_CREDENTIALS}"
-                    """
+                    sh 'terraform plan -var="frontend_image=${FRONTEND_IMAGE}" -var="backend_image=${BACKEND_IMAGE}" -var="GOOGLE_APPLICATION_CREDENTIALS=${env.GOOGLE_APPLICATION_CREDENTIALS}" -var="GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}" -var="GOOGLE_CLOUD_ZONE=${GOOGLE_CLOUD_ZONE}"'
                 }
             }
         }
@@ -127,10 +124,7 @@ pipeline {
                         try {
                             echo "Attempt #${attempt} to apply Terraform..."
                             // Apply Terraform to create the infrastructure, passing the GOOGLE_APPLICATION_CREDENTIALS variable
-                            sh """
-                                export GOOGLE_APPLICATION_CREDENTIALS=${env.GOOGLE_APPLICATION_CREDENTIALS}
-                                terraform apply -auto-approve -var="frontend_image=${FRONTEND_IMAGE}" -var="backend_image=${BACKEND_IMAGE}" -var="GOOGLE_APPLICATION_CREDENTIALS=${env.GOOGLE_APPLICATION_CREDENTIALS}"
-                            """
+                            sh 'terraform apply -auto-approve -var="frontend_image=${FRONTEND_IMAGE}" -var="backend_image=${BACKEND_IMAGE}" -var="GOOGLE_APPLICATION_CREDENTIALS=${env.GOOGLE_APPLICATION_CREDENTIALS}" -var="GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}" -var="GOOGLE_CLOUD_ZONE=${GOOGLE_CLOUD_ZONE}"'
                             success = true
                         } catch (Exception e) {
                             if (attempt == retries) {
@@ -147,19 +141,31 @@ pipeline {
             }
         }
 
+        stage('Authenticate with GCloud') {
+            steps {
+                withCredentials([file(credentialsId: 'google-cloud-service-account-json', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
+                    script {
+                        // Authenticate with gcloud using the service account key
+                        sh 'gcloud auth activate-service-account --key-file=${GOOGLE_APPLICATION_CREDENTIALS}'
+                        sh 'gcloud config set project ${GOOGLE_CLOUD_PROJECT}'
+                    }
+                }
+            }
+        }
+
         stage('Deploying to Google Cloud') {
             steps {
                 script {
                     echo 'Deploying Docker containers to Google Cloud...'
                     // Assuming Terraform has set up the VM and firewall
-                    sh """
-                        gcloud compute instances describe my-docker-vm --zone=${GOOGLE_CLOUD_ZONE} || exit 1
-                        gcloud compute ssh my-docker-vm --zone=${GOOGLE_CLOUD_ZONE} --command="
+                    sh '''
+                        gcloud compute instances describe usenlease-docker-vm --zone=${GOOGLE_CLOUD_ZONE} || exit 1
+                        gcloud compute ssh usenlease-docker-vm --zone=${GOOGLE_CLOUD_ZONE} --command="
                             docker pull ${FRONTEND_IMAGE}:latest
                             docker pull ${BACKEND_IMAGE}:latest
                             docker run -d -p 8000:8000 ${FRONTEND_IMAGE}:latest
                             docker run -d -p 3000:3000 ${BACKEND_IMAGE}:latest"
-                    """
+                    '''
                 }
             }
         }
