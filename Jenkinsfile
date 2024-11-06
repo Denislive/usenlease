@@ -7,7 +7,6 @@ pipeline {
         GOOGLE_CLOUD_PROJECT = 'burnished-ether-439413-s1'
         GOOGLE_CLOUD_ZONE = 'us-central1-a'
         GOOGLE_APPLICATION_CREDENTIALS = credentials('google-cloud-service-account-json')
-        PATH+EXTRA = "/home/nelson-ngumo/google-cloud-sdk/bin" 
     }
 
     stages {
@@ -24,9 +23,12 @@ pipeline {
         stage('Check GCloud Installation') {
             steps {
                 script {
-                    // Check the version of Google Cloud SDK (gcloud)
-                    sh 'gcloud --version || exit 1'
-                    echo 'Google Cloud SDK is installed. Proceeding with the deployment...'
+                    // Update PATH to include Google Cloud SDK
+                    withEnv(["PATH+EXTRA=/home/nelson-ngumo/google-cloud-sdk/bin"]) {
+                        // Check the version of Google Cloud SDK (gcloud)
+                        sh 'gcloud --version || exit 1'
+                        echo 'Google Cloud SDK is installed. Proceeding with the deployment...'
+                    }
                 }
             }
         }
@@ -104,7 +106,7 @@ pipeline {
         stage('Deploy to Google Cloud') {
             steps {
                 script {
-                    echo 'Deploying Docker containers to Google Cloud.....'
+                    echo 'Deploying Docker containers to Google Cloud...'
                     // Assuming Terraform has set up the VM and firewall
                     sh '''
                         gcloud compute instances describe my-docker-vm --zone=${GOOGLE_CLOUD_ZONE} || exit 1
