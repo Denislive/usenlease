@@ -6,7 +6,7 @@ pipeline {
         BACKEND_IMAGE = 'ngumonelson123/backend-image'
         GOOGLE_CLOUD_PROJECT = 'burnished-ether-439413-s1'
         GOOGLE_CLOUD_ZONE = 'us-central1-a'
-        GOOGLE_APPLICATION_CREDENTIALS = credentials('google-cloud-service-account-json') // Use the credential ID from Jenkins
+        GOOGLE_APPLICATION_CREDENTIALS_PATH = '/home/nelson-ngumo/Documents/burnished-ether-439413-s1-579bee90267c.json'
     }
 
     stages {
