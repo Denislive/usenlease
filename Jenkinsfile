@@ -29,7 +29,7 @@ pipeline {
 
                     // Only append if it's not already in the PATH
                     if (!currentPath.contains(gcloudPath)) {
-                        withEnv(["PATH=${gcloudPath}:${env.PATH}"]) {
+                        withEnv(["PATH+EXTRA=${gcloudPath}"]) {
                             // Ensure gcloud has execute permissions
                             sh "chmod +x ${gcloudPath}/gcloud"
                             sh 'gcloud --version || exit 1'
