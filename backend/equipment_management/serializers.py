@@ -135,6 +135,9 @@ class CartSerializer(serializers.ModelSerializer):
         model = Cart
         fields = ['id', 'user', 'cart_total_price', 'total_cart_items', 'date_created', 'date_updated']
 
+    def create(self, validated_data):
+        print("validated data", validated_data)
+
 class CartItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = CartItem

@@ -2,6 +2,10 @@
 from rest_framework import viewsets, permissions
 from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.exceptions import AuthenticationFailed
+from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
+from django.utils.translation import gettext_lazy as _
 import json
 
 from rest_framework import status
@@ -18,6 +22,51 @@ from .serializers import (
     OrderSerializer,
     OrderItemSerializer
 )
+
+class JWTAuthenticationFromCookie(JWTAuthentication):
+    def authenticate(self, request):
+        access_token = request.COOKIES.get('token')  # Access token cookie
+        refresh_token = request.COOKIES.get('refresh')  # Refresh token cookie
+        
+        # If no access token is present, return None (unauthenticated)
+        if not access_token:
+            return None
+
+        try:
+            # Try to validate the access token
+            validated_token = self.get_validated_token(access_token)
+            return self.get_user(validated_token), validated_token
+        except InvalidToken:
+            # If the access token is expired or invalid, attempt to refresh using the refresh token
+            if refresh_token:
+                try:
+                    # Attempt to get a new access token using the refresh token
+                    refresh = RefreshToken(refresh_token)
+                    new_access_token = str(refresh.access_token)
+
+                    # Set the new access token in the cookies (or headers as needed)
+                    response = self.get_user_response(request)
+                    response.set_cookie('token', new_access_token, httponly=True, secure=True)
+                    
+                    
+                    # Validate the new access token
+                    validated_token = self.get_validated_token(new_access_token)
+                    return self.get_user(validated_token), validated_token
+                except TokenError as e:
+                    raise AuthenticationFailed(_('Token is invalid or expired.'))
+
+            # If no refresh token is available, raise an authentication error
+            raise AuthenticationFailed(_('Token is expired and no refresh token is provided.'))
+
+    def get_user_response(self, request):
+        """
+        Helper method to return the response object where the new access token can be set.
+        """
+        # The `request` object doesn't provide response, this method is just an example.
+        # You can adjust this method to work with your response handling logic.
+        from rest_framework.response import Response
+        return Response()
+
 
 
 from django.http import QueryDict
@@ -368,23 +417,54 @@ class ReviewViewSet(viewsets.ViewSet):
 
 
 class CartViewSet(viewsets.ViewSet):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthenticationFromCookie]
 
     def list(self, request):
-    
         try:
+            # Get the cart for the authenticated user
             cart = Cart.objects.get(user=request.user)
+            
+            # Get all cart items related to the cart
+            cart_items = CartItem.objects.filter(cart=cart)  # Corrected here
+            
+            # Serialize the cart data, including related cart items
             serializer = CartSerializer(cart)
-            return Response(serializer.data)
+            # Add cart_items to the serialized data
+            cart_data = serializer.data
+            cart_data['cart_items'] = CartItemSerializer(cart_items, many=True).data  # Ensure you have a CartItemSerializer
+            
+            return Response(cart_data)
+        
         except Cart.DoesNotExist:
             return Response([], status=status.HTTP_204_NO_CONTENT)
 
+
     def create(self, request):
-        self.permission_classes = [permissions.IsAuthenticated]
-        self.check_permissions(request)  # Ensure permission check is applied
+        # Ensure the user is authenticated
+        self.check_permissions(request)
+
+        # Retrieve or create a Cart for the authenticated user
         cart, created = Cart.objects.get_or_create(user=request.user)
-        serializer = CartSerializer(cart)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        # If cart items are provided in the request, update them
+        cart_items_data = request.data.get("cart_items", [])
+        print("cart items data", cart_items_data)
+        
+        for item_data in cart_items_data:
+            # Ensure each cart item belongs to the current cart and is added/updated properly
+            cart_item, created = CartItem.objects.update_or_create(
+                cart=cart,
+                defaults={
+                    'quantity': item_data.get("quantity"),
+                    'start_date': item_data.get("start_date"),
+                    'end_date': item_data.get("end_date"),
+                    'total': item_data.get("total"),
+                }
+            )
+        
+        # Serialize and return the updated cart
+        cart_serializer = CartSerializer(cart)
+        return Response(cart_serializer.data, status=status.HTTP_201_CREATED)
 
     def retrieve(self, request, pk=None):
         self.permission_classes = [permissions.IsAuthenticated]
