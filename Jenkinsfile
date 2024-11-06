@@ -159,30 +159,32 @@ pipeline {
             }
         }
 
-        stage('Deploying to Google Cloud') {
-            steps {
-                script {
-                    echo 'Deploying to Google Cloud...'
-                    sh '''#!/bin/bash
-                        gcloud compute instances create usenlease-site \
-                            --project=${GOOGLE_CLOUD_PROJECT} \
-                            --zone=${GOOGLE_CLOUD_ZONE} \
-                            --image-family=debian-11 \
-                            --image-project=debian-cloud \
-                            --tags=http-server,https-server \
-                            --metadata=startup-script='#!/bin/bash
-                                apt-get update
-                                apt-get install -y docker.io
-                                systemctl enable docker
-                                systemctl start docker
-                                docker pull ${FRONTEND_IMAGE}
-                                docker pull ${BACKEND_IMAGE}
-                                docker run -d -p 8000:8000 ${FRONTEND_IMAGE}
-                                docker run -d -p 3000:3000 ${BACKEND_IMAGE}'
-                    '''
-                }
-            }
+        stage('Deploy to Google Cloud') {
+    steps {
+        script {
+            echo 'Deploying to Google Cloud...'
+            sh '''#!/bin/bash
+                INSTANCE_NAME="usenlease-site"
+                gcloud compute instances delete $INSTANCE_NAME --project=${GOOGLE_CLOUD_PROJECT} --zone=${GOOGLE_CLOUD_ZONE} --quiet || true
+                gcloud compute instances create $INSTANCE_NAME \
+                    --project=${GOOGLE_CLOUD_PROJECT} \
+                    --zone=${GOOGLE_CLOUD_ZONE} \
+                    --image-family=debian-11 \
+                    --image-project=debian-cloud \
+                    --tags=http-server,https-server \
+                    --metadata=startup-script='#!/bin/bash
+                        apt-get update
+                        apt-get install -y docker.io
+                        systemctl enable docker
+                        systemctl start docker
+                        docker pull ${FRONTEND_IMAGE}
+                        docker pull ${BACKEND_IMAGE}
+                        docker run -d -p 8000:8000 ${FRONTEND_IMAGE}
+                        docker run -d -p 3000:3000 ${BACKEND_IMAGE}'
+            '''
         }
+    }
+}
 
         stage('Clean Up') {
             steps {
