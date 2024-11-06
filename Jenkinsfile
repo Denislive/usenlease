@@ -13,7 +13,7 @@ pipeline {
         stage('Check Docker Installation') {
             steps {
                 script {
-                    // Verify Docker installation, explicitly using bash shell
+                    // Use bash explicitly to check if Docker is installed
                     sh 'bash -c "docker --version || exit 1"'
                     echo 'Docker is installed. Proceeding with the build...'
                 }
@@ -32,6 +32,7 @@ pipeline {
                         withEnv(["PATH=${gcloudPath}:${env.PATH}"]) {
                             // Ensure gcloud has execute permissions
                             sh "chmod +x ${gcloudPath}/gcloud"
+                            // Use bash explicitly here
                             sh 'bash -c "gcloud --version || exit 1"'
                             echo 'Google Cloud SDK is installed. Proceeding with the deployment...'
                         }
@@ -39,6 +40,7 @@ pipeline {
                         echo 'Google Cloud SDK path already set. Proceeding...'
                         // Ensure gcloud has execute permissions if path is already set
                         sh "chmod +x ${gcloudPath}/gcloud"
+                        // Use bash explicitly here
                         sh 'bash -c "gcloud --version || exit 1"'
                     }
                 }
@@ -56,7 +58,8 @@ pipeline {
             steps {
                 script {
                     echo 'Building the frontend Docker image...'
-                    sh "docker build -t ${FRONTEND_IMAGE}:latest ./frontend"
+                    // Use bash explicitly here to build the Docker image
+                    sh "bash -c 'docker build -t ${FRONTEND_IMAGE}:latest ./frontend'"
                 }
             }
         }
@@ -65,7 +68,8 @@ pipeline {
             steps {
                 script {
                     echo 'Building the backend Docker image...'
-                    sh "docker build -t ${BACKEND_IMAGE}:latest ./backend"
+                    // Use bash explicitly here to build the Docker image
+                    sh "bash -c 'docker build -t ${BACKEND_IMAGE}:latest ./backend'"
                 }
             }
         }
@@ -76,7 +80,8 @@ pipeline {
                     echo 'Pushing frontend Docker image to Docker Hub...'
                     withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                         sh "docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}"
-                        sh "docker push ${FRONTEND_IMAGE}:latest"
+                        // Use bash explicitly here to push Docker image
+                        sh "bash -c 'docker push ${FRONTEND_IMAGE}:latest'"
                     }
                 }
             }
@@ -88,7 +93,8 @@ pipeline {
                     echo 'Pushing backend Docker image to Docker Hub...'
                     withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                         sh "docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}"
-                        sh "docker push ${BACKEND_IMAGE}:latest"
+                        // Use bash explicitly here to push Docker image
+                        sh "bash -c 'docker push ${BACKEND_IMAGE}:latest'"
                     }
                 }
             }
@@ -108,7 +114,7 @@ pipeline {
             steps {
                 script {
                     echo 'Running Terraform plan to see the changes...'
-                    // Run terraform plan to preview the changes, passing the GOOGLE_APPLICATION_CREDENTIALS variable
+                    // Use bash explicitly to run terraform plan
                     sh 'bash -c "terraform plan -var=\\"frontend_image=${FRONTEND_IMAGE}\\" -var=\\"backend_image=${BACKEND_IMAGE}\\" -var=\\"GOOGLE_APPLICATION_CREDENTIALS=${env.GOOGLE_APPLICATION_CREDENTIALS}\\" -var=\\"GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}\\" -var=\\"GOOGLE_CLOUD_ZONE=${GOOGLE_CLOUD_ZONE}\\""'
                 }
             }
@@ -123,7 +129,7 @@ pipeline {
                     while (attempt <= retries && !success) {
                         try {
                             echo "Attempt #${attempt} to apply Terraform..."
-                            // Apply Terraform to create the infrastructure, passing the GOOGLE_APPLICATION_CREDENTIALS variable
+                            // Use bash explicitly here to run terraform apply
                             sh 'bash -c "terraform apply -auto-approve -var=\\"frontend_image=${FRONTEND_IMAGE}\\" -var=\\"backend_image=${BACKEND_IMAGE}\\" -var=\\"GOOGLE_APPLICATION_CREDENTIALS=${env.GOOGLE_APPLICATION_CREDENTIALS}\\" -var=\\"GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}\\" -var=\\"GOOGLE_CLOUD_ZONE=${GOOGLE_CLOUD_ZONE}\\""'
                             success = true
                         } catch (Exception e) {
