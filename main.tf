@@ -1,14 +1,8 @@
 provider "google" {
-  credentials = file(var.GOOGLE_APPLICATION_CREDENTIALS)
+  credentials = file(env.GOOGLE_APPLICATION_CREDENTIALS)
   project     = "usenlease-docker-vm"
   region      = "us-central1"
   zone        = "us-central1-a"
-}
-
-variable "GOOGLE_APPLICATION_CREDENTIALS" {
-  description = "/home/nelson-ngumo/Documents/burnished-ether-439413-s1-579bee90267c.json"
-  type        = string
-  default     = "/run/secrets/GOOGLE_APPLICATION_CREDENTIALS"  # Path used by Jenkins
 }
 
 variable "frontend_image" {
