@@ -164,7 +164,7 @@ pipeline {
                 script {
                     echo 'Deploying to Google Cloud...'
                     sh '''#!/bin/bash
-                        gcloud compute instances create usenlease-docker-vm \
+                        gcloud compute instances create usenlease-site \
                             --project=${GOOGLE_CLOUD_PROJECT} \
                             --zone=${GOOGLE_CLOUD_ZONE} \
                             --image-family=debian-11 \
