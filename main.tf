@@ -1,6 +1,12 @@
+# Declare the GOOGLE_APPLICATION_CREDENTIALS variable
+variable "GOOGLE_APPLICATION_CREDENTIALS" {
+  description = "The path to the Google Cloud service account JSON file"
+  type        = string
+}
+
 # Specify the Terraform provider for Google Cloud
 provider "google" {
-  credentials = file(var.GOOGLE_APPLICATION_CREDENTIALS)
+  credentials = file(var.GOOGLE_APPLICATION_CREDENTIALS)  # Use the environment variable
   project     = "usenlease-docker-vm"
   region      = "us-central1"
   zone        = "us-central1-a"
