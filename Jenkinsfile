@@ -10,12 +10,21 @@ pipeline {
     }
 
     stages {
+        stage('Check Shell') {
+            steps {
+                script {
+                    // Ensure we are using bash
+                    sh 'echo "Current shell: $SHELL"'
+                }
+            }
+        }
+
         stage('Check Docker Installation') {
             steps {
                 script {
-                    // Use bash explicitly to check if Docker is installed
+                    echo 'Checking if Docker is installed...'
+                    // Force bash for Docker version check
                     sh 'bash -c "docker --version || exit 1"'
-                    echo 'Docker is installed. Proceeding with the build...'
                 }
             }
         }
@@ -23,26 +32,9 @@ pipeline {
         stage('Check GCloud Installation') {
             steps {
                 script {
-                    // Define Google Cloud SDK path
-                    def gcloudPath = '/usr/local/bin/google-cloud-sdk/bin'
-                    def currentPath = sh(script: 'echo $PATH', returnStdout: true).trim()
-
-                    // Only append if it's not already in the PATH
-                    if (!currentPath.contains(gcloudPath)) {
-                        withEnv(["PATH=${gcloudPath}:${env.PATH}"]) {
-                            // Ensure gcloud has execute permissions
-                            sh "chmod +x ${gcloudPath}/gcloud"
-                            // Use bash explicitly here
-                            sh 'bash -c "gcloud --version || exit 1"'
-                            echo 'Google Cloud SDK is installed. Proceeding with the deployment...'
-                        }
-                    } else {
-                        echo 'Google Cloud SDK path already set. Proceeding...'
-                        // Ensure gcloud has execute permissions if path is already set
-                        sh "chmod +x ${gcloudPath}/gcloud"
-                        // Use bash explicitly here
-                        sh 'bash -c "gcloud --version || exit 1"'
-                    }
+                    echo 'Checking if GCloud is installed...'
+                    // Force bash for GCloud version check
+                    sh 'bash -c "gcloud --version || exit 1"'
                 }
             }
         }
@@ -58,8 +50,8 @@ pipeline {
             steps {
                 script {
                     echo 'Building the frontend Docker image...'
-                    // Use bash explicitly here to build the Docker image
-                    sh "bash -c 'docker build -t ${FRONTEND_IMAGE}:latest ./frontend'"
+                    // Force bash for Docker build
+                    sh 'bash -c "docker build -t ${FRONTEND_IMAGE}:latest ./frontend"'
                 }
             }
         }
@@ -68,8 +60,8 @@ pipeline {
             steps {
                 script {
                     echo 'Building the backend Docker image...'
-                    // Use bash explicitly here to build the Docker image
-                    sh "bash -c 'docker build -t ${BACKEND_IMAGE}:latest ./backend'"
+                    // Force bash for Docker build
+                    sh 'bash -c "docker build -t ${BACKEND_IMAGE}:latest ./backend"'
                 }
             }
         }
@@ -79,9 +71,9 @@ pipeline {
                 script {
                     echo 'Pushing frontend Docker image to Docker Hub...'
                     withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        sh "docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}"
-                        // Use bash explicitly here to push Docker image
-                        sh "bash -c 'docker push ${FRONTEND_IMAGE}:latest'"
+                        sh 'docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}'
+                        // Force bash for Docker push
+                        sh 'bash -c "docker push ${FRONTEND_IMAGE}:latest"'
                     }
                 }
             }
@@ -92,9 +84,9 @@ pipeline {
                 script {
                     echo 'Pushing backend Docker image to Docker Hub...'
                     withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        sh "docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}"
-                        // Use bash explicitly here to push Docker image
-                        sh "bash -c 'docker push ${BACKEND_IMAGE}:latest'"
+                        sh 'docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}'
+                        // Force bash for Docker push
+                        sh 'bash -c "docker push ${BACKEND_IMAGE}:latest"'
                     }
                 }
             }
@@ -104,7 +96,7 @@ pipeline {
             steps {
                 script {
                     echo 'Initializing Terraform...'
-                    // Run terraform init to initialize the working directory
+                    // Force bash for terraform initialization
                     sh 'bash -c "terraform init"'
                 }
             }
@@ -114,7 +106,7 @@ pipeline {
             steps {
                 script {
                     echo 'Running Terraform plan to see the changes...'
-                    // Use bash explicitly to run terraform plan
+                    // Force bash for Terraform plan with necessary variable substitutions
                     sh 'bash -c "terraform plan -var=\\"frontend_image=${FRONTEND_IMAGE}\\" -var=\\"backend_image=${BACKEND_IMAGE}\\" -var=\\"GOOGLE_APPLICATION_CREDENTIALS=${env.GOOGLE_APPLICATION_CREDENTIALS}\\" -var=\\"GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}\\" -var=\\"GOOGLE_CLOUD_ZONE=${GOOGLE_CLOUD_ZONE}\\""'
                 }
             }
@@ -123,13 +115,13 @@ pipeline {
         stage('Set Up Infrastructure with Terraform') {
             steps {
                 script {
+                    echo 'Setting up infrastructure with Terraform...'
                     def retries = 3
                     def success = false
                     def attempt = 1
                     while (attempt <= retries && !success) {
                         try {
-                            echo "Attempt #${attempt} to apply Terraform..."
-                            // Use bash explicitly here to run terraform apply
+                            // Force bash for Terraform apply
                             sh 'bash -c "terraform apply -auto-approve -var=\\"frontend_image=${FRONTEND_IMAGE}\\" -var=\\"backend_image=${BACKEND_IMAGE}\\" -var=\\"GOOGLE_APPLICATION_CREDENTIALS=${env.GOOGLE_APPLICATION_CREDENTIALS}\\" -var=\\"GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}\\" -var=\\"GOOGLE_CLOUD_ZONE=${GOOGLE_CLOUD_ZONE}\\""'
                             success = true
                         } catch (Exception e) {
@@ -151,7 +143,7 @@ pipeline {
             steps {
                 withCredentials([file(credentialsId: 'google-cloud-service-account-json', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
                     script {
-                        // Authenticate with gcloud using the service account key
+                        // Force bash for Google Cloud authentication
                         sh 'bash -c "gcloud auth activate-service-account --key-file=${GOOGLE_APPLICATION_CREDENTIALS}"'
                         sh 'bash -c "gcloud config set project ${GOOGLE_CLOUD_PROJECT}"'
                     }
@@ -163,15 +155,9 @@ pipeline {
             steps {
                 script {
                     echo 'Deploying Docker containers to Google Cloud...'
-                    // Assuming Terraform has set up the VM and firewall
-                    sh '''
-                        bash -c "gcloud compute instances describe usenlease-docker-vm --zone=${GOOGLE_CLOUD_ZONE} || exit 1"
-                        bash -c "gcloud compute ssh usenlease-docker-vm --zone=${GOOGLE_CLOUD_ZONE} --command=\"
-                            docker pull ${FRONTEND_IMAGE}:latest
-                            docker pull ${BACKEND_IMAGE}:latest
-                            docker run -d -p 8000:8000 ${FRONTEND_IMAGE}:latest
-                            docker run -d -p 3000:3000 ${BACKEND_IMAGE}:latest\""
-                    '''
+                    // Force bash for Google Cloud deployment
+                    sh 'bash -c "gcloud compute instances describe usenlease-docker-vm --zone=${GOOGLE_CLOUD_ZONE} || exit 1"'
+                    sh 'bash -c "gcloud compute ssh usenlease-docker-vm --zone=${GOOGLE_CLOUD_ZONE} --command=\\"docker pull ${FRONTEND_IMAGE}:latest && docker pull ${BACKEND_IMAGE}:latest && docker run -d -p 8000:8000 ${FRONTEND_IMAGE}:latest && docker run -d -p 3000:3000 ${BACKEND_IMAGE}:latest\\""'
                 }
             }
         }
