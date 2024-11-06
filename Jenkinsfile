@@ -2,63 +2,20 @@ pipeline {
     agent any
 
     environment {
-        FRONTEND_IMAGE = 'ngumonelson123/frontend-image'
-        BACKEND_IMAGE = 'ngumonelson123/backend-image'
-        GOOGLE_CLOUD_PROJECT = 'burnished-ether-439413-s1'
-        GOOGLE_CLOUD_ZONE = 'us-central1-a'
-        GOOGLE_APPLICATION_CREDENTIALS = credentials('google-cloud-service-account-json') // Use the credential ID from Jenkins
+        FRONTEND_IMAGE = 'ngumonelson123/frontend-image'  // Frontend Docker image
+        BACKEND_IMAGE = 'ngumonelson123/backend-image'    // Backend Docker image
+        DOCKER_USERNAME = credentials('docker-username')  // Docker Hub username (ensure this is set up in Jenkins credentials)
+        DOCKER_PASSWORD = credentials('docker-password')  // Docker Hub password (ensure this is set up in Jenkins credentials)
     }
 
     stages {
-        stage('Check Shell') {
-            steps {
-                script {
-                    echo "Checking shell being used..."
-                    // Explicitly call bash to ensure we are using bash for this command
-                    sh '''#!/bin/bash
-                        echo "Current shell: $SHELL"
-                    '''
-                }
-            }
-        }
-
-        stage('Check Docker Installation') {
-            steps {
-                script {
-                    echo 'Checking if Docker is installed...'
-                    sh '''#!/bin/bash
-                        docker --version || exit 1
-                    '''
-                }
-            }
-        }
-
-        stage('Check GCloud Installation') {
-            steps {
-                script {
-                    echo 'Checking if GCloud is installed...'
-                    sh '''#!/bin/bash
-                        gcloud --version || exit 1
-                    '''
-                }
-            }
-        }
-
-        stage('Clone Repo') {
-            steps {
-                echo "Cloning the repository..."
-                git url: 'https://github.com/Denislive/usenlease.git'
-            }
-        }
-
         stage('Build Frontend Image') {
             steps {
                 script {
-                    echo 'Building the frontend Docker image...'
-                    sh '''#!/bin/bash
-                        FRONTEND_IMAGE="${env.FRONTEND_IMAGE}:latest"
-                        docker build -t $FRONTEND_IMAGE ./frontend
-                    '''
+                    echo "Building the frontend Docker image..."
+                    sh """
+                        docker build -t ${env.FRONTEND_IMAGE}:latest ./frontend
+                    """
                 }
             }
         }
@@ -66,11 +23,10 @@ pipeline {
         stage('Build Backend Image') {
             steps {
                 script {
-                    echo 'Building the backend Docker image...'
-                    sh '''#!/bin/bash
-                        BACKEND_IMAGE="${env.BACKEND_IMAGE}:latest"
-                        docker build -t $BACKEND_IMAGE ./backend
-                    '''
+                    echo "Building the backend Docker image..."
+                    sh """
+                        docker build -t ${env.BACKEND_IMAGE}:latest ./backend
+                    """
                 }
             }
         }
@@ -78,12 +34,12 @@ pipeline {
         stage('Push Frontend Image to Docker Hub') {
             steps {
                 script {
-                    echo 'Pushing frontend Docker image to Docker Hub...'
-                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        sh '''#!/bin/bash
-                            docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
-                            docker push ${FRONTEND_IMAGE}:latest
-                        '''
+                    echo "Pushing frontend Docker image to Docker Hub..."
+                    withCredentials([usernamePassword(credentialsId: 'docker-credentials', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                        sh """
+                            docker login -u ${env.DOCKER_USERNAME} -p ${env.DOCKER_PASSWORD}
+                            docker push ${env.FRONTEND_IMAGE}:latest
+                        """
                     }
                 }
             }
@@ -92,12 +48,12 @@ pipeline {
         stage('Push Backend Image to Docker Hub') {
             steps {
                 script {
-                    echo 'Pushing backend Docker image to Docker Hub...'
-                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        sh '''#!/bin/bash
-                            docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
-                            docker push ${BACKEND_IMAGE}:latest
-                        '''
+                    echo "Pushing backend Docker image to Docker Hub..."
+                    withCredentials([usernamePassword(credentialsId: 'docker-credentials', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                        sh """
+                            docker login -u ${env.DOCKER_USERNAME} -p ${env.DOCKER_PASSWORD}
+                            docker push ${env.BACKEND_IMAGE}:latest
+                        """
                     }
                 }
             }
@@ -106,10 +62,8 @@ pipeline {
         stage('Initialize Terraform') {
             steps {
                 script {
-                    echo 'Initializing Terraform...'
-                    sh '''#!/bin/bash
-                        terraform init
-                    '''
+                    echo "Initializing Terraform..."
+                    sh "terraform init"
                 }
             }
         }
@@ -117,13 +71,10 @@ pipeline {
         stage('Terraform Plan') {
             steps {
                 script {
-                    echo 'Running Terraform plan to see the changes...'
-                    // Run terraform plan to preview the changes, passing the GOOGLE_APPLICATION_CREDENTIALS variable
-                    sh '''#!/bin/bash
-                        terraform plan -var="GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}" \
-                        -var="GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}" \
-                        -var="GOOGLE_CLOUD_ZONE=${GOOGLE_CLOUD_ZONE}"
-                    '''
+                    echo "Running Terraform plan to see the changes..."
+                    sh """
+                        terraform plan -var="frontend_image=${env.FRONTEND_IMAGE}" -var="backend_image=${env.BACKEND_IMAGE}"
+                    """
                 }
             }
         }
@@ -131,13 +82,10 @@ pipeline {
         stage('Terraform Apply') {
             steps {
                 script {
-                    echo 'Applying Terraform changes...'
-                    // Run terraform apply to apply the changes
-                    sh '''#!/bin/bash
-                        terraform apply -var="GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}" \
-                        -var="GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}" \
-                        -var="GOOGLE_CLOUD_ZONE=${GOOGLE_CLOUD_ZONE}" -auto-approve
-                    '''
+                    echo "Applying Terraform configuration..."
+                    sh """
+                        terraform apply -auto-approve -var="frontend_image=${env.FRONTEND_IMAGE}" -var="backend_image=${env.BACKEND_IMAGE}"
+                    """
                 }
             }
         }
@@ -145,10 +93,10 @@ pipeline {
         stage('Authenticate with GCloud') {
             steps {
                 script {
-                    echo 'Authenticating with Google Cloud...'
-                    sh '''#!/bin/bash
-                        gcloud auth activate-service-account --key-file=${GOOGLE_APPLICATION_CREDENTIALS}
-                    '''
+                    echo "Authenticating with Google Cloud..."
+                    sh """
+                        gcloud auth activate-service-account --key-file=${GOOGLE_CREDENTIALS}
+                    """
                 }
             }
         }
@@ -156,39 +104,29 @@ pipeline {
         stage('Deploy to Google Cloud') {
             steps {
                 script {
-                    echo 'Deploying to Google Cloud...'
-                    sh '''#!/bin/bash
-                        gcloud compute instances create usenlease-docker-vm \
-                            --project=${GOOGLE_CLOUD_PROJECT} \
-                            --zone=${GOOGLE_CLOUD_ZONE} \
-                            --image-family=debian-11 \
-                            --image-project=debian-cloud \
-                            --tags=http-server,https-server \
-                            --metadata=startup-script='#!/bin/bash
-                                apt-get update
-                                apt-get install -y docker.io
-                                systemctl enable docker
-                                systemctl start docker
-                                docker pull ${FRONTEND_IMAGE}
-                                docker pull ${BACKEND_IMAGE}
-                                docker run -d -p 8000:8000 ${FRONTEND_IMAGE}
-                                docker run -d -p 3000:3000 ${BACKEND_IMAGE}'
-                    '''
+                    echo "Deploying to Google Cloud..."
+                    sh """
+                        # Your deployment commands for Google Cloud here
+                    """
                 }
             }
         }
 
         stage('Clean Up') {
             steps {
-                echo "Cleaning up..."
-                // Additional clean-up tasks can be added here if needed.
+                script {
+                    echo "Cleaning up..."
+                    // Add any necessary cleanup steps
+                }
             }
         }
 
         stage('Post Actions') {
             steps {
-                echo "Pipeline finished successfully!"
-                // Perform any necessary post-actions, like notifying users or sending alerts.
+                script {
+                    echo "Post actions after deployment"
+                    // Any post-deployment actions
+                }
             }
         }
     }
