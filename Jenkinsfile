@@ -74,7 +74,10 @@ pipeline {
             steps {
                 script {
                     echo 'Pushing frontend Docker image to Docker Hub...'
-                    sh "docker push ${FRONTEND_IMAGE}:latest"
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        sh "docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}"
+                        sh "docker push ${FRONTEND_IMAGE}:latest"
+                    }
                 }
             }
         }
@@ -83,7 +86,10 @@ pipeline {
             steps {
                 script {
                     echo 'Pushing backend Docker image to Docker Hub...'
-                    sh "docker push ${BACKEND_IMAGE}:latest"
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        sh "docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}"
+                        sh "docker push ${BACKEND_IMAGE}:latest"
+                    }
                 }
             }
         }
