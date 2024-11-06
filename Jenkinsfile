@@ -20,6 +20,16 @@ pipeline {
             }
         }
 
+        stage('Check GCloud Installation') {
+            steps {
+                script {
+                    // Check the version of Google Cloud SDK (gcloud)
+                    sh 'gcloud --version || exit 1'
+                    echo 'Google Cloud SDK is installed. Proceeding with the deployment...'
+                }
+            }
+        }
+
         stage('Clone Repo') {
             steps {
                 echo "Cloning the repository..."
@@ -111,11 +121,9 @@ pipeline {
     post {
         success {
             echo 'Pipeline completed successfully!'
-            //slackSend(channel: '#devops', color: 'good', message: "Build succeeded: ${currentBuild.fullDisplayName}")
         }
         failure {
             echo 'Pipeline failed.'
-            //slackSend(channel: '#devops', color: 'danger', message: "Build failed in stage: ${env.STAGE_NAME}")
             emailext(
                 subject: "Build Failure: ${currentBuild.fullDisplayName}",
                 body: "The pipeline has failed at stage ${env.STAGE_NAME}. Please check the logs for details.",
