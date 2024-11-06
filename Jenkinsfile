@@ -10,7 +10,7 @@ pipeline {
     }
 
     stages {
-        stage('Check Docker Installation') {
+        stage('Checking Docker Installation') {
             steps {
                 script {
                     // Verify Docker installation
