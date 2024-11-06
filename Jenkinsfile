@@ -94,6 +94,16 @@ pipeline {
             }
         }
 
+        stage('Initialize Terraform') {
+            steps {
+                script {
+                    echo 'Initializing Terraform...'
+                    // Run terraform init to initialize the working directory
+                    sh 'terraform init'
+                }
+            }
+        }
+
         stage('Set Up Infrastructure with Terraform') {
             steps {
                 script {
