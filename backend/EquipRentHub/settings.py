@@ -10,10 +10,11 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
-
 from pathlib import Path
 from datetime import timedelta
 from corsheaders.defaults import default_headers
+import os
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -23,26 +24,22 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'equiprentsecure-okgE-0f1jZv0y4FtyxOcOKwwgp3Ag65Q_WQxr4lxdmU='
+SECRET_KEY = os.getenv('SECRET_KEY', 'equiprentsecure-okgE-0f1jZv0y4FtyxOcOKwwgp3Ag65Q_WQxr4lxdmU=')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = ['*']
 
-
 LOGIN_URL = '/accounts/user/login'
-
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
-
 AUTH_USER_MODEL = 'user_management.User'
 
-STRIPE_PUBLIC_KEY = "pk_test_51PoseE050JE89jJG85ZUGTXvcXNgziBRdyCNzPydQ7ngbEAUCyOzF3Lvz7JkX8qePludxNIigvTMHwqotpRCrA4E00NJ7VgSfd"
-STRIPE_SECRET_KEY = "sk_test_51PoseE050JE89jJGUypP7IdYiTdb7bD1da6baheYVgmGSOqNbFUVR7KD04RWrq0WMTTtpI3vrxovwwA1PjCG5TLS00FkXZUgTc"
-STRIPE_WEBHOOK_SECRET = ""
-
+STRIPE_PUBLIC_KEY = os.getenv("STRIPE_PUBLIC_KEY", "pk_test_51PoseE050JE89jJG85ZUGTXvcXNgziBRdyCNzPydQ7ngbEAUCyOzF3Lvz7JkX8qePludxNIigvTMHwqotpRCrA4E00NJ7VgSfd")
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "sk_test_51PoseE050JE89jJGUypP7IdYiTdb7bD1da6baheYVgmGSOqNbFUVR7KD04RWrq0WMTTtpI3vrxovwwA1PjCG5TLS00FkXZUgTc")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
 
 # Application definition
 
@@ -64,8 +61,6 @@ INSTALLED_APPS = [
 
     'equipment_management.apps.EquipmentManagementConfig',
     'user_management.apps.UserManagementConfig',
-    
-
 ]
 
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
@@ -73,8 +68,8 @@ CRISPY_TEMPLATE_PACK = 'bootstrap4'
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
 ]
-# Rest jwt
 
+# Rest JWT
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -84,8 +79,7 @@ REST_FRAMEWORK = {
     ),
 }
 
-# Simple JWT settings 
-
+# Simple JWT settings
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
@@ -96,29 +90,24 @@ SIMPLE_JWT = {
     "AUTH_COOKIE_REFRESH": "refresh",
 }
 
-
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_HOST_USER = 'dennisgacharigachemi@gmail.com'
-EMAIL_HOST_PASSWORD = 'ehyh hqkb rpgf cuoo'  # Consider using environment variables for security
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', 'ehyh hqkb rpgf cuoo')  # Consider using environment variables for security
 EMAIL_USE_TLS = True
 
-
-#Security Settings
-# settings.py
+# Security Settings
 SESSION_COOKIE_SAMESITE = 'None'
 CSRF_COOKIE_SAMESITE = 'None'
 SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
-    # Not accessible via JavaScript
+CSRF_COOKIE_SECURE = True  # Not accessible via JavaScript
 CORS_ALLOW_CREDENTIALS = True  # This allows cookies to be sent with requests
 
 CORS_ALLOW_HEADERS = list(default_headers) + [
-    'content-type'
+    'content-type',
     'authorization',  # If you are using Bearer token or similar
     'X-CSRFToken',  # If you are sending CSRF token
 ]
-
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -137,7 +126,7 @@ TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [
-            BASE_DIR /"templates",
+            BASE_DIR / "templates",
         ],
         'APP_DIRS': True,
         'OPTIONS': {
@@ -153,17 +142,22 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'EquipRentHub.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+DATABASE_URL = os.getenv('DATABASE_URL')
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600, ssl_require=True)
     }
-}
-
+else:
+    # Fallback to SQLite3 if no DATABASE_URL is provided in the environment variables
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
@@ -183,7 +177,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
 
@@ -195,7 +188,6 @@ USE_I18N = True
 
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
@@ -205,7 +197,6 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media/'
-
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
