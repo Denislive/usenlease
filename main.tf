@@ -1,6 +1,6 @@
 # Specify the Terraform provider for Google Cloud
 provider "google" {
-  credentials = file("/home/nelson-ngumo/Documents/burnished-ether-439413-s1-579bee90267c.json")
+  credentials = file(var.GOOGLE_APPLICATION_CREDENTIALS)
   project     = "usenlease-docker-vm"
   region      = "us-central1"
   zone        = "us-central1-a"
