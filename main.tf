@@ -1,20 +1,12 @@
+# Specify the Terraform provider for Google Cloud
 provider "google" {
-  credentials = file(env.GOOGLE_APPLICATION_CREDENTIALS)
+  credentials = file(var.GOOGLE_APPLICATION_CREDENTIALS)
   project     = "usenlease-docker-vm"
   region      = "us-central1"
   zone        = "us-central1-a"
 }
 
-variable "frontend_image" {
-  description = "Docker image for the frontend"
-  type        = string
-}
-
-variable "backend_image" {
-  description = "Docker image for the backend"
-  type        = string
-}
-
+# Create the Google Compute instance
 resource "google_compute_instance" "default" {
   name         = "usenlease-docker-vm"
   machine_type = "e2-medium"
@@ -50,16 +42,17 @@ resource "google_compute_instance" "default" {
   }
 }
 
+# Create a firewall rule to allow HTTP/HTTPS traffic
 resource "google_compute_firewall" "default" {
   name    = "default-allow-http-https"
   network = "default"
 
   allow {
     protocol = "tcp"
-    ports    = ["80", "443", "8000", "3000"]
+    ports    = ["80", "443", "8000", "3000"]  # Allowing 8000 and 3000 for frontend and backend
   }
 
-  source_ranges = ["0.0.0.0/0"]
+  source_ranges = ["0.0.0.0/0"]  # Allows incoming traffic from any IP address.
 
   target_tags = ["http-server", "https-server"]
 }
