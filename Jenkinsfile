@@ -109,7 +109,10 @@ pipeline {
                 script {
                     echo 'Running Terraform plan to see the changes...'
                     // Run terraform plan to preview the changes, passing the GOOGLE_APPLICATION_CREDENTIALS variable
-                    sh 'terraform plan -var="frontend_image=${FRONTEND_IMAGE}" -var="backend_image=${BACKEND_IMAGE}" -var="GOOGLE_APPLICATION_CREDENTIALS=${env.GOOGLE_APPLICATION_CREDENTIALS}"'
+                    sh """
+                        export GOOGLE_APPLICATION_CREDENTIALS=${env.GOOGLE_APPLICATION_CREDENTIALS}
+                        terraform plan -var="frontend_image=${FRONTEND_IMAGE}" -var="backend_image=${BACKEND_IMAGE}" -var="GOOGLE_APPLICATION_CREDENTIALS=${env.GOOGLE_APPLICATION_CREDENTIALS}"
+                    """
                 }
             }
         }
@@ -124,7 +127,10 @@ pipeline {
                         try {
                             echo "Attempt #${attempt} to apply Terraform..."
                             // Apply Terraform to create the infrastructure, passing the GOOGLE_APPLICATION_CREDENTIALS variable
-                            sh 'terraform apply -auto-approve -var="frontend_image=${FRONTEND_IMAGE}" -var="backend_image=${BACKEND_IMAGE}" -var="GOOGLE_APPLICATION_CREDENTIALS=${env.GOOGLE_APPLICATION_CREDENTIALS}"'
+                            sh """
+                                export GOOGLE_APPLICATION_CREDENTIALS=${env.GOOGLE_APPLICATION_CREDENTIALS}
+                                terraform apply -auto-approve -var="frontend_image=${FRONTEND_IMAGE}" -var="backend_image=${BACKEND_IMAGE}" -var="GOOGLE_APPLICATION_CREDENTIALS=${env.GOOGLE_APPLICATION_CREDENTIALS}"
+                            """
                             success = true
                         } catch (Exception e) {
                             if (attempt == retries) {
@@ -146,14 +152,14 @@ pipeline {
                 script {
                     echo 'Deploying Docker containers to Google Cloud...'
                     // Assuming Terraform has set up the VM and firewall
-                    sh '''
+                    sh """
                         gcloud compute instances describe my-docker-vm --zone=${GOOGLE_CLOUD_ZONE} || exit 1
                         gcloud compute ssh my-docker-vm --zone=${GOOGLE_CLOUD_ZONE} --command="
                             docker pull ${FRONTEND_IMAGE}:latest
                             docker pull ${BACKEND_IMAGE}:latest
                             docker run -d -p 8000:8000 ${FRONTEND_IMAGE}:latest
                             docker run -d -p 3000:3000 ${BACKEND_IMAGE}:latest"
-                    '''
+                    """
                 }
             }
         }
