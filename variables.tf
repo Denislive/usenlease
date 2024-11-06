@@ -4,12 +4,12 @@ variable "GOOGLE_APPLICATION_CREDENTIALS" {
 }
 
 variable "frontend_image" {
-  description = "Docker image for the frontend"
+  description = "frontend-image"
   type        = string
 }
 
 variable "backend_image" {
-  description = "Docker image for the backend"
+  description = "backend-image"
   type        = string
 }
 
