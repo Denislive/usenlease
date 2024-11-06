@@ -141,7 +141,7 @@ pipeline {
             }
         }
 
-        stage('Deploying to Google Cloud') {
+        stage('Deploy to Google Cloud') {
             steps {
                 script {
                     echo 'Deploying Docker containers to Google Cloud...'
