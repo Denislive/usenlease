@@ -6,7 +6,7 @@ pipeline {
         BACKEND_IMAGE = 'ngumonelson123/backend-image'
         GOOGLE_CLOUD_PROJECT = 'burnished-ether-439413-s1'
         GOOGLE_CLOUD_ZONE = 'us-central1-a'
-        GOOGLE_APPLICATION_CREDENTIALS_PATH = '/home/nelson-ngumo/Documents/burnished-ether-439413-s1-579bee90267c.json'
+        GOOGLE_APPLICATION_CREDENTIALS = credentials('google-cloud-service-account-json') // Use the credential ID from Jenkins
     }
 
     stages {
@@ -108,8 +108,8 @@ pipeline {
             steps {
                 script {
                     echo 'Running Terraform plan to see the changes...'
-                    // Run terraform plan to preview the changes
-                    sh 'terraform plan -var="frontend_image=${FRONTEND_IMAGE}" -var="backend_image=${BACKEND_IMAGE}"'
+                    // Run terraform plan to preview the changes, passing the GOOGLE_APPLICATION_CREDENTIALS variable
+                    sh 'terraform plan -var="frontend_image=${FRONTEND_IMAGE}" -var="backend_image=${BACKEND_IMAGE}" -var="GOOGLE_APPLICATION_CREDENTIALS=${env.GOOGLE_APPLICATION_CREDENTIALS}"'
                 }
             }
         }
@@ -123,8 +123,8 @@ pipeline {
                     while (attempt <= retries && !success) {
                         try {
                             echo "Attempt #${attempt} to apply Terraform..."
-                            // Apply Terraform to create the infrastructure
-                            sh 'terraform apply -auto-approve -var="frontend_image=${FRONTEND_IMAGE}" -var="backend_image=${BACKEND_IMAGE}"'
+                            // Apply Terraform to create the infrastructure, passing the GOOGLE_APPLICATION_CREDENTIALS variable
+                            sh 'terraform apply -auto-approve -var="frontend_image=${FRONTEND_IMAGE}" -var="backend_image=${BACKEND_IMAGE}" -var="GOOGLE_APPLICATION_CREDENTIALS=${env.GOOGLE_APPLICATION_CREDENTIALS}"'
                             success = true
                         } catch (Exception e) {
                             if (attempt == retries) {
