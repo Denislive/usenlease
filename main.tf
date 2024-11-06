@@ -1,12 +1,17 @@
 # Specify the Terraform provider for Google Cloud
 provider "google" {
-  credentials = file(var.GOOGLE_APPLICATION_CREDENTIALS != "" ? var.GOOGLE_APPLICATION_CREDENTIALS : "")
+  credentials = file(var.GOOGLE_APPLICATION_CREDENTIALS)
   project     = "usenlease-docker-vm"
   region      = "us-central1"
   zone        = "us-central1-a"
 }
 
 # Declare the missing variables for frontend and backend image
+variable "GOOGLE_APPLICATION_CREDENTIALS" {
+  description = "Path to the Google Cloud credentials JSON file"
+  type        = string
+}
+
 variable "frontend_image" {
   description = "Docker image for the frontend"
   type        = string
@@ -15,13 +20,6 @@ variable "frontend_image" {
 variable "backend_image" {
   description = "Docker image for the backend"
   type        = string
-}
-
-# Declare the missing variable for Google Application Credentials
-variable "GOOGLE_APPLICATION_CREDENTIALS" {
-  description = "The path to the Google Cloud service account credentials file"
-  type        = string
-  default     = ""  # If no default is provided, you must pass it in via the command line or environment variable
 }
 
 # Create the Google Compute instance
@@ -71,6 +69,8 @@ resource "google_compute_firewall" "default" {
     protocol = "tcp"
     ports    = ["80", "443", "8000", "3000"]  # Allowing 8000 and 3000 for frontend and backend
   }
+
+  source_ranges = ["0.0.0.0/0"]  # Allows incoming traffic from any IP address.
 
   target_tags = ["http-server", "https-server"]
 }
