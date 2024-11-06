@@ -56,7 +56,7 @@ pipeline {
             steps {
                 script {
                     echo 'Building the frontend Docker image...'
-                    sh "docker build -t ${env.FRONTEND_IMAGE}:latest ./frontend"
+                    sh 'docker build -t $FRONTEND_IMAGE:latest ./frontend'
                 }
             }
         }
@@ -65,7 +65,7 @@ pipeline {
             steps {
                 script {
                     echo 'Building the backend Docker image...'
-                    sh "docker build -t ${env.BACKEND_IMAGE}:latest ./backend"
+                    sh 'docker build -t $BACKEND_IMAGE:latest ./backend'
                 }
             }
         }
@@ -75,8 +75,8 @@ pipeline {
                 script {
                     echo 'Pushing frontend Docker image to Docker Hub...'
                     withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        sh "docker login -u ${env.DOCKER_USERNAME} -p ${env.DOCKER_PASSWORD}"
-                        sh "docker push ${env.FRONTEND_IMAGE}:latest"
+                        sh 'docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD'
+                        sh 'docker push $FRONTEND_IMAGE:latest'
                     }
                 }
             }
@@ -87,8 +87,8 @@ pipeline {
                 script {
                     echo 'Pushing backend Docker image to Docker Hub...'
                     withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        sh "docker login -u ${env.DOCKER_USERNAME} -p ${env.DOCKER_PASSWORD}"
-                        sh "docker push ${env.BACKEND_IMAGE}:latest"
+                        sh 'docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD'
+                        sh 'docker push $BACKEND_IMAGE:latest'
                     }
                 }
             }
@@ -109,7 +109,7 @@ pipeline {
                 script {
                     echo 'Running Terraform plan to see the changes...'
                     // Run terraform plan to preview the changes, passing the GOOGLE_APPLICATION_CREDENTIALS variable
-                    sh 'terraform plan -var="frontend_image=${env.FRONTEND_IMAGE}" -var="backend_image=${env.BACKEND_IMAGE}" -var="GOOGLE_APPLICATION_CREDENTIALS=${env.GOOGLE_APPLICATION_CREDENTIALS}" -var="GOOGLE_CLOUD_PROJECT=${env.GOOGLE_CLOUD_PROJECT}" -var="GOOGLE_CLOUD_ZONE=${env.GOOGLE_CLOUD_ZONE}"'
+                    sh 'terraform plan -var=frontend_image=$FRONTEND_IMAGE -var=backend_image=$BACKEND_IMAGE -var=GOOGLE_APPLICATION_CREDENTIALS=$GOOGLE_APPLICATION_CREDENTIALS -var=GOOGLE_CLOUD_PROJECT=$GOOGLE_CLOUD_PROJECT -var=GOOGLE_CLOUD_ZONE=$GOOGLE_CLOUD_ZONE'
                 }
             }
         }
@@ -122,17 +122,17 @@ pipeline {
                     def attempt = 1
                     while (attempt <= retries && !success) {
                         try {
-                            echo "Attempt #${attempt} to apply Terraform..."
+                            echo "Attempt #$attempt to apply Terraform..."
                             // Apply Terraform to create the infrastructure, passing the GOOGLE_APPLICATION_CREDENTIALS variable
-                            sh 'terraform apply -auto-approve -var="frontend_image=${env.FRONTEND_IMAGE}" -var="backend_image=${env.BACKEND_IMAGE}" -var="GOOGLE_APPLICATION_CREDENTIALS=${env.GOOGLE_APPLICATION_CREDENTIALS}" -var="GOOGLE_CLOUD_PROJECT=${env.GOOGLE_CLOUD_PROJECT}" -var="GOOGLE_CLOUD_ZONE=${env.GOOGLE_CLOUD_ZONE}"'
+                            sh 'terraform apply -auto-approve -var=frontend_image=$FRONTEND_IMAGE -var=backend_image=$BACKEND_IMAGE -var=GOOGLE_APPLICATION_CREDENTIALS=$GOOGLE_APPLICATION_CREDENTIALS -var=GOOGLE_CLOUD_PROJECT=$GOOGLE_CLOUD_PROJECT -var=GOOGLE_CLOUD_ZONE=$GOOGLE_CLOUD_ZONE'
                             success = true
                         } catch (Exception e) {
                             if (attempt == retries) {
                                 currentBuild.result = 'FAILURE'
-                                echo "Terraform failed after ${retries} attempts."
+                                echo "Terraform failed after $retries attempts."
                                 throw e
                             }
-                            echo "Attempt #${attempt} failed. Retrying..."
+                            echo "Attempt #$attempt failed. Retrying..."
                             attempt++
                             sleep(time: 10, unit: 'SECONDS')  // Retry delay
                         }
@@ -146,8 +146,8 @@ pipeline {
                 withCredentials([file(credentialsId: 'google-cloud-service-account-json', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
                     script {
                         // Authenticate with gcloud using the service account key
-                        sh 'gcloud auth activate-service-account --key-file=${GOOGLE_APPLICATION_CREDENTIALS}'
-                        sh 'gcloud config set project ${env.GOOGLE_CLOUD_PROJECT}'
+                        sh 'gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS'
+                        sh 'gcloud config set project $GOOGLE_CLOUD_PROJECT'
                     }
                 }
             }
@@ -159,12 +159,12 @@ pipeline {
                     echo 'Deploying Docker containers to Google Cloud...'
                     // Assuming Terraform has set up the VM and firewall
                     sh '''
-                        gcloud compute instances describe usenlease-docker-vm --zone=${env.GOOGLE_CLOUD_ZONE} || exit 1
-                        gcloud compute ssh usenlease-docker-vm --zone=${env.GOOGLE_CLOUD_ZONE} --command="
-                            docker pull ${env.FRONTEND_IMAGE}:latest
-                            docker pull ${env.BACKEND_IMAGE}:latest
-                            docker run -d -p 8000:8000 ${env.FRONTEND_IMAGE}:latest
-                            docker run -d -p 3000:3000 ${env.BACKEND_IMAGE}:latest"
+                        gcloud compute instances describe usenlease-docker-vm --zone=$GOOGLE_CLOUD_ZONE || exit 1
+                        gcloud compute ssh usenlease-docker-vm --zone=$GOOGLE_CLOUD_ZONE --command="
+                            docker pull $FRONTEND_IMAGE:latest
+                            docker pull $BACKEND_IMAGE:latest
+                            docker run -d -p 8000:8000 $FRONTEND_IMAGE:latest
+                            docker run -d -p 3000:3000 $BACKEND_IMAGE:latest"
                     '''
                 }
             }
@@ -174,14 +174,3 @@ pipeline {
     post {
         success {
             echo 'Pipeline completed successfully!!'
-        }
-        failure {
-            echo 'Pipeline failed.'
-            emailext(
-                subject: "Build Failure: ${currentBuild.fullDisplayName}",
-                body: "The pipeline has failed at stage ${env.STAGE_NAME}. Please check the logs for details.",
-                to: 'nelsonmbui88@gmail.com'
-            )
-        }
-    }
-}
