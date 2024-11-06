@@ -56,7 +56,8 @@ pipeline {
                 script {
                     echo 'Building the frontend Docker image...'
                     sh '''#!/bin/bash
-                        docker build -t ${env.FRONTEND_IMAGE}:latest ./frontend
+                        FRONTEND_IMAGE="${env.FRONTEND_IMAGE}:latest"
+                        docker build -t $FRONTEND_IMAGE ./frontend
                     '''
                 }
             }
@@ -67,7 +68,8 @@ pipeline {
                 script {
                     echo 'Building the backend Docker image...'
                     sh '''#!/bin/bash
-                        docker build -t ${env.BACKEND_IMAGE}:latest ./backend
+                        BACKEND_IMAGE="${env.BACKEND_IMAGE}:latest"
+                        docker build -t $BACKEND_IMAGE ./backend
                     '''
                 }
             }
@@ -118,9 +120,9 @@ pipeline {
                     echo 'Running Terraform plan to see the changes...'
                     // Run terraform plan to preview the changes, passing the GOOGLE_APPLICATION_CREDENTIALS variable
                     sh '''#!/bin/bash
-                        terraform plan -var="GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}" \
-                                       -var="GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}" \
-                                       -var="GOOGLE_CLOUD_ZONE=${GOOGLE_CLOUD_ZONE}"
+                        terraform plan -var="GOOGLE_APPLICATION_CREDENTIALS=${env.GOOGLE_APPLICATION_CREDENTIALS}" \
+                        -var="GOOGLE_CLOUD_PROJECT=${env.GOOGLE_CLOUD_PROJECT}" \
+                        -var="GOOGLE_CLOUD_ZONE=${env.GOOGLE_CLOUD_ZONE}"
                     '''
                 }
             }
@@ -130,12 +132,11 @@ pipeline {
             steps {
                 script {
                     echo 'Applying Terraform changes...'
-                    // Apply the Terraform plan to provision the resources
+                    // Run terraform apply to apply the changes
                     sh '''#!/bin/bash
-                        terraform apply -auto-approve \
-                                       -var="GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}" \
-                                       -var="GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}" \
-                                       -var="GOOGLE_CLOUD_ZONE=${GOOGLE_CLOUD_ZONE}"
+                        terraform apply -var="GOOGLE_APPLICATION_CREDENTIALS=${env.GOOGLE_APPLICATION_CREDENTIALS}" \
+                        -var="GOOGLE_CLOUD_PROJECT=${env.GOOGLE_CLOUD_PROJECT}" \
+                        -var="GOOGLE_CLOUD_ZONE=${env.GOOGLE_CLOUD_ZONE}" -auto-approve
                     '''
                 }
             }
@@ -144,11 +145,9 @@ pipeline {
         stage('Authenticate with GCloud') {
             steps {
                 script {
-                    echo 'Authenticating with GCloud...'
-                    // Authenticate with Google Cloud using the service account key
+                    echo 'Authenticating with Google Cloud...'
                     sh '''#!/bin/bash
-                        gcloud auth activate-service-account --key-file=${GOOGLE_APPLICATION_CREDENTIALS}
-                        gcloud config set project ${GOOGLE_CLOUD_PROJECT}
+                        gcloud auth activate-service-account --key-file=${env.GOOGLE_APPLICATION_CREDENTIALS}
                     '''
                 }
             }
@@ -158,17 +157,22 @@ pipeline {
             steps {
                 script {
                     echo 'Deploying to Google Cloud...'
-                    // Assuming you're deploying Docker images or resources, like the Compute instance
                     sh '''#!/bin/bash
-                        # Example: Deploying a Docker container to a Google Compute Engine VM
-                        # This could involve gcloud commands, docker run, or any other required steps
-                        gcloud compute instances create ${env.FRONTEND_IMAGE}-vm \
-                            --image-family debian-11 --image-project debian-cloud \
-                            --zone ${GOOGLE_CLOUD_ZONE} \
-                            --tags http-server,https-server \
-                            --metadata startup-script="#!/bin/bash
-                            docker pull ${env.FRONTEND_IMAGE}:latest
-                            docker run -d -p 80:80 ${env.FRONTEND_IMAGE}:latest"
+                        gcloud compute instances create usenlease-docker-vm \
+                            --project=${env.GOOGLE_CLOUD_PROJECT} \
+                            --zone=${env.GOOGLE_CLOUD_ZONE} \
+                            --image-family=debian-11 \
+                            --image-project=debian-cloud \
+                            --tags=http-server,https-server \
+                            --metadata=startup-script='#!/bin/bash
+                                apt-get update
+                                apt-get install -y docker.io
+                                systemctl enable docker
+                                systemctl start docker
+                                docker pull ${env.FRONTEND_IMAGE}
+                                docker pull ${env.BACKEND_IMAGE}
+                                docker run -d -p 8000:8000 ${env.FRONTEND_IMAGE}
+                                docker run -d -p 3000:3000 ${env.BACKEND_IMAGE}'
                     '''
                 }
             }
@@ -176,35 +180,16 @@ pipeline {
 
         stage('Clean Up') {
             steps {
-                script {
-                    echo 'Cleaning up...'
-                    // Example cleanup steps, if necessary, like removing temporary files or resources
-                    sh '''#!/bin/bash
-                        docker system prune -f
-                    '''
-                }
+                echo "Cleaning up..."
+                // Additional clean-up tasks can be added here if needed.
             }
         }
 
         stage('Post Actions') {
             steps {
-                echo 'Sending email notification on failure...'
-                emailext(
-                    to: 'nelsonmbui88@gmail.com',
-                    subject: "Jenkins Pipeline: ${currentBuild.currentResult}",
-                    body: "The Jenkins pipeline has finished with status: ${currentBuild.currentResult}."
-                )
+                echo "Pipeline finished successfully!"
+                // Perform any necessary post-actions, like notifying users or sending alerts.
             }
-        }
-    }
-
-    post {
-        failure {
-            echo "Pipeline failed!"
-            // More failure handling or notifications can go here
-        }
-        success {
-            echo "Pipeline succeeded!"
         }
     }
 }
