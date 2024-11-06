@@ -81,8 +81,8 @@ pipeline {
                     echo 'Pushing frontend Docker image to Docker Hub...'
                     withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                         sh '''#!/bin/bash
-                            docker login -u ${env.DOCKER_USERNAME} -p ${env.DOCKER_PASSWORD}
-                            docker push ${env.FRONTEND_IMAGE}:latest
+                            docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
+                            docker push ${FRONTEND_IMAGE}:latest
                         '''
                     }
                 }
@@ -95,8 +95,8 @@ pipeline {
                     echo 'Pushing backend Docker image to Docker Hub...'
                     withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                         sh '''#!/bin/bash
-                            docker login -u ${env.DOCKER_USERNAME} -p ${env.DOCKER_PASSWORD}
-                            docker push ${env.BACKEND_IMAGE}:latest
+                            docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
+                            docker push ${BACKEND_IMAGE}:latest
                         '''
                     }
                 }
@@ -120,9 +120,9 @@ pipeline {
                     echo 'Running Terraform plan to see the changes...'
                     // Run terraform plan to preview the changes, passing the GOOGLE_APPLICATION_CREDENTIALS variable
                     sh '''#!/bin/bash
-                        terraform plan -var="GOOGLE_APPLICATION_CREDENTIALS=${env.GOOGLE_APPLICATION_CREDENTIALS}" \
-                        -var="GOOGLE_CLOUD_PROJECT=${env.GOOGLE_CLOUD_PROJECT}" \
-                        -var="GOOGLE_CLOUD_ZONE=${env.GOOGLE_CLOUD_ZONE}"
+                        terraform plan -var="GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}" \
+                        -var="GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}" \
+                        -var="GOOGLE_CLOUD_ZONE=${GOOGLE_CLOUD_ZONE}"
                     '''
                 }
             }
@@ -134,9 +134,9 @@ pipeline {
                     echo 'Applying Terraform changes...'
                     // Run terraform apply to apply the changes
                     sh '''#!/bin/bash
-                        terraform apply -var="GOOGLE_APPLICATION_CREDENTIALS=${env.GOOGLE_APPLICATION_CREDENTIALS}" \
-                        -var="GOOGLE_CLOUD_PROJECT=${env.GOOGLE_CLOUD_PROJECT}" \
-                        -var="GOOGLE_CLOUD_ZONE=${env.GOOGLE_CLOUD_ZONE}" -auto-approve
+                        terraform apply -var="GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}" \
+                        -var="GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}" \
+                        -var="GOOGLE_CLOUD_ZONE=${GOOGLE_CLOUD_ZONE}" -auto-approve
                     '''
                 }
             }
@@ -147,7 +147,7 @@ pipeline {
                 script {
                     echo 'Authenticating with Google Cloud...'
                     sh '''#!/bin/bash
-                        gcloud auth activate-service-account --key-file=${env.GOOGLE_APPLICATION_CREDENTIALS}
+                        gcloud auth activate-service-account --key-file=${GOOGLE_APPLICATION_CREDENTIALS}
                     '''
                 }
             }
@@ -159,8 +159,8 @@ pipeline {
                     echo 'Deploying to Google Cloud...'
                     sh '''#!/bin/bash
                         gcloud compute instances create usenlease-docker-vm \
-                            --project=${env.GOOGLE_CLOUD_PROJECT} \
-                            --zone=${env.GOOGLE_CLOUD_ZONE} \
+                            --project=${GOOGLE_CLOUD_PROJECT} \
+                            --zone=${GOOGLE_CLOUD_ZONE} \
                             --image-family=debian-11 \
                             --image-project=debian-cloud \
                             --tags=http-server,https-server \
@@ -169,10 +169,10 @@ pipeline {
                                 apt-get install -y docker.io
                                 systemctl enable docker
                                 systemctl start docker
-                                docker pull ${env.FRONTEND_IMAGE}
-                                docker pull ${env.BACKEND_IMAGE}
-                                docker run -d -p 8000:8000 ${env.FRONTEND_IMAGE}
-                                docker run -d -p 3000:3000 ${env.BACKEND_IMAGE}'
+                                docker pull ${FRONTEND_IMAGE}
+                                docker pull ${BACKEND_IMAGE}
+                                docker run -d -p 8000:8000 ${FRONTEND_IMAGE}
+                                docker run -d -p 3000:3000 ${BACKEND_IMAGE}'
                     '''
                 }
             }
