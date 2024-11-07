@@ -11,11 +11,11 @@ RUN npm install
 # Copy the rest of your application code
 COPY . .
 
-# Build the application
-RUN npm run build
+# Build the application (optional, if needed for production)
+RUN npm run build  # This step can be optional for development, but useful for production
 
 # Expose the port your app runs on
 EXPOSE 3000
 
-# Command to run your app
-CMD ["npm", "start"]
+# Command to run your app (development mode)
+CMD ["npm", "run", "dev"]
