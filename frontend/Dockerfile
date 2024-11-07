@@ -1,21 +1,18 @@
-# Use an official Node.js runtime as a parent image
-FROM node:14
+# Use an official Node.js image (preferably a version 16 or higher)
+FROM node:16
 
-# Set the working directory
+# Set working directory
 WORKDIR /app
 
 # Copy package.json and install dependencies
-COPY package*.json ./
+COPY package.json package-lock.json ./
 RUN npm install
 
-# Copy the rest of your application code
+# Copy the rest of the application code
 COPY . .
 
-# Build the application (optional, if needed for production)
-RUN npm run build  # This step can be optional for development, but useful for production
-
-# Expose the port your app runs on
+# Expose the app port
 EXPOSE 3000
 
-# Command to run your app (development mode)
+# Run the application
 CMD ["npm", "run", "dev"]

@@ -7,7 +7,6 @@ pipeline {
         GOOGLE_CLOUD_PROJECT = 'burnished-ether-439413-s1'
         GOOGLE_CLOUD_ZONE = 'us-central1-a'
         GOOGLE_APPLICATION_CREDENTIALS = credentials('google-cloud-service-account-json') // Use the credential ID from Jenkins
-        ENV_FILE = '.env' // Reference the updated .env file
     }
 
     stages {
@@ -15,6 +14,7 @@ pipeline {
             steps {
                 script {
                     echo "Checking shell being used..."
+                    // Explicitly call bash to ensure we are using bash for this command
                     sh '''#!/bin/bash
                         echo "Current shell: $SHELL"
                     '''
@@ -28,17 +28,6 @@ pipeline {
                     echo 'Checking if Docker is installed...'
                     sh '''#!/bin/bash
                         docker --version || exit 1
-                    '''
-                }
-            }
-        }
-
-        stage('Check Docker Compose Installation') {
-            steps {
-                script {
-                    echo 'Checking if Docker Compose is installed...'
-                    sh '''#!/bin/bash
-                        docker-compose --version || exit 1
                     '''
                 }
             }
@@ -62,16 +51,25 @@ pipeline {
             }
         }
 
-        stage('Build and Run Containers with Docker Compose') {
+        stage('Build Frontend Image') {
             steps {
                 script {
-                    echo 'Building and running containers using Docker Compose...'
+                    echo 'Building the frontend Docker image...'
                     sh '''#!/bin/bash
-                        # Use the updated .env file for environment configuration
-                        cp ${WORKSPACE}/.env .env
+                        FRONTEND_IMAGE="${env.FRONTEND_IMAGE}:latest"
+                        docker build -t $FRONTEND_IMAGE ./frontend
+                    '''
+                }
+            }
+        }
 
-                        # Build the services defined in docker-compose.yml
-                        docker-compose -f docker-compose.yml up --build -d
+        stage('Build Backend Image') {
+            steps {
+                script {
+                    echo 'Building the backend Docker image...'
+                    sh '''#!/bin/bash
+                        BACKEND_IMAGE="${env.BACKEND_IMAGE}:latest"
+                        docker build -t $BACKEND_IMAGE ./backend
                     '''
                 }
             }
@@ -161,32 +159,32 @@ pipeline {
             }
         }
 
-        stage('Deploying to Google Cloud') {
-            steps {
-                script {
-                    echo 'Deploy to Google Cloud...'
-                    sh '''#!/bin/bash
-                        INSTANCE_NAME="usenlease-site"
-                        gcloud compute instances delete $INSTANCE_NAME --project=${GOOGLE_CLOUD_PROJECT} --zone=${GOOGLE_CLOUD_ZONE} --quiet || true
-                        gcloud compute instances create $INSTANCE_NAME \
-                            --project=${GOOGLE_CLOUD_PROJECT} \
-                            --zone=${GOOGLE_CLOUD_ZONE} \
-                            --image-family=debian-11 \
-                            --image-project=debian-cloud \
-                            --tags=http-server,https-server \
-                            --metadata=startup-script='#!/bin/bash
-                                apt-get update
-                                apt-get install -y docker.io
-                                systemctl enable docker
-                                systemctl start docker
-                                docker pull ${FRONTEND_IMAGE}
-                                docker pull ${BACKEND_IMAGE}
-                                docker run -d -p 8000:8000 ${FRONTEND_IMAGE}
-                                docker run -d -p 3000:3000 ${BACKEND_IMAGE}'
-                    '''
-                }
-            }
+        stage('Deploy to Google Cloud') {
+    steps {
+        script {
+            echo 'Deploy to Google Cloud...'
+            sh '''#!/bin/bash
+                INSTANCE_NAME="usenlease-site"
+                gcloud compute instances delete $INSTANCE_NAME --project=${GOOGLE_CLOUD_PROJECT} --zone=${GOOGLE_CLOUD_ZONE} --quiet || true
+                gcloud compute instances create $INSTANCE_NAME \
+                    --project=${GOOGLE_CLOUD_PROJECT} \
+                    --zone=${GOOGLE_CLOUD_ZONE} \
+                    --image-family=debian-11 \
+                    --image-project=debian-cloud \
+                    --tags=http-server,https-server \
+                    --metadata=startup-script='#!/bin/bash
+                        apt-get update
+                        apt-get install -y docker.io
+                        systemctl enable docker
+                        systemctl start docker
+                        docker pull ${FRONTEND_IMAGE}
+                        docker pull ${BACKEND_IMAGE}
+                        docker run -d -p 8000:8000 ${FRONTEND_IMAGE}
+                        docker run -d -p 3000:3000 ${BACKEND_IMAGE}'
+            '''
         }
+    }
+}
 
         stage('Clean Up') {
             steps {

@@ -1,37 +1,67 @@
-version: '3.8'
+version: "3.8"
 
 services:
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+
+  # Frontend microservice
+  ngumo-client:
+    image: ngumonelson123/frontend-image:latest
+    build: ./frontend
+    container_name: usenlease-frontend
+    stdin_open: true
+    tty: true
     ports:
       - "3000:3000"
-    depends_on:
-      - backend
+    depends_on: 
+      - usenlease-backend
+    networks:
+      - app-net
     env_file:
-      - .env  # Load environment variables for the frontend (if needed)
+      - .env  # This references your .env file if you want to inject environment variables for the client
 
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+  # Backend microservice
+  ngumo-backend:
+    image: ngumonelson123/backend-image:latest
+    build: ./backend
+    container_name: usenlease-backend
+    stdin_open: true
+    tty: true
+    restart: always
     ports:
       - "8000:8000"
-    depends_on:
-      - mongodb
+    depends_on: 
+      - app-ip-mongo
+    networks:
+      - app-net
     env_file:
-      - .env  # Load environment variables for the backend
+      - .env  # This references your .env file if you want to inject environment variables for the backend
 
-  mongodb:
-    image: mongo:latest
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: "${MONGO_INITDB_ROOT_USERNAME}" # From .env
-      MONGO_INITDB_ROOT_PASSWORD: "${MONGO_INITDB_ROOT_PASSWORD}" # From .env
+  # MongoDB Database microservice
+  app-ip-mongo:
+    image: mongo
+    container_name: app-mongo
     ports:
-      - "27017:27017"  # Exposes MongoDB
+      - "27017:27017"
+    networks:
+      - app-net
     volumes:
-      - mongo_data:/data/db  # Persistent storage for MongoDB
+      - type: volume
+        source: app-mongo-data
+        target: /data/db
+    env_file:
+      - .env  # You can add environment variables for MongoDB if required, such as authentication credentials
 
+# Network configuration
+networks:
+  app-net:
+    name: app-net
+    driver: bridge
+    attachable: true
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16 
+          ip_range: 172.20.0.0/16 
+
+# Docker volume for persistent data
 volumes:
-  mongo_data:  # Defines a volume for MongoDB data persistence
+  app-mongo-data:
+    driver: local
