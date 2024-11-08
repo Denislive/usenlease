@@ -1,9 +1,12 @@
-version: "3.8"
+version: '3.8'
 
 services:
 
   # Frontend microservice
   usenlease-frontend:
+    build:
+      context: ./frontend  # Path to your frontend directory
+      dockerfile: Dockerfile # Specify if your Dockerfile is named something else
     image: ngumonelson123/frontend-image:latest
     container_name: usenlease-frontend
     stdin_open: true
@@ -19,6 +22,9 @@ services:
 
   # Backend microservice
   usenlease-backend:
+    build:
+      context: ./backend  # Path to your backend directory
+      dockerfile: Dockerfile # Specify if your Dockerfile is named something else
     image: ngumonelson123/backend-image:latest
     container_name: usenlease-backend
     stdin_open: true

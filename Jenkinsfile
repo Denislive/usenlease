@@ -55,6 +55,39 @@ pipeline {
                 }
             }
         }
+        
+        // Stage to build and push the Docker images to Docker Hub
+        stage('Push Frontend Image to Docker Hub') {
+            steps {
+                script {
+                    echo 'Pushing frontend Docker image to Docker Hub...'
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        sh '''#!/bin/bash
+                            docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
+                            docker build -t ${FRONTEND_IMAGE}:latest ./frontend
+                            docker push ${FRONTEND_IMAGE}:latest
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Push Backend Image to Docker Hub') {
+            steps {
+                script {
+                    echo 'Pushing backend Docker image to Docker Hub...'
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        sh '''#!/bin/bash
+                            docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
+                            docker build -t ${BACKEND_IMAGE}:latest ./backend
+                            docker push ${BACKEND_IMAGE}:latest
+                        '''
+                    }
+                }
+            }
+        }
+
+        // Docker Compose Build and Push stage to handle images for both frontend and backend
         stage('Build and Push Docker Images') {
             steps {
                 script {
@@ -66,6 +99,7 @@ pipeline {
                 }
             }
         }
+
         stage('Initialize Terraform') {
             steps {
                 script {
@@ -116,7 +150,7 @@ pipeline {
                 }
             }
         }
-        stage('Deploying to Google Cloud') {
+        stage('Deploy to Google Cloud') {
             steps {
                 script {
                     echo 'Deploy to Google Cloud...'
@@ -134,17 +168,20 @@ pipeline {
                         apt-get install -y docker.io
                         systemctl enable docker
                         systemctl start docker
+                        docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
                         docker-compose -f /home/nelson-ngumo/DevOps07/usenlease/docker-compose.yaml up -d'
                     '''
                 }
             }
         }
+
         stage('Clean Up') {
             steps {
                 echo "Cleaning up..."
                 // Add any necessary cleanup commands here
             }
         }
+
         stage('Post Actions') {
             steps {
                 echo "Pipeline finished successfully!"
