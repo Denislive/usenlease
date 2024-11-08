@@ -19,5 +19,5 @@ COPY . .
 # Expose port 8000 for the application
 EXPOSE 8000
 
-# Specify the command to run your application with Gunicorn
-CMD ["gunicorn", "EquipRentHub.wsgi:application", "--bind", "0.0.0.0:8000"]
+# Run migrations and then start Gunicorn
+CMD ["sh", "-c", "python manage.py migrate && gunicorn EquipRentHub.wsgi:application --bind 0.0.0.0:8000"]
