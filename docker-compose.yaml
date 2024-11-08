@@ -3,7 +3,7 @@ version: "3.8"
 services:
 
   # Frontend microservice
-  ngumo-client:
+  usenlease-frontend:
     image: ngumonelson123/frontend-image:latest
     container_name: usenlease-frontend
     stdin_open: true
@@ -18,7 +18,7 @@ services:
       - .env
 
   # Backend microservice
-  ngumo-backend:
+  usenlease-backend:
     image: ngumonelson123/backend-image:latest
     container_name: usenlease-backend
     stdin_open: true
