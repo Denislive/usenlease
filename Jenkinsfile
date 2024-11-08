@@ -113,6 +113,15 @@ pipeline {
                 }
             }
         }
+         stage('Terraform Taint (if needed)') {
+            steps {
+                script {
+                    // Optional: Taint resources to force recreation
+                    sh 'terraform taint google_compute_instance.default'
+                    sh 'terraform taint google_compute_firewall.default'
+                }
+            }
+        }
 
         stage('Terraform Plan') {
             steps {
@@ -179,8 +188,8 @@ pipeline {
                         systemctl start docker
                         docker pull ${FRONTEND_IMAGE}
                         docker pull ${BACKEND_IMAGE}
-                        docker run -d -p 8000:8000 ${FRONTEND_IMAGE}
-                        docker run -d -p 3000:3000 ${BACKEND_IMAGE}'
+                        docker run -d -p 3000:3000 ${FRONTEND_IMAGE}
+                        docker run -d -p 8000:8000 ${BACKEND_IMAGE}'
             '''
         }
     }
