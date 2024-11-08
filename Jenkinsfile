@@ -126,7 +126,7 @@ pipeline {
         stage('Terraform Plan') {
             steps {
                 script {
-                    echo 'Running Terraform plan to see the changes...'
+                    echo 'Running Terraform plan to see the changes.....'
                     // Pass the image variables explicitly to Terraform
                     sh '''#!/bin/bash
                         terraform plan \
