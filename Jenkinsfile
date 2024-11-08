@@ -193,9 +193,9 @@ pipeline {
                 script {
                     echo 'Building and running the Django application using Docker Compose...'
                     sh '''#!/bin/bash
-                    sudo docker-compose up --build -d
-                    sudo docker-compose exec web python manage.py migrate
-                    sudo docker-compose exec web python manage.py runserver 0.0.0.0:8000
+                     docker-compose up --build -d
+                     docker-compose exec web python manage.py migrate
+                     docker-compose exec web python manage.py runserver 0.0.0.0:8000
                     '''
                 }
             }
