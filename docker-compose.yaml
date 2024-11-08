@@ -5,7 +5,6 @@ services:
   # Frontend microservice
   ngumo-client:
     image: ngumonelson123/frontend-image:latest
-    build: ./frontend
     container_name: usenlease-frontend
     stdin_open: true
     tty: true
@@ -16,12 +15,11 @@ services:
     networks:
       - app-net
     env_file:
-      - .env  # This references your .env file if you want to inject environment variables for the client
+      - .env
 
   # Backend microservice
   ngumo-backend:
     image: ngumonelson123/backend-image:latest
-    build: ./backend
     container_name: usenlease-backend
     stdin_open: true
     tty: true
@@ -33,7 +31,7 @@ services:
     networks:
       - app-net
     env_file:
-      - .env  # This references your .env file if you want to inject environment variables for the backend
+      - .env
 
   # MongoDB Database microservice
   app-ip-mongo:
@@ -48,14 +46,12 @@ services:
         source: app-mongo-data
         target: /data/db
     env_file:
-      - .env  # You can add environment variables for MongoDB if required, such as authentication credentials
+      - .env 
 
 # Network configuration
 networks:
   app-net:
-    name: app-net
     driver: bridge
-    attachable: true
     ipam:
       config:
         - subnet: 172.20.0.0/16 

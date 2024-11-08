@@ -8,7 +8,7 @@ provider "google" {
 
 # Create the Google Compute instance
 resource "google_compute_instance" "default" {
-  name         = "usenlease-site"
+  name         = "usenlease-website"
   machine_type = "e2-medium"
   zone         = var.GOOGLE_CLOUD_ZONE
   
