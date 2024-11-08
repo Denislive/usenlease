@@ -8,6 +8,18 @@ pipeline {
         GOOGLE_APPLICATION_CREDENTIALS = credentials('google-cloud-service-account-json')
     }
     stages {
+        stage('Setup') {
+            steps {
+                echo "Creating .env file"
+                sh '''
+                echo "GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}" > .env
+                echo "GOOGLE_CLOUD_ZONE=${GOOGLE_CLOUD_ZONE}" >> .env
+                echo "GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}" >> .env
+                echo "FRONTEND_IMAGE=${FRONTEND_IMAGE}" >> .env
+                echo "BACKEND_IMAGE=${BACKEND_IMAGE}" >> .env
+                '''
+            }
+        }
         stage('Check Shell') {
             steps {
                 script {
