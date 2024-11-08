@@ -151,7 +151,7 @@ WSGI_APPLICATION = 'EquipRentHub.wsgi.application'
 DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': '/app/db.sqlite3',  # Directly reference the mounted path in the container
+             'NAME': BASE_DIR / "db.sqlite3",  # or a custom path
         }
     }
 

@@ -55,7 +55,7 @@ pipeline {
                 }
             }
         }
-        
+
         // Stage to build and push the Docker images to Docker Hub
         stage('Push Frontend Image to Docker Hub') {
             steps {
@@ -170,6 +170,20 @@ pipeline {
                         systemctl start docker
                         docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
                         docker-compose -f /home/nelson-ngumo/DevOps07/usenlease/docker-compose.yaml up -d'
+                    '''
+                }
+            }
+        }
+
+        // Build and Run should come after the deployment
+        stage('Build and Run') {
+            steps {
+                script {
+                    echo 'Building and running the Django application using Docker Compose...'
+                    sh '''#!/bin/bash
+                    docker-compose up --build -d
+                    docker-compose exec web python manage.py migrate
+                    docker-compose exec web python manage.py runserver 0.0.0.0:8000
                     '''
                 }
             }

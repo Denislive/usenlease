@@ -1,4 +1,4 @@
-version: '3.8'  # Add version if not already present
+version: '3.8'
 
 services:
   # Frontend microservice
@@ -26,19 +26,21 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./db.sqlite3:/app/db.sqlite3  # Volume to persist the SQLite3 database
+      - /home/nelson-ngumo/DevOps07/usenlease/db.sqlite3:/app/db.sqlite3  # Mount the SQLite3 database from your local machine
+      - ./backend:/app/backend  # Mount the backend directory only
     networks:
       - app-net
     env_file:
       - .env
+    command: |
+      bash -c "cd /app/backend && python manage.py migrate && python manage.py runserver 0.0.0.0:8000"  # Navigate to backend and run migrations
 
 # Network configuration
 networks:
   app-net:
     driver: bridge
 
-# Docker volume for persistent data (no need for mongo volume as SQLite is file-based)
+# Docker volume for persistent data (optional)
 volumes:
-  # SQLite volume persistence (optional)
   sqlite-data:
     driver: local
