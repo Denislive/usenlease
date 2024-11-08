@@ -35,15 +35,24 @@ resource "google_compute_instance" "default" {
       systemctl enable docker
       systemctl start docker
 
+      # Ensure the SQLite3 file and directory exist
+      if [ ! -f /home/debian/db.sqlite3 ]; then
+        echo "Creating SQLite3 database file..." > /var/log/startup.log
+        touch /home/debian/db.sqlite3
+      fi
+
+      # Pull the frontend and backend images
       echo "Pulling frontend image..." > /var/log/startup.log
       docker pull ${var.frontend_image} >> /var/log/startup.log 2>&1
       echo "Pulling backend image..." >> /var/log/startup.log
       docker pull ${var.backend_image} >> /var/log/startup.log 2>&1
 
+      # Start frontend and backend containers with SQLite3 volume for backend
       echo "Starting frontend container..." >> /var/log/startup.log
       docker run -d -p 3000:3000 ${var.frontend_image} >> /var/log/startup.log 2>&1
-      echo "Starting backend container..." >> /var/log/startup.log
-      docker run -d -p 8000:8000 ${var.backend_image} >> /var/log/startup.log 2>&1
+
+      echo "Starting backend container with volume for SQLite3..." >> /var/log/startup.log
+      docker run -d -p 8000:8000 -v /home/debian/db.sqlite3:/app/db.sqlite3 ${var.backend_image} >> /var/log/startup.log 2>&1
     EOT
   }
 }

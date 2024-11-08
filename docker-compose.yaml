@@ -1,19 +1,15 @@
-version: '3.8'
+version: '3.8'  # Add version if not already present
 
 services:
-
   # Frontend microservice
   usenlease-frontend:
-    build:
-      context: ./frontend  # Path to your frontend directory
-      dockerfile: Dockerfile # Specify if your Dockerfile is named something else
     image: ngumonelson123/frontend-image:latest
     container_name: usenlease-frontend
     stdin_open: true
     tty: true
     ports:
       - "3000:3000"
-    depends_on: 
+    depends_on:
       - usenlease-backend
     networks:
       - app-net
@@ -22,9 +18,6 @@ services:
 
   # Backend microservice
   usenlease-backend:
-    build:
-      context: ./backend  # Path to your backend directory
-      dockerfile: Dockerfile # Specify if your Dockerfile is named something else
     image: ngumonelson123/backend-image:latest
     container_name: usenlease-backend
     stdin_open: true
@@ -32,38 +25,20 @@ services:
     restart: always
     ports:
       - "8000:8000"
-    depends_on: 
-      - app-ip-mongo
+    volumes:
+      - ./db.sqlite3:/app/db.sqlite3  # Volume to persist the SQLite3 database
     networks:
       - app-net
     env_file:
       - .env
 
-  # MongoDB Database microservice
-  app-ip-mongo:
-    image: mongo
-    container_name: app-mongo
-    ports:
-      - "27017:27017"
-    networks:
-      - app-net
-    volumes:
-      - type: volume
-        source: app-mongo-data
-        target: /data/db
-    env_file:
-      - .env 
-
 # Network configuration
 networks:
   app-net:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16 
-          ip_range: 172.20.0.0/16 
 
-# Docker volume for persistent data
+# Docker volume for persistent data (no need for mongo volume as SQLite is file-based)
 volumes:
-  app-mongo-data:
+  # SQLite volume persistence (optional)
+  sqlite-data:
     driver: local
