@@ -113,15 +113,15 @@ pipeline {
                 }
             }
         }
-         stage('Terraform Taint (if needed)') {
-            steps {
-                script {
-                    // Optional: Taint resources to force recreation
-                    sh 'terraform taint google_compute_instance.default'
-                    sh 'terraform taint google_compute_firewall.default'
-                }
-            }
-        }
+        //  stage('Terraform Taint (if needed)') {
+        //     steps {
+        //         script {
+        //             // Optional: Taint resources to force recreation
+        //             sh 'terraform taint google_compute_instance.default'
+        //             sh 'terraform taint google_compute_firewall.default'
+        //         }
+        //     }
+        // }
 
         stage('Terraform Plan') {
             steps {
