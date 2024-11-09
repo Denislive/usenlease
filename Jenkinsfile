@@ -175,7 +175,7 @@ pipeline {
                 }
             }
         }
-        stage('Deploying to Google Cloud') {
+        stage('Deploy to Google Cloud') {
             steps {
                 script {
                     echo 'Deploying to Google Cloud...'
