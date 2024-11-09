@@ -6,6 +6,10 @@ pipeline {
         GOOGLE_CLOUD_PROJECT = 'burnished-ether-439413-s1'
         GOOGLE_CLOUD_ZONE = 'us-central1-a'
         GOOGLE_APPLICATION_CREDENTIALS = credentials('google-cloud-service-account-json')
+        // PostgreSQL credentials from secrets.tfvars (ensure you load them securely)
+        POSTGRES_USER = credentials('postgres-user')
+        POSTGRES_PASSWORD = credentials('postgres-password')
+        POSTGRES_DB = 'usenlease_db'
     }
     stages {
         stage('Setup') {
@@ -17,6 +21,9 @@ pipeline {
                 echo "GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}" >> .env
                 echo "FRONTEND_IMAGE=${FRONTEND_IMAGE}" >> .env
                 echo "BACKEND_IMAGE=${BACKEND_IMAGE}" >> .env
+                echo "POSTGRES_USER=${POSTGRES_USER}" >> .env
+                echo "POSTGRES_PASSWORD=${POSTGRES_PASSWORD}" >> .env
+                echo "POSTGRES_DB=${POSTGRES_DB}" >> .env
                 '''
             }
         }
@@ -132,7 +139,10 @@ pipeline {
                     -var="backend_image=${BACKEND_IMAGE}" \
                     -var="GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}" \
                     -var="GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}" \
-                    -var="GOOGLE_CLOUD_ZONE=${GOOGLE_CLOUD_ZONE}"
+                    -var="GOOGLE_CLOUD_ZONE=${GOOGLE_CLOUD_ZONE}" \
+                    -var="POSTGRES_USER=${POSTGRES_USER}" \
+                    -var="POSTGRES_PASSWORD=${POSTGRES_PASSWORD}" \
+                    -var="POSTGRES_DB=${POSTGRES_DB}"
                     '''
                 }
             }
@@ -147,7 +157,10 @@ pipeline {
                     -var="backend_image=${BACKEND_IMAGE}" \
                     -var="GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}" \
                     -var="GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}" \
-                    -var="GOOGLE_CLOUD_ZONE=${GOOGLE_CLOUD_ZONE}"
+                    -var="GOOGLE_CLOUD_ZONE=${GOOGLE_CLOUD_ZONE}" \
+                    -var="POSTGRES_USER=${POSTGRES_USER}" \
+                    -var="POSTGRES_PASSWORD=${POSTGRES_PASSWORD}" \
+                    -var="POSTGRES_DB=${POSTGRES_DB}"
                     '''
                 }
             }
