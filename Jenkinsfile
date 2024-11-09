@@ -180,7 +180,7 @@ pipeline {
                 script {
                     echo 'Deploying to Google Cloud...'
                     sh '''#!/bin/bash
-                    INSTANCE_NAME="usenlease-site"
+                    INSTANCE_NAME="usenlease-website"
                     gcloud compute instances delete $INSTANCE_NAME --project=${GOOGLE_CLOUD_PROJECT} --zone=${GOOGLE_CLOUD_ZONE} --quiet || true
                     gcloud compute instances create $INSTANCE_NAME \
                         --project=${GOOGLE_CLOUD_PROJECT} \
