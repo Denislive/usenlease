@@ -47,6 +47,7 @@ variable "POSTGRES_DB" {
 variable "DB_HOST" {
   description = "Hostname for the PostgreSQL database"
   type        = string
+  default     = "usenlease-db"
 }
 
 variable "DB_PORT" {
