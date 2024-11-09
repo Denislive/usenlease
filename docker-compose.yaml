@@ -3,7 +3,8 @@ version: '3.8'
 services:
   # Frontend microservice
   usenlease-frontend:
-    image: ngumonelson123/frontend-image:latest
+    build:
+      context: ./frontend
     container_name: usenlease-frontend
     stdin_open: true
     tty: true
@@ -18,7 +19,8 @@ services:
 
   # Backend microservice
   usenlease-backend:
-    image: ngumonelson123/backend-image:latest
+    build:
+      context: ./backend
     container_name: usenlease-backend
     stdin_open: true
     tty: true
@@ -26,21 +28,44 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - /home/nelson-ngumo/DevOps07/usenlease/db.sqlite3:/app/db.sqlite3  # Mount the SQLite3 database from your local machine
-      - ./backend:/app/backend  # Mount the backend directory only
+      - ./backend:/app/backend
     networks:
       - app-net
     env_file:
       - .env
-    command: |
-      bash -c "cd /app/backend && python manage.py migrate && python manage.py runserver 0.0.0.0:8000"  # Navigate to backend and run migrations
+    depends_on:
+      usenlease-db:
+        condition: service_healthy
+    command: >
+      bash -c "cd /app/backend &&
+               python manage.py wait_for_db &&
+               python manage.py migrate &&
+               python manage.py runserver 0.0.0.0:8000"
+
+  # PostgreSQL service
+  usenlease-db:
+    image: postgres:latest
+    container_name: usenlease-db
+    env_file:
+      - .env
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - app-net
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 # Network configuration
 networks:
   app-net:
     driver: bridge
 
-# Docker volume for persistent data (optional)
+# Docker volumes for persistent data
 volumes:
-  sqlite-data:
+  postgres-data:
     driver: local
