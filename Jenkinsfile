@@ -199,7 +199,7 @@ pipeline {
                 }
             }
         }
-
+/* 
         // Build and Run should come after the deployment
         stage('Build and Run') {
             steps {
@@ -212,7 +212,7 @@ pipeline {
                     '''
                 }
             }
-        }
+        } */
 
         stage('Clean Up') {
             steps {

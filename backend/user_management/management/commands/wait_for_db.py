@@ -24,4 +24,4 @@ class Command(BaseCommand):
                 break
             except OperationalError:
                 self.stdout.write(self.style.NOTICE('Database unavailable, waiting 1 second...'))
-                time.sleep(5)
+                time.sleep(1)
