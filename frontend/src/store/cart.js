@@ -2,6 +2,8 @@ import { defineStore } from 'pinia';
 import { ref, computed, watch } from 'vue';
 import { useAuthStore } from '@/store/auth';
 import Cookies from 'js-cookie';
+import axios from 'axios';  // Import axios
+
 
 export const useCartStore = defineStore('cart', () => {
     const cart = ref([]); // Array to hold cart items
@@ -16,9 +18,24 @@ export const useCartStore = defineStore('cart', () => {
     };
 
     // Load cart based on user's authentication status
-    const loadCart = () => {
+    const loadCart = async () => {
         if (authStore.isAuthenticated) {
             console.log("Getting cart from database");
+
+            try {
+                // Send the data to the backend API using Axios with withCredentials set to true
+                const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/cart/`, {
+                    withCredentials: true,  // Ensures cookies are sent with the request
+                });
+    
+                // Log the response from the backend
+                console.log("cart retrieved from the database:", response.data);
+            } catch (error) {
+                // Log any errors that occur during the request
+                console.error("Error getting cart:", error);
+            }
+
+
             // Example API call to load cart data for authenticated users
             // const response = await api.loadCart();
             // cart.value = response.data;

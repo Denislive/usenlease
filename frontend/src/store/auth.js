@@ -103,7 +103,7 @@ export const useAuthStore = defineStore('auth', () => {
     console.log("Attempting to log out...");
     try {
       const csrfToken = getCSRFToken(); // Get CSRF token
-      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/logout/`, {}, {
+      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/accounts/logout/`, {}, {
         headers: {
           'X-CSRFToken': csrfToken, // Include CSRF token
         },

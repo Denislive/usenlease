@@ -13,7 +13,7 @@
 
     <p class="description mb-4">{{ equipment.description }}</p>
     <p class="availability mb-2">
-      <strong>Status:</strong> 
+      <strong>Status:</strong>
       <span :class="equipment.is_available ? 'text-green-600' : 'text-red-600'">
         {{ equipment.is_available ? 'Available' : 'Not Available' }}
       </span>
@@ -30,49 +30,29 @@
     <div class="booking-form">
       <form @submit.prevent="submitBooking">
         <label for="start-date" class="block mb-1">Start Date:</label>
-        <input
-          type="date"
-          id="start-date"
-          v-model="startDate"
-          required
-          class="mb-4 p-2 border rounded w-full"
-        />
+        <input type="date" id="start-date" v-model="startDate" required class="mb-4 p-2 border rounded w-full" />
 
         <label for="end-date" class="block mb-1">End Date:</label>
-        <input
-          type="date"
-          id="end-date"
-          v-model="endDate"
-          required
-          class="mb-4 p-2 border rounded w-full"
-        />
+        <input type="date" id="end-date" v-model="endDate" required class="mb-4 p-2 border rounded w-full" />
 
         <label for="quantity" class="block mb-1">Number of Equipments:</label>
-        <input
-          type="number"
-          id="quantity"
-          v-model="quantity"
-          min="1"
-          required
-          class="mb-4 p-2 border rounded w-full"
-        />
+        <input type="number" id="quantity" v-model="quantity" min="1" required class="mb-4 p-2 border rounded w-full" />
 
-        <button
-          type="submit"
-          class="button add-to-cart bg-[#ffc107] text-black py-2 px-4 rounded hover:bg-yellow-400 transition"
-        >
+        <button type="submit"
+          class="button add-to-cart bg-[#ffc107] text-black py-2 px-4 rounded hover:bg-yellow-400 transition">
           Add to Cart
         </button>
       </form>
     </div>
   </div>
 </template>
-
 <script setup>
 import { ref } from 'vue';
+import { useAuthStore } from '@/store/auth'; // Correct import
+const authStore = useAuthStore(); // Initialize the auth store
 import { useCartStore } from '@/store/cart'; // Adjust the path as necessary
 const cartStore = useCartStore();
-
+import axios from 'axios';  // Import axios
 
 const props = defineProps({
   equipment: {
@@ -93,27 +73,47 @@ const startDate = ref('');
 const endDate = ref('');
 const quantity = ref(1);
 
-const submitBooking = () => {
-  // Log the booking details for debugging
-  console.log('Booking Details:', {
-    startDate: startDate.value,
-    endDate: endDate.value,
-    quantity: quantity.value,
-    equipment: props.equipment,
-  });
+const submitBooking = async () => {
+    console.log('Booking Details:', {
+        startDate: startDate.value,
+        endDate: endDate.value,
+        quantity: quantity.value,
+        equipment: props.equipment.id,
+    });
 
-  // Ensure hourly_rate is parsed as a float
-  const equipmentWithFloatHourlyRate = {
-    ...props.equipment,
-    hourly_rate: parseFloat(props.equipment.hourly_rate), // Convert hourly_rate to float
-  };
+    // Prepare the payload
+    const payload = {
+        cart_items: [
+            {
+                item: props.equipment.id,
+                quantity: quantity.value,
+                start_date: startDate.value,
+                end_date: endDate.value,
+            }
+        ]
+    };
 
-  // Here you would typically make an API request to add to the cart
-  cartStore.addItem({
-    ...equipmentWithFloatHourlyRate,
-    quantity: quantity.value, // Include quantity for the item
-    total: parseFloat(props.equipment.hourly_rate) * quantity.value, // Calculate total
-  });
+    // Check if user is authenticated (based on HTTP cookies)
+    if (authStore.isAuthenticated) {
+        console.log("Saving cart to database:", payload);
+
+        try {
+            // Send the data to the backend API using Axios with withCredentials set to true
+            const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/cart/`, payload, {
+                withCredentials: true,  // Ensures cookies are sent with the request
+            });
+
+            // Log the response from the backend
+            console.log("Booking saved to the database:", response.data);
+        } catch (error) {
+            // Log any errors that occur during the request
+            console.error("Error saving cart:", error);
+        }
+    } else {
+        // If the user is not authenticated, save to local storage
+        localStorage.setItem('cart', JSON.stringify(payload));
+        console.error("Error saving cart:", error.response);
+    }
 };
 
 
@@ -126,20 +126,3 @@ const renderStars = (rating) => {
 };
 </script>
 
-<style scoped>
-.cell {
-  max-width: 400px; /* Limit the width of the equipment details */
-}
-
-.loading {
-  text-align: center;
-  font-size: 18px;
-  color: #555;
-}
-
-.error {
-  color: red;
-  text-align: center;
-  font-size: 18px;
-}
-</style>
