@@ -178,7 +178,7 @@ pipeline {
         stage('Deploy to Google Cloud') {
             steps {
                 script {
-                    echo 'Deploying to Google Cloud...'
+                    echo 'Deploy to Google Cloud...'
                     sh '''#!/bin/bash
                     INSTANCE_NAME="usenlease-website"
                     gcloud compute instances delete $INSTANCE_NAME --project=${GOOGLE_CLOUD_PROJECT} --zone=${GOOGLE_CLOUD_ZONE} --quiet || true
