@@ -107,30 +107,54 @@ pipeline {
             }
         }
         stage('Authenticate and Deploying to Google Cloud') {
-    steps {
-        script {
-            echo 'Authenticating and deploying to Google Cloud...'
-            sh '''
-            gcloud auth activate-service-account --key-file=${GOOGLE_APPLICATION_CREDENTIALS}
-            INSTANCE_NAME="usenlease-website"
-            # Skipping instance creation if it exists.
-            gcloud compute instances describe $INSTANCE_NAME --project=${GOOGLE_CLOUD_PROJECT} --zone=${GOOGLE_CLOUD_ZONE} || true
-            gcloud compute instances add-metadata $INSTANCE_NAME \
-                --project=${GOOGLE_CLOUD_PROJECT} \
-                --zone=${GOOGLE_CLOUD_ZONE} \
-                --metadata=startup-script='#!/bin/bash
-                apt-get update
-                apt-get install -y docker.io
-                systemctl enable docker
-                systemctl start docker
-                docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
-                cd /home/nelson-ngumo/DevOps07/usenlease
-                docker-compose up -d'
-            '''
+            steps {
+                script {
+                    echo 'Authenticating and deploying to Google Cloud...'
+                    sh '''
+                    # Authenticate to Google Cloud
+                    gcloud auth activate-service-account --key-file=${GOOGLE_APPLICATION_CREDENTIALS}
+
+                    INSTANCE_NAME="usenlease-website"
+
+                    # Check if instance exists, if not create it
+                    INSTANCE_EXISTS=$(gcloud compute instances describe $INSTANCE_NAME --project=${GOOGLE_CLOUD_PROJECT} --zone=${GOOGLE_CLOUD_ZONE} --format="get(name)" || echo "not found")
+
+                    if [[ "$INSTANCE_EXISTS" == "not found" ]]; then
+                        echo "Instance $INSTANCE_NAME does not exist. Creating it..."
+                        gcloud compute instances create $INSTANCE_NAME \
+                            --project=${GOOGLE_CLOUD_PROJECT} \
+                            --zone=${GOOGLE_CLOUD_ZONE} \
+                            --image-family=debian-11 \
+                            --image-project=debian-cloud \
+                            --tags=http-server,https-server \
+                            --metadata=startup-script='#!/bin/bash
+                            apt-get update
+                            apt-get install -y docker.io
+                            systemctl enable docker
+                            systemctl start docker
+                            docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
+                            cd /home/nelson-ngumo/DevOps07/usenlease
+                            docker-compose up -d'
+                    else
+                        echo "Instance $INSTANCE_NAME already exists. Skipping creation."
+                        # Update metadata if instance exists
+                        gcloud compute instances add-metadata $INSTANCE_NAME \
+                            --project=${GOOGLE_CLOUD_PROJECT} \
+                            --zone=${GOOGLE_CLOUD_ZONE} \
+                            --metadata=startup-script='#!/bin/bash
+                            apt-get update
+                            apt-get install -y docker.io
+                            systemctl enable docker
+                            systemctl start docker
+                            docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
+                            cd /home/nelson-ngumo/DevOps07/usenlease
+                            docker-compose up -d'
+                    fi
+                    '''
+                }
+            }
         }
     }
-}
-
     post {
         success {
             echo "Pipeline finished successfully!"
