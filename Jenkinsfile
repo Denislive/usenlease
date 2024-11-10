@@ -113,7 +113,6 @@ pipeline {
                     sh '''
                     gcloud auth activate-service-account --key-file=${GOOGLE_APPLICATION_CREDENTIALS}
                     INSTANCE_NAME="usenlease-website"
-                    gcloud compute instances delete $INSTANCE_NAME --project=${GOOGLE_CLOUD_PROJECT} --zone=${GOOGLE_CLOUD_ZONE} --quiet || true
                     gcloud compute instances create $INSTANCE_NAME \
                         --project=${GOOGLE_CLOUD_PROJECT} \
                         --zone=${GOOGLE_CLOUD_ZONE} \
