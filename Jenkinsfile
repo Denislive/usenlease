@@ -80,9 +80,9 @@ pipeline {
                 script {
                     echo 'Building and deploying Docker images using Docker Compose...'
                     sh '''
-                    docker-compose -f docker-compose.yaml down
-                    docker-compose -f docker-compose.yaml pull
-                    docker-compose -f docker-compose.yaml up --build -d
+                    docker-compose down
+                    docker-compose pull
+                    docker-compose up --build -d
                     '''
                 }
             }
@@ -132,15 +132,6 @@ pipeline {
                 }
             }
         }
-    //     stage('Clean Up') {
-    //         steps {
-    //             echo "Cleaning up..."
-    //             sh '''
-    //             docker-compose -f docker-compose.yaml down
-    //             '''
-    //         }
-    //     }
-    // }
     post {
         success {
             echo "Pipeline finished successfully!"
