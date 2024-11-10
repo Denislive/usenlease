@@ -6,7 +6,6 @@ pipeline {
         GOOGLE_CLOUD_PROJECT = 'burnished-ether-439413-s1'
         GOOGLE_CLOUD_ZONE = 'us-central1-a'
         GOOGLE_APPLICATION_CREDENTIALS = credentials('google-cloud-service-account-json')
-        // PostgreSQL credentials from secrets.tfvars (ensure you load them securely)
         POSTGRES_USER = credentials('postgres-user')
         POSTGRES_PASSWORD = credentials('postgres-password')
         POSTGRES_DB = 'usenlease_db'
@@ -27,32 +26,13 @@ pipeline {
                 '''
             }
         }
-        stage('Check Shell') {
+        stage('Check Shell and Docker Installation') {
             steps {
                 script {
-                    echo "Checking shell being used..."
+                    echo "Checking shell and Docker installation..."
                     sh '''#!/bin/bash
                     echo "Current shell: $SHELL"
-                    '''
-                }
-            }
-        }
-        stage('Check Docker Installation') {
-            steps {
-                script {
-                    echo 'Checking if Docker is installed...'
-                    sh '''#!/bin/bash
                     docker --version || exit 1
-                    '''
-                }
-            }
-        }
-        stage('Check GCloud Installation') {
-            steps {
-                script {
-                    echo 'Checking if GCloud is installed...'
-                    sh '''#!/bin/bash
-                    gcloud --version || exit 1
                     '''
                 }
             }
@@ -63,95 +43,56 @@ pipeline {
                 git url: 'https://github.com/Denislive/usenlease.git'
             }
         }
-        stage('Verify docker-compose.yaml Path') {
-            steps {
-                script {
-                    if (!fileExists('/home/nelson-ngumo/DevOps07/usenlease/docker-compose.yaml')) {
-                        error 'docker-compose.yaml not found at /home/nelson-ngumo/DevOps07/usenlease!'
-                    } else {
-                        echo 'docker-compose.yaml found at specified path.'
+        stage('Push Docker Images to Docker Hub') {
+            parallel {
+                stage('Push Frontend Image') {
+                    steps {
+                        script {
+                            echo 'Pushing frontend Docker image to Docker Hub...'
+                            withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                                sh '''
+                                docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
+                                docker build -t ${FRONTEND_IMAGE}:latest ./frontend
+                                docker push ${FRONTEND_IMAGE}:latest
+                                '''
+                            }
+                        }
+                    }
+                }
+                stage('Push Backend Image') {
+                    steps {
+                        script {
+                            echo 'Pushing backend Docker image to Docker Hub...'
+                            withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                                sh '''
+                                docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
+                                docker build -t ${BACKEND_IMAGE}:latest ./backend
+                                docker push ${BACKEND_IMAGE}:latest
+                                '''
+                            }
+                        }
                     }
                 }
             }
         }
-
-        // Stage to build and push the Docker images to Docker Hub
-        stage('Push Frontend Image to Docker Hub') {
+        stage('Build and Deploy with Docker Compose') {
             steps {
                 script {
-                    echo 'Pushing frontend Docker image to Docker Hub...'
-                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        sh '''#!/bin/bash
-                            docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
-                            docker build -t ${FRONTEND_IMAGE}:latest ./frontend
-                            docker push ${FRONTEND_IMAGE}:latest
-                        '''
-                    }
-                }
-            }
-        }
-
-        stage('Push Backend Image to Docker Hub') {
-            steps {
-                script {
-                    echo 'Pushing backend Docker image to Docker Hub...'
-                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        sh '''#!/bin/bash
-                            docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
-                            docker build -t ${BACKEND_IMAGE}:latest ./backend
-                            docker push ${BACKEND_IMAGE}:latest
-                        '''
-                    }
-                }
-            }
-        }
-
-        // Docker Compose Build and Push stage to handle images for both frontend and backend
-        stage('Build and Push Docker Images') {
-            steps {
-                script {
-                    echo 'Building and pushing Docker images using Docker Compose...'
-                    sh '''#!/bin/bash
-                    docker-compose -f /home/nelson-ngumo/DevOps07/usenlease/docker-compose.yaml build
-                    docker-compose -f /home/nelson-ngumo/DevOps07/usenlease/docker-compose.yaml push
+                    echo 'Building and deploying Docker images using Docker Compose...'
+                    sh '''
+                    docker-compose -f docker-compose.yaml down
+                    docker-compose -f docker-compose.yaml pull
+                    docker-compose -f docker-compose.yaml up --build -d
                     '''
                 }
             }
         }
-
-        stage('Initialize Terraform') {
+        stage('Initialize and Apply Terraform') {
             steps {
                 script {
-                    echo 'Initializing Terraform...'
-                    sh '''#!/bin/bash
+                    echo 'Initializing and applying Terraform configuration...'
+                    sh '''
                     terraform init
-                    '''
-                }
-            }
-        }
-        stage('Terraform Plan') {
-            steps {
-                script {
-                    echo 'Running Terraform plan to see the changes.....'
-                    sh '''#!/bin/bash
-                    terraform plan \
-                    -var="frontend_image=${FRONTEND_IMAGE}" \
-                    -var="backend_image=${BACKEND_IMAGE}" \
-                    -var="GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}" \
-                    -var="GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}" \
-                    -var="GOOGLE_CLOUD_ZONE=${GOOGLE_CLOUD_ZONE}" \
-                    -var="POSTGRES_USER=${POSTGRES_USER}" \
-                    -var="POSTGRES_PASSWORD=${POSTGRES_PASSWORD}" \
-                    -var="POSTGRES_DB=${POSTGRES_DB}"
-                    '''
-                }
-            }
-        }
-        stage('Terraform Apply') {
-            steps {
-                script {
-                    echo 'Applying Terraform changes...'
-                    sh '''#!/bin/bash
                     terraform apply -auto-approve \
                     -var="frontend_image=${FRONTEND_IMAGE}" \
                     -var="backend_image=${BACKEND_IMAGE}" \
@@ -165,21 +106,12 @@ pipeline {
                 }
             }
         }
-        stage('Authenticate with GCloud') {
+        stage('Authenticate and Deploy to Google Cloud') {
             steps {
                 script {
-                    echo 'Authenticating with Google Cloud...'
-                    sh '''#!/bin/bash
+                    echo 'Authenticating and deploying to Google Cloud...'
+                    sh '''
                     gcloud auth activate-service-account --key-file=${GOOGLE_APPLICATION_CREDENTIALS}
-                    '''
-                }
-            }
-        }
-        stage('Deploy to Google Cloud') {
-            steps {
-                script {
-                    echo 'Deploy to Google Cloud...'
-                    sh '''#!/bin/bash
                     INSTANCE_NAME="usenlease-website"
                     gcloud compute instances delete $INSTANCE_NAME --project=${GOOGLE_CLOUD_PROJECT} --zone=${GOOGLE_CLOUD_ZONE} --quiet || true
                     gcloud compute instances create $INSTANCE_NAME \
@@ -194,38 +126,27 @@ pipeline {
                         systemctl enable docker
                         systemctl start docker
                         docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
-                        docker-compose -f /home/nelson-ngumo/DevOps07/usenlease/docker-compose.yaml up -d'
+                        cd /home/nelson-ngumo/DevOps07/usenlease
+                        docker-compose up -d'
                     '''
                 }
             }
         }
-/* 
-        // Build and Run should come after the deployment
-        stage('Build and Run') {
-            steps {
-                script {
-                    echo 'Building and running the Django application using Docker Compose...'
-                    sh '''#!/bin/bash
-                     docker-compose up --build -d
-                     docker-compose exec web python manage.py migrate
-                     docker-compose exec web python manage.py runserver 0.0.0.0:8000
-                    '''
-                }
-            }
-        } */
-
-        stage('Clean Up') {
-            steps {
-                echo "Cleaning up..."
-                // Add any necessary cleanup commands here
-            }
+    //     stage('Clean Up') {
+    //         steps {
+    //             echo "Cleaning up..."
+    //             sh '''
+    //             docker-compose -f docker-compose.yaml down
+    //             '''
+    //         }
+    //     }
+    // }
+    post {
+        success {
+            echo "Pipeline finished successfully!"
         }
-
-        stage('Post Actions') {
-            steps {
-                echo "Pipeline finished successfully!"
-                // Add any notifications or alerts here
-            }
+        failure {
+            echo "Pipeline failed."
         }
     }
 }

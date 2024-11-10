@@ -1,13 +1,9 @@
 version: '3.8'
 
 services:
-  # Frontend microservice
   usenlease-frontend:
-    build:
-      context: ./frontend
+    image: ngumonelson123/frontend-image:latest  # Use Docker Hub image
     container_name: usenlease-frontend
-    stdin_open: true
-    tty: true
     ports:
       - "3000:3000"
     depends_on:
@@ -17,32 +13,24 @@ services:
     env_file:
       - .env
 
-  # Backend microservice
   usenlease-backend:
-    build:
-      context: ./backend
+    image: ngumonelson123/backend-image:latest  # Use Docker Hub image
     container_name: usenlease-backend
-    stdin_open: true
-    tty: true
-    restart: always
     ports:
       - "8000:8000"
-    volumes:
-      - ./backend:/app/backend
+    depends_on:
+      usenlease-db:
+        condition: service_healthy
     networks:
       - app-net
     env_file:
       - .env
-    depends_on:
-      usenlease-db:
-        condition: service_healthy
     command: >
       bash -c "cd /app/backend &&
                python manage.py wait_for_db &&
                python manage.py migrate &&
                python manage.py runserver 0.0.0.0:8000"
 
-  # PostgreSQL service
   usenlease-db:
     image: postgres:latest
     container_name: usenlease-db
@@ -60,12 +48,10 @@ services:
       timeout: 5s
       retries: 5
 
-# Network configuration
 networks:
   app-net:
     driver: bridge
 
-# Docker volumes for persistent data
 volumes:
   postgres-data:
     driver: local
