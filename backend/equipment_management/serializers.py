@@ -51,6 +51,7 @@ class EquipmentSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True, required=False)
     images = ImageSerializer(many=True, read_only=True)  # Include related images
     address = AddressSerializer()  # Allow writable Address field
+    hourly_rate = serializers.FloatField()
 
     class Meta:
         model = Equipment
@@ -117,12 +118,6 @@ class EquipmentSerializer(serializers.ModelSerializer):
 
 
 
- 
-
-
-
-
-
 class SpecificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Specification
@@ -133,15 +128,14 @@ class SpecificationSerializer(serializers.ModelSerializer):
 class CartSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cart
-        fields = ['id', 'user', 'cart_total_price', 'total_cart_items', 'date_created', 'date_updated']
-
-    def create(self, validated_data):
-        print("validated data", validated_data)
+        fields = ['cart_items']
 
 class CartItemSerializer(serializers.ModelSerializer):
+    item_details = EquipmentSerializer(source='item', read_only=True)  # Full details on read
+    total = serializers.FloatField(required=False)
     class Meta:
         model = CartItem
-        fields = ['id', 'cart', 'item', 'quantity', 'start_date', 'end_date', 'ordered', 'total']
+        fields = ['id', 'cart', 'item', 'item_details', 'quantity', 'start_date', 'end_date', 'ordered', 'total']
 
 class OrderSerializer(serializers.ModelSerializer):
     class Meta:

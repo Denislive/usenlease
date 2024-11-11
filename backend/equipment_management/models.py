@@ -9,7 +9,7 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 
 from user_management.models import Address
-
+from datetime import datetime
 import uuid
 import base64
 
@@ -191,7 +191,7 @@ class CartItem(models.Model):
     id = models.CharField(primary_key=True, max_length=16, default=generate_short_uuid, editable=False)
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='cart_items')
     item = models.ForeignKey(Equipment, on_delete=models.PROTECT)
-    quantity = models.PositiveIntegerField(default=1, null=True, blank=True)
+    quantity = models.PositiveIntegerField(default=1)
     start_date = models.DateField()
     end_date = models.DateField()
     ordered = models.BooleanField(default=False)
@@ -203,13 +203,29 @@ class CartItem(models.Model):
     @property
     def get_cart_item_total(self):
         if self.item and self.item.hourly_rate is not None:
-            rental_days = (self.end_date - self.start_date).days
+            # Ensure start_date and end_date are datetime.date objects
+            start_date = self.start_date
+            end_date = self.end_date
+
+            # Convert to date if they are in string format
+            if isinstance(start_date, str):
+                start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+            if isinstance(end_date, str):
+                end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+
+            # Calculate rental days
+            rental_days = (end_date - start_date).days
+            print("rental days", rental_days)
             if rental_days < 0:
                 rental_days = 0
+
+            # Calculate total based on hours and quantity
             total_hours = rental_days * 24
             calculated_total = self.quantity * self.item.hourly_rate * total_hours
             self.total = calculated_total  # Update the total field
-        return 0
+            print("type of calculated total", type(calculated_total))
+
+        return self.total if self.total else 0
     
     def clean(self):
         # Validate rental dates
