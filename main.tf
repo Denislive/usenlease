@@ -32,14 +32,16 @@ resource "google_compute_instance" "default" {
       #!/bin/bash
       apt-get update
       apt-get install -y docker.io
+      apt-get install -y postgresql postgresql-contrib
       systemctl enable docker
       systemctl start docker
+      systemctl enable postgresql
+      systemctl start postgresql
 
-      # Ensure the SQLite3 file and directory exist
-      if [ ! -f /home/debian/db.sqlite3 ]; then
-        echo "Creating SQLite3 database file..." > /var/log/startup.log
-        touch /home/debian/db.sqlite3
-      fi
+      # Configure PostgreSQL
+      sudo -u postgres psql -c "CREATE USER ${var.POSTGRES_USER} WITH PASSWORD '${var.POSTGRES_PASSWORD}';"
+      sudo -u postgres psql -c "CREATE DATABASE ${var.POSTGRES_DB};"
+      sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE ${var.POSTGRES_DB} TO ${var.POSTGRES_USER};"
 
       # Pull the frontend and backend images
       echo "Pulling frontend image..." > /var/log/startup.log
@@ -47,12 +49,18 @@ resource "google_compute_instance" "default" {
       echo "Pulling backend image..." >> /var/log/startup.log
       docker pull ${var.backend_image} >> /var/log/startup.log 2>&1
 
-      # Start frontend and backend containers with SQLite3 volume for backend
+      # Start frontend and backend containers, ensuring backend connects to PostgreSQL
       echo "Starting frontend container..." >> /var/log/startup.log
       docker run -d -p 3000:3000 ${var.frontend_image} >> /var/log/startup.log 2>&1
 
-      echo "Starting backend container with volume for SQLite3..." >> /var/log/startup.log
-      docker run -d -p 8000:8000 -v /home/debian/db.sqlite3:/app/db.sqlite3 ${var.backend_image} >> /var/log/startup.log 2>&1
+      echo "Starting backend container with PostgreSQL connection..." >> /var/log/startup.log
+      docker run -d -p 8000:8000 \
+        -e DB_HOST=${var.DB_HOST} \
+        -e DB_PORT=${var.DB_PORT} \
+        -e DB_NAME=${var.POSTGRES_DB} \
+        -e DB_USER=${var.POSTGRES_USER} \
+        -e DB_PASSWORD=${var.POSTGRES_PASSWORD} \
+        ${var.backend_image} >> /var/log/startup.log 2>&1
     EOT
   }
 }
@@ -64,7 +72,7 @@ resource "google_compute_firewall" "default" {
 
   allow {
     protocol = "tcp"
-    ports    = ["80", "443", "8000", "3000"]  # Allowing 8000 and 3000 for frontend and backend
+    ports    = ["80", "443", "8000", "3000", "5432"]  # Allowing 8000 and 3000 for frontend and backend
   }
 
   source_ranges = ["0.0.0.0/0"]  # Allows incoming traffic from any IP address.
