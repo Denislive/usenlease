@@ -1,9 +1,9 @@
-// src/stores/auth.js
 import { defineStore } from 'pinia';
 import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
 import Cookies from 'js-cookie'; // Import js-cookie for cookie management
+import useNotifications from '@/store/notification'; // Import the notification service
 
 // Function to get the CSRF token from cookies
 const getCSRFToken = () => {
@@ -13,14 +13,13 @@ const getCSRFToken = () => {
   if (parts.length === 2) return parts.pop().split(';').shift();
 };
 
-
-
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null); // Stores the user data
   const redirectTo = ref(''); // Path to redirect after login
   const loginError = ref('');
   const isLoading = ref(false);
   const router = useRouter(); // Router instance
+  const { showNotification } = useNotifications(); // Initialize notification service
 
   // Check for user data in cookies on mount
   onMounted(() => {
@@ -30,14 +29,13 @@ export const useAuthStore = defineStore('auth', () => {
       console.log("User data retrieved from cookies:", user.value); // Debug log
     }
   });
-  
 
   // Login action
   const login = async (email, password) => {
     isLoading.value = true; // Set loading state
     console.log("Attempting to log in with email:", email);
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/login/`, {
+      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/accounts/login/`, {
         email,
         password,
       }, {
@@ -53,6 +51,7 @@ export const useAuthStore = defineStore('auth', () => {
       }, 86400000); // 86400000 ms = 1 day
 
       console.log("Login successful! User data:", user.value); // Debug log for user data
+      showNotification('Login Successful', 'Welcome back!', 'success'); // Show success notification
 
       // Attempt to load any pending form data from local storage
       const formData = loadFormDataFromLocalStorage();
@@ -67,10 +66,13 @@ export const useAuthStore = defineStore('auth', () => {
           });
           console.log('Equipment created successfully:', createResponse.data);
           router.push({ name: 'equipment-details', params: { id: createResponse.data.id } }); // Redirect to the equipment details page
+          showNotification('Item Listing Successful', `${createResponse.data.name} created successfully!`, 'success'); // Show success notification
           localStorage.removeItem('payload'); // Optionally remove the payload from local storage
           return;
         } catch (error) {
           console.error('Error creating equipment:', error.response.data);
+          showNotification('Error Listing Item', "An error occured during item listing!", 'error'); // Show success notification
+
         }
       }
 
@@ -92,9 +94,11 @@ export const useAuthStore = defineStore('auth', () => {
     if (error.response && error.response.status === 401) {
       loginError.value = 'Incorrect email or password.';
       console.warn("Login failed: Incorrect email or password."); // Warn log for authentication failure
+      showNotification('Login Failed', 'Incorrect email or password.', 'error'); // Show error notification
     } else {
       loginError.value = 'An error occurred. Please try again later.';
       console.error("Login error:", error); // Error log for other errors
+      showNotification('Login Error', 'An error occurred. Please try again later.', 'error'); // Show error notification
     }
   };
 
@@ -113,9 +117,11 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = null; // Clear user data upon successful logout
       Cookies.remove('user'); // Remove user cookie
       console.log("Successfully logged out. User data cleared.");
+      showNotification('Logout Successful', 'You have been logged out.', 'success'); // Show success notification
       router.push('/'); // Redirect to login after logout
     } catch (error) {
       console.error("Logout error:", error.response ? error.response.data : error);
+      showNotification('Logout Error', 'An error occurred while logging out.', 'error'); // Show error notification
     } finally {
       isLoading.value = false; // Reset loading state
     }

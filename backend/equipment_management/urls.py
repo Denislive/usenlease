@@ -1,47 +1,32 @@
-from django.urls import path
-from . import views 
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import (
+    CategoryViewSet,
+    TagViewSet,
+    EquipmentViewSet,
+    ImageViewSet,
+    SpecificationViewSet,
+    ReviewViewSet,
+    CartViewSet,
+    OrderViewSet,
+    OrderItemViewSet,
+    CartItemViewSet
+)
 
+# Create a router and register the viewsets
+router = DefaultRouter()
+router.register(r'categories', CategoryViewSet, basename='category')
+router.register(r'tags', TagViewSet, basename='tag')
+router.register(r'equipments', EquipmentViewSet, basename='equipment')
+router.register(r'images', ImageViewSet, basename='image')
+router.register(r'specifications', SpecificationViewSet, basename='specification')
+router.register(r'reviews', ReviewViewSet, basename='review')
+router.register(r'cart-items', CartItemViewSet, basename='cart-item')
+router.register(r'cart', CartViewSet, basename='cart')
+
+router.register(r'orders', OrderViewSet, basename='order')
+router.register(r'order-items', OrderItemViewSet, basename='order-item')
 
 urlpatterns = [
-    # path('latest-equipments/', views.LatestEquipmentList.as_view()),
-    path('', views.home, name='home'),
-    path('about/', views.about_us, name='about'),
-    path('services/', views.services, name='services'),
-    path('service-detail/', views.service_detail, name='service_detail'),
-    path('search/', views.search_view, name='search'),
-    path('equipments/', views.equipment_list, name='equipments'),
-    path('equipments/<slug:slug>/<int:id>/', views.equipment_detail, name='equipment_detail'),
-
-
-    # path('equipment/details/', views.equipment_detail, name='equipment_detail'),
-
-    # path('profile/', views.profile, name='profile'),
-    path('cart/', views.cart, name='cart-summary'),
-    path('checkout/', views.checkout, name='checkout'),
-
-
-    path('equipment/create/', views.equipment_create_view, name='equipment-create'),
-
-    path('add-to-cart/<slug:slug>/<int:id>/', views.add_to_cart, name='add-to-cart'),
-    path('add-single-item-to-cart/<slug:slug>/<int:id>/', views.add_single_item_to_cart, name='add-single-item-to-cart'),
-    path('remove-from-cart/<slug:slug>/<int:id>/', views.remove_from_cart, name='remove-from-cart'),
-    path('remove-item-from-cart/<slug:slug>/<int:id>/', views.remove_single_item_from_cart, name='remove-single-item-from-cart'),
-
-
-    # path('add_equipment/', views.add_equipment, name='equip'),
-    path('contact/', views.contact_us, name='contact'),
-    path('stripe/', views.stripe_view, name='stripe'),
-
-    path('paypal/', views.paypal_view, name='paypal'),
-
-
-    # path('cart/', views.CartSummaryView.as_view(), name='cart'),
-    # path('checkout/', views.CheckoutView.as_view(), name='checkout'),
-    path('success/', views.successMsg, name='success'),
-
-    path('create-payment/', views.create_payment, name='create-payment'),
-
-    # path('equipment/<int:equipment_id>/review/', views.submit_equipment_review, name='submit_equipment_review'),
-    # path('owner/<int:owner_id>/review/', views.submit_owner_review, name='submit_owner_review'),
-
+    path('', include(router.urls)),  # Include all the registered routes
 ]

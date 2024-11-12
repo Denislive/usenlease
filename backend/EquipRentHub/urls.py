@@ -8,12 +8,8 @@ from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('equipment_management.urls')),  # Include app's URLs
-    path('accounts/', include('user_management.urls')),
-    path('api/v1/', include('djoser.urls')),
-    path('api/v1/', include('djoser.urls.authtoken')),
-    path('api/accounts/', include('user_management.api_urls')),
-    path('api/', include('equipment_management.api_urls')),
+    path('api/accounts/', include('user_management.urls')),
+    path('api/', include('equipment_management.urls')),
 
 
     # path('api/v1/', include('equipment_management.urls')),

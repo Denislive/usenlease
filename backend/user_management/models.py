@@ -17,6 +17,7 @@ class OTP(models.Model):
     code = models.CharField(max_length=6)
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()
+    expired = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
         if not self.expires_at:
@@ -25,9 +26,16 @@ class OTP(models.Model):
 
     def is_expired(self):
         return timezone.now() > self.expires_at
+    
+    def expire(self):
+        """Mark this OTP as expired."""
+        if self.is_expired() and not self.expired:
+            self.expired = True
+            self.save()
 
     def _str_(self):
         return f"OTP for {self.user.email} - {self.code}"
+        
 
 def generate_short_uuid():
     # Generate a UUID, convert to bytes, then encode in base64, removing padding

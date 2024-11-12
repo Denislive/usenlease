@@ -60,18 +60,7 @@
                             </span>
                             <p v-if="errors.role" class="text-red-500 text-sm">{{ errors.role }}</p>
                         </div>
-                        <div class="relative">
-                            <label for="phone" class="block text-sm font-medium text-gray-700">Phone</label>
-                            <input type="tel" id="phone" v-model="phone" @input="validatePhone"
-                                :class="['mt-1 block w-full border rounded-md p-2 focus:outline-none', errors.phone ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-green-500']">
-                            <span v-if="errors.phone" class="absolute right-2 top-10 text-red-500">
-                                <i class="pi pi-exclamation-triangle"></i>
-                            </span>
-                            <span v-if="!errors.phone && phone" class="absolute right-2 top-10 text-green-500">
-                                <i class="pi pi-check"></i>
-                            </span>
-                            <p v-if="errors.phone" class="text-red-500 text-sm">{{ errors.phone }}</p>
-                        </div>
+                        <vue-tel-input v-model="phone"></vue-tel-input>
                         <div class="relative">
                             <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
                             <input type="email" id="email" v-model="email" @input="validateEmail"
@@ -214,6 +203,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
+import Cookies from 'js-cookie';
 
 const currentStep = ref(1);
 const firstName = ref('');
@@ -227,6 +217,14 @@ const password = ref('');
 const confirmPassword = ref('');
 const acceptedTerms = ref(false);
 const router = useRouter();
+
+
+// Example function to set the email in a cookie
+function setEmailCookie(email) {
+
+  Cookies.set('email', email, { expires: 7, secure: true, sameSite: 'None' });
+  console.log(`${email} set in the cookies`)
+}
 
 // Refs for file handling
 const identityDocumentFile = ref(null);
@@ -253,10 +251,6 @@ const validateRole = () => {
     errors.value.role = role.value ? '' : 'Role is required';
 };
 
-const validatePhone = () => {
-    const phonePattern = /^[0-9]{10}$/;
-    errors.value.phone = phone.value && phonePattern.test(phone.value) ? '' : 'Valid Phone number is required';
-};
 
 const validateEmail = () => {
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -292,7 +286,6 @@ const nextStep = () => {
         validateLastName();
         validateCompanyName();
         validateRole();
-        validatePhone();
         validateEmail();
 
         if (!Object.values(errors.value).some(error => error)) {
@@ -370,18 +363,17 @@ const handleSignup = async () => {
         if (response.ok) {
             const userData = await response.json();
             router.push('/verify');
+            
             successMessage.value = 'Signup successful!';
+
+            // Usage example
+            setEmailCookie(userData.email);
+            
             errorMessage.value = '';
             console.log('Response:', userData);
             console.log(userData);
 
-            // Check if the email exists in the response and store it in local storage
-            if (userData && userData.email) {
-                localStorage.setItem('email', userData.email);
-                console.log('Email stored in local storage:', userData.email);
-            } else {
-                console.error('Email not found in the response.');
-            }
+
         } else {
             const errorData = await response.json();
             errorMessage.value = errorData.message || 'Signup failed!';

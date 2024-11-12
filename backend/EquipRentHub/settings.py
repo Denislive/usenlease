@@ -66,7 +66,7 @@ INSTALLED_APPS = [
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000", "http://34.133.46.212:3000"
+    "http://localhost:3000", "http://127.0.0.1:3000"
 ]
 
 # Rest JWT

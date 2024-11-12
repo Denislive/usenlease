@@ -1,311 +1,489 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
+# rentals/views.py
+from django.shortcuts import get_object_or_404
+from django.contrib.auth.hashers import make_password
 
-from .forms import UserRegistrationForm, UserUpdateForm, PhysicalAddressForm, CreditCardForm, EmailAuthenticationForm, AddressForm
+from rest_framework import viewsets
+from rest_framework.views import APIView
+
+from rest_framework.response import Response
+from rest_framework import status
+
+from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth import authenticate
+from django.db import IntegrityError
+
+
 from .models import User, Address, PhysicalAddress, CreditCard
+from .serializers import UserSerializer, AddressSerializer, PhysicalAddressSerializer, CreditCardSerializer
 
-def create_user_view(request):
-    if request.method == 'POST':
-        form = UserRegistrationForm(request.POST, request.FILES)
-        if form.is_valid():
-            form.save()
-            return redirect('user:login')  # Replace with your success URL
-    else:
-        form = UserRegistrationForm()
-    return render(request, 'user_management/create_user.html', {'form': form})
+# views.py
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
+from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
+from rest_framework_simplejwt.views import TokenBlacklistView, TokenRefreshView, TokenVerifyView
 
 
-def user_login_view(request):
-    if request.method == 'POST':
-        form = EmailAuthenticationForm(request, data=request.POST)
-        if form.is_valid():
-            email = form.cleaned_data.get('username')
-            password = form.cleaned_data.get('password')
+from django.contrib.auth import authenticate
+from rest_framework.views import APIView
+from .serializers import UserSerializer
 
-            user = authenticate(request, username=email, password=password)
 
-            if user is not None:
-                login(request, user)
-                
+from django.utils import timezone
+from datetime import timedelta, datetime
+from django.conf import settings
+from django.contrib.auth import get_user_model
 
-                return redirect('/')
+from rest_framework_simplejwt.exceptions import TokenError
+
+
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework import status
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth import authenticate
+from .serializers import UserSerializer  # Adjust the import as necessary
+
+
+
+from .models import OTP
+from .serializers import OTPSerializer
+import random
+import smtplib
+from email.mime.text import MIMEText
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+class OTPViewSet(viewsets.ViewSet):
+    @action(detail=False, methods=['post'])
+    def generate_otp(self, request):
+        # Retrieve email from the request
+        email = request.data.get("email")
+        if not email:
+            return Response({"error": "Email not provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Look up the user by email
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return Response({"error": "User with this email does not exist."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Expire all existing OTPs for the user
+        OTP.objects.filter(user=user, expired=False).update(expired=True)
+
+        # Generate a new OTP and save it in the database
+        otp_code = str(random.randint(100000, 999999))
+        otp_instance = OTP.objects.create(user=user, code=otp_code)
+        otp_instance.save()
+
+        # Prepare email content
+        subject = "Email Verification"
+        message_body = (
+            f"Hello {user.email},\n\n"
+            f"Thank you for signing up with us! To activate your account, please use the following OTP code:\n\n"
+            f"{otp_code}\n\n"
+            f"If you did not request this OTP, please ignore this message.\n\n"
+            f"Thank you for choosing our service!\n\n"
+            f"Best regards,\n"
+            f"The Use And Lease Team"
+        )
+
+        # Send email
+        try:
+            msg = MIMEText(message_body)
+            msg['Subject'] = subject
+            msg['From'] = f"Use N Lease <{settings.EMAIL_HOST_USER}>"
+            msg['To'] = user.email
+
+            server = smtplib.SMTP(settings.EMAIL_HOST, settings.EMAIL_PORT)
+            server.starttls()
+            server.login(settings.EMAIL_HOST_USER, settings.EMAIL_HOST_PASSWORD)
+            server.send_message(msg)
+            server.quit()
+            return Response({"message": "OTP sent successfully!"}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": "Failed to send OTP", "details": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=False, methods=['post'])
+    def verify_otp(self, request):
+        # Retrieve the user's email and OTP from the request
+        email = request.data.get("email")
+        entered_otp = request.data.get("otp")
+        print(email, entered_otp)
+
+        if not email or not entered_otp:
+            return Response({"error": "Email and OTP are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Find the user by email
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return Response({"error": "User with this email does not exist."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Verify OTP
+        try:
+            otp_instance = OTP.objects.filter(user=user, code=entered_otp).latest('created_at')
+            
+            # Check if the OTP is expired and mark it as expired if necessary
+            if otp_instance.is_expired():
+                otp_instance.expire()  # Mark OTP as expired
+                return Response({"error": "OTP has expired."}, status=status.HTTP_400_BAD_REQUEST)
+
+            if otp_instance.code == entered_otp:
+                # OTP verified successfully; activate the user's account
+                user.is_active = True
+                user.save()
+                otp_instance.expire()  # Mark OTP as expired after successful verification
+                print("User activated")
+                return Response({"message": "OTP verified successfully!"}, status=status.HTTP_200_OK)
             else:
-                messages.error(request, 'Invalid email or password.')
+                return Response({"error": "Invalid OTP."}, status=status.HTTP_400_BAD_REQUEST)
+
+        except OTP.DoesNotExist:
+            return Response({"error": "OTP not found."}, status=status.HTTP_404_NOT_FOUND)
+
+class LoginView(APIView):
+    permission_classes = [AllowAny]  # Allow any user to access this view
+
+    def post(self, request):
+        email = request.data.get("email")
+        password = request.data.get("password")
+        user = authenticate(request, email=email, password=password)
+
+        if user:
+            # Create refresh token for the user
+            refresh = RefreshToken.for_user(user)
+
+            # Serialize the user details
+            user_data = UserSerializer(user).data
+
+            response_data = {
+                "id": user.id,
+                "username": user.username,
+                "role": user.role,
+                "is_authenticated": user.is_authenticated
+                
+            }
+            response = Response(response_data, status=status.HTTP_200_OK)
+
+            # Set the access token in an HTTP-only cookie
+            response.set_cookie(
+                key="token", 
+                value=str(refresh.access_token),
+                httponly=True,
+                secure=True,  # Change to True if using HTTPS in production
+                samesite='None',
+                path="/"
+            )
+
+            # Set the refresh token as an HTTP-only cookie
+            response.set_cookie(
+                key="refresh", 
+                value=str(refresh),
+                httponly=True,
+                secure=True,  # Change to True if using HTTPS in production
+                samesite='None',
+                path="/"
+            )
+
+            # Log tokens for verification
+            print("Tokens before setting cookies:")
+            print(f"Access Token: {refresh.access_token}")
+            print(f"Refresh Token: {refresh}")
+
+            # Retrieve and log tokens from cookies in the response
+            access_cookie = response.cookies.get('token')
+            refresh_cookie = response.cookies.get('refresh')  # Updated to 'refresh_token'
+
+            print("Cookies set in the response:")
+            print(f"Access Token Cookie: {access_cookie}")
+            print(f"Refresh Token Cookie: {refresh_cookie}")
+
+            return response
         else:
-            for field in form:
-                if field.errors:
-                    for error in field.errors:
-                        messages.error(request, error)
-    else:
-        form = EmailAuthenticationForm()
-
-    return render(request, 'user_management/user_login.html', {'form': form})
+            return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
 
 
-@login_required
-def update_user_view(request, pk):
-    user = User.objects.get(pk=pk)
-    if request.method == 'POST':
-        form = UserUpdateForm(request.POST, request.FILES, instance=user)
-        if form.is_valid():
-            form.save()
-            return redirect('user:profile')  # Replace with your success URL
-    else:
-        form = UserUpdateForm(instance=user)
-    return render(request, 'user_management/update_user.html', {'form': form})
+# class CustomTokenVerifyView(TokenVerifyView):
+#     """
+#     Custom token verification view that retrieves the token from cookies.
+#     """
+#     permission_classes = [AllowAny]
+    
+#     def post(self, request, *args, **kwargs):   
+#         # Attempt to get the token from cookies
+#         token = request.COOKIES.get('token')
+
+#         if token is None:
+#             return Response({'detail': 'No access token provided.'}, status=400)
+
+        
+        
+#         # If no token is found in cookies, return an error response
+#         if not token:
+#             return Response({"detail": "Token not provided in cookies."}, status=status.HTTP_400_BAD_REQUEST)
+        
+#         # Update request data with token from cookies for verification
+#         request.data['token'] = token
+#         return super().post(request, *args, **kwargs)  # Call the parent method to handle verification
 
 
-def user_logout(request):
-    logout(request)  # Log the user out
-    return redirect('user:login')
+class CustomLogoutView(APIView):
+
+    def post(self, request):
+        # Retrieve the refresh token from the cookies
+        access_token = request.COOKIES.get('token')
+        refresh_token = request.COOKIES.get('refresh')
+
+        if access_token is None:
+            return Response({'detail': 'No access token provided.'}, status=400)
+
+        if refresh_token is None:
+            return Response({'detail': 'No refresh token provided.'}, status=400)
+
+        try:
+            # Create a RefreshToken object
+            token = RefreshToken(refresh_token)
+
+            # Retrieve the OutstandingToken instance
+            outstanding_token = OutstandingToken.objects.get(token=token)
+
+            # Blacklist the outstanding token
+            BlacklistedToken.objects.create(token=outstanding_token)
+
+            # Optional: Clear the refresh token cookie
+            response = Response({'detail': 'Token has been blacklisted.'})
+            response.delete_cookie('refresh')  # Ensure the correct cookie name is used
+            response.delete_cookie('token')  # Ensure the correct cookie name is used
+            
+            return response
+
+        except OutstandingToken.DoesNotExist:
+            return Response({'detail': 'Outstanding token not found.'}, status=404)
+        except TokenError as e:
+            print(f'TokenError: {str(e)}')
+            return Response({'detail': f'Token error: {str(e)}'}, status=400)
+        except Exception as e:
+            print(f'General Exception: {str(e)}')
+            return Response({'detail': f'An error occurred: {str(e)}'}, status=500) 
+
+
+class UserViewSet(viewsets.ViewSet):
+    """
+    A ViewSet for listing, retrieving, creating, updating, and deleting users with JWT authentication and permissions.
+    """
+    
+    # Apply JWT authentication to all actions
+    authentication_classes = [JWTAuthentication]
+
+    def list(self, request):
+        # Only allow admin users to list all users
+        self.permission_classes = [IsAdminUser]
+        self.check_permissions(request)  # Ensure permission check is applied
+
+        queryset = User.objects.all()
+        serializer = UserSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    # def retrieve(self, request, pk=None):
+    #     # Only allow authenticated users to retrieve user profiles
+    #     self.permission_classes = [IsAuthenticated]
+    #     self.check_permissions(request)
+
+    #     queryset = User.objects.all()
+    #     user = get_object_or_404(queryset, pk=pk)
+    #     serializer = UserSerializer(user)
+    #     return Response(serializer.data)
+
+    def create(self, request):
+        # Allow anyone to create a new user account
+        data = request.data
+        first_name = data['first_name']
+        last_name = data['last_name']
+        # Manually hash the password before saving
+        if 'password' in data:
+            data['password'] = make_password(data['password'])
+
+        data['username'] = "{} {}".format(first_name, last_name)
+        serializer = UserSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def update(self, request, pk=None):
+        # Only authenticated users can update their profiles
+        self.permission_classes = [IsAuthenticated]
+        self.check_permissions(request)
+
+        user = get_object_or_404(User, pk=pk)
+        data = request.data
+        
+        # Hash password if it exists in the request
+        if 'password' in data:
+            data['password'] = make_password(data['password'])
+            
+        serializer = UserSerializer(user, data=data, partial=True)  # Allow partial updates
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    # def destroy(self, request, pk=None):
+    #     # Only admin users can delete a user
+    #     self.permission_classes = [IsAdminUser]
+    #     self.check_permissions(request)
+
+    #     user = get_object_or_404(User, pk=pk)
+    #     user.delete()
+    #     return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 
+class AddressViewSet(viewsets.ViewSet):
+    """
+    A simple ViewSet for listing, retrieving, updating, and deleting addresses.
+    """
+    authentication_classes = [JWTAuthentication]
+
+    def list(self, request):
+        self.permission_classes = [IsAdminUser, IsAuthenticated]
+        self.check_permissions(request)
+
+        # Filter addresses by the logged-in user
+        queryset = Address.objects.all()
+        serializer = AddressSerializer(queryset, many=True)
+        return Response(serializer.data)
 
 
+    def retrieve(self, request, pk=None):
+        self.permission_classes = [IsAuthenticated]
+        self.check_permissions(request)
+        address = get_object_or_404(Address, pk=pk)  # Check if the address belongs to the user
+        serializer = AddressSerializer(address)
+        return Response(serializer.data)
 
+    def create(self, request):
+        self.permission_classes = [IsAuthenticated]
+        self.check_permissions(request)
+        serializer = AddressSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=request.user)  # Set the user to the logged-in user
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-@login_required
-def create_address_view(request):
-    if request.method == 'POST':
-        form = AddressForm(request.POST)
-        if form.is_valid():
-            form = form.save(commit=False)
-            form.user = request.user
-            form.save()
-            return redirect('user:profile')  # Replace with your success URL
-    else:
-        form = AddressForm()
-    return render(request, 'user_management/create_address.html', {'form': form})
+    def update(self, request, pk=None):
+        self.permission_classes = [IsAuthenticated]
+        self.check_permissions(request)
+        address = get_object_or_404(Address, pk=pk, user=request.user)  # Ensure user owns the address
+        serializer = AddressSerializer(address, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
-@login_required
-def delete_address_view(request, pk):
-    address = get_object_or_404(Address, pk=pk)
-    if request.method == 'POST':
+    def destroy(self, request, pk=None):
+        self.permission_classes = [IsAuthenticated]
+        self.check_permissions(request)
+        address = get_object_or_404(Address, pk=pk, user=request.user)  # Ensure user owns the address
         address.delete()
-        return redirect('user:profile')  # Replace with the actual name of the URL for the address list page
-
-    return render(request, 'user_management/delete_address.html', {'object': address})
-
-
-@login_required
-def update_address_view(request, pk):
-    address = Address.objects.get(pk=pk)
-    if request.method == 'POST':
-        form = AddressForm(request.POST, instance=address)
-        if form.is_valid():
-            form.save()
-            return redirect('user:profile')  # Replace with your success URL
-    else:
-        form = AddressForm(instance=address)
-    return render(request, 'user_management/update_address.html', {'form': form})
-
-
-def sync_billing_address(user, address):
-    billing_address = Address.objects.filter(address_type='B', is_default=True).first()
-    if billing_address:
-        # Update the existing default billing address
-        billing_address.full_name = address.full_name
-        billing_address.company_name = address.company_name
-        billing_address.street_address = address.street_address
-        billing_address.address_line_2 = address.address_line_2
-        billing_address.city = address.city
-        billing_address.state = address.state
-        billing_address.zip_code = address.zip_code
-        billing_address.country = address.country
-        billing_address.is_default = True
-        billing_address.save()
-    else:
-        # Create a new billing address and set it as default
-        new_billing_address = Address.objects.create(
-            user=user,
-            full_name=address.full_name,
-            company_name=address.company_name,
-            street_address=address.street_address,
-            address_line_2=address.address_line_2,
-            city=address.city,
-            state=address.state,
-            zip_code=address.zip_code,
-            country=address.country,
-            address_type='billing',
-            is_default=True
-        )
-        user.billing_addresses.add(new_billing_address)
-
-
-def sync_shipping_address(user, address):
-    shipping_address = Address.objects.filter(address_type='S', is_default=True).first()
-    if shipping_address:
-        # Update the existing default shipping address
-        shipping_address.full_name = address.full_name
-        shipping_address.company_name = address.company_name
-        shipping_address.street_address = address.street_address
-        shipping_address.address_line_2 = address.address_line_2
-        shipping_address.city = address.city
-        shipping_address.state = address.state
-        shipping_address.zip_code = address.zip_code
-        shipping_address.country = address.country
-        shipping_address.is_default = True
-        shipping_address.save()
-    else:
-        # Create a new shipping address and set it as default
-        new_shipping_address = Address.objects.create(
-            user=user,
-            full_name=address.full_name,
-            company_name=address.company_name,
-            street_address=address.street_address,
-            address_line_2=address.address_line_2,
-            city=address.city,
-            state=address.state,
-            zip_code=address.zip_code,
-            country=address.country,
-            address_type='shipping',
-            is_default=True
-        )
-        user.shipping_addresses.add(new_shipping_address)
-
-
-
-
-@login_required
-def create_physical_address_view(request):
-    user = request.user
-
-    if request.method == 'POST':
-        form = PhysicalAddressForm(request.POST)
-        if form.is_valid():
-            address = form.save(commit=False)
-            address.user = user
-            address.save()
-
-            # Assign the new physical address to the user
-            user.physical_address = address
-
-            # Handle "Same as Billing Address"
-            if form.cleaned_data.get('same_as_billing'):
-                sync_billing_address(user, address)
-
-            # Handle "Same as Shipping Address"
-            if form.cleaned_data.get('same_as_shipping'):
-                sync_shipping_address(user, address)
-
-            user.save()
-            return redirect('user:profile')  # Replace with your success URL
-    else:
-        form = PhysicalAddressForm()
-
-    return render(request, 'user_management/create_physical_address.html', {'form': form})
-
-
-@login_required
-def update_physical_address_view(request):
-    user = request.user
-    
-    instance = PhysicalAddress.objects.get(user=user)
-
+        return Response(status=status.HTTP_204_NO_CONTENT)
     
 
-    if request.method == 'POST':
-        form = PhysicalAddressForm(request.POST, instance=instance)
-        if form.is_valid():
-            address = form.save(commit=False)
-            address.user = user
-            address.save()
+class PhysicalAddressViewSet(viewsets.ViewSet):
+    """
+    A simple ViewSet for listing, retrieving, updating, and deleting physical addresses.
+    """
+    authentication_classes = [JWTAuthentication]
 
-            # Handle "Same as Billing Address"
-            if form.cleaned_data.get('same_as_billing'):
-                sync_billing_address(user, address)
+    def list(self, request):
+        self.permission_classes = [IsAdminUser, IsAuthenticated]
+        self.check_permissions(request)
+        queryset = PhysicalAddress.objects.all()
+        serializer = PhysicalAddressSerializer(queryset, many=True)
+        return Response(serializer.data)
 
-            # Handle "Same as Shipping Address"
-            if form.cleaned_data.get('same_as_shipping'):
-                sync_shipping_address(user, address)
+    def retrieve(self, request, pk=None):
+        self.permission_classes = [IsAuthenticated]
+        self.check_permissions(request)
+        queryset = PhysicalAddress.objects.all()
+        physical_address = get_object_or_404(queryset, pk=pk, user=request.user)
+        serializer = PhysicalAddressSerializer(physical_address)
+        return Response(serializer.data)
 
-            user.save()
-            return redirect('user:profile')  # Replace with your success URL
-    else:
-        form = PhysicalAddressForm(instance=instance)
+    def create(self, request):
+        
+        serializer = PhysicalAddressSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    return render(request, 'user_management/update_physical_address.html', {'form': form})
+    def update(self, request, pk=None):
+        self.permission_classes = [IsAuthenticated]
+        self.check_permissions(request)
+        physical_address = get_object_or_404(PhysicalAddress, pk=pk, user=request.user)
+        serializer = PhysicalAddressSerializer(physical_address, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    def destroy(self, request, pk=None):
+        self.permission_classes = [IsAuthenticated]
+        self.check_permissions(request)
+        physical_address = get_object_or_404(PhysicalAddress, pk=pk, user=request.user)
+        physical_address.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
-@login_required
-def create_credit_card_view(request):
-    user = request.user
+class CreditCardViewSet(viewsets.ViewSet):
+    """
+    A simple ViewSet for listing, retrieving, updating, and deleting credit cards.
+    """
+    authentication_classes = [JWTAuthentication]
 
-    if request.method == 'POST':
-        form = CreditCardForm(request.POST)
-        if form.is_valid():
-            credit_card = form.save(commit=False)
-            credit_card.user = user
+    
+    def list(self, request):
+        self.permission_classes = [IsAdminUser, IsAuthenticated]
+        self.check_permissions(request)
+        queryset = CreditCard.objects.all()
+        serializer = CreditCardSerializer(queryset, many=True)
+        return Response(serializer.data)
 
-            # Check if the new credit card should be set as default
-            if credit_card.is_default:
-                # Set all existing credit cards of the user to non-default
-                CreditCard.objects.filter(user=user).update(is_default=False)
+    def retrieve(self, request, pk=None):
+        self.permission_classes = [IsAuthenticated]
+        self.check_permissions(request)
+        queryset = CreditCard.objects.all()
+        credit_card = get_object_or_404(queryset, pk=pk, use=request.user)
+        serializer = CreditCardSerializer(credit_card)
+        return Response(serializer.data)
 
-            # Save the new credit card
-            credit_card.save()
+    def create(self, request):
+        serializer = CreditCardSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-            return redirect('user:profile')  # Replace with your success URL
+    def update(self, request, pk=None):
+        self.permission_classes = [IsAuthenticated]
+        self.check_permissions(request)
+        credit_card = get_object_or_404(CreditCard, pk=pk, user=request.user)
+        serializer = CreditCardSerializer(credit_card, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    else:
-        form = CreditCardForm()
-
-    return render(request, 'user_management/create_credit_card.html', {'form': form})
-
-
-
-@login_required
-def update_credit_card_view(request):
-    credit_card = CreditCard.objects.filter(user=request.user, is_default=True)
-    if request.method == 'POST':
-        form = CreditCardForm(request.POST, instance=credit_card)
-        if form.is_valid():
-            updated_credit_card = form.save(commit=False)
-
-            if updated_credit_card.is_default:
-                # Set all other credit cards of the user to non-default
-                CreditCard.objects.filter(user=credit_card.user).exclude(pk=credit_card.pk).update(is_default=False)
-
-            updated_credit_card.save()
-            return redirect('user:profile')  # Replace with your success URL
-
-    else:
-        form = CreditCardForm(instance=credit_card)
-
-    return render(request, 'user_management/update_credit_card.html', {'form': form})
-
-
-@login_required
-def delete_credit_card_view(request, pk):
-    credit_card = get_object_or_404(CreditCard, pk=pk)
-    if request.method == 'POST':
+    def destroy(self, request, pk=None):
+        self.permission_classes = [IsAuthenticated]
+        self.check_permissions(request)
+        credit_card = get_object_or_404(CreditCard, pk=pk, user=request.user)
         credit_card.delete()
-        return redirect('user:profile')  # Replace with the actual name of the URL for the credit card list page
-
-    return render(request, 'user_management/delete_credit_card.html', {'object': credit_card})
-
-
-
-@login_required
-def profile(request):
-    user = request.user
-    physical_address = PhysicalAddress.objects.filter(user=user, is_default=True).first()
-    billing_address = Address.objects.filter(user=user, address_type='billing', is_default=True).first()
-    shipping_address = Address.objects.filter(user=user, address_type='shipping', is_default=True).first()
-    payment_info = CreditCard.objects.filter(user=user, is_default=True).first()
-
-    context = {
-        'user': user,
-        'physical_address': physical_address,
-        'billing_address': billing_address,
-        'shipping_address': shipping_address,
-        'payment_info': payment_info,
-
-    }
-    
-    return render(request, 'user_management/profile.html', context)
-
+        return Response(status=status.HTTP_204_NO_CONTENT)

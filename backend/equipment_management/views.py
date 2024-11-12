@@ -1,712 +1,847 @@
-from django.shortcuts import render, get_object_or_404, redirect
-from django.utils import timezone
-from django.contrib import messages
-from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import Count
-from django.db.models import Q
-from django.db import transaction
-from django.views.generic import View
-from django.http import JsonResponse
-from django.conf import settings
-from django.contrib.auth.decorators import login_required
-from django.urls import reverse
-
-
-
-from rest_framework.views import APIView
+# rentals/views.py
+from rest_framework import viewsets, permissions
 from rest_framework.response import Response
-
-
-from user_management.models import Address
-from user_management.forms import CheckoutForm
-from .models import Equipment, Order, OrderItem, Cart, CartItem, Tag, Category, Review, Image, Specification
-from .forms import EquipmentReviewForm
-
-import stripe
-
-stripe.api_key = settings.STRIPE_SECRET_KEY
-
-
-@login_required
-def create_payment(request):
-    try:
-        # Fetch the order to get the total cost
-        order = Order.objects.get(user=request.user, ordered=False)
-        total = int(order.get_total * 100)
-
-        # Create a PaymentIntent with the order amount and currency
-        intent = stripe.PaymentIntent.create(
-            amount=total,
-            currency='usd',
-            automatic_payment_methods={
-                'enabled': True,
-            },
-        )
-
-        # Begin a transaction to ensure atomicity
-        with transaction.atomic():
-            # Mark the order as paid and update the ordered status
-            order.payment_token = intent.id
-            order.payment_status = 'paid'
-            order.ordered = True
-            order.date_ordered = timezone.now()
-            order.save()
-
-            # Iterate over all items in the order and mark their equipment as not available
-            for item in order.order_items.all():  # Assuming `order_items` is the related name for OrderItems
-                equipment = item.item  # `item` is the foreign key to Equipment in OrderItem
-                equipment.is_available = False
-                equipment.save()
-
-        return JsonResponse({
-            'clientSecret': intent.client_secret,
-        })
-    except Order.DoesNotExist:
-        return JsonResponse({'error': 'Order not found'}, status=404)
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=400)
-
-@login_required
-def successMsg(request):
-    token = request.GET.get('payment_intent')
-
-    if not token:
-        return redirect('order_summary')  # Redirect if no token
-
-    try:
-        # Find the order using the secure token
-        order = Order.objects.get(payment_token=token)
-        context = {
-            'order': order
-        }
-
-        # Mark the order as completed (or whatever your logic is)
-        order = Order.objects.get(user=request.user, ordered=False)
-        order.status = 'approved'
-        order.ordered = True
-        order.save()
-
-        return render(request, 'equipment_management/success.html', context)
-
-    except Order.DoesNotExist:
-        return redirect('order_summary')  # Redirect if no matching order is found
-
-@login_required
-def stripe_view(request):
-    if request.method == 'POST':
-        print(request.POST)
-    try:
-        order = Order.objects.get(user=request.user, ordered=False)
-    except ObjectDoesNotExist:
-        return redirect('cart-summary')
-    context = {
-        'order': order,
-        'STRIPE_PUBLIC_KEY': settings.STRIPE_PUBLIC_KEY
-    }
-    return render(request, 'equipment_management/stripe.html', context)
-
-@login_required
-def paypal_view(request):
-    return render(request, 'equipment_management/paypal.html')
-
-
-
-def search_view(request):
-    query = request.GET.get('query')  # Get the search query from the request
-    results = Equipment.objects.all()  # Start with all Equipment objects
-
-    referer_url = request.META.get('HTTP_REFERER', '/')  # Default URL
-
-
-    if query:
-        # Perform a search on the relevant fields
-        results = results.filter(
-            Q(name__icontains=query) |  # Search in the name field
-            Q(description__icontains=query) |  # Search in the description field
-            Q(category__name__icontains=query) |  # Search in the related category's name
-            Q(tags__name__icontains=query)  # Search in the related tags' names
-        ).distinct()  # Ensure results are distinct to avoid duplicates
-
-    context = {
-        'referer_url': referer_url,
-        'results': results,
-        'query': query,
-    }
-    return render(request, 'equipment_management/search_results.html', context)
-
-
-@login_required
-def equipment_create_view(request):
-    user = request.user
-
-    if request.method == 'POST':
-        # Extracting data from the POST request
-        name = request.POST.get('name')
-        description = request.POST.get('description')
-        category_id = request.POST.get('category')
-        hourly_rate = request.POST.get('hourly_rate')
-        street_address = request.POST.get('street_address')
-        street_address2 = request.POST.get('street_address2')
-        city = request.POST.get('city')
-        state = request.POST.get('state')
-        zip_code = request.POST.get('zip_code')
-        country = request.POST.get('country')
-        is_available = request.POST.get('is_available') == 'on'
-        terms = request.POST.get('terms')
-        tags = request.POST.get('tags', '').split(',')
-        # Process specifications
-        spec_names = request.POST.getlist('specName')
-        spec_values = request.POST.getlist('specValue')
-
-        for name, value in zip(spec_names, spec_values):
-            Specification.objects.create(equipment=equipment, name=name, value=value)
-
-        # Create a new Address instance
-        address = Address.objects.create(
-            street_address=street_address,
-            street_address2=street_address2,
-            city=city,
-            state=state,
-            zip_code=zip_code,
-            country=country,
-            user=user,  # Assuming the user is the owner of the address
-            is_default=False  # Adjust as needed
-        )
-
-        # Create the Equipment instance
-        equipment = Equipment(
-            owner=user,
-            name=name,
-            description=description,
-            category_id=category_id,
-            hourly_rate=hourly_rate,
-            address=address,  # Save the address instance
-            is_available=is_available,
-            terms=terms
-        )
-        equipment.save()
-
-        slug = equipment.slug
-        id = equipment.id
-
-        # Handle tags
-        for tag_name in tags:
-            tag_name = tag_name.strip()
-            if tag_name:  # Only add non-empty tags
-                tag, created = Tag.objects.get_or_create(name=tag_name)
-                equipment.tags.add(tag)
-
-        # Handle multiple image uploads
-        images = request.FILES.getlist('images')
-        for img in images:
-            Image.objects.create(equipment=equipment, image=img)
-
-        messages.success(request, 'Equipment added successfully.')
-        return redirect(reverse('equipment_detail', kwargs={'slug': slug, 'id': id}))  # Redirect to an appropriate page
-    
-    return render(request, 'equipment_management/index.html')
-
-
-def home(request):
-    cart_items = get_cart_items(request)
-
-    trending_ads = Equipment.objects.filter(is_available=True).order_by('-date_created')[:4]  # Fetch trending ads
-    equipments = Equipment.objects.all()  # Fetch all equipment
-    categories = Category.objects.filter(parent=None)
-    
-    
-    context = {
-        'cart_items': cart_items,
-        'categories': categories,
-        'equipments': equipments,
-        'trending_ads': trending_ads
-    }
-    return render(request, 'equipment_management/index.html', context)
-
-def about_us(request):
-    return render(request, 'equipment_management/about_us.html')
-
-def services(request):
-    return render(request, 'equipment_management/services.html')
-
-def service_detail(request):
-    return render(request, 'equipment_management/service_detail.html')
-
-def contact_us(request):
-    return render(request, 'equipment_management/contact_us.html')
-
-
-
-
-def equipment_list(request):
-    equipments = Equipment.objects.prefetch_related('images').all()
-    categories = Category.objects.filter(parent=None)
-    cities = Equipment.objects.values('address__city').annotate(equipment_count=Count('id')).order_by('-equipment_count')
-
-    context = {
-        'equipments': equipments,
-        'categories': categories,
-        'cities': cities,
-    }
-    return render(request, 'equipment_management/categories.html', context)
-
-def equipment_detail(request, slug, id):
-
-    equipment = get_object_or_404(Equipment, slug=slug, id=id)
-    if request.method == 'POST':
-        form = EquipmentReviewForm(request.POST)
-        if form.is_valid():
-            review = form.save(commit=False)
-            review.equipment = equipment
-            review.user = request.user
-            review.save()
-            return redirect(equipment.get_absolute_url())  # Redirect to equipment detail page
-    else:
-        form = EquipmentReviewForm()
-
-    reviews = equipment.reviews.all()
-
-
-    context = {
-        'form': form,
-        'equipment': equipment,
-        'reviews': reviews
-     }
-
-    return render(request, 'equipment_management/equipment_detail.html', context)
-
-
-def get_or_create_cart(request):
-    session_key = request.session.session_key
-    if not session_key:
-        request.session.create()  # Ensure the session is created if not present
-        session_key = request.session.session_key
-
-    cart, created = Cart.objects.get_or_create(session_key=session_key)
-    return cart
-
-def cart(request):
-    cart_items = get_cart_items(request)
-    total_price = sum(item.get_total for item in cart_items)  # Calculate total price
-    context = {
-        'cart_items': cart_items,
-        'total_price': total_price,
-    }
-    return render(request, 'equipment_management/cart.html', context)
-
-def add_to_cart(request, slug, id):
-    item = get_object_or_404(Equipment, slug=slug, id=id)
-    if request.method == 'POST':
-        print(request.POST)
-
-        cart = get_or_create_cart(request)
-
-        # Fetch start_date, end_date, and quantity from the form data
-        start_date = request.POST.get('start_date')
-        end_date = request.POST.get('end_date')
-        quantity = int(request.POST.get('quantity'))  # Default to 1 if not provided
-
-        # Try to get an existing cart item or create a new one
-        cart_item, created = CartItem.objects.get_or_create(
-            cart=cart,
-            item=item,
-            start_date=start_date,
-            end_date=end_date,
-            quantity=quantity
-        )
-
-        if not created:
-            # If the cart item already exists, just update the quantity
-            cart_item.quantity += quantity
-            cart_item.save()
-            messages.info(request, 'This item quantity was updated in your cart.')
-        else:
-            # If a new cart item was created, just save it
-            cart_item.save()
-            messages.info(request, 'This item was added to your cart.')
-
-    return redirect('cart-summary')
-
-def add_single_item_to_cart(request, slug, id):
-    cart = get_or_create_cart(request)
-    item = get_object_or_404(Equipment, slug=slug, id=id)
-
-    try:
-        cart_item = CartItem.objects.get(
-            cart=cart,
-            item=item,
-            ordered=False
-        )
-        if cart_item:
-            # In the quantity of the item in the cart
-            cart_item.quantity += 1
-            cart_item.save()
-            messages.info(request, 'The quantity of this item was updated.')
-
-    except CartItem.DoesNotExist:
-        messages.info(request, 'This item was not in your cart.')
-
-    return redirect('cart-summary')
-
-def remove_from_cart(request, slug, id):
-    item = get_object_or_404(Equipment, slug=slug, id=id)
-    cart = get_or_create_cart(request)
-
-    try:
-        # Retrieve the cart item to be removed
-        cart_item = CartItem.objects.get(
-            cart=cart,
-            item=item,
-            ordered=False
-        )
-        # Remove the cart item from the cart
-        cart_item.delete()
-        messages.info(request, 'This item was removed from your cart.')
-    except CartItem.DoesNotExist:
-        messages.info(request, 'This item was not in your cart.')
-
-    return redirect('cart-summary')
-
-def remove_single_item_from_cart(request, slug, id):
-    cart = get_or_create_cart(request)
-    item = get_object_or_404(Equipment, slug=slug, id=id)
-
-    try:
-        cart_item = CartItem.objects.get(
-            cart=cart,
-            item=item,
-            ordered=False
-        )
-        if cart_item.quantity > 1:
-            # Decrease the quantity of the item in the cart
-            cart_item.quantity -= 1
-            cart_item.save()
-            messages.info(request, 'The quantity of this item was updated.')
-        else:
-            # Remove the item from the cart
-            cart_item.delete()
-            messages.info(request, 'This item was removed from your cart.')
-
-    except CartItem.DoesNotExist:
-        messages.info(request, 'This item was not in your cart.')
-
-    return redirect('cart-summary')
-
-def get_cart_items(request):
-    cart = get_or_create_cart(request)
-    cart_items = CartItem.objects.filter(cart=cart, ordered=False)  # Fetch items that are not ordered
-    return cart_items
-
-class CartSummaryView(View):
-
-    def get(self, *args, **kwargs):
-        # Get or create a cart based on the session
-        session_key = self.request.session.session_key
-        if not session_key:
-            # Create a session key if it doesn't exist
-            self.request.session.save()
-            session_key = self.request.session.session_key
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.exceptions import AuthenticationFailed
+from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
+from django.utils.translation import gettext_lazy as _
+from django.shortcuts import get_object_or_404
+import json
+from datetime import datetime
+
+from rest_framework import status
+from .models import Category, Tag, Equipment, Image, Specification, Review, Cart, CartItem, Order, OrderItem
+from .serializers import (
+    CategorySerializer,
+    TagSerializer,
+    EquipmentSerializer,
+    ImageSerializer,
+    SpecificationSerializer,
+    ReviewSerializer,
+    CartSerializer,
+    CartItemSerializer,
+    OrderSerializer,
+    OrderItemSerializer
+)
+
+class JWTAuthenticationFromCookie(JWTAuthentication):
+    def authenticate(self, request):
+        access_token = request.COOKIES.get('token')  # Access token cookie
+        refresh_token = request.COOKIES.get('refresh')  # Refresh token cookie
         
+        # If no access token is present, return None (unauthenticated)
+        if not access_token:
+            return None
+
         try:
-            # Retrieve the active cart for the session
-            cart = Cart.objects.get(session_key=session_key)
+            # Try to validate the access token
+            validated_token = self.get_validated_token(access_token)
+            return self.get_user(validated_token), validated_token
+        except InvalidToken:
+            # If the access token is expired or invalid, attempt to refresh using the refresh token
+            if refresh_token:
+                try:
+                    # Attempt to get a new access token using the refresh token
+                    refresh = RefreshToken(refresh_token)
+                    new_access_token = str(refresh.access_token)
 
-            cart_items = CartItem.objects.filter(id__in=cart.cart_items.values_list('id', flat=True)) \
-                                 .select_related('item') \
-                                 .prefetch_related('item__images')
-            if not cart_items.exists():
-                cart.delete()
-                return redirect('equipments') 
+                    # Set the new access token in the cookies (or headers as needed)
+                    response = self.get_user_response(request)
+                    response.set_cookie('token', new_access_token, httponly=True, secure=True)
+                    
+                    
+                    # Validate the new access token
+                    validated_token = self.get_validated_token(new_access_token)
+                    return self.get_user(validated_token), validated_token
+                except TokenError as e:
+                    raise AuthenticationFailed(_('Token is invalid or expired.'))
 
-            context = {
-                'cart': cart,
-                'cart_items': cart_items,
-            }
-            return render(self.request, 'equipment_management/cart.html', context)
+            # If no refresh token is available, raise an authentication error
+            raise AuthenticationFailed(_('Token is expired and no refresh token is provided.'))
 
-        except ObjectDoesNotExist:
-            return redirect('equipments')
+    def get_user_response(self, request):
+        """
+        Helper method to return the response object where the new access token can be set.
+        """
+        # The `request` object doesn't provide response, this method is just an example.
+        # You can adjust this method to work with your response handling logic.
+        from rest_framework.response import Response
+        return Response()
 
 
 
-def is_valid_form(values):
-    return all(field and field.strip() for field in values)
+from django.http import QueryDict
 
-class CheckoutView(View):
-    def get(self, *args, **kwargs):
-        try:
-            # Try to get the user's active order
-            order = Order.objects.get(user=self.request.user, ordered=False)
-            print('Got an order')
-            print(order.order_items.count)
-
-        except Order.DoesNotExist:
-            # If no active order exists, create a new one from the cart
-            cart = get_object_or_404(Cart, session_key=self.request.session.session_key)
-            if not cart.cart_items.exists():
-                messages.info(self.request, "Your cart is empty")
-                return redirect('cart')
-            
-            with transaction.atomic():
-                order = Order.objects.create(user=self.request.user, ordered=False)
-                print('Created order')
-                for item in cart.cart_items.all():
-                    OrderItem.objects.create(
-                        order=order,
-                        item=item.item,
-                        quantity=item.quantity,
-                        start_date=item.start_date,
-                        end_date=item.end_date,
-                    )
-                cart.delete()  # Remove the cart after creating the order
-
-        form = CheckoutForm()
-        context = {
-            'form': form,
-            'order': order,
+def convert_querydict_to_dict(querydict):
+    # Convert the QueryDict to a dictionary
+    result = {}
+    for key, value in querydict.lists():
+        # If there's only one item in the value list, unpack it
+        if len(value) == 1:
+            result[key] = value[0]
+        else:
+            result[key] = value
+    
+    # Handle specific conversions
+    # Convert address and tags if they are serialized as JSON strings
+    if 'address' in result and isinstance(result['address'], list):
+        # Convert address string to a dictionary if nested
+        result['address'] = {
+            'street_address': result['address'][0].get('street_address', [])[0],
+            'city': result['address'][0].get('city', [])[0],
+            'state': result['address'][0].get('state', [])[0],
+            'zip_code': result['address'][0].get('zip_code', [])[0],
+            'country': result['address'][0].get('country', [])[0]
         }
 
-        # Default shipping address
-        shipping_address_qs = Address.objects.filter(
-            user=self.request.user,
-            address_type='S',
-            is_default=True
-        )
-        if shipping_address_qs.exists():
-            context['default_shipping_address'] = shipping_address_qs[0]
-
-        # Default billing address
-        billing_address_qs = Address.objects.filter(
-            user=self.request.user,
-            address_type='B',
-            is_default=True
-        )
-        if billing_address_qs.exists():
-            context['default_billing_address'] = billing_address_qs[0]
-
-        return render(self.request, "equipment_management/checkout.html", context)
-
-    def post(self, *args, **kwargs):
-        form = CheckoutForm(self.request.POST or None)
-        print(self.request.POST)
+    if 'tags' in result:
         try:
-            order = Order.objects.get(user=self.request.user, ordered=False)
-            if form.is_valid():
-                use_default_shipping = form.cleaned_data.get('use_default_shipping')
-                if use_default_shipping:
-                    address_qs = Address.objects.filter(
-                        user=self.request.user,
-                        address_type='S',
-                        is_default=True
-                    )
-                    if address_qs.exists():
-                        shipping_address = address_qs[0]
-                        order.shipping_address = shipping_address
-                        order.save()
-                    else:
-                        messages.info(self.request, "No default shipping address available")
-                        return redirect('checkout')
-                else:
-                    shipping_address1 = form.cleaned_data.get('shipping_address')
-                    shipping_address2 = form.cleaned_data.get('shipping_address2')
-                    shipping_country = form.cleaned_data.get('shipping_country')
-                    shipping_zip = form.cleaned_data.get('shipping_zip')
+            # Parse the tags JSON string to a Python list
+            result['tags'] = eval(result['tags'])
+        except Exception as e:
+            print("Error converting tags:", e)
 
-                    if is_valid_form([shipping_address1, shipping_country, shipping_zip]):
-                        shipping_address = Address(
-                            user=self.request.user,
-                            street_address=shipping_address1,
-                            street_address2=shipping_address2,
-                            country=shipping_country,
-                            zip_code=shipping_zip,
-                            address_type='S'
-                        )
-                        shipping_address.save()
-                        order.shipping_address = shipping_address
-                        order.save()
+    return result
 
-                        set_default_shipping = form.cleaned_data.get('set_default_shipping')
-                        if set_default_shipping:
-                            shipping_address.is_default = True
-                            shipping_address.save()
+class CategoryViewSet(viewsets.ViewSet):
+    authentication_classes = [JWTAuthentication]
 
-                    else:
-                        messages.info(self.request, "Please fill in the required shipping address fields")
-                        return redirect('checkout')
+    def list(self, request):
+         # Ensure permission check is applied
+        queryset = Category.objects.filter(parent=None)
+        serializer = CategorySerializer(queryset, many=True)
+        return Response(serializer.data)
 
-                use_default_billing = form.cleaned_data.get('use_default_billing')
-                same_billing_address = form.cleaned_data.get('same_billing_address')
+    def create(self, request):
+        self.permission_classes = [permissions.IsAdminUser]
+        self.check_permissions(request)  # Ensure permission check is applied
 
-                if same_billing_address:
-                    billing_address = shipping_address
-                    billing_address.pk = None
-                    billing_address.address_type = 'B'
-                    billing_address.save()
-                    order.billing_address = billing_address
-                    order.save()
+        serializer = CategorySerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-                elif use_default_billing:
-                    address_qs = Address.objects.filter(
-                        user=self.request.user,
-                        address_type='B',
-                        is_default=True
-                    )
-                    if address_qs.exists():
-                        billing_address = address_qs[0]
-                        order.billing_address = billing_address
-                        order.save()
-                    else:
-                        messages.info(self.request, "No default billing address available")
-                        return redirect('checkout')
-                else:
-                    billing_address1 = form.cleaned_data.get('billing_address')
-                    billing_address2 = form.cleaned_data.get('billing_address2')
-                    billing_country = form.cleaned_data.get('billing_country')
-                    billing_zip = form.cleaned_data.get('billing_zip')
+    def retrieve(self, request, pk=None):
+        self.permission_classes = [permissions.IsAdminUser]
+        self.check_permissions(request)  # Ensure permission check is applied
+        category = Category.objects.get(pk=pk)
+        serializer = CategorySerializer(category)
+        return Response(serializer.data)
 
-                    if is_valid_form([billing_address1, billing_country, billing_zip]):
-                        billing_address = Address(
-                            user=self.request.user,
-                            street_address=billing_address1,
-                            street_address2=billing_address2,
-                            country=billing_country,
-                            zip_code=billing_zip,
-                            address_type='B'
-                        )
-                        billing_address.save()
-                        order.billing_address = billing_address
-                        order.save()
+    def update(self, request, pk=None):
+        self.permission_classes = [permissions.IsAdminUser]
+        self.check_permissions(request)  # Ensure permission check is applied
+        category = Category.objects.get(pk=pk)
+        serializer = CategorySerializer(category, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-                        set_default_billing = form.cleaned_data.get('set_default_billing')
-                        if set_default_billing:
-                            billing_address.is_default = True
-                            billing_address.save()
+    def destroy(self, request, pk=None):
+        self.permission_classes = [permissions.IsAdminUser]
+        self.check_permissions(request)  # Ensure permission check is applied
+        category = Category.objects.get(pk=pk)
+        category.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
-                    else:
-                        messages.info(self.request, "Please fill in the required billing address fields")
-                        return redirect('checkout')
-                    
+
+class TagViewSet(viewsets.ViewSet):
+    authentication_classes = [JWTAuthentication]
+
+    def list(self, request):
+        self.permission_classes = [permissions.IsAdminUser]
+        self.check_permissions(request)  # Ensure permission check is applied
+        queryset = Tag.objects.all()
+        serializer = TagSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    def create(self, request):
+        self.permission_classes = [permissions.IsAuthenticated]
+        self.check_permissions(request)  # Ensure permission check is applied
+        serializer = TagSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def retrieve(self, request, pk=None):
+        self.permission_classes = [permissions.IsAuthenticated]
+        self.check_permissions(request)  # Ensure permission check is applied
+        tag = Tag.objects.get(pk=pk)
+        serializer = TagSerializer(tag)
+        return Response(serializer.data)
+
+    def update(self, request, pk=None):
+        self.permission_classes = [permissions.IsAuthenticated]
+        self.check_permissions(request)  # Ensure permission check is applied
+        tag = Tag.objects.get(pk=pk)
+        serializer = TagSerializer(tag, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def destroy(self, request, pk=None):
+        self.permission_classes = [permissions.IsAuthenticated]
+        self.check_permissions(request)  # Ensure permission check is applied
+        tag = Tag.objects.get(pk=pk)
+        tag.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class EquipmentViewSet(viewsets.ModelViewSet):
+    queryset = Equipment.objects.all()
+    serializer_class = EquipmentSerializer
+
+    authentication_classes = [JWTAuthentication]
+
+    def list(self, request):
+        queryset = Equipment.objects.all()
+        serializer = EquipmentSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    def create(self, request, *args, **kwargs):
+        try:    
+            images = request.FILES.getlist('images')  # Assumes images are sent with the 'images' key
+            print()
+            print('Images',images)
+            # Convert incoming data to a structured dictionary
+            data = convert_querydict_to_dict(request.data)
+            print("Structured data before adjustments:", data['images'])
+
+            
+            # Ensure address fields are grouped in a dictionary for the `address` field
+            data['address'] = {
+                'street_address': data.pop('street_address', None),
+                'city': data.pop('city', None),
+                'state': data.pop('state', None),
+                'zip_code': data.pop('zip_code', None),
+                'country': data.pop('country', None)
+            }
+
+            # Convert tags to the expected format (list of dictionaries)
+            if 'tags' in data:
+                # Assuming tags are meant to be strings, convert to dicts if necessary
+                data['tags'] = [{'name': tag} for tag in data.pop('tags')]
+
+            print("Structured data with nested address and formatted tags:", data)
+
+          
                 
+        except Exception as e:
+            print("Error structuring data:", e)
+            raise
 
-                # Optionally handle payment options here
-                payment_method = form.cleaned_data.get('payment_method')
-                print(f"Selected payment method: {payment_method}")  # Debugging line
+        # Initialize serializer with structured data
+        try:
+            serializer = self.get_serializer(data=data, context={'request': request})
+            print("Serializer initialized successfully with data.")
+        except Exception as e:
+            print("Error initializing serializer:", e)
+            raise
 
-                if payment_method == 'S':
-                    return redirect('stripe') 
-                elif payment_method == 'P':
-                    return redirect('paypal')
-                else:
-                    messages.info(self.request, "Please select a payment method")
-                    return redirect('checkout')
+        # Validate serializer data
+        try:
+            serializer.is_valid(raise_exception=True)
+            print("Data is valid.")
+        except Exception as e:
+            print("Error validating serializer data:", e)
+            print("Validation errors:", serializer.errors)
+            raise
 
+        # Save the validated data and return the response
+        try:
+            equipment = serializer.save(request=request)
+            print("Equipment instance created successfully:", equipment)
+            headers = self.get_success_headers(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        except Exception as e:
+            print("Error saving equipment instance or preparing response:", e)
+            raise
+
+
+
+
+
+    def retrieve(self, request, pk=None):
+    
+        equipment = Equipment.objects.get(pk=pk)
+        serializer = EquipmentSerializer(equipment)
+        return Response(serializer.data)
+
+    def update(self, request, pk=None):
+        self.permission_classes = [permissions.IsAuthenticated]
+        self.check_permissions(request)  # Ensure permission check is applied
+        equipment = Equipment.objects.get(pk=pk)
+        serializer = EquipmentSerializer(equipment, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def destroy(self, request, pk=None):
+        self.permission_classes = [permissions.IsAuthenticated]
+        self.check_permissions(request)  # Ensure permission check is applied
+        equipment = Equipment.objects.get(pk=pk)
+        equipment.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ImageViewSet(viewsets.ViewSet):
+    authentication_classes = [JWTAuthentication]
+
+    def list(self, request):
+        self.permission_classes = [permissions.IsAdminUser]
+        self.check_permissions(request)  # Ensure permission check is applied
+        queryset = Image.objects.all()
+        serializer = ImageSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    def create(self, request):
+        # self.permission_classes = [permissions.IsAuthenticated]
+        # self.check_permissions(request)  # Ensure permission check is applied
+        serializer = ImageSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def retrieve(self, request, pk=None):
+        self.permission_classes = [permissions.IsAuthenticated]
+        self.check_permissions(request)  # Ensure permission check is applied
+        image = Image.objects.get(pk=pk)
+        serializer = ImageSerializer(image)
+        return Response(serializer.data)
+
+    def update(self, request, pk=None):
+        self.permission_classes = [permissions.IsAuthenticated]
+        self.check_permissions(request)  # Ensure permission check is applied
+        image = Image.objects.get(pk=pk)
+        serializer = ImageSerializer(image, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def destroy(self, request, pk=None):
+        self.permission_classes = [permissions.IsAuthenticated]
+        self.check_permissions(request)  # Ensure permission check is applied
+        image = Image.objects.get(pk=pk)
+        image.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class SpecificationViewSet(viewsets.ViewSet):
+
+    authentication_classes = [JWTAuthentication]
+
+    def list(self, request):
+        self.permission_classes = [permissions.IsAdminUser]
+        self.check_permissions(request)  # Ensure permission check is applied
+        queryset = Specification.objects.all()
+        serializer = SpecificationSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    def create(self, request):
+        self.permission_classes = [permissions.IsAuthenticated]
+        self.check_permissions(request)  # Ensure permission check is applied
+        serializer = SpecificationSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def retrieve(self, request, pk=None):
+        self.permission_classes = [permissions.IsAuthenticated]
+        self.check_permissions(request)  # Ensure permission check is applied
+        specification = Specification.objects.get(pk=pk)
+        serializer = SpecificationSerializer(specification)
+        return Response(serializer.data)
+
+    def update(self, request, pk=None):
+        self.permission_classes = [permissions.IsAuthenticated]
+        self.check_permissions(request)  # Ensure permission check is applied
+        specification = Specification.objects.get(pk=pk)
+        serializer = SpecificationSerializer(specification, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def destroy(self, request, pk=None):
+        self.permission_classes = [permissions.IsAuthenticated]
+        self.check_permissions(request)  # Ensure permission check is applied
+        specification = Specification.objects.get(pk=pk)
+        specification.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ReviewViewSet(viewsets.ViewSet):
+    authentication_classes = [JWTAuthentication]
+
+    def list(self, request):
+        queryset = Review.objects.all()
+        serializer = ReviewSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    def create(self, request):
+        self.permission_classes = [permissions.IsAuthenticated]
+        self.check_permissions(request)  # Ensure permission check is applied
+        serializer = ReviewSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def retrieve(self, request, pk=None):
+        self.permission_classes = [permissions.IsAuthenticated]
+        self.check_permissions(request)  # Ensure permission check is applied
+        review = Review.objects.get(pk=pk)
+        serializer = ReviewSerializer(review)
+        return Response(serializer.data)
+
+    def update(self, request, pk=None):
+        self.permission_classes = [permissions.IsAuthenticated]
+        self.check_permissions(request)  # Ensure permission check is applied
+        review = Review.objects.get(pk=pk)
+        serializer = ReviewSerializer(review, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def destroy(self, request, pk=None):
+        self.permission_classes = [permissions.IsAuthenticated]
+        self.check_permissions(request)  # Ensure permission check is applied
+        review = Review.objects.get(pk=pk)
+        review.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+class CartViewSet(viewsets.ModelViewSet):
+    authentication_classes = [JWTAuthenticationFromCookie]
+    serializer_class = CartSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        # Ensure a cart exists for the user before returning the queryset
+        Cart.objects.get_or_create(user=self.request.user)
+        return Cart.objects.filter(user=self.request.user)
+
+    
+
+    def create(self, request, *args, **kwargs):
+        # Get or create a cart for the user
+        cart, created = Cart.objects.get_or_create(user=self.request.user)
+        
+        if not created:
+            # If the cart already exists, return its details with a custom message
+            serializer = self.get_serializer(cart)
+            return Response(
+                {"detail": "A cart already exists for this user.", "cart": serializer.data},
+                status=status.HTTP_200_OK
+            )
+
+        # If a new cart is created, return its details in the response
+        serializer = self.get_serializer(cart)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def update(self, request, *args, **kwargs):
+        # Ensure a cart exists for the user before updating
+        cart = self.get_object()
+        serializer = self.get_serializer(cart, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+    def destroy(self, request, *args, **kwargs):
+        # Ensure a cart exists before attempting to delete it
+        cart = self.get_object()
+        cart.delete()
+        return Response({"detail": "Cart deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+
+class CartItemViewSet(viewsets.ModelViewSet):
+    authentication_classes = [JWTAuthenticationFromCookie]
+    serializer_class = CartItemSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_cart_item(self):
+        user_cart, _ = Cart.objects.get_or_create(user=self.request.user)
+        return CartItem.objects.get(id=self.request.data.get('id'))
+
+    def get_queryset(self):
+        # Ensure a cart exists for the user and filter cart items by the user's cart
+        user_cart, _ = Cart.objects.get_or_create(user=self.request.user)
+        return CartItem.objects.filter(cart=user_cart)
+
+    def create(self, request, *args, **kwargs):
+        # Ensure a cart exists for the user
+        user_cart, _ = Cart.objects.get_or_create(user=self.request.user)
+        
+        # Extract data for the item to be added/updated
+        item_data = request.data
+        item_id = item_data.get("item")  # Get the item ID
+        item_quantity = item_data.get("quantity", 1)
+        
+        # Check if the item already exists in the user's cart
+        existing_cart_item = CartItem.objects.filter(cart=user_cart, item_id=item_id).first()
+
+        if existing_cart_item:
+            # Normalize the start_date and end_date to only compare the date (ignore time)
+            new_start_date = datetime.strptime(item_data.get("start_date"), "%Y-%m-%d").date()
+            new_end_date = datetime.strptime(item_data.get("end_date"), "%Y-%m-%d").date()
+
+            existing_start_date = existing_cart_item.start_date  # No need for .date(), it's already a date
+            existing_end_date = existing_cart_item.end_date  # No need for .date(), it's already a date
+
+            if (existing_start_date != new_start_date or existing_end_date != new_end_date):
+                # If the dates are different, reset the quantity and update dates
+                existing_cart_item.quantity = item_quantity  # Set the quantity to the new value
+                existing_cart_item.start_date = new_start_date
+                existing_cart_item.end_date = new_end_date
+            else:
+                # If the dates are the same, increment the quantity
+                existing_cart_item.quantity += item_quantity
+
+            existing_cart_item.save()
+            serializer = self.get_serializer(existing_cart_item)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        
+        # If the item does not exist in the cart, create a new cart item
+        item_data['cart'] = user_cart.id  # Associate the new cart item with the user's cart
+        serializer = self.get_serializer(data=item_data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        
+    def update(self, request, *args, **kwargs):
+        # item_id = request.data.get('id') 
+        # cart_item = CartItem.objects.get(id=item_id)
+        cart_item = self.get_cart_item()
+        serializer = self.get_serializer(cart_item, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+    def destroy(self, request, *args, **kwargs):
+        cart_item = self.get_object()
+        cart_item.delete()
+        return Response({"detail": "Cart item deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+
+# class CartViewSet(viewsets.ViewSet):
+#     authentication_classes = [JWTAuthenticationFromCookie]
+#     serializer_class = CartSerializer
+#     def get_queryset(self):
+#         # Only return the cart for the authenticated user
+#         return Cart.objects.filter(user=self.request.user)
+
+#     def list(self, request):
+#         try:
+#             # Get the cart for the authenticated user
+#             cart = Cart.objects.get(user=request.user)
+            
+#             # Get all cart items related to the cart
+#             cart_items = CartItem.objects.filter(cart=cart)  # Corrected here
+            
+#             # Serialize the cart data, including related cart items
+#             serializer = CartSerializer(cart)
+#             # Add cart_items to the serialized data
+#             cart_data = serializer.data
+#             cart_data['cart_items'] = CartItemSerializer(cart_items, many=True).data  # Ensure you have a CartItemSerializer
+            
+#             return Response(cart_data)
+        
+#         except Cart.DoesNotExist:
+#             return Response([], status=status.HTTP_204_NO_CONTENT)
+
+#     def create(self, request):
+#         # Print incoming request data for debugging purposes
+#         print()
+#         print("Creatiioon request data", request.data)
+
+#         # Ensure the user is authenticated
+#         self.check_permissions(request)
+
+#         # Ensure request data is a list of cart items
+#         if not isinstance(request.data.get('cart_items'), list):
+#             return Response({"detail": "Invalid data format. Expected a list of cart items."}, status=status.HTTP_400_BAD_REQUEST)
+
+#         cart_data = request.data.get('cart_items')
+#         if not cart_data:
+#             return Response({"detail": "Cart items are required."}, status=status.HTTP_400_BAD_REQUEST)
+#         print()
+
+#         print("Cart data received:", cart_data)
+
+#         # Retrieve or create a Cart for the authenticated user
+#         cart, created = Cart.objects.get_or_create(user=request.user)
+
+#         # Process each cart item
+#         for item_data in cart_data:
+#             item_response = self.process_cart_item(item_data, cart)
+#             if item_response:
+#                 return item_response
+
+#         # Serialize and return the updated cart
+#         cart_serializer = CartSerializer(cart)
+#         return Response(cart_serializer.data, status=status.HTTP_201_CREATED)
+
+#     def process_cart_item(self, item_data, cart):
+#         # Extract item details
+
+#         equipment_id = item_data.get('item')
+#         quantity = item_data.get("quantity")
+#         start_date = item_data.get("start_date")
+#         end_date = item_data.get("end_date")
+
+#         if not equipment_id or not start_date or not end_date:
+#             return Response({"detail": "Missing required fields for an item."}, status=status.HTTP_400_BAD_REQUEST)
+
+#         print(f"Processing item: Equipment ID: {equipment_id}, Quantity: {quantity}, Start Date: {start_date}, End Date: {end_date}")
+
+#         try:
+#             equipment = Equipment.objects.get(id=equipment_id)
+#         except Equipment.DoesNotExist:
+#             return Response({"detail": f"Equipment with ID {equipment_id} not found."}, status=status.HTTP_404_NOT_FOUND)
+
+#         # Create a new cart item (no updates)
+#         CartItem.objects.create(
+#             cart=cart,
+#             item=equipment,
+#             quantity=quantity,
+#             start_date=start_date,
+#             end_date=end_date
+#         )
+
+#         return None
+
+
+    
+
+#     def update(self, request, pk=None):
+#         # Print incoming request data for debugging purposes
+#         print()
+#         print("update requst data", request.data)
+        
+
+#         # If request data is a list of cart items, directly use it
+#         if isinstance(request.data, list):
+#             cart_data = request.data
+#         else:
+#             return Response({"detail": "Invalid data format. Expected a list of cart items."}, status=status.HTTP_400_BAD_REQUEST)
+        
+#         # Ensure cart_data is not empty
+#         if not cart_data:
+#             return Response({"detail": "Cart items are required."}, status=status.HTTP_400_BAD_REQUEST)
+#         print()
+
+#         print("Cart data received for update:", cart_data)
+
+#         # Retrieve the cart for the authenticated user
+#         cart = get_object_or_404(Cart, user=request.user)
+
+#         # Iterate over the cart items data
+#         for item_data in cart_data:
+#             equipment_id = item_data.get('item', {}).get('id')
+#             quantity = item_data.get("quantity")
+#             start_date = item_data.get("start_date")
+#             end_date = item_data.get("end_date")
+            
+#             if not equipment_id or not start_date or not end_date:
+#                 return Response({"detail": "Missing required fields for an item."}, status=status.HTTP_400_BAD_REQUEST)
+
+#             print(f"Equipment ID: {equipment_id}, Quantity: {quantity}, Start Date: {start_date}, End Date: {end_date}")
+            
+#             # Find the Equipment instance or return 404 if not found
+#             equipment = get_object_or_404(Equipment, id=equipment_id)
+            
+#             # Find the existing cart item
+#             cart_item = CartItem.objects.filter(cart=cart, item=equipment).first()
+
+#             if cart_item:
+#                 # If the item exists, update its quantity and dates
+#                 cart_item.quantity = quantity  # Update the quantity
+#                 cart_item.start_date = start_date  # Update the start date
+#                 cart_item.end_date = end_date  # Update the end date
+#                 cart_item.save()  # Save updated cart item
+#             else:
+#                 # If the item doesn't exist, create a new cart item
+#                 CartItem.objects.create(
+#                     cart=cart,
+#                     item=equipment,
+#                     quantity=quantity,
+#                     start_date=start_date,
+#                     end_date=end_date
+#                 )
+
+#         # Serialize and return the updated cart
+#         cart_serializer = CartSerializer(cart)
+#         return Response(cart_serializer.data, status=status.HTTP_200_OK)
+
+#     def retrieve(self, request, pk=None):
+#         self.permission_classes = [permissions.IsAuthenticated]
+#         self.check_permissions(request)  # Ensure permission check is applied
+#         try:
+#             cart = Cart.objects.get(pk=pk, user=request.user)
+#             serializer = CartSerializer(cart)
+#             return Response(serializer.data)
+#         except Cart.DoesNotExist:
+#             return Response(status=status.HTTP_404_NOT_FOUND)
+
+#     def destroy(self, request, pk=None):
+#         self.permission_classes = [permissions.IsAuthenticated]
+#         self.check_permissions(request)  # Ensure permission check is applied
+#         try:
+#             cart = Cart.objects.get(pk=pk, user=request.user)
+#             cart.delete()
+#             return Response(status=status.HTTP_204_NO_CONTENT)
+#         except Cart.DoesNotExist:
+#             return Response(status=status.HTTP_404_NOT_FOUND)
+        
+# class CartItemViewSet(viewsets.ViewSet):
+
+#     authentication_classes = [JWTAuthentication]
+
+#     def list(self, request):
+#         self.permission_classes = [permissions.IsAuthenticated]
+#         self.check_permissions(request)  # Ensure permission check is applied
+#         queryset = CartItem.objects.all()
+#         serializer = CartItemSerializer(queryset, many=True)
+#         return Response(serializer.data)
+
+#     def create(self, request):
+#         self.permission_classes = [permissions.IsAuthenticated]
+#         self.check_permissions(request)  # Ensure permission check is applied
+#         serializer = CartItemSerializer(data=request.data)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(serializer.data, status=status.HTTP_201_CREATED)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+#     def retrieve(self, request, pk=None):
+#         self.permission_classes = [permissions.IsAuthenticated]
+#         self.check_permissions(request)  # Ensure permission check is applied
+#         try:
+#             cart_item = CartItem.objects.get(pk=pk)
+#             serializer = CartItemSerializer(cart_item)
+#             return Response(serializer.data)
+#         except CartItem.DoesNotExist:
+#             return Response(status=status.HTTP_404_NOT_FOUND)
+
+#     def update(self, request, pk=None):
+#         self.permission_classes = [permissions.IsAuthenticated]
+#         self.check_permissions(request)  # Ensure permission check is applied
+#         try:
+#             cart_item = CartItem.objects.get(pk=pk)
+#             serializer = CartItemSerializer(cart_item, data=request.data)
+#             if serializer.is_valid():
+#                 serializer.save()
+#                 return Response(serializer.data)
+#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#         except CartItem.DoesNotExist:
+#             return Response(status=status.HTTP_404_NOT_FOUND)
+
+#     def destroy(self, request, pk=None):
+#         self.permission_classes = [permissions.IsAuthenticated]
+#         self.check_permissions(request)  # Ensure permission check is applied
+#         try:
+#             cart_item = CartItem.objects.get(pk=pk)
+#             cart_item.delete()
+#             return Response(status=status.HTTP_204_NO_CONTENT)
+#         except CartItem.DoesNotExist:
+#             return Response(status=status.HTTP_404_NOT_FOUND)
+
+
+class OrderViewSet(viewsets.ViewSet):
+    authentication_classes = [JWTAuthentication]
+
+    def list(self, request):
+        self.permission_classes = [permissions.IsAuthenticated]
+        self.check_permissions(request)  # Ensure permission check is applied
+        queryset = Order.objects.filter(user=request.user)
+        serializer = OrderSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    def create(self, request):
+        self.permission_classes = [permissions.IsAuthenticated]
+        self.check_permissions(request)  # Ensure permission check is applied
+        serializer = OrderSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=request.user)  # Associate the order with the current user
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def retrieve(self, request, pk=None):
+        self.permission_classes = [permissions.IsAuthenticated]
+        self.check_permissions(request)  # Ensure permission check is applied
+        try:
+            order = Order.objects.get(pk=pk, user=request.user)
         except Order.DoesNotExist:
-            messages.warning(self.request, "You do not have an active order")
-            return redirect('checkout')
+            return Response(status=status.HTTP_404_NOT_FOUND)
 
-def checkout(request):
-    context = {
-    }
-    return render(request, 'equipment_management/checkout.html', context)
+        serializer = OrderSerializer(order)
+        return Response(serializer.data)
 
-def submit_owner_review(request, owner_id):
-    owner = get_object_or_404(settings.AUTH_USER_MODEL, id=owner_id)
-    if request.method == 'POST':
-        form = OwnerReviewForm(request.POST)
-        if form.is_valid():
-            review = form.save(commit=False)
-            review.owner = owner
-            review.user = request.user
-            review.save()
-            return redirect('profile_orders')  # Redirect to the orders page
-    else:
-        form = OwnerReviewForm()
-    return render(request, 'submit_owner_review.html', {'form': form, 'owner': owner})
+    def update(self, request, pk=None):
+        self.permission_classes = [permissions.IsAuthenticated]
+        self.check_permissions(request)  # Ensure permission check is applied
+        order = Order.objects.get(pk=pk, user=request.user)
+        serializer = OrderSerializer(order, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
+    def destroy(self, request, pk=None):
+        self.permission_classes = [permissions.IsAuthenticated]
+        self.check_permissions(request)  # Ensure permission check is applied
+        order = Order.objects.get(pk=pk, user=request.user)
+        order.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+class OrderItemViewSet(viewsets.ViewSet):
+    authentication_classes = [JWTAuthentication]
 
+    def list(self, request):
+        self.permission_classes = [permissions.IsAuthenticated]
+        self.check_permissions(request)  # Ensure permission check is applied
+        queryset = OrderItem.objects.all()
+        serializer = OrderItemSerializer(queryset, many=True)
+        return Response(serializer.data)
 
+    def create(self, request):
+        self.permission_classes = [permissions.IsAuthenticated]
+        self.check_permissions(request)  # Ensure permission check is applied
+        serializer = OrderItemSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    def retrieve(self, request, pk=None):
+        self.permission_classes = [permissions.IsAuthenticated]
+        self.check_permissions(request)  # Ensure permission check is applied
+        order_item = OrderItem.objects.get(pk=pk, user=request.user)
+        serializer = OrderItemSerializer(order_item)
+        return Response(serializer.data)
 
+    def update(self, request, pk=None):
+        self.permission_classes = [permissions.IsAuthenticated]
+        self.check_permissions(request)  # Ensure permission check is applied
+        order_item = OrderItem.objects.get(pk=pk)
+        serializer = OrderItemSerializer(order_item, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
-
-# def profile(request):
-
-#     return render(request, 'equipment_management/profile.html')
-
-# def equipment_detail(request, slug, id):
-#     equipment = get_object_or_404(Equipment, id=id)
-
-#     related_equipments = Equipment.objects.filter(category=equipment.category)
-#     context = {
-#         'equipment': equipment,
-#         'related_equipments': related_equipments
-#     }
-#     return render(request, 'equipment_management/equipment_detail.html', context)
-
-
-
-
-
-
-# def submit_equipment_review(request, equipment_id):
-#     equipment = get_object_or_404(Equipment, id=equipment_id)
-#     if request.method == 'POST':
-#         form = EquipmentReviewForm(request.POST)
-#         if form.is_valid():
-#             review = form.save(commit=False)
-#             review.equipment = equipment
-#             review.user = request.user
-#             review.save()
-#             return redirect(equipment.get_absolute_url())  # Redirect to equipment detail page
-#     else:
-#         form = EquipmentReviewForm()
-#     return render(request, 'submit_equipment_review.html', {'form': form, 'equipment': equipment})
-
-
-
-# def equipment_create_view(request):
-#     if request.method == 'POST':
-#         form = EquipmentForm(request.POST)
-#         if form.is_valid():
-#             data = form.cleaned_data
-
-#             # Create a new PhysicalAddress from form data
-#             address = Address.objects.create(
-#                 street_address=data['street_address'],
-#                 street_address2=data.get('street_address2'),
-#                 city=data['city'],
-#                 state=data['state'],
-#                 zip_code=data['zip_code'],
-#                 user=request.user  # Assume the user is the owner of the address
-#             )
-
-#             # Create the Equipment instance
-#             equipment = Equipment(
-#                 owner=request.user,
-#                 name=data['name'],
-#                 description=data['description'],
-#                 category=data['category'],
-#                 hourly_rate=data['hourly_rate'],
-#                 address=address,
-#                 is_available=data.get('is_available', True),
-#                 terms=data['terms']
-#             )
-#             equipment.save()
-
-#             # Handle tags
-#             tags = [tag.strip() for tag in data['tags'].split(',') if tag.strip()]
-#             for tag_name in tags:
-#                 tag, created = Tag.objects.get_or_create(name=tag_name)
-#                 equipment.tags.add(tag)
-
-#             messages.success(request, 'Equipment added successfully.')
-#             return redirect('equipments')  # Redirect to an appropriate page
-
-#     else:
-#         form = EquipmentForm()
-
-#     return render(request, 'equipment_management/create_equipment.html', {'form': form})
+    def destroy(self, request, pk=None):
+        self.permission_classes = [permissions.IsAuthenticated]
+        self.check_permissions(request)  # Ensure permission check is applied
+        order_item = OrderItem.objects.get(pk=pk)
+        order_item.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

@@ -1,36 +1,41 @@
-from django.urls import path
-from . import views
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from rest_framework_simplejwt.views import (
+    TokenRefreshView,
+    TokenVerifyView
+)
 
-app_name = 'user'
+from .views import (
+    UserViewSet,
+    AddressViewSet,
+    PhysicalAddressViewSet,
+    CreditCardViewSet,
+    LoginView,
+    CustomLogoutView,
+    OTPViewSet, 
+)
 
+# Initialize the router
+router = DefaultRouter()
+router.register('users', UserViewSet, basename='user')
+router.register('addresses', AddressViewSet, basename='address')
+router.register('physical-addresses', PhysicalAddressViewSet, basename='physicaladdress')
+router.register('credit-cards', CreditCardViewSet, basename='creditcard')
+
+# Define urlpatterns with JWT token routes and router URLs
 urlpatterns = [
+    # JWT Token management paths
+    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('token/verify/', TokenVerifyView.as_view(), name='token_verify'),
 
-    
-    # User URLs
-    path('user/create/', views.create_user_view, name='create_user'),
-    path('user/update/<int:pk>/', views.update_user_view, name='update_user'),
-    
-    path('user/login/', views.user_login_view, name='login'),
-    path('logout/', views.user_logout, name='logout'),
+    # User authentication paths
+    path('login/', LoginView.as_view(), name='login'),
+    path('logout/', CustomLogoutView.as_view(), name='logout'),
 
-    path('user/profile/', views.profile, name='profile'),
+    # OTP paths
+    path('otp/', OTPViewSet.as_view({'post': 'generate_otp'}), name='generate_otp'),
+    path('otp/verify/', OTPViewSet.as_view({'post': 'verify_otp'}), name='verify_otp'),
 
-    # Address URLs
-    path('address/create/', views.create_address_view, name='create_address'),
-    path('address/update/<int:pk>/', views.update_address_view, name='update_address'),
-
-    # Physical Address URLs
-    path('physical-address/create/', views.create_physical_address_view, name='create_physical_address'),
-    path('physical-address/update/', views.update_physical_address_view, name='update_physical_address'),
-
-
-    # Credit Card URLs
-    path('credit-card/create/', views.create_credit_card_view, name='create_credit_card'),
-    path('credit-card/update/', views.update_credit_card_view, name='update_credit_card'),
-
-     # Delete Address URL
-    path('address/delete/<int:pk>/', views.delete_address_view, name='delete_address'),
-
-    # Delete Credit Card URL
-    path('credit-card/delete/<int:pk>/', views.delete_credit_card_view, name='delete_credit_card'),
+    # Include the router URLs
+    path('', include(router.urls)),
 ]

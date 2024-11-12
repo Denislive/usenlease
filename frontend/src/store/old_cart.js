@@ -2,12 +2,10 @@ import { defineStore } from 'pinia';
 import { ref, computed, watch } from 'vue';
 import { useAuthStore } from '@/store/auth';
 import axios from 'axios';
-import useNotifications from '@/store/notification.js'; // Import the notification service
 
 export const useCartStore = defineStore('cart', () => {
     const cart = ref([]); // Array to hold cart items
     const authStore = useAuthStore();
-    const { showNotification } = useNotifications(); // Initialize notification service
 
     // Automatically calculated totals based on cart items
     const cartTotalPrice = computed(() => cart.value.reduce((total, item) => total + parseFloat(item.total), 0));
@@ -25,7 +23,6 @@ export const useCartStore = defineStore('cart', () => {
                 console.log("Cart retrieved from the database:", cart.value);
             } catch (error) {
                 console.error("Error getting cart:", error);
-                showNotification('Error', 'Could not load your cart items.', 'error'); // Show error notification
             }
         } else {
             const savedCart = localStorage.getItem('cart');
@@ -38,45 +35,45 @@ export const useCartStore = defineStore('cart', () => {
     // Watch the authentication state to load cart data accordingly
     watch(() => authStore.isAuthenticated, loadCart, { immediate: true });
 
+   
+
     // Remove item from the cart
     const removeItem = (itemId) => {
         const index = cart.value.findIndex(item => item.id === itemId);
         if (index !== -1) {
             cart.value.splice(index, 1); // Remove the item at the found index
-            showNotification('Item Removed', 'The item has been removed from your cart.', 'success'); // Show success notification
-        } else {
-            showNotification('Error', 'Item not found in cart.', 'error'); // Show error notification
         }
     };
 
     const updateItemQuantity = async (itemId, quantity) => {
-        if (authStore.isAuthenticated) {
-            const foundItem = cart.value.find(item => item.id === itemId);
-            if (foundItem) {
-                foundItem.quantity = parseInt(quantity);
-                foundItem.total = parseFloat(foundItem.hourly_rate) * foundItem.quantity;
-                showNotification('Quantity Updated', `${foundItem.item_details.name} quantity has been updated.`, 'success');
-            } else {
-                showNotification('Error', 'Item not found in cart.', 'error');
-            }
+        console.log(`Attempting to update quantity for item ID: ${itemId}, New quantity: ${quantity}`);
+        
+        // Find the item in the cart
+        const foundItem = cart.value.find(item => item.id === itemId);
+        console.log("Found item in cart:", foundItem);
+      
+        if (foundItem) {
+          // Parse and update the quantity
+          foundItem.quantity = parseInt(quantity);
+          console.log(`Updated quantity for item ID: ${itemId} to ${foundItem.quantity}`);
+      
+          // Update the total price based on the new quantity
+          foundItem.total = parseFloat(foundItem.hourly_rate) * foundItem.quantity;
+          console.log(`Updated total for item ID: ${itemId} to ${foundItem.total}`);
         } else {
-            const foundItem = cart.value.find(item => item.item.id === itemId);
-            if (foundItem) {
-                foundItem.quantity = parseInt(quantity);
-                foundItem.total = parseFloat(foundItem.hourly_rate) * foundItem.quantity;
-                showNotification('Quantity Updated', `${foundItem.item.name} quantity has been updated.`, 'success');
-            } else {
-                showNotification('Error', 'Item not found in cart.', 'error');
-            }
-            localStorage.setItem('cart', JSON.stringify(cart.value));
+          console.warn(`Item with ID: ${itemId} not found in cart.`);
         }
-    };
+      
+        console.log("Cart after update:", cart.value);
+      };
+      
+    
 
     // Clear the cart
     const clearCart = () => {
         cart.value = [];
-        showNotification('Cart Cleared', 'All items have been removed from your cart.', 'success');
     };
+
 
     return {
         cart,

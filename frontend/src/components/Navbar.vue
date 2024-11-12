@@ -33,12 +33,12 @@ watchEffect(() => {
     <div class="w-11/12 md:w-5/6 lg:w-5/6 mx-auto">
       <header class="text-white flex justify-between items-center">
         <RouterLink :to="{ name: 'home' }" class="flex items-center">
-          <img src="@/assets/images/logo.png" alt="Company Logo" class="h-10" />
+          <img src="@/assets/images/logo.jpeg" alt="Use N lease Logo" class="h-20" />
         </RouterLink>
 
         <div class="flex items-center space-x-4">
-          <RouterLink :to="{name: 'categories'}" class="hidden md:block hover:underline text-xl">
-            <i class="pi pi-spin pi-asterisk py-2"></i>
+          <RouterLink :to="{name: 'categories'}" class="hidden md:block text-xl">
+            CATEGORIES
           </RouterLink>
 
           <!-- Conditionally show Login or Logout based on isAuthenticated -->
@@ -52,8 +52,7 @@ watchEffect(() => {
           <RouterLink :to="{ name: 'list-item' }"
             class="bg-[#ffc107] text-black py-2 px-4 rounded hover:bg-yellow-400 transition flex items-center"
             aria-label="Add a new item">
-            <i class="pi pi-plus text-lg mr-1"></i>
-            List Item
+            Lease
           </RouterLink>
 
           <div class="relative">
@@ -106,5 +105,6 @@ watchEffect(() => {
 
 
 <style scoped>
+
 /* Optional additional styles can go here */
 </style>

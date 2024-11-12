@@ -4,6 +4,8 @@ from user_management.serializers import AddressSerializer
 from user_management.models import Address, User
 from django.shortcuts import get_object_or_404
 
+import json
+
 class SubcategorySerializer(serializers.ModelSerializer):
     ad_count = serializers.SerializerMethodField()
 
@@ -78,6 +80,11 @@ class EquipmentSerializer(serializers.ModelSerializer):
         is_available = validated_data.get('is_available')
         category = validated_data.get('category')
         available_quantity = validated_data.get('available_quantity')
+
+
+
+        
+
        
 
         # Create Address instance
@@ -94,6 +101,20 @@ class EquipmentSerializer(serializers.ModelSerializer):
             category=category,
             available_quantity=available_quantity
         )
+
+
+         # Extract the specifications data
+        specifications_data = request.data.pop('specifications')
+        
+        # Create the specification objects and associate them with the equipment
+        for spec_data in specifications_data:
+         
+            spec_data = json.loads(spec_data)
+        
+            print(spec_data)
+            for spec in spec_data:
+                print(spec)
+                Specification.objects.create(equipment=equipment, name=spec['key'], value=spec['value'])
 
         # Handle tags if they exist
         tags_data = validated_data.pop('tags', [])

@@ -1,98 +1,98 @@
 <template>
-  <div class="flex flex-col items-center p-6 bg-white rounded-lg shadow-md">
-    <h2 class="text-xl font-semibold mb-4">Enter OTP</h2>
-    <input
-      type="text"
-      v-model="otp"
-      maxlength="6"
-      placeholder="Enter OTP"
-      class="border border-gray-300 p-2 rounded w-64 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-400"
-    />
-    <button
-      @click="submitOTP"
-      :disabled="isSubmitting || isTimerActive"
-      class="bg-blue-500 text-white p-2 rounded w-full mb-2 hover:bg-blue-600 disabled:opacity-50"
-    >
-      Submit
-    </button>
-    <div v-if="isTimerActive" class="text-red-600 mb-2">
-      Resend OTP in: {{ remainingTime }} seconds
+  <div class="flex justify-center items-center min-h-screen bg-gray-100">
+    <div class="flex flex-col items-center p-8 bg-white rounded-lg shadow-lg w-80">
+      <h2 class="text-2xl font-semibold mb-6 text-[#1c1c1c]">Enter OTP</h2>
+      <input type="text" v-model="otp" maxlength="6" placeholder="Enter OTP"
+        class="border border-gray-300 text-gray-700 text-center font-medium p-3 rounded w-full mb-6 focus:outline-none focus:ring-2 focus:ring-[#ffc107] placeholder-gray-400"
+        @input="autoSubmit" />
+      <button @click="submitOTP" :disabled="isSubmitting"
+        class="bg-[#1c1c1c] text-white font-semibold p-3 rounded w-full mb-4 hover:bg-yellow-500 disabled:opacity-50">
+        Submit
+      </button>
+      <div v-if="isTimerActive" class="text-red-500 mb-4 text-sm">
+        Resend OTP in: {{ remainingTime }} seconds
+      </div>
+      <button v-if="!isTimerActive" @click="requestNewOTP" :disabled="isSubmitting"
+        class="border border-[#ffc107] text-[#ffc107] font-semibold p-3 rounded w-full hover:bg-[#ffc107] hover:text-white disabled:opacity-50">
+        Request New OTP
+      </button>
     </div>
-    <button
-      v-if="!isTimerActive"
-      @click="requestNewOTP"
-      :disabled="isSubmitting"
-      class="bg-green-500 text-white p-2 rounded w-full hover:bg-green-600 disabled:opacity-50"
-    >
-      Request New OTP
-    </button>
   </div>
 </template>
 
 <script>
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
+import { useRouter } from 'vue-router';
+import useNotifications from '@/store/notification.js';
+import Cookies from 'js-cookie';
 
 export default {
   setup() {
     const otp = ref('');
+    const router = useRouter();
+    const { showNotification } = useNotifications();
+
     const isSubmitting = ref(false);
     const isTimerActive = ref(false);
     const remainingTime = ref(60);
-    const email = ref(localStorage.getItem('email')); // Retrieve email from local storage
+    const email = ref(Cookies.get('email'));
     let timerInterval;
 
-    // Function to submit the OTP
+    const autoSubmit = () => {
+      if (otp.value.length === 6) {
+        submitOTP();
+      }
+    };
+
+
+    // Example function to delete the email cookie
+    function deleteEmailCookie() {
+      Cookies.remove('email');
+    }
+
     const submitOTP = async () => {
       if (!otp.value) {
-        alert("Please enter the OTP.");
+        showNotification("Error", "Please enter the OTP.", "error");
         return;
       }
-
       isSubmitting.value = true;
       try {
         const response = await axios.post(
           'http://127.0.0.1:8000/api/accounts/otp/verify/',
-          { otp: otp.value, email: email.value }, // Include email in the request
-          { withCredentials: true }
+          { otp: otp.value, email: email.value },
+
         );
-        console.log('OTP verified:', response.data);
-
-        // Optionally remove the email from local storage after verification
-        localStorage.removeItem('email');
-
-        // Handle success (e.g., redirect the user or show a success message)
+        showNotification("Success", "OTP verified successfully.", "success");
+        router.push('/login');
+        // Usage example
+        deleteEmailCookie();
       } catch (error) {
-        console.error('Error verifying OTP:', error.response?.data || error);
+        showNotification("Error", error.response?.data || "OTP verification failed.", "error");
       } finally {
         isSubmitting.value = false;
       }
     };
 
-    // Function to request a new OTP
     const requestNewOTP = async () => {
       isSubmitting.value = true;
-
       try {
         await axios.post(
           'http://127.0.0.1:8000/api/accounts/otp/',
-          { email: email.value }, // Include email in the request
-          { withCredentials: true }
+          { email: email.value },
         );
-        console.log('New OTP requested for email:', email.value);
-        startTimer(); // Start the countdown timer
+        showNotification("Success", "New OTP sent to your email.", "success");
+        startTimer();
       } catch (error) {
-        console.error('Error requesting new OTP:', error.response?.data || error);
+        showNotification("Error", error.response?.data || "Failed to send new OTP.", "error");
       } finally {
         isSubmitting.value = false;
       }
     };
 
-    // Function to start the timer
     const startTimer = () => {
       isTimerActive.value = true;
       remainingTime.value = 60;
-
       timerInterval = setInterval(() => {
         remainingTime.value -= 1;
         if (remainingTime.value <= 0) {
@@ -103,9 +103,8 @@ export default {
     };
 
     onMounted(() => {
-      if (!email.value) {
-        console.error('No email found in local storage.');
-      }
+      requestNewOTP();
+
     });
 
     return {
@@ -115,12 +114,13 @@ export default {
       remainingTime,
       submitOTP,
       requestNewOTP,
+      autoSubmit,
     };
   },
 };
+
 </script>
 
 <style>
 /* Add any additional global styles here */
 </style>
-

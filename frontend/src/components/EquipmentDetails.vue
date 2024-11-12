@@ -74,46 +74,82 @@ const endDate = ref('');
 const quantity = ref(1);
 
 const submitBooking = async () => {
-    console.log('Booking Details:', {
-        startDate: startDate.value,
-        endDate: endDate.value,
-        quantity: quantity.value,
-        equipment: props.equipment.id,
-    });
+  console.log('Booking Details:', {
+    startDate: startDate.value,
+    endDate: endDate.value,
+    quantity: quantity.value,
+    equipment: props.equipment.id,
+  });
 
-    // Prepare the payload
-    const payload = {
-        cart_items: [
-            {
-                item: props.equipment.id,
-                quantity: quantity.value,
-                start_date: startDate.value,
-                end_date: endDate.value,
-            }
-        ]
+  // Prepare the payload
+  const payload = {
+    item: props.equipment.id,
+    quantity: quantity.value,
+    start_date: startDate.value,
+    end_date: endDate.value,
+  };
+
+  if (authStore.isAuthenticated) {
+    console.log("Adding equipment to cart", payload);
+
+    try {
+      console.log("Synching cart to db ...");
+      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/cart-items/`, payload, {
+        withCredentials: true,  // Ensures cookies are sent with the request
+      });
+      console.log("Item saved to the database:", response.data);
+    } catch (error) {
+      console.error("Error saving cart:", error);
+    }
+  } else {
+    // Prepare the payload for local storage
+    const localPayload = {
+      item: props.equipment,
+      quantity: quantity.value,
+      start_date: startDate.value,
+      end_date: endDate.value,
     };
 
-    // Check if user is authenticated (based on HTTP cookies)
-    if (authStore.isAuthenticated) {
-        console.log("Saving cart to database:", payload);
+    const existingCart = localStorage.getItem('cart');
+    if (existingCart) {
+      const parsedExistingCart = JSON.parse(existingCart);
 
-        try {
-            // Send the data to the backend API using Axios with withCredentials set to true
-            const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/cart/`, payload, {
-                withCredentials: true,  // Ensures cookies are sent with the request
-            });
+      if (Array.isArray(parsedExistingCart)) {
+        const existingItemIndex = parsedExistingCart.findIndex(
+          (cartItem) =>
+            cartItem.item.id === localPayload.item.id &&
+            cartItem.start_date === localPayload.start_date &&
+            cartItem.end_date === localPayload.end_date
+        );
 
-            // Log the response from the backend
-            console.log("Booking saved to the database:", response.data);
-        } catch (error) {
-            // Log any errors that occur during the request
-            console.error("Error saving cart:", error);
+        if (existingItemIndex !== -1) {
+          // Update the quantity and total for the existing item
+          parsedExistingCart[existingItemIndex].quantity += localPayload.quantity;
+          parsedExistingCart[existingItemIndex].total =
+            parsedExistingCart[existingItemIndex].quantity *
+            parsedExistingCart[existingItemIndex].item.hourly_rate;
+        } else {
+          // Add new item if not already in the cart
+          parsedExistingCart.push(localPayload);
         }
+
+        cartStore.cart = parsedExistingCart;
+        localStorage.setItem('cart', JSON.stringify(parsedExistingCart));
+        console.log("Cart updated with new items, without overwriting.");
+      } else {
+        // If the existing cart isn't an array, just replace it with the new item
+        cartStore.cart = [localPayload];
+        localStorage.setItem('cart', JSON.stringify([localPayload]));
+        console.log("Cart saved to localStorage.");
+      }
     } else {
-        // If the user is not authenticated, save to local storage
-        localStorage.setItem('cart', JSON.stringify(payload));
-        console.error("Error saving cart:", error.response);
+      // Save the new cart if no existing cart in localStorage
+      const newCart = [localPayload];
+      localStorage.setItem('cart', JSON.stringify(newCart));
+      cartStore.cart = newCart;
+      console.log("Cart saved to localStorage.");
     }
+  }
 };
 
 
@@ -125,4 +161,3 @@ const renderStars = (rating) => {
   return '★'.repeat(fullStars) + (halfStar ? '☆' : '') + '☆'.repeat(emptyStars);
 };
 </script>
-
