@@ -10,23 +10,26 @@ from .views import (
     CartViewSet,
     OrderViewSet,
     OrderItemViewSet,
-    CartItemViewSet
+    CartItemViewSet,
+    RootCategoryListView
 )
 
 # Create a router and register the viewsets
 router = DefaultRouter()
-router.register(r'categories', CategoryViewSet, basename='category')
-router.register(r'tags', TagViewSet, basename='tag')
-router.register(r'equipments', EquipmentViewSet, basename='equipment')
-router.register(r'images', ImageViewSet, basename='image')
-router.register(r'specifications', SpecificationViewSet, basename='specification')
-router.register(r'reviews', ReviewViewSet, basename='review')
-router.register(r'cart-items', CartItemViewSet, basename='cart-item')
-router.register(r'cart', CartViewSet, basename='cart')
+router.register('categories', CategoryViewSet, basename='category')
+router.register('tags', TagViewSet, basename='tag')
+router.register('equipments', EquipmentViewSet, basename='equipment')
+router.register('images', ImageViewSet, basename='image')
+router.register('specifications', SpecificationViewSet, basename='specification')
+router.register('reviews', ReviewViewSet, basename='review')
+router.register('cart-items', CartItemViewSet, basename='cart-item')
+router.register('cart', CartViewSet, basename='cart')
 
-router.register(r'orders', OrderViewSet, basename='order')
-router.register(r'order-items', OrderItemViewSet, basename='order-item')
+router.register('orders', OrderViewSet, basename='order')
+router.register('order-items', OrderItemViewSet, basename='order-item')
 
 urlpatterns = [
     path('', include(router.urls)),  # Include all the registered routes
+    path('root-categories/', RootCategoryListView.as_view(), name='root-category-list'),
+
 ]

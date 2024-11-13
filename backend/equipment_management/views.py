@@ -9,6 +9,8 @@ from django.utils.translation import gettext_lazy as _
 from django.shortcuts import get_object_or_404
 import json
 from datetime import datetime
+from rest_framework import generics
+
 
 from rest_framework import status
 from .models import Category, Tag, Equipment, Image, Specification, Review, Cart, CartItem, Order, OrderItem
@@ -109,7 +111,7 @@ class CategoryViewSet(viewsets.ViewSet):
 
     def list(self, request):
          # Ensure permission check is applied
-        queryset = Category.objects.filter(parent=None)
+        queryset = Category.objects.all()
         serializer = CategorySerializer(queryset, many=True)
         return Response(serializer.data)
 
@@ -146,6 +148,13 @@ class CategoryViewSet(viewsets.ViewSet):
         category = Category.objects.get(pk=pk)
         category.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+        
+
+class RootCategoryListView(generics.ListAPIView):
+    serializer_class = CategorySerializer
+
+    def get_queryset(self):
+        return Category.objects.filter(parent__isnull=True)
 
 
 class TagViewSet(viewsets.ViewSet):

@@ -4,6 +4,7 @@ from user_management.serializers import AddressSerializer
 from user_management.models import Address, User
 from django.shortcuts import get_object_or_404
 
+
 import json
 
 class SubcategorySerializer(serializers.ModelSerializer):
@@ -24,6 +25,9 @@ class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = ['id', 'name', 'description', 'slug', 'subcategories', 'image']
+
+      
+
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
