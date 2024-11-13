@@ -12,6 +12,8 @@ from user_management.models import Address
 from datetime import datetime
 import uuid
 import base64
+from django.db.models import Avg
+
 
 def generate_short_uuid():
     # Generate a UUID, convert to bytes, then encode in base64, removing padding
@@ -78,11 +80,14 @@ class Equipment(models.Model):
     def get_absolute_url(self):
         return reverse('equipment_detail', kwargs={'slug': self.slug, 'id': self.id})
 
-    def get_add_to_cart_url(self):
-        return reverse('add-to-cart', kwargs={'slug': self.slug, 'id': self.id})
-
-    def get_remove_from_cart_url(self):
-        return reverse('remove-from-cart', kwargs={'slug': self.slug, 'id': self.id})
+    def get_average_rating(self):
+        # Calculate the average rating of the equipment
+        reviews = self.equipment_reviews.all()  # Get all reviews for the equipment
+        if reviews.exists():
+            # Calculate the average rating
+            avg_rating = reviews.aggregate(Avg('rating'))['rating__avg']
+            return avg_rating
+        return None  # or return a default value like 0
         
 
     def save(self, *args, **kwargs):
@@ -141,7 +146,7 @@ class Review(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='user_reviews')
 
     rating = models.IntegerField(choices=[(i, str(i)) for i in range(1, 6)])  # Ratings from 1 to 5
-    review_text = models.TextField()
+    review_text = models.TextField(blank=True, null=True)
     date_created = models.DateTimeField(auto_now_add=True)
 
     class Meta:

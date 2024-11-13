@@ -269,6 +269,7 @@ class EquipmentViewSet(viewsets.ModelViewSet):
     def retrieve(self, request, pk=None):
     
         equipment = Equipment.objects.get(pk=pk)
+        equipment_reviews = equipment.equipment_reviews.filter(review_text__isnull=False).exclude(review_text="")
         serializer = EquipmentSerializer(equipment)
         return Response(serializer.data)
 
@@ -380,19 +381,25 @@ class SpecificationViewSet(viewsets.ViewSet):
 
 
 class ReviewViewSet(viewsets.ViewSet):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthenticationFromCookie]
+    serializer_class = ReviewSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
     def list(self, request):
-        queryset = Review.objects.all()
+        # Filter reviews to include only those with non-null, non-empty review_text
+        queryset = Review.objects.filter(review_text__isnull=False).exclude(review_text="")
+        
         serializer = ReviewSerializer(queryset, many=True)
         return Response(serializer.data)
 
     def create(self, request):
-        self.permission_classes = [permissions.IsAuthenticated]
-        self.check_permissions(request)  # Ensure permission check is applied
-        serializer = ReviewSerializer(data=request.data)
+        # Add the user to the request data before validation
+        data = request.data.copy()
+        data['user'] = request.user.id  # or request.user.pk, depending on your setup
+
+        serializer = ReviewSerializer(data=data)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(user=request.user)  # pass the user to the save method
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

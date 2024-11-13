@@ -37,6 +37,12 @@ class ReviewSerializer(serializers.ModelSerializer):
         fields = ['equipment', 'owner', 'user', 'rating', 'review_text', 'date_created']
 
 
+class SpecificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Specification
+        fields = ['equipment', 'name', 'value']
+
+
 # Serializer for the Image model
 class ImageSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
@@ -54,16 +60,27 @@ class EquipmentSerializer(serializers.ModelSerializer):
     images = ImageSerializer(many=True, read_only=True)  # Include related images
     address = AddressSerializer()  # Allow writable Address field
     hourly_rate = serializers.FloatField()
+    specifications = SpecificationSerializer(many=True)
+    equipment_reviews = ReviewSerializer(many=True, read_only=True)
+    rating = serializers.SerializerMethodField()
 
     class Meta:
         model = Equipment
         fields = ['owner', 'id', 'category', 'tags', 'name', 'description', 
                   'images', 'hourly_rate', 'address', 'available_quantity', 
-                  'is_available']
+                  'is_available', "specifications", 'terms', 'equipment_reviews', 'rating']
         extra_kwargs = {
             'slug': {'write_only': True},   # Slug is write-only and not exposed
-            'terms': {'write_only': True},  # Terms are write-only, not exposed
         }
+    
+    def to_representation(self, instance):
+        # Filter out reviews with no review_text before returning the data
+        data = super().to_representation(instance)
+        data['equipment_reviews'] = [review for review in data['equipment_reviews'] if review['review_text']]
+        return data
+
+    def get_rating(self, obj):
+        return obj.get_average_rating()
 
     def create(self, validated_data):
         # Access the request from the context
@@ -139,10 +156,6 @@ class EquipmentSerializer(serializers.ModelSerializer):
 
 
 
-class SpecificationSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Specification
-        fields = ['equipment', 'name', 'value']
 
 
 
