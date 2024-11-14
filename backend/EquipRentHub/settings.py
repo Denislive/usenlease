@@ -126,8 +126,8 @@ TEMPLATES = [
 WSGI_APPLICATION = 'EquipRentHub.wsgi.application'
 
 # Database configuration
-try:
-    DATABASES = {
+# try:
+DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
             'NAME': os.getenv('POSTGRES_DB', 'usenlease_db'),
@@ -137,23 +137,23 @@ try:
             'PORT': os.getenv('POSTGRES_PORT', '5432'),
         }
     }
-    # Test PostgreSQL connection
-    connection = psycopg2.connect(
-        dbname=DATABASES['default']['NAME'],
-        user=DATABASES['default']['USER'],
-        password=DATABASES['default']['PASSWORD'],
-        host=DATABASES['default']['HOST'],
-        port=DATABASES['default']['PORT']
-    )
-    connection.close()
-except Exception as e:
-    print(f"PostgreSQL configuration failed: {e}. Falling back to SQLite3.")
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
+    # # Test PostgreSQL connection
+    # connection = psycopg2.connect(
+    #     dbname=DATABASES['default']['NAME'],
+    #     user=DATABASES['default']['USER'],
+    #     password=DATABASES['default']['PASSWORD'],
+    #     host=DATABASES['default']['HOST'],
+    #     port=DATABASES['default']['PORT']
+    # )
+#     connection.close()
+# except Exception as e:
+#     print(f"PostgreSQL configuration failed: {e}. Falling back to SQLite3.")
+#     DATABASES = {
+#         'default': {
+#             'ENGINE': 'django.db.backends.sqlite3',
+#             'NAME': BASE_DIR / 'db.sqlite3',
+#         }
+#     }
 
 # Rest of your configurations
 
