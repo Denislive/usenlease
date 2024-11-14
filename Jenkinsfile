@@ -52,8 +52,8 @@ pipeline {
                             withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                                 sh '''
                                 docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
-                                docker build -t ${FRONTEND_IMAGE}:V.1.1.0 ./frontend
-                                docker push ${FRONTEND_IMAGE}:V:1.1.0
+                                docker build -t ${FRONTEND_IMAGE}:latest ./frontend
+                                docker push ${FRONTEND_IMAGE}:latest
                                 '''
                             }
                         }
@@ -66,8 +66,8 @@ pipeline {
                             withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                                 sh '''
                                 docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
-                                docker build -t ${BACKEND_IMAGE}:V:1.1.0 ./backend
-                                docker push ${BACKEND_IMAGE}:V:1.1.0
+                                docker build -t ${BACKEND_IMAGE}:latest ./backend
+                                docker push ${BACKEND_IMAGE}:latest
                                 '''
                             }
                         }
