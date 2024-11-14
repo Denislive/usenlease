@@ -20,11 +20,13 @@ variable "GOOGLE_CLOUD_ZONE" {
 variable "frontend_image" {
   description = "Docker image for the frontend service"
   type        = string
+  default = "ngumonelson123/frontend-image:V:1.1.0"
 }
 
 variable "backend_image" {
   description = "Docker image for the backend service"
   type        = string
+  default = "ngumonelson123/backend-image:V:1.1.0"
 }
 
 # PostgreSQL Database Configuration
@@ -44,13 +46,13 @@ variable "POSTGRES_DB" {
   type        = string
 }
 
-variable "DB_HOST" {
+variable "POSTGRES_HOST" {
   description = "Hostname for the PostgreSQL database"
   type        = string
   default     = "usenlease-db"
 }
 
-variable "DB_PORT" {
+variable "POSTGRES_PORT" {
   description = "Port for the PostgreSQL database"
   type        = string
   default     = "5432"

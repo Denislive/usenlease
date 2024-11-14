@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   usenlease-frontend:
-    image: ngumonelson123/frontend-image:latest  # Use Docker Hub image
+    image: ngumonelson123/frontend-image:V:1.1.0  # Use Docker Hub image
     container_name: usenlease-frontend
     ports:
       - "3000:3000"
@@ -14,7 +14,7 @@ services:
       - .env
 
   usenlease-backend:
-    image: ngumonelson123/backend-image:latest  # Use Docker Hub image
+    image: ngumonelson123/backend-image:V:1.1.0  # Use Docker Hub image
     container_name: usenlease-backend
     ports:
       - "8000:8000"

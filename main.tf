@@ -52,11 +52,11 @@ resource "google_compute_instance" "default" {
       # Start frontend and backend containers, ensuring backend connects to PostgreSQL
       echo "Starting frontend container..." >> /var/log/startup.log
       docker run -d -p 3000:3000 ${var.frontend_image} >> /var/log/startup.log 2>&1
-
+      
       echo "Starting backend container with PostgreSQL connection..." >> /var/log/startup.log
       docker run -d -p 8000:8000 \
-        -e DB_HOST=${var.DB_HOST} \
-        -e DB_PORT=${var.DB_PORT} \
+        -e DB_HOST=${var.POSTGRES_HOST} \
+        -e DB_PORT=${var.POSTGRES_PORT} \
         -e DB_NAME=${var.POSTGRES_DB} \
         -e DB_USER=${var.POSTGRES_USER} \
         -e DB_PASSWORD=${var.POSTGRES_PASSWORD} \
