@@ -147,25 +147,24 @@ try:
             'PORT': os.getenv('POSTGRES_PORT', '5432'),
         }
     }
-    # Test connection with the PostgreSQL database to ensure availability
-    import psycopg2
-    connection = psycopg2.connect(
-        dbname=DATABASES['default']['NAME'],
-        user=DATABASES['default']['USER'],
-        password=DATABASES['default']['PASSWORD'],
-        host=DATABASES['default']['HOST'],
-        port=DATABASES['default']['PORT']
-    )
-    connection.close()
+   import environ
+import os
 
-except Exception:
-    print("PostgreSQL configuration failed; falling back to SQLite3.")
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
+# Initialize environment variables
+env = environ.Env()
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': env('POSTGRES_DB', default='usenlease_db'),
+        'USER': env('POSTGRES_USER', default='postgres'),
+        'PASSWORD': env('POSTGRES_PASSWORD', default='mysecretpassword'),
+        'HOST': env('POSTGRES_HOST', default='usenlease-db'),
+        'PORT': env('POSTGRES_PORT', default='5432'),
     }
+}
+
 
 
 # Password validation
