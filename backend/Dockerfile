@@ -16,7 +16,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Install PostgreSQL dependencies for Django (if not in the requirements.txt)
 RUN pip install psycopg2-binary
 
-# Copy the rest of the project files into the container
+# Copy the rest of the project files into the containers
 COPY . .
 
 # Expose port 8000 for the Django app

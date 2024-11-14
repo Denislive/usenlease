@@ -1,7 +1,7 @@
 # Use an official Node.js image (preferably version 16 or higher)
 FROM node:16
 
-# Set the working directory for the application
+# Set the work directory for the application
 WORKDIR /app
 
 # Copy package.json and package-lock.json to the container to leverage Docker's cache for dependencies
