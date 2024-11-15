@@ -1,4 +1,6 @@
 # rentals/views.py
+import jwt
+from rest_framework.exceptions import NotAuthenticated
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.hashers import make_password
 
@@ -37,7 +39,8 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 
 from rest_framework_simplejwt.exceptions import TokenError
-
+from rest_framework.exceptions import AuthenticationFailed
+from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -59,6 +62,55 @@ from rest_framework.decorators import action
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
+
+
+
+
+
+class JWTAuthenticationFromCookie(JWTAuthentication):
+    def authenticate(self, request):
+        access_token = request.COOKIES.get('token')  # Access token cookie
+        refresh_token = request.COOKIES.get('refresh')  # Refresh token cookie
+        
+        # If no access token is present, return None (unauthenticated)
+        if not access_token:
+            return None
+
+        try:
+            # Try to validate the access token
+            validated_token = self.get_validated_token(access_token)
+            return self.get_user(validated_token), validated_token
+        except InvalidToken:
+            # If the access token is expired or invalid, attempt to refresh using the refresh token
+            if refresh_token:
+                try:
+                    # Attempt to get a new access token using the refresh token
+                    refresh = RefreshToken(refresh_token)
+                    new_access_token = str(refresh.access_token)
+
+                    # Set the new access token in the cookies (or headers as needed)
+                    response = self.get_user_response(request)
+                    response.set_cookie('token', new_access_token, httponly=True, secure=True)
+                    
+                    
+                    # Validate the new access token
+                    validated_token = self.get_validated_token(new_access_token)
+                    return self.get_user(validated_token), validated_token
+                except TokenError as e:
+                    raise AuthenticationFailed(_('Token is invalid or expired.'))
+
+            # If no refresh token is available, raise an authentication error
+            raise AuthenticationFailed(_('Token is expired and no refresh token is provided.'))
+
+    def get_user_response(self, request):
+        """
+        Helper method to return the response object where the new access token can be set.
+        """
+        # The `request` object doesn't provide response, this method is just an example.
+        # You can adjust this method to work with your response handling logic.
+        from rest_framework.response import Response
+        return Response()
+
 
 class OTPViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['post'])
@@ -280,7 +332,7 @@ class UserViewSet(viewsets.ViewSet):
     """
     
     # Apply JWT authentication to all actions
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthenticationFromCookie]
 
     def list(self, request):
         # Only allow admin users to list all users
@@ -291,15 +343,33 @@ class UserViewSet(viewsets.ViewSet):
         serializer = UserSerializer(queryset, many=True)
         return Response(serializer.data)
 
-    # def retrieve(self, request, pk=None):
-    #     # Only allow authenticated users to retrieve user profiles
-    #     self.permission_classes = [IsAuthenticated]
-    #     self.check_permissions(request)
 
-    #     queryset = User.objects.all()
-    #     user = get_object_or_404(queryset, pk=pk)
-    #     serializer = UserSerializer(user)
-    #     return Response(serializer.data)
+    def retrieve(self, request, pk=None):
+        # Retrieve the token from the cookies
+        token = request.COOKIES.get('token')  # Adjust the cookie name if needed
+        
+        if not token:
+            raise NotAuthenticated("Authentication token not found.")
+        
+        try:
+            # Decode the JWT token to extract the user ID
+            decoded_token = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+            user_id = decoded_token.get('user_id')  # Assuming 'user_id' is in the payload
+            
+            if not user_id:
+                raise NotAuthenticated("User ID not found in the token.")
+            
+            # Retrieve the user by ID
+            user = get_object_or_404(User, pk=user_id)
+            
+            # Serialize the user data
+            serializer = UserSerializer(user)
+            return Response(serializer.data)
+        
+        except jwt.ExpiredSignatureError:
+            raise NotAuthenticated("Token has expired.")
+        except jwt.InvalidTokenError:
+            raise NotAuthenticated("Invalid token.")
 
     def create(self, request):
         # Allow anyone to create a new user account
@@ -324,6 +394,8 @@ class UserViewSet(viewsets.ViewSet):
 
         user = get_object_or_404(User, pk=pk)
         data = request.data
+        print("update data", data)
+
         
         # Hash password if it exists in the request
         if 'password' in data:
@@ -335,14 +407,14 @@ class UserViewSet(viewsets.ViewSet):
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    # def destroy(self, request, pk=None):
-    #     # Only admin users can delete a user
-    #     self.permission_classes = [IsAdminUser]
-    #     self.check_permissions(request)
+    def destroy(self, request, pk=None):
+        # Only admin users can delete a user
+        self.permission_classes = [IsAdminUser]
+        self.check_permissions(request)
 
-    #     user = get_object_or_404(User, pk=pk)
-    #     user.delete()
-    #     return Response(status=status.HTTP_204_NO_CONTENT)
+        user = get_object_or_404(User, pk=pk)
+        user.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 
@@ -400,7 +472,7 @@ class PhysicalAddressViewSet(viewsets.ViewSet):
     """
     A simple ViewSet for listing, retrieving, updating, and deleting physical addresses.
     """
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthenticationFromCookie]
 
     def list(self, request):
         self.permission_classes = [IsAdminUser, IsAuthenticated]

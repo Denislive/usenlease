@@ -16,31 +16,7 @@ class OTPSerializer(serializers.ModelSerializer):
         fields = ['id', 'user', 'code', 'created_at', 'expires_at']
         read_only_fields = ['created_at', 'expires_at']
 
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = [
-            'first_name',
-            'last_name',
-            'company_name',
-            'username',
-            'role',
-            'phone_number',
-            'email',
-            'document_type',
-            'identity_document',
-            'proof_of_address',
-            'password'
-        ]
-        extra_kwargs = {
-            'id': {'write_only': True},  # Make id write-only
-            'password': {'write_only': True},  # Ensure password is write-only
-            'document_type': {'write_only': True},
-            'identity_document': {'write_only': True},
-            'proof_of_address': {'write_only': True},
-        }
 
-    
 
 class AddressSerializer(serializers.ModelSerializer):
     class Meta:
@@ -55,6 +31,7 @@ class AddressSerializer(serializers.ModelSerializer):
             
         ]
         write_only_fields = ['id', 'address_type', 'is_default']  # Make these fields read-only
+
 
 class PhysicalAddressSerializer(serializers.ModelSerializer):
     class Meta:
@@ -71,6 +48,37 @@ class PhysicalAddressSerializer(serializers.ModelSerializer):
             'country',
             'is_default'
         ]
+
+class UserSerializer(serializers.ModelSerializer):
+    user_address = PhysicalAddressSerializer(read_only=True)
+    class Meta:
+        model = User
+        fields = [
+            'image',
+            'first_name',
+            'last_name',
+            'company_name',
+            'username',
+            'role',
+            'phone_number',
+            'email',
+            'user_address',
+            'document_type',
+            'identity_document',
+            'proof_of_address',
+            'password'
+        ]
+        extra_kwargs = {
+            'id': {'write_only': True},  # Make id write-only
+            'password': {'write_only': True},  # Ensure password is write-only
+            'document_type': {'write_only': True},
+            'identity_document': {'write_only': True},
+            'proof_of_address': {'write_only': True},
+        }
+
+    
+
+
 
 class CreditCardSerializer(serializers.ModelSerializer):
     class Meta:

@@ -119,7 +119,7 @@ class Address(models.Model):
 
 class PhysicalAddress(models.Model):
     id = models.CharField(primary_key=True, max_length=16, default=generate_short_uuid, editable=False)
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='user')
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='user_address')
 
     full_name = models.CharField(max_length=100)
     company_name = models.CharField(max_length=100, blank=True, null=True)
