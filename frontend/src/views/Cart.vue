@@ -1,10 +1,11 @@
-
 <template>
   <div class="container md:py-1 lg:py-1 mx-auto sm:p-0">
     <!-- Shopping Cart Area Start -->
     <div class="mt-0">
       <form @submit.prevent="submitCart">
         <h3 class="bg-gray-800 text-white p-4 mb-4">Cart Summary</h3>
+
+        <!-- Cart Items Table -->
         <div class="overflow-x-auto p-2">
           <table class="min-w-full bg-white border border-gray-300">
             <thead>
@@ -49,8 +50,16 @@
           </table>
         </div>
 
+        <!-- Empty Cart Message -->
+        <div v-if="cartItems.length === 0" class="empty-cart text-center py-16">
+          <i class="pi pi-exclamation-circle text-9xl text-gray-500"></i>
+
+          <p class="text-xl text-gray-500 mt-4">Oops! Your cart is empty.</p>
+          <p class="text-sm text-gray-400 mt-2">Add some items to your cart to get started!</p>
+        </div>
+
         <!-- Cart Totals Area Start -->
-        <div class="mt-8">
+        <div class="mt-8" v-if="cartItems.length > 0">
           <h3 class="font-semibold bg-gray-800 text-white p-4 mb-4">Cart Totals</h3>
           <div class="m-4">
             <div class="flex justify-between">
@@ -67,9 +76,9 @@
             </div>
           </div>
           <div class="text-right m-4">
-            <button @click.prevent="checkout"
+            <RouterLink :to="{ name: 'checkout'}"
               class="bg-[#1c1c1c] text-white py-2 px-4 rounded hover:text-[#ffc107] transition">Proceed to
-              Checkout</button>
+              Checkout</RouterLink>
           </div>
         </div>
         <!-- Cart Totals Area End -->
@@ -78,6 +87,7 @@
     <!-- Shopping Cart Area End -->
   </div>
 </template>
+
 
 <script>
 import { computed, onMounted } from 'vue';
@@ -183,13 +193,15 @@ const subtotal = computed(() => {
 
 
 
-
-    const getItemImage = (item) => {
-  return authStore.isAuthenticated && item.item_details && item.item_details.images
-    ? item.item_details.images[0].image_url
-    : item.item && item.item.images
-    ? item.item.images[0].image_url
-    : ''; // Fallback if image URL is not available
+const getItemImage = (item) => {
+  if (authStore.isAuthenticated && item.item_details && item.item_details.images && item.item_details.images.length > 0) {
+    return item.item_details.images[0].image_url;
+  } else if (item.item && item.item.images && item.item.images.length > 0) {
+    return item.item.images[0].image_url;
+  } else {
+    // Return a placeholder image URL or null to handle it in the template
+    return item.item.name || item.item_details.name; // Or return null if you handle the fallback in the template
+  }
 };
 
 const getItemName = (item) => {

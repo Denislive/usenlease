@@ -1,5 +1,5 @@
 <template>
-  <div class="fixed top-20 right-5 space-y-4">
+  <div class="fixed top-30 right-5 space-y-4">
     <div
       v-for="(notification, index) in notifications"
       :key="index"

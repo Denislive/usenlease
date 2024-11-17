@@ -9,7 +9,7 @@
               class="flex transition-transform duration-500"
               :style="{ transform: `translateX(-${currentIndex * 100}%)` }"
             >
-              <div v-for="ad in trendingAds" :key="ad.id" class="min-w-[calc(50%-1rem)] mx-2">
+              <div v-for="ad in trendingAds" :key="ad.id" @click="() => { goToDetail(ad.id) }" class="min-w-[calc(50%-1rem)] mx-2">
                 <div class="bg-white rounded-lg shadow-lg overflow-hidden">
                   <div class="relative">
                     <span 
@@ -58,7 +58,7 @@
               class="flex transition-transform duration-500"
               :style="{ transform: `translateX(-${featuredIndex * 100}%)` }"
             >
-              <div v-for="equipment in featuredEquipments" :key="equipment.id" class="min-w-[calc(50%-1rem)] mx-2">
+              <div v-for="equipment in featuredEquipments" :key="equipment.id" @click="() => { goToDetail(equipment.id) }" class="min-w-[calc(50%-1rem)] mx-2">
                 <div class="bg-white rounded-lg shadow-lg overflow-hidden">
                   <img 
                     :src="getFullImageUrl(equipment.images[0]?.image_url) || placeholderImage" 
@@ -86,7 +86,10 @@
   
   <script setup>
   import { ref, onMounted } from 'vue';
+  import { useRouter } from 'vue-router';
   
+  const router = useRouter();
+
   // Reactive variables to hold ads and equipments
   const trendingAds = ref([]);
   const featuredEquipments = ref([]);
@@ -115,6 +118,15 @@
   const getFullImageUrl = (imagePath) => {
     return imagePath ? `http://127.0.0.1:8000${imagePath}` : null;
   };
+
+
+  const goToDetail = (equipmentId) => {
+  if (equipmentId) {
+    router.push({ name: 'equipment-details', params: { id: equipmentId } });
+  } else {
+    console.error('Equipment ID is missing!'); // Log an error if ID is missing
+  }
+}
   
   // Navigation functions
   const next = () => {

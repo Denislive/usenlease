@@ -2,16 +2,30 @@
 import { ref, onMounted, computed } from 'vue';
 import { useEquipmentsStore } from '@/store/equipments'; // Import the equipments store
 import { RouterLink } from 'vue-router'; // Import RouterLink
-
+import axios from 'axios';
 const store = useEquipmentsStore(); // Create an instance of the equipments store
 
 // Reactive properties for loading and error states
 const loading = computed(() => store.isLoading); // Loading state from the store
 const error = computed(() => store.error); // Error state from the store
 
+const categories = ref([]);
+
+const fetchCategories = async () => {
+  try {
+    const response = await axios.get('http://127.0.0.1:8000/api/root-categories/');
+    categories.value = response.data;
+  } catch (err) {
+    console.error('Error fetching root categories:', err);
+    error.value = 'Failed to fetch categories. Please try again later.';
+  } finally {
+    loading.value = false; // Reset loading state once the request is done
+  }
+};
+
 // Fetch categories when the component mounts
 onMounted(() => {
-    store.fetchCategories(); // Use the store method to fetch categories
+    fetchCategories(); // Use the store method to fetch categories
 });
 </script>
 
@@ -26,32 +40,32 @@ onMounted(() => {
             </template>
             <template v-else>
                 <ul class="categories-list list-none p-0 m-0 space-y-5">
-                    <li v-for="category in store.categories" :key="category.id" class="category-item relative mb-5 group">
+                    <li v-for="category in categories" :key="category.id" class="category-item relative mb-5 group">
                         <RouterLink
                             :to="{ name: 'category-details', query: { cat: category.slug } }"
                             class="flex items-center p-2 bg-white rounded-lg transition-shadow duration-300 text-gray-800 shadow hover:bg-yellow-100 hover:shadow-lg"
                         >
-                            <img :src="category.image ? `http://127.0.0.1:8000${category.image}` : 'https://picsum.photos/100/150'" 
+                            <img :src="category.image ? category.image : 'https://picsum.photos/100/150'" 
                             :alt="category.name" 
                                  class="category-icon w-12 h-12 object-cover rounded-full border-2 border-yellow-400 mr-3">
                             <div class="category-name-container">
                                 <span class="category-name font-semibold">{{ category.name }}</span>
                                 <span class="ad-count text-gray-500">
-                                    ({{ category.subcategories ? category.subcategories.reduce((count, sub) => count + sub.ad_count, 0) : 0 }} Ads)
+                                    ({{ category.subcategories ? category.subcategories.reduce((count, sub) => count + sub.ad_count, 0) : 0 }})
                                 </span>
                             </div>
                         </RouterLink>
                         <ul class="subcategories-list list-none p-0 mt-2 hidden group-hover:block left-0 z-10" style="top: calc(100% + 0.5rem); left: 0; width: 100%;">
                             <li v-for="subcategory in category.subcategories" :key="subcategory.id" class="subcategory-item mb-2">
                                 <RouterLink 
-                                    :to="{ name: 'category-details', query: { cat: subcategory.slug } }" 
+                                    :to="{ name: 'category-details', query: { cat: category.slug, sub: subcategory.slug } }" 
                                     class="flex items-center p-2 bg-white rounded-lg transition-colors duration-300 text-gray-800 hover:bg-yellow-100 transform hover:translate-x-1">
-                                    <img :src="subcategory.image ? `http://127.0.0.1:8000${subcategory.image}` : 'https://picsum.photos/100/150'" 
+                                    <img :src="subcategory.image ? subcategory.image : 'https://picsum.photos/100/150'" 
                                          :alt="subcategory.name" 
                                          class="subcategory-icon w-9 h-9 object-cover rounded-full border-2 border-yellow-400 mr-2">
                                     <div class="subcategory-name-container flex-1">
                                         <span class="subcategory-name font-medium">{{ subcategory.name }}</span>
-                                        <span class="ad-count text-xs text-gray-400">({{ subcategory.ad_count }} Ads)</span>
+                                        <span class="ad-count text-xs text-gray-400">({{ subcategory.ad_count }})</span>
                                     </div>
                                 </RouterLink>
                             </li>

@@ -2,9 +2,18 @@
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useEquipmentsStore } from '@/store/equipments'; // Import your Pinia store
+import { useStore } from 'vuex';
 
 const router = useRouter();
 const store = useEquipmentsStore(); // Create an instance of the equipments store
+const search = useStore();
+
+
+// Computed property to get searchQuery from Vuex
+const searchQuery = computed(() => search.getters.getSearchQuery);
+
+
+
 
 // Fetch equipments and categories when the component is mounted
 onMounted(async () => {
@@ -16,8 +25,6 @@ onMounted(async () => {
 const equipments = computed(() => store.equipments);
 const categories = computed(() => store.categories);
 
-// Use the Vuex searchQuery directly
-const searchQuery = computed(() => store.getSearchQuery); // Assuming this is available in your store
 
 // Computed property for filtered equipments
 const filteredEquipments = computed(() => {
@@ -54,7 +61,7 @@ const goToDetail = (equipmentId) => {
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
       <!-- Loop through the filtered equipments -->
       <div
-        v-for="equipment in equipments"
+        v-for="equipment in filteredEquipments"
         :key="equipment.id"
         @click="() => { goToDetail(equipment.id) }"
         class="bg-white rounded-lg shadow-lg overflow-hidden transition-transform hover:scale-105 cursor-pointer"

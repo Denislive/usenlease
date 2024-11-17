@@ -30,14 +30,14 @@
           <li>
             <a href="#" class="text-xl text-gray-500" @click.prevent="clearAll('location')">Clear All</a>
           </li>
-          <li v-for="city in cities" :key="city.id">
+          <li v-for="(city, index) in cities" :key="index">
             <input
-              :id="`city-checkbox${city.id}`"
+              :id="`city-checkbox${index}`"
               type="checkbox"
               class="mr-2"
-              v-model="selectedCities[city.name]"
+              v-model="selectedCities[city]"
             />
-            <label :for="`city-checkbox${city.id}`" class="text-xl">{{ city.name }}</label>
+            <label :for="`city-checkbox${city}`" class="text-xl">{{ city }}</label>
           </li>
         </ul>
       </li>
@@ -48,6 +48,7 @@
 <script setup>
 import { ref } from 'vue';
 
+// Props
 const props = defineProps({
   categories: {
     type: Array,
@@ -70,13 +71,13 @@ const props = defineProps({
 // Function to clear all selected filters
 const clearAll = (filterType) => {
   if (filterType === 'category') {
-    for (const key in selectedCategories) {
-      selectedCategories[key] = false;
-    }
+    Object.keys(props.selectedCategories).forEach((key) => {
+      props.selectedCategories[key] = false;
+    });
   } else if (filterType === 'location') {
-    for (const key in selectedCities) {
-      selectedCities[key] = false;
-    }
+    Object.keys(props.selectedCities).forEach((key) => {
+      props.selectedCities[key] = false;
+    });
   }
 };
 </script>
