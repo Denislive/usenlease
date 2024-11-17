@@ -213,63 +213,89 @@ class EquipmentViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     def create(self, request, *args, **kwargs):
-        try:    
+        try:
+            # Get images if sent with the 'images' key
             images = request.FILES.getlist('images')  # Assumes images are sent with the 'images' key
-            print()
-            print('Images',images)
-            # Convert incoming data to a structured dictionary
-            data = convert_querydict_to_dict(request.data)
-            print("Structured data before adjustments:", data['images'])
+            print("Images received:", images)
 
-            
+            # Convert incoming querydict to a structured dictionary
+            data = convert_querydict_to_dict(request.data)
+            print("Converted form data:", data)
+
             # Ensure address fields are grouped in a dictionary for the `address` field
-            data['address'] = {
+            address = {
                 'street_address': data.pop('street_address', None),
                 'city': data.pop('city', None),
                 'state': data.pop('state', None),
                 'zip_code': data.pop('zip_code', None),
                 'country': data.pop('country', None)
             }
+            data['address'] = address
+            print("Address data:", address)
 
-            # Convert tags to the expected format (list of dictionaries)
+            # Convert tags to a list of dictionaries for `tags`
             if 'tags' in data:
-                # Assuming tags are meant to be strings, convert to dicts if necessary
                 data['tags'] = [{'name': tag} for tag in data.pop('tags')]
+            print("Tags data:", data.get('tags', []))
 
-            print("Structured data with nested address and formatted tags:", data)
+            # Convert specifications from string to list of dictionaries
+            if 'specifications' in data:
+                data['specifications'] = json.loads(data.pop('specifications'))
+            print("Specifications data:", data.get('specifications', []))
 
-          
-                
-        except Exception as e:
-            print("Error structuring data:", e)
-            raise
+            specifications_data = data['specifications']
 
-        # Initialize serializer with structured data
-        try:
+            # Initialize and validate the equipment serializer
+            print("Initializing equipment serializer with data:", data)
             serializer = self.get_serializer(data=data, context={'request': request})
-            print("Serializer initialized successfully with data.")
-        except Exception as e:
-            print("Error initializing serializer:", e)
-            raise
-
-        # Validate serializer data
-        try:
             serializer.is_valid(raise_exception=True)
-            print("Data is valid.")
-        except Exception as e:
-            print("Error validating serializer data:", e)
-            print("Validation errors:", serializer.errors)
-            raise
 
-        # Save the validated data and return the response
-        try:
-            equipment = serializer.save(request=request)
-            print("Equipment instance created successfully:", equipment)
+            # Save the equipment instance first to generate the ID
+            equipment = serializer.save()
+            print("Equipment instance saved:", equipment)
+
+            # Now create the specifications associated with the equipment
+            for spec in specifications_data:
+                print("Processing specification:", spec)
+                
+                # Rename 'key' to 'name' in the specification data
+                if 'key' in spec:
+                    spec['name'] = spec.pop('key', None)  # Rename 'key' to 'name'
+                    print(f"Renamed specification: {spec}")
+                
+                # Ensure 'name' is now present
+                if not spec.get('name'):
+                    print("Specification 'name' is missing")
+                    return Response({'detail': 'Specification name is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+                # Ensure we include the equipment instance in the context for the Specification serializer
+                specification_serializer = SpecificationSerializer(data=spec, context={'equipment': equipment})
+                print("Spec data for specification serializer:", spec)
+                if specification_serializer.is_valid():
+                    specification_serializer.save(equipment=equipment)  # Create the specification instance
+                    print(f"Specification saved: {specification_serializer.data}")
+                else:
+                    print("Specification serializer errors:", specification_serializer.errors)
+                    return Response(specification_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+            # Handle images if necessary
+            if images:
+                print(f"Processing {len(images)} images.")
+                for image in images:
+                    # Example of saving images (if your Equipment model supports this)
+                    equipment.images.create(image=image)
+                    print(f"Image saved: {image}")
+
+            # Return the response with the created equipment data
             headers = self.get_success_headers(serializer.data)
+            print("Returning response data:", serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
         except Exception as e:
-            print("Error saving equipment instance or preparing response:", e)
-            raise
+            print("Error during data processing:", e)
+            return Response({'detail': 'An error occurred while processing the data.'}, status=status.HTTP_400_BAD_REQUEST)
+
+
 
 
 
