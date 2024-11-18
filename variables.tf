@@ -20,13 +20,13 @@ variable "GOOGLE_CLOUD_ZONE" {
 variable "frontend_image" {
   description = "Docker image for the frontend service"
   type        = string
-  default = "ngumonelson123/frontend-image:latest"
+  default = "ngumonelson123/frontend-image:v1.1.0"
 }
 
 variable "backend_image" {
   description = "Docker image for the backend service"
   type        = string
-  default = "ngumonelson123/backend-image:latest"
+  default = "ngumonelson123/backend-image:v1.1.0"
 }
 
 # PostgreSQL Database Configuration
