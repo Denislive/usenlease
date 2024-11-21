@@ -1,28 +1,28 @@
 # Stage 1: Build Stage
 FROM node:16-alpine AS builder
 
-# Set the work directory for the application
+# Set the working directory for the application
 WORKDIR /app
 
-# Copy package.json and package-lock.json to the container to leverage Docker's cache for dependencies
-COPY frontend/package.json frontend/package-lock.json ./
+# Copy package.json and package-lock.json to leverage Docker's cache for dependencies
+COPY package.json package-lock.json ./
 
 # Install the dependencies
 RUN npm install
 
 # Copy the rest of the application code into the container
-COPY frontend .
+COPY . .
 
 # Build the frontend application
 RUN npm run build
 
-# Stage 2: Development Image
+# Stage 2: Production Image
 FROM node:16-alpine
 
-# Set the work directory for the application
+# Set the working directory for the application
 WORKDIR /app
 
-# Copy only the necessary files for development
+# Copy only the necessary files from the build stage to the production image
 COPY --from=builder /app /app
 
 # Expose port 3000 to allow communication with the host machine
