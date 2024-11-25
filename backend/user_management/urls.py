@@ -13,6 +13,10 @@ from .views import (
     LoginView,
     CustomLogoutView,
     OTPViewSet, 
+    ChatViewSet,
+    MessageViewSet,
+    AllChatsViewSet,
+
 )
 
 # Initialize the router
@@ -21,6 +25,10 @@ router.register('users', UserViewSet, basename='user')
 router.register('addresses', AddressViewSet, basename='address')
 router.register('physical-addresses', PhysicalAddressViewSet, basename='physicaladdress')
 router.register('credit-cards', CreditCardViewSet, basename='creditcard')
+router.register(r'chats', ChatViewSet, basename='chat')
+router.register(r'messages', MessageViewSet, basename='message')
+router.register(r'all-chats', AllChatsViewSet, basename='all_chats')
+
 
 # Define urlpatterns with JWT token routes and router URLs
 urlpatterns = [

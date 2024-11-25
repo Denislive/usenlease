@@ -30,6 +30,9 @@ export const useAuthStore = defineStore('auth', () => {
     }
   });
 
+
+  
+
   // Login action
   const login = async (email, password) => {
     isLoading.value = true; // Set loading state

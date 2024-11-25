@@ -1,10 +1,10 @@
 <template>
-  <div class="mx-auto p-4">
+  <div class="mx-auto p-4" v-if="equipment">
     <!-- Main Image with Zoom Effect -->
     <div class="relative overflow-hidden">
       <img
-         :src="currentImage ? `http://127.0.0.1:8000${currentImage}` : 'https://picsum.photos/100/150'"
-  alt="Main Equipment Image"
+        :src="currentImage ? `http://127.0.0.1:8000${currentImage}` : placeholderImage"
+        alt="Main Equipment Image"
         class="w-full h-128 object-cover rounded-lg shadow-lg"
         @mousemove="zoomImage"
         @mouseleave="resetZoom"
@@ -26,7 +26,7 @@
         <img
           v-for="(image, index) in images"
           :key="index"
-          :src="`http://127.0.0.1:8000${image.image_url}` || placeholderImage" 
+          :src="`http://127.0.0.1:8000${image.image_url}` || placeholderImage"
           alt="Equipment Thumbnail"
           class="w-24 h-24 object-cover rounded-lg cursor-pointer border-2"
           :class="{ 'border-[#ffc107]': currentImage === image.image_url }"
@@ -38,76 +38,108 @@
       </button>
     </div>
   </div>
+
+  <!-- Fallback when equipment is null -->
+  <div v-else class="text-center">
+    <p>No equipment available.</p>
+  </div>
 </template>
 
 <script>
-export default {
-  props: {
-    equipment: {
-      type: Object,
-      required: true,
-    },
-  },
-  data() {
-    return {
-      images: this.equipment?.images || [], // Use optional chaining
-      currentImage: (this.equipment?.images[0]?.image_url || this.placeholderImage), // Set to first image or placeholder
-      zoomed: false,
-      zoomPosition: '0%',
-      placeholderImage: 'https://via.placeholder.com/300x200.png?text=No+Image', // Online placeholder image
-    };
-  },
-  watch: {
-    equipment: {
-      immediate: true,
-      handler(newValue) {
-        console.log('New equipment prop:', newValue); // Debugging statement
-        this.images = newValue?.images || [];
-        this.currentImage = (newValue?.images[0]?.image_url || this.placeholderImage);
-      },
-    },
-  },
-  methods: {
-    setCurrentImage(image) {
-      console.log('Setting current image to:', image); // Debugging statement
-      this.currentImage = image; // Use selected image
-    },
-    prevImage() {
-      const currentIndex = this.images.findIndex(image => image.image_url === this.currentImage);
-      const newIndex = (currentIndex - 1 + this.images.length) % this.images.length;
-      this.currentImage = this.images.length > 0 ? this.images[newIndex].image_url : this.placeholderImage;
-      console.log('Previous image set to:', this.currentImage); // Debugging statement
-    },
-    nextImage() {
-      const currentIndex = this.images.findIndex(image => image.image_url === this.currentImage);
-      const newIndex = (currentIndex + 1) % this.images.length;
-      this.currentImage = this.images.length > 0 ? this.images[newIndex].image_url : this.placeholderImage;
-      console.log('Next image set to:', this.currentImage); // Debugging statement
-    },
-    zoomImage(event) {
-      const { offsetX, offsetY } = event;
-      const { clientWidth, clientHeight } = this.$refs.mainImage;
+import { ref, onMounted } from 'vue';
+import { useRoute } from 'vue-router'; // Import useRoute to get route params
+import axios from 'axios';
 
-      // Calculate the percentage position of the mouse within the image
+export default {
+  setup() {
+    const placeholderImage = 'https://via.placeholder.com/300x200.png?text=No+Image';
+    const equipment = ref(null); // Equipment data to be fetched
+    const currentImage = ref(placeholderImage);
+    const images = ref([]);
+    const zoomed = ref(false);
+    const zoomPosition = ref('0%');
+
+    // Get the equipment id from the URL
+    const route = useRoute();
+    const equipmentId = route.params.id; // assuming 'id' is the route parameter
+
+    // Function to fetch equipment data
+    const fetchEquipmentData = async () => {
+      try {
+        const response = await axios.get(`http://127.0.0.1:8000/api/equipments/${equipmentId}`);
+        if (response.data && response.data.images && response.data.images.length > 0) {
+          equipment.value = response.data;
+          images.value = response.data.images;
+          currentImage.value = response.data.images[0].image_url;
+        } else {
+          equipment.value = null; // Handle case where no images exist
+        }
+      } catch (error) {
+        console.error('Error fetching equipment data:', error);
+        equipment.value = null; // Handle error state
+      }
+    };
+
+    // Fetch equipment data when component is mounted
+    onMounted(() => {
+      if (equipmentId) {
+        fetchEquipmentData();
+      }
+    });
+
+    // Handle previous and next image changes
+    const setCurrentImage = (image) => {
+      currentImage.value = image;
+    };
+
+    const prevImage = () => {
+      const currentIndex = images.value.findIndex(image => image.image_url === currentImage.value);
+      const newIndex = (currentIndex - 1 + images.value.length) % images.value.length;
+      currentImage.value = images.value.length > 0 ? images.value[newIndex].image_url : placeholderImage;
+    };
+
+    const nextImage = () => {
+      const currentIndex = images.value.findIndex(image => image.image_url === currentImage.value);
+      const newIndex = (currentIndex + 1) % images.value.length;
+      currentImage.value = images.value.length > 0 ? images.value[newIndex].image_url : placeholderImage;
+    };
+
+    // Zoom effect
+    const zoomImage = (event) => {
+      const { offsetX, offsetY } = event;
+      const { clientWidth, clientHeight } = event.target;
+
       const xPercent = (offsetX / clientWidth) * 100;
       const yPercent = (offsetY / clientHeight) * 100;
 
-      this.zoomPosition = `${xPercent}% ${yPercent}%`;
-      this.zoomed = true;
-    },
-    resetZoom() {
-      this.zoomed = false;
-    },
-  },
-  mounted() {
-    console.log('Equipment Image Component Mounted:', this.equipment); // Debugging statement
+      zoomPosition.value = `${xPercent}% ${yPercent}%`;
+      zoomed.value = true;
+    };
+
+    const resetZoom = () => {
+      zoomed.value = false;
+    };
+
+    return {
+      equipment,
+      currentImage,
+      images,
+      zoomed,
+      zoomPosition,
+      placeholderImage,
+      setCurrentImage,
+      prevImage,
+      nextImage,
+      zoomImage,
+      resetZoom,
+    };
   },
 };
 </script>
 
 <style scoped>
 .container {
-  max-width: 600px; /* Limit the width of the container */
+  max-width: 600px;
 }
 
 .zoomed-image {
@@ -116,11 +148,11 @@ export default {
   left: 0;
   width: 100%;
   height: 100%;
-  background-size: 200%; /* Adjust size for zoom effect */
+  background-size: 200%;
   background-repeat: no-repeat;
   background-position: center;
   transition: opacity 0.2s ease;
-  pointer-events: none; /* Prevent mouse events on this layer */
-  opacity: 1; /* Adjust opacity for visibility */
+  pointer-events: none;
+  opacity: 1;
 }
 </style>

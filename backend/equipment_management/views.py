@@ -1,5 +1,6 @@
 # rentals/views.py
 from rest_framework import viewsets, permissions
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -7,10 +8,22 @@ from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 from django.utils.translation import gettext_lazy as _
 from django.shortcuts import get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.http import require_POST
+
+from rest_framework.permissions import AllowAny
+
+
+from django.http import JsonResponse
+from django.db import transaction
 import json
 from datetime import datetime
+from django.conf import settings
 from rest_framework import generics
 
+from django.http import QueryDict
 
 from rest_framework import status
 from .models import Category, Tag, Equipment, Image, Specification, Review, Cart, CartItem, Order, OrderItem
@@ -26,6 +39,15 @@ from .serializers import (
     OrderSerializer,
     OrderItemSerializer
 )
+
+import stripe
+stripe.api_key = settings.STRIPE_SECRET_KEY
+
+DOMAIN = 'http://localhost:3000'
+
+
+
+
 
 class JWTAuthenticationFromCookie(JWTAuthentication):
     def authenticate(self, request):
@@ -72,8 +94,155 @@ class JWTAuthenticationFromCookie(JWTAuthentication):
         return Response()
 
 
+        
 
-from django.http import QueryDict
+class CreateCheckoutSessionView(APIView):
+    """
+    Handles the creation of a Stripe checkout session and order creation.
+    """
+
+    authentication_classes = [JWTAuthenticationFromCookie]
+    permission_classes = [permissions.IsAuthenticated]  # Restrict access to authenticated users
+
+    def post(self, request):
+        try:
+            user = request.user
+            cart = Cart.objects.get(user=user)
+
+            if not cart.cart_items.exists():
+                return Response({"error": "Cart is empty, cannot create a session."}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Prepare order data
+            cart_items = cart.cart_items.all()
+            order_total_price = cart.get_cart_total
+            total_order_items = cart.get_cart_items
+
+            # Create the order
+            order_serializer = OrderSerializer(data={
+                'user': user.id,
+                'order_total_price': order_total_price,
+                'total_order_items': total_order_items,
+            })
+            order_serializer.is_valid(raise_exception=True)
+            order = order_serializer.save()
+
+            # Create order items
+            for cart_item in cart_items:
+                OrderItem.objects.create(
+                    order=order,
+                    item=cart_item.item,
+                    quantity=cart_item.quantity,
+                    start_date=cart_item.start_date,
+                    end_date=cart_item.end_date,
+                )
+
+            # Convert price to cents
+            amount_in_cents = int(order_total_price * 100)
+
+            items_list = [
+                {
+                    "name": item.item.name,
+                    "quantity": item.quantity,
+                    "start_date": str(item.start_date),
+                    "end_date": str(item.end_date),
+                    "hourly_rate": float(item.item.hourly_rate),
+                    "total": float(item.total),
+                }
+                for item in order.order_items.all()
+            ]
+
+            stripe_price = stripe.Price.create(
+                unit_amount=amount_in_cents,
+                currency="usd",
+                product_data={
+                    "name": f"Order {order.id}",
+                },
+                metadata={
+                    "order_summary": f"Order total items: {order.total_order_items} --- Order total Price: ${order.order_total_price}",
+                    "items": json.dumps(items_list),  # Serialize items as JSON string
+                },
+            )
+
+
+            session = stripe.checkout.Session.create(
+                mode='payment',
+                customer_email=request.data.get('customer_email'),
+                billing_address_collection='required',
+                shipping_address_collection={'allowed_countries': ['US', 'CA', 'KE']},
+                line_items=[{'price': stripe_price.id, 'quantity': 1}],
+                success_url=f"{DOMAIN}/payment-successful?session_id={{CHECKOUT_SESSION_ID}}",
+                cancel_url=f"{DOMAIN}/payment-canceled",
+            )
+
+            # Update order with payment details
+            order.payment_token = session.id
+            order.payment_status = 'pending'
+            order.save()
+
+            # Clear the cart
+            cart_items.delete()
+
+            return Response({
+                'session_id': session.id,
+                'url': session.url,
+                'order_id': order.id,
+            }, status=status.HTTP_201_CREATED)
+        except Cart.DoesNotExist:
+            return Response({"error": "No cart found for the user"}, status=status.HTTP_404_NOT_FOUND)
+        except stripe.error.StripeError as e:
+            return Response({"error": f"Stripe error: {e.user_message}"}, status=status.HTTP_400_BAD_REQUEST)
+        except ValidationError as e:
+            return Response({"error": e.detail}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"error": "An unexpected error occurred."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+class SessionStatusView(APIView):
+    """
+    Retrieves the status of a Stripe checkout session.
+    """
+
+    authentication_classes = [JWTAuthenticationFromCookie]
+    permission_classes = [AllowAny]  # Allow unauthenticated users to access
+
+    def get(self, request):
+        session_id = request.query_params.get('session_id')
+
+        if not session_id:
+            return Response({'error': 'Session ID is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Retrieve Stripe session details
+            session = stripe.checkout.Session.retrieve(session_id)
+
+            # Attempt to find the order associated with this session
+            order = Order.objects.filter(payment_token=session_id).first()
+            order.payment_status = 'paid'
+            order.ordered = True
+            order.date_ordered = datetime.now()
+            order.save()
+
+            if not order:
+                return Response({'error': 'Order not found for the given session ID.'}, status=status.HTTP_404_NOT_FOUND)
+
+            # Build the response with session and order details
+            status_response = {
+                'session_status': session.status,
+                'payment_status': order.payment_status,
+                'customer_email': session.customer_details.email if session.customer_details else None,
+                'order_id': order.id,
+                'order_total_price': order.order_total_price,
+                'total_order_items': order.total_order_items,
+            }
+
+            return Response(status_response, status=status.HTTP_200_OK)
+        except stripe.error.StripeError as e:
+            return Response({'error': f'Stripe error: {e.user_message}'}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': f'An error occurred: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 
 def convert_querydict_to_dict(querydict):
     # Convert the QueryDict to a dictionary
@@ -107,7 +276,7 @@ def convert_querydict_to_dict(querydict):
     return result
 
 class CategoryViewSet(viewsets.ViewSet):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthenticationFromCookie]
 
     def list(self, request):
          # Ensure permission check is applied
@@ -205,9 +374,10 @@ class EquipmentViewSet(viewsets.ModelViewSet):
     queryset = Equipment.objects.all()
     serializer_class = EquipmentSerializer
 
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthenticationFromCookie]
 
     def list(self, request):
+        # queryset = Equipment.objects.filter(owner=request.user.id)
         queryset = Equipment.objects.all()
         serializer = EquipmentSerializer(queryset, many=True)
         return Response(serializer.data)
@@ -797,8 +967,36 @@ class CartItemViewSet(viewsets.ModelViewSet):
 #             return Response(status=status.HTTP_404_NOT_FOUND)
 
 
+class OrderActionView(APIView):
+    authentication_classes = [JWTAuthenticationFromCookie]
+
+
+    def post(self, request, pk, action):
+        print("data", request.data)
+        try:
+            order = Order.objects.get(id=pk, user=request.user)
+
+            if action == 'terminate':
+                order.terminate_rental()
+            elif action == 'delete':
+                order.delete()
+            elif action == 'reorder':
+                new_order = order.reorder()
+                return Response({'message': 'Order reordered successfully', 'new_order_id': new_order.id}, status=status.HTTP_200_OK)
+            else:
+                return Response({'error': 'Invalid action'}, status=status.HTTP_400_BAD_REQUEST)
+
+            return Response({'message': f'Order {action} action successful'}, status=status.HTTP_200_OK)
+
+        except Order.DoesNotExist:
+            return Response({'error': 'Order not found'}, status=status.HTTP_404_NOT_FOUND)
+        except ValueError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
 class OrderViewSet(viewsets.ViewSet):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthenticationFromCookie]
 
     def list(self, request):
         self.permission_classes = [permissions.IsAuthenticated]
@@ -808,14 +1006,76 @@ class OrderViewSet(viewsets.ViewSet):
         return Response(serializer.data)
 
     def create(self, request):
-        self.permission_classes = [permissions.IsAuthenticated]
-        self.check_permissions(request)  # Ensure permission check is applied
-        serializer = OrderSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save(user=request.user)  # Associate the order with the current user
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        self.check_permissions(request)
 
+        data = request.data
+        data['user'] = request.user.id
+
+        try:
+            # Fetch the user's cart
+            cart = Cart.objects.get(user=request.user)
+        except Cart.DoesNotExist:
+            return Response({"error": "No cart found for the user"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Get cart items
+        cart_items = cart.cart_items.all()
+
+        if not cart_items.exists():
+            return Response({"error": "Cart is empty, cannot create an order"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Calculate order total price and total order items
+        order_total_price = sum(item.quantity * item.item.hourly_rate for item in cart_items)
+        total_order_items = sum(item.quantity for item in cart_items)
+
+        data['order_total_price'] = order_total_price
+        data['total_order_items'] = total_order_items
+
+        # Serialize and save the order
+        order_serializer = OrderSerializer(data=data)
+        if order_serializer.is_valid():
+            # Save the order and create order items
+            order = order_serializer.save(user=request.user)
+
+            for cart_item in cart_items:
+                OrderItem.objects.create(
+                    order=order,
+                    item=cart_item.item,
+                    quantity=cart_item.quantity,
+                    start_date=cart_item.start_date,
+                    end_date=cart_item.end_date
+                )
+
+            # Clear the cart after creating the order
+            cart_items.delete()
+
+            # Payment logic (Stripe integration)
+            try:
+                # Convert the total price to cents (Stripe requires amount in cents)
+                amount_in_cents = int(order_total_price * 100)
+
+                # Create a PaymentIntent with Stripe
+                intent = stripe.PaymentIntent.create(
+                    amount=amount_in_cents,
+                    currency='usd',
+                    automatic_payment_methods={'enabled': True},
+                )
+
+                # Update the order with the payment token
+                order.payment_token = intent.id
+                order.payment_status = 'pending'  # Initially set to pending before payment confirmation
+                order.save()
+
+                # Return the client secret for the frontend to process the payment
+                return Response({
+                    'clientSecret': intent.client_secret,
+                    'order_id': order.id,
+                }, status=status.HTTP_201_CREATED)
+
+            except stripe.error.StripeError as e:
+                return Response({"error": f"Payment processing failed: {e.user_message}"}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(order_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
     def retrieve(self, request, pk=None):
         self.permission_classes = [permissions.IsAuthenticated]
         self.check_permissions(request)  # Ensure permission check is applied
@@ -846,7 +1106,7 @@ class OrderViewSet(viewsets.ViewSet):
 
 
 class OrderItemViewSet(viewsets.ViewSet):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthenticationFromCookie]
 
     def list(self, request):
         self.permission_classes = [permissions.IsAuthenticated]

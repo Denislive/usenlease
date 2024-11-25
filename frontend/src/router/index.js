@@ -11,8 +11,10 @@ import LoginView from '@/views/LoginView.vue';
 import SignUp from '@/components/SignUp.vue';
 import CreateEquipment from '@/components/CreateEquipment.vue';
 import NotFound from '@/components/NotFound.vue';
-import VerifyEmail  from '@/components/VerifyEmail.vue';
+import VerifyEmail from '@/components/VerifyEmail.vue';
 import { useAuthStore } from '@/store/auth'; // Import your auth store
+import PaymentSuccess from '@/views/PaymentSuccess.vue';
+import PaymentFailure from '@/views/PaymentFailure.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -80,6 +82,16 @@ const router = createRouter({
       component: CreateEquipment,
       // meta: { requiresAuth: true }, // Protecting this route
 
+    },
+    {
+      path: '/payment-successful', // Ensure this starts with '/'
+      name: 'success',
+      component: PaymentSuccess,
+    },
+    {
+      path: '/payment-canceled',
+      name: 'failed',
+      component: PaymentFailure,
     },
     {
       path: '/:pathMatch(.*)*',

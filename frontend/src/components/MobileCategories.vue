@@ -17,14 +17,17 @@
           <!-- Dynamic Category Cards -->
           <div v-for="category in categories" :key="category.id">
             <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+              <RouterLink
+                            :to="{ name: 'category-details', query: { cat: category.slug } }">
               <img 
-                :src="category.image || placeholderImage" 
-                :alt="`${category.name} Image`" 
+              :src=" category.image ? `http://127.0.0.1:8000${category.image}` || placeholderImage 
+              :alt=`${category.name}`" 
                 class="w-full h-32 object-cover"
               />
               <div class="p-4 text-center">
-                <h5 class="text-sm font-semibold">{{ category.name }}</h5>
+                <h5 class="text-sm">{{ category.name }}</h5>
               </div>
+            </RouterLink>
             </div>
           </div>
         </div>

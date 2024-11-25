@@ -30,6 +30,7 @@ onMounted(async () => {
     console.log('Fetching category data...');
     const categoryResponse = await axios.get('http://127.0.0.1:8000/api/categories');
     categories.value = categoryResponse.data;
+    console.log("Fetched categories", categories.value);
 
     // Initialize selected categories
     categories.value.forEach(category => {
@@ -37,9 +38,11 @@ onMounted(async () => {
     });
     console.log('Initialized selected categories:', selectedCategories.value);
 
-    // Fetch cities from an appropriate endpoint if available
-    // const cityResponse = await axios.get('http://127.0.0.1:8000/api/cities');
-    // cities.value = cityResponse.data;
+    // Extract cities from the equipment data (assuming each equipment has a city/location field)
+    const equipmentCities = equipments.value.map(equipment => equipment.address?.city).filter(city => city);
+    cities.value = [...new Set(equipmentCities)]; // Remove duplicates
+    console.log('Cities fetched from equipment data:', cities.value);
+
   } catch (error) {
     console.error('Error fetching data:', error);
   }

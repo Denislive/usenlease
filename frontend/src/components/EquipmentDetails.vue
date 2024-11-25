@@ -1,12 +1,12 @@
 <template>
   <div v-if="loading" class="loading">Loading equipment details...</div>
   <div v-else-if="error" class="error">{{ error }}</div>
-  <div v-else-if="equipment" class="cell medium-4 large-4 p-4 border rounded-lg shadow-lg bg-white">
+  <div v-else-if="equipment" class="cell medium-4 large-4 p-12 border rounded-lg shadow-lg bg-gray-100">
     <h1 class="product-name text-2xl font-bold mb-2">{{ equipment.name }}</h1>
 
     <div class="rating-reviews mb-2">
       <span class="rating text-yellow-500">{{ renderStars(equipment.rating) }}</span>
-      <span class="reviews text-gray-600"> ({{ equipment.reviews ? equipment.reviews.length : 0 }} Reviews)</span>
+      <span class="reviews text-gray-600"> ({{ equipment.equipment_reviews ? equipment.equipment_reviews.length : 0 }} Reviews)</span>
     </div>
 
     <p class="price text-xl font-semibold mb-4">${{ equipment.hourly_rate }}/Hour</p>
