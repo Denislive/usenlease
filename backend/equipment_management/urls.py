@@ -11,7 +11,10 @@ from .views import (
     OrderViewSet,
     OrderItemViewSet,
     CartItemViewSet,
-    RootCategoryListView
+    RootCategoryListView,
+    OrderActionView,
+    CreateCheckoutSessionView,
+    SessionStatusView
 )
 
 # Create a router and register the viewsets
@@ -30,6 +33,9 @@ router.register('order-items', OrderItemViewSet, basename='order-item')
 
 urlpatterns = [
     path('', include(router.urls)),  # Include all the registered routes
+    path('create-checkout-session/', CreateCheckoutSessionView.as_view(), name='create_checkout_session'),
+    path('session-status/', SessionStatusView.as_view(), name='session_status'),
+    path('orders/<str:pk>/<str:action>/', OrderActionView.as_view(), name='order-action'),
     path('root-categories/', RootCategoryListView.as_view(), name='root-category-list'),
 
 ]

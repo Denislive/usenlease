@@ -213,7 +213,7 @@ class EquipmentSerializer(serializers.ModelSerializer):
 class CartSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cart
-        fields = ['cart_items']
+        fields = ['id', 'cart_items']
 
 class CartItemSerializer(serializers.ModelSerializer):
     item_details = EquipmentSerializer(source='item', read_only=True)  # Full details on read
@@ -223,10 +223,11 @@ class CartItemSerializer(serializers.ModelSerializer):
         fields = ['id', 'cart', 'item', 'item_details', 'quantity', 'start_date', 'end_date', 'ordered', 'total']
 
 class OrderSerializer(serializers.ModelSerializer):
+ 
     class Meta:
         model = Order
         fields = ['id', 'payment_token', 'user', 'status', 'shipping_address', 'billing_address', 
-                  'payment_status', 'date_created', 'date_ordered', 'ordered']
+                  'payment_status', 'date_created', 'date_ordered', 'ordered', 'cart', 'order_total_price', 'total_order_items']
 
 class OrderItemSerializer(serializers.ModelSerializer):
     class Meta:

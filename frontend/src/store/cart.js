@@ -58,6 +58,7 @@ export const useCartStore = defineStore('cart', () => {
             const foundItem = cart.value.find(item => item.id === itemId);
             if (foundItem) {
                 foundItem.quantity = parseInt(quantity);
+                loadCart();
                 foundItem.total = parseFloat(foundItem.hourly_rate) * foundItem.quantity;
                 showNotification('Quantity Updated', `${foundItem.item_details.name} quantity has been updated.`, 'success');
             } else {
@@ -68,6 +69,7 @@ export const useCartStore = defineStore('cart', () => {
             if (foundItem) {
                 foundItem.quantity = parseInt(quantity);
                 foundItem.total = parseFloat(foundItem.hourly_rate) * foundItem.quantity;
+                loadCart();
                 showNotification('Quantity Updated', `${foundItem.item.name} quantity has been updated.`, 'success');
             } else {
                 showNotification('Error', 'Item not found in cart.', 'error');

@@ -17,8 +17,8 @@ from django.contrib.auth import authenticate
 from django.db import IntegrityError
 
 
-from .models import User, Address, PhysicalAddress, CreditCard
-from .serializers import UserSerializer, AddressSerializer, PhysicalAddressSerializer, CreditCardSerializer
+from .models import User, Address, PhysicalAddress, CreditCard, Message
+from .serializers import UserSerializer, AddressSerializer, PhysicalAddressSerializer, CreditCardSerializer, MessageSerializer
 
 # views.py
 from rest_framework.response import Response
@@ -50,6 +50,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from .serializers import UserSerializer  # Adjust the import as necessary
 
+from rest_framework.parsers import MultiPartParser, FormParser
+
 
 
 from .models import OTP
@@ -60,9 +62,8 @@ from email.mime.text import MIMEText
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from django.contrib.auth import get_user_model
-
+from django.db import transaction
 User = get_user_model()
-
 
 
 
@@ -110,6 +111,111 @@ class JWTAuthenticationFromCookie(JWTAuthentication):
         # You can adjust this method to work with your response handling logic.
         from rest_framework.response import Response
         return Response()
+
+
+from rest_framework import status, viewsets
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from .models import Chat, Message
+from .serializers import ChatSerializer, MessageSerializer
+from django.db.models import Q
+
+class ChatViewSet(viewsets.ModelViewSet):
+    queryset = Chat.objects.all()
+    serializer_class = ChatSerializer
+
+    authentication_classes = [JWTAuthenticationFromCookie]
+    
+
+    def get_queryset(self):
+        self.check_permissions(self.request)  
+        # Filter chats by current logged-in user
+        return Chat.objects.filter(participants=self.request.user)
+
+    def perform_create(self, serializer):
+        """Create a new chat with the logged-in user and specified participants."""
+        sender = self.request.user
+        recipient_ids = self.request.data.get('participants', [])
+
+        # Ensure the logged-in user is included
+        participants = [sender]
+
+        # Add recipients if they exist
+        if recipient_ids:
+            recipients = get_user_model().objects.filter(id__in=recipient_ids)
+            participants.extend(recipients)
+
+        # Save the chat with the combined participants
+        serializer.save(participants=participants)
+
+
+class MessageViewSet(viewsets.ModelViewSet):
+    queryset = Message.objects.all()
+    serializer_class = MessageSerializer
+    authentication_classes = [JWTAuthenticationFromCookie]
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """Retrieve messages for a specific chat or for the logged-in user."""
+        self.check_permissions(self.request)
+        chat_id = self.request.query_params.get("chat_id")
+        
+        if chat_id:
+            return Message.objects.filter(chat_id=chat_id, is_deleted=False).order_by("sent_at")
+        
+        # Messages where the user is either sender or receiver
+        return Message.objects.filter(
+            Q(sender=self.request.user) | Q(receiver=self.request.user),
+            is_deleted=False
+        ).order_by("sent_at")
+
+    @transaction.atomic
+    def perform_create(self, serializer):
+        """Ensure chat exists between sender and receiver before creating a message."""
+        sender = self.request.user
+        receiver_id = self.request.data.get("receiver")
+
+        if not receiver_id:
+            raise ValueError("Receiver ID is required to send a message.")
+        
+        try:
+            receiver = User.objects.get(id=receiver_id)
+        except User.DoesNotExist:
+            raise ValueError("Receiver not found.")
+
+        # Check if a chat already exists between the sender and receiver
+        chat = Chat.objects.filter(participants=sender).filter(participants=receiver).distinct()
+        
+        if not chat.exists():
+            # Create a new chat
+            chat = Chat.objects.create()
+            chat.participants.set([sender, receiver])
+        else:
+            chat = chat.first()
+
+        # Save the message associated with the chat
+        serializer.save(sender=sender, receiver=receiver, chat=chat)
+
+    def delete_message(self, request, pk=None):
+        try:
+            message = Message.objects.get(id=pk, sender=self.request.user)
+            message.is_deleted = True
+            message.save()
+            return Response({"message": "Message deleted"}, status=status.HTTP_204_NO_CONTENT)
+        except Message.DoesNotExist:
+            return Response({"error": "Message not found"}, status=status.HTTP_404_NOT_FOUND)
+
+
+class AllChatsViewSet(viewsets.ViewSet):
+
+    authentication_classes = [JWTAuthenticationFromCookie]
+
+    def list(self, request):
+        # Get all chats for the user
+        self.check_permissions(request)  
+        chats = Chat.objects.filter(participants=request.user)
+        serializer = ChatSerializer(chats, many=True)
+        return Response(serializer.data)
 
 
 class OTPViewSet(viewsets.ViewSet):
@@ -262,6 +368,34 @@ class LoginView(APIView):
             return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
 
 
+
+class TokenRefreshView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        refresh_token = request.COOKIES.get('refresh')
+        if not refresh_token:
+            return Response({"error": "Refresh token not provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            refresh = RefreshToken(refresh_token)
+            new_access_token = str(refresh.access_token)
+
+            response = Response({"message": "Token refreshed successfully."})
+            response.set_cookie(
+                key="token",
+                value=new_access_token,
+                httponly=True,
+                secure=True,  # Set to True in production
+                samesite='None',
+                path="/"
+            )
+            return response
+        except TokenError as e:
+            return Response({"error": "Invalid refresh token."}, status=status.HTTP_401_UNAUTHORIZED)
+
+
+
 # class CustomTokenVerifyView(TokenVerifyView):
 #     """
 #     Custom token verification view that retrieves the token from cookies.
@@ -345,31 +479,13 @@ class UserViewSet(viewsets.ViewSet):
 
 
     def retrieve(self, request, pk=None):
-        # Retrieve the token from the cookies
-        token = request.COOKIES.get('token')  # Adjust the cookie name if needed
-        
-        if not token:
-            raise NotAuthenticated("Authentication token not found.")
-        
-        try:
-            # Decode the JWT token to extract the user ID
-            decoded_token = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
-            user_id = decoded_token.get('user_id')  # Assuming 'user_id' is in the payload
-            
-            if not user_id:
-                raise NotAuthenticated("User ID not found in the token.")
-            
-            # Retrieve the user by ID
-            user = get_object_or_404(User, pk=user_id)
-            
-            # Serialize the user data
-            serializer = UserSerializer(user)
-            return Response(serializer.data)
-        
-        except jwt.ExpiredSignatureError:
-            raise NotAuthenticated("Token has expired.")
-        except jwt.InvalidTokenError:
-            raise NotAuthenticated("Invalid token.")
+        user = request.user
+        if not user.is_authenticated:
+            raise NotAuthenticated("Authentication required.")
+
+        serializer = UserSerializer(user)
+        return Response(serializer.data)
+
 
     def create(self, request):
         # Allow anyone to create a new user account

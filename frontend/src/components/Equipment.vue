@@ -115,6 +115,13 @@ const goToDetail = (equipmentId) => {
         </div>
       </div>
     </div>
+
+    <div class="empty-list-container text-center py-16" v-if="filteredEquipments.length === 0">
+        <i class="pi pi-exclamation-circle text-9xl text-gray-500"></i>
+      <p class="text-xl text-gray-500 mt-4">Oops! No items in here!</p>
+      <p class="text-xl text-gray-500 mt-4">Try adding a new item by hitting the lease button.</p>
+
+    </div>
   </div>
 </template>
 

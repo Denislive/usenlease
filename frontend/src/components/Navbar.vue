@@ -1,14 +1,17 @@
 <script setup>
-import { ref, watchEffect } from 'vue';
+import { ref, watchEffect, onMounted } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/auth';  // Import the auth store
 import { useCartStore } from '@/store/cart'; // Adjust the path as necessary
+import axios from 'axios';
+
 const cartStore = useCartStore();
 
 
 const showDropdown = ref(false);
 const authStore = useAuthStore();
 const router = useRouter();
+const user = ref({});
 
 
 let dropdownTimeout;
@@ -26,6 +29,34 @@ const showDropdownWithDelay = (show) => {
         }, 200); // Delay to close dropdown after mouse leaves
       }
     };
+
+
+    // Fetch user data from API
+    const getUserData = async () => {
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_BASE_URL}/api/accounts/users/${authStore.user.id}/`,
+          { withCredentials: true }
+        );
+        user.value = {
+          ...response.data,
+          user_address: response.data.user_address || {
+            full_name: '',
+            street_address: '',
+            street_address2: '',
+            city: '',
+            state: '',
+            zip_code: '',
+            country: ''
+          }
+        };
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      }
+    };
+
+  onMounted(() => getUserData());
+
 
 // Handle Logout functionality
 const handleLogout = async () => {
@@ -50,7 +81,7 @@ watchEffect(() => {
     <div class="w-11/12 md:w-5/6 lg:w-5/6 mx-auto">
       <header class="text-white flex justify-between items-center">
         <RouterLink :to="{ name: 'home' }" class="flex items-center">
-          <img src="@/assets/images/logo.jpeg" alt="Use N lease Logo" class="h-20" />
+          <img src="@/assets/images/logo.jpeg"  alt="Use N lease Logo" class="h-20" />
         </RouterLink>
 
         <div class="flex items-center">
@@ -58,7 +89,7 @@ watchEffect(() => {
             <!-- Browse Equipment Button -->
             <a 
               class="px-6 py-2 bg-gradient-to-r from-[#ffc107] to-[#1c1c1c] text-white font-semibold rounded-lg shadow-lg transform transition duration-300 hover:scale-105 hover:shadow-2xl">
-              Browse Equipments
+              Browse Items
             </a>
 
           </RouterLink>
@@ -70,7 +101,7 @@ watchEffect(() => {
           @mouseenter="showDropdownWithDelay(true)" @mouseleave="showDropdownWithDelay(false)">
             <!-- Profile Icon -->
             <button class="hidden md:block flex items-center space-x-2 focus:outline-none">
-              <img src="@/assets/images/logo.jpeg" alt="Profile Icon"
+              <img :src="`http://127.0.0.1:8000${user.image}`" alt="Profile Icon"
                 class="w-10 h-10 rounded-full border border-gray-300" />
             </button>
 
@@ -78,7 +109,7 @@ watchEffect(() => {
             <div
               class="absolute left-1/2 mt-7 w-32 bg-[#1c1c1c] rounded-lg shadow-lg text-center z-10 transform -translate-x-1/2"
               v-show="showDropdown">
-
+              
               <!-- Profile Option -->
               <RouterLink to="/profile" @click="showDropdown=false" class="block py-2 text-white hover:text-[#ffc107]">
                 Profile

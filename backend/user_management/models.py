@@ -42,6 +42,27 @@ def generate_short_uuid():
     return base64.urlsafe_b64encode(uuid.uuid4().bytes).decode('utf-8')[:16]
 
 
+class Chat(models.Model):
+    participants = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='chats')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Chat between {', '.join([user.email for user in self.participants.all()])}"
+
+class Message(models.Model):
+    chat = models.ForeignKey(Chat, related_name='messages', on_delete=models.CASCADE)
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='sent_messages')
+    receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='received_messages')
+    content = models.TextField()
+    sent_at = models.DateTimeField(auto_now_add=True)
+    is_deleted = models.BooleanField(default=False)  # To handle deletion of messages
+    seen = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"Message from {self.sender.email} to {self.receiver.email} on {self.sent_at}"
+
+
 
 class User(AbstractUser):
     id = models.CharField(primary_key=True, max_length=16, default=generate_short_uuid, editable=False)

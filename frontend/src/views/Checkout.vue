@@ -12,15 +12,15 @@ import CheckoutSummary from '@/components/CheckoutSummary.vue';
 
   <div class="mx-auto p-2 w-6/8 sm:w-11/12">
     <div class="grid grid-cols-1 md:grid-cols-12 gap-4 p-1">
-      <!-- Sidebar Section -->
-      <aside class="md:col-span-6 bg-gray-100 rounded p-2">
-        <Addresses />
-      </aside>
-
+    
       <!-- Main Content Section -->
       <main class="md:col-span-6 bg-gray-100 p-1">
         <CheckoutSummary />
       </main>
+      <!-- Sidebar Section -->
+      <aside class="md:col-span-6 bg-gray-100 rounded p-2">
+        <Addresses />
+      </aside>
     </div>
     <EquipmentTabs />
 

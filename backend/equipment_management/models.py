@@ -192,6 +192,8 @@ class Cart(models.Model):
         self.total_cart_items = self.get_cart_items  # Update item count
         super().save(*args, **kwargs)  # Save the cart instance
 
+       
+
 class CartItem(models.Model):
     id = models.CharField(primary_key=True, max_length=16, default=generate_short_uuid, editable=False)
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='cart_items')
@@ -252,6 +254,10 @@ class CartItem(models.Model):
         self.total = self.get_cart_item_total  # Ensures total is calculated before saving
         super().save(*args, **kwargs)
 
+        # Update the parent cart
+        if self.cart:
+            self.cart.save()
+
 
 # Order Model
 class Order(models.Model):
@@ -267,12 +273,14 @@ class Order(models.Model):
     ]
 
     payment_token = models.CharField(max_length=255, blank=True, null=True)
+
+    cart = models.ForeignKey(Cart, on_delete=models.PROTECT, blank=True, null=True)
     
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
     shipping_address = models.ForeignKey(Address, related_name='shipping_address', on_delete=models.PROTECT, blank=True, null=True)
     billing_address = models.ForeignKey(Address, related_name='billing_address', on_delete=models.PROTECT, blank=True, null=True)
-    payment_status = models.CharField(max_length=10, choices=[('paid', 'Paid'), ('unpaid', 'Unpaid')], default='unpaid')
+    payment_status = models.CharField(max_length=10, choices=[('paid', 'Paid'), ('pending', 'pending'), ('unpaid', 'unpaid')], default='unpaid')
     date_created = models.DateTimeField(auto_now_add=True)
     date_ordered = models.DateTimeField(blank=True, null=True)
 
@@ -285,6 +293,35 @@ class Order(models.Model):
 
     def __str__(self):
         return f"Order {self.id} for {self.user.username}"
+
+
+
+    def terminate_rental(self):
+        if self.status in ['pending', 'rented']:
+            self.status = 'canceled'
+            self.save()
+        else:
+            raise ValueError("Rental cannot be terminated in the current status.")
+
+    def reorder(self):
+        if self.status in ['completed', 'returned', 'canceled']:
+            new_order = Order.objects.create(
+                user=self.user,
+                cart=self.cart,
+                shipping_address=self.shipping_address,
+                billing_address=self.billing_address,
+            )
+            for item in self.order_items.all():
+                OrderItem.objects.create(
+                    order=new_order,
+                    item=item.item,
+                    quantity=item.quantity,
+                    start_date=item.start_date,
+                    end_date=item.end_date,
+                )
+            return new_order
+        else:
+            raise ValueError("Reorder can only be performed on completed, returned, or canceled orders.")
 
     @property
     def get_order_total(self):
@@ -322,13 +359,21 @@ class OrderItem(models.Model):
 
     @property
     def get_order_item_total(self):
+        # Check if start_date and end_date are both set
+        if not self.start_date or not self.end_date:
+            return 0.00  # Return 0 if the dates are missing
+        
         rental_days = (self.end_date - self.start_date).days
         if rental_days < 0:
             rental_days = 0
-        total_hours = rental_days * 24
+        total_hours = rental_days * 24  # Convert rental days to total hours
         return self.quantity * self.item.hourly_rate * total_hours
+
     
     def save(self, *args, **kwargs):
         # Update the total field before saving
         self.total = self.get_order_item_total  # Ensures total is calculated before saving
         super().save(*args, **kwargs)
+
+        if self.order:
+            self.order.save()
