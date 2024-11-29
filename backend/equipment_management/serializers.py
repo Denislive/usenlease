@@ -4,21 +4,22 @@ from user_management.serializers import AddressSerializer
 from user_management.models import Address, User
 from django.shortcuts import get_object_or_404
 
-
 import json
 
+# Serializer for Subcategory model
 class SubcategorySerializer(serializers.ModelSerializer):
-    ad_count = serializers.SerializerMethodField()
+    ad_count = serializers.SerializerMethodField()  # Custom field for counting ads
 
     class Meta:
         model = Category
         fields = ['id', 'name', 'ad_count', 'image', 'slug']  # Include 'image' field if it exists
 
+    # Method to count the number of related equipment in this subcategory
     def get_ad_count(self, obj):
-        # Assuming you have a related_name 'equipments' in your Category model
         return obj.equipments.count()  # Count of equipments in this subcategory
 
 
+# Serializer for Category model
 class CategorySerializer(serializers.ModelSerializer):
     subcategories = SubcategorySerializer(many=True, read_only=True)  # Nested subcategory serializer
 
@@ -26,78 +27,81 @@ class CategorySerializer(serializers.ModelSerializer):
         model = Category
         fields = ['id', 'name', 'description', 'slug', 'subcategories', 'image']
 
-      
 
-
+# Serializer for Tag model
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
-        fields = ['name']
+        fields = ['name']  # Only include the 'name' field of the tag
 
 
+# Serializer for Review model
 class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Review
-        fields = ['equipment', 'owner', 'user', 'rating', 'review_text', 'date_created']
+        fields = ['equipment', 'owner', 'user', 'rating', 'review_text', 'date_created']  # Include review-related fields
 
 
+# Serializer for Specification model
 class SpecificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Specification
-        fields = ['value']
+        fields = ['value']  # Only include the value of the specification
 
         extra_kwargs = {
-            'equipment': {'write_only':True},
-            'name': {'write_only':True}
+            'equipment': {'write_only': True},  # Do not expose equipment field in output
+            'name': {'write_only': True}  # Do not expose name field in output
         }
 
 
-# Serializer for the Image model
+# Serializer for Image model
 class ImageSerializer(serializers.ModelSerializer):
-    image_url = serializers.SerializerMethodField()
+    image_url = serializers.SerializerMethodField()  # Custom field for image URL
 
     class Meta:
         model = Image
-        fields = ('image_url',)
+        fields = ('image_url',)  # Only include 'image_url'
 
     # Method to get the URL of the image
     def get_image_url(self, obj):
         return obj.image.url
 
+
+# Serializer for Equipment model
 class EquipmentSerializer(serializers.ModelSerializer):
-    tags = TagSerializer(many=True, required=False)
+    tags = TagSerializer(many=True, required=False)  # Include tags, not required
     images = ImageSerializer(many=True, read_only=True)  # Include related images
-    address = AddressSerializer()  # Allow writable Address field
-    hourly_rate = serializers.FloatField()
-    specifications = SpecificationSerializer(many=True,required=False)
-    equipment_reviews = ReviewSerializer(many=True, read_only=True)
-    rating = serializers.SerializerMethodField()
+    address = AddressSerializer()  # Include Address serializer, writable
+    hourly_rate = serializers.FloatField()  # Include hourly rate field
+    specifications = SpecificationSerializer(many=True, required=False)  # Include specifications
+    equipment_reviews = ReviewSerializer(many=True, read_only=True)  # Include reviews, read-only
+    rating = serializers.SerializerMethodField()  # Custom field for average rating
 
     class Meta:
         model = Equipment
         fields = ['owner', 'id', 'category', 'tags', 'name', 'description', 
                   'images', 'hourly_rate', 'address', 'available_quantity', 
-                  'is_available', "specifications", 'terms', 'equipment_reviews', 'rating']
+                  'is_available', "specifications", 'equipment_reviews', 'rating']
         extra_kwargs = {
-            'slug': {'write_only': True},   # Slug is write-only and not exposed
+            'slug': {'write_only': True},  # Slug is write-only and not exposed
         }
-    
+
+    # Overriding to_representation to filter out reviews with no text
     def to_representation(self, instance):
-        # Filter out reviews with no review_text before returning the data
         data = super().to_representation(instance)
         data['equipment_reviews'] = [review for review in data['equipment_reviews'] if review['review_text']]
         return data
 
+    # Method to get the average rating of equipment
     def get_rating(self, obj):
         return obj.get_average_rating()
 
+    # Overriding create method to handle image, tag, and specification processing
     def create(self, validated_data):
-        # Access the request from the context
         request = self.context.get('request')
 
-        # Retrieve the uploaded images from request.FILES
-        images = request.FILES.getlist('images') if request else []
-        print("Received images:", images)
+        images = request.FILES.getlist('images') if request else []  # Get images from request
+        print("Received images:", images)  # Debugging line
 
         user = validated_data.pop('owner')
         address_data = validated_data.pop('address')
@@ -123,113 +127,65 @@ class EquipmentSerializer(serializers.ModelSerializer):
             available_quantity=available_quantity
         )
 
-
-        # Extract the specifications data
+        # Process and create specifications
         specifications_data = request.data.pop('specifications')
-
-        # Create the specification objects and associate them with the equipment
         for spec_data in specifications_data:
-            spec_data = json.loads(spec_data)  # Assuming you need to load the spec data as JSON
+            spec_data = json.loads(spec_data)  # Load spec data as JSON
             print("Spec data after loading:", spec_data)  # Debugging line
-            
             for spec in spec_data:
                 print("Processing spec:", spec)  # Debugging line
                 
-                # Create the specification and associate it with the equipment instance
+                # Create and associate specification with equipment
                 Specification.objects.create(
-                    equipment=equipment,  # Associate the specification with the equipment
-                    name=spec['key'],     # Assuming 'key' is the name of the specification
-                    value=spec['value']   # Assuming 'value' is the value of the specification
+                    equipment=equipment,
+                    name=spec['key'],
+                    value=spec['value']
                 )
-
                 print("Specification created:", spec)  # Debugging line
 
-
-        # # Extract the specifications data
-        # specifications_data = request.data.get('specifications', [])
-        # print("Specifications data:", specifications_data)
-
-        # # Create the specification objects and associate them with the equipment
-        # for spec_data in specifications_data:
-        #     # Check if spec_data is a string and needs to be loaded from JSON
-        #     if isinstance(spec_data, str):
-        #         try:
-        #             spec_data = json.loads(spec_data)
-        #             print("Parsed specification:", spec_data)
-        #         except json.JSONDecodeError as e:
-        #             print(f"Error decoding specification data: {e}")
-        #             continue
-
-        #     # Loop through the specification data (expecting a list of dicts)
-        #     for spec in spec_data:
-        #         print("Processing spec:", spec)
-        #         name = spec.get('key')
-        #         value = spec.get('value')
-
-        #         # Check if 'key' and 'value' exist in the spec
-        #         if not name or not value:
-        #             print(f"Invalid specification data: {spec}. Missing 'key' or 'value'.")
-        #             continue  # Skip invalid specification data
-
-        #         # Ensure the equipment field is correctly assigned
-        #         specification_data = {
-        #             'equipment': equipment,
-        #             'name': name,  # Renamed from 'key' to 'name'
-        #             'value': value
-        #         }
-
-        #         # Now use the Specification serializer to validate and create the specification instance
-        #         specification_serializer = SpecificationSerializer(data=specification_data)
-        #         if specification_serializer.is_valid():
-        #             specification_serializer.save()  # Create the specification instance
-        #             print(f"Specification created: {specification_serializer.data}")
-        #         else:
-        #             print(f"Specification errors: {specification_serializer.errors}")
-        #             continue
-
-        # Handle tags if they exist
+        # Handle tags if provided
         tags_data = validated_data.pop('tags', [])
-        print('Tags data:', tags_data)  # Debugging line to see tags_data
+        print('Tags data:', tags_data)  # Debugging line
 
         for tag_name in tags_data:
-            # Assuming tag_name is a string; if it's a dict, adjust accordingly
-            tag, created = Tag.objects.get_or_create(name=tag_name)  # Create or get the tag
-            equipment.tags.add(tag)  # Add tag to equipment's many-to-many field
+            tag, created = Tag.objects.get_or_create(name=tag_name)  # Create or get tag
+            equipment.tags.add(tag)  # Add tag to equipment
 
-        # Handle images if they exist
+        # Handle images if provided
         for image in images:
-            # Create an Image instance associated with the equipment
-            Image.objects.create(equipment=equipment, image=image)
-            print(f"Image created: {image}")
+            Image.objects.create(equipment=equipment, image=image)  # Create image for equipment
+            print(f"Image created: {image}")  # Debugging line
 
         return equipment
 
 
-
-
-
-
-
+# Serializer for Cart model
 class CartSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cart
-        fields = ['id', 'cart_items']
+        fields = ['id', 'cart_items']  # Cart fields
 
+
+# Serializer for CartItem model
 class CartItemSerializer(serializers.ModelSerializer):
-    item_details = EquipmentSerializer(source='item', read_only=True)  # Full details on read
-    total = serializers.FloatField(required=False)
+    item_details = EquipmentSerializer(source='item', read_only=True)  # Include full equipment details
+    total = serializers.FloatField(required=False)  # Optional total field
+
     class Meta:
         model = CartItem
         fields = ['id', 'cart', 'item', 'item_details', 'quantity', 'start_date', 'end_date', 'ordered', 'total']
 
+
+# Serializer for Order model
 class OrderSerializer(serializers.ModelSerializer):
- 
     class Meta:
         model = Order
         fields = ['id', 'payment_token', 'user', 'status', 'shipping_address', 'billing_address', 
                   'payment_status', 'date_created', 'date_ordered', 'ordered', 'cart', 'order_total_price', 'total_order_items']
 
+
+# Serializer for OrderItem model
 class OrderItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderItem
-        fields = ['id', 'ordered', 'item', 'order', 'quantity', 'start_date', 'end_date']
+        fields = ['id', 'ordered', 'item', 'order', 'quantity', 'start_date', 'end_date']  # OrderItem fields
