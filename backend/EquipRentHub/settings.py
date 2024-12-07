@@ -12,10 +12,10 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY', 'equiprentsecure-okgE-0f1jZv0y4FtyxOcOKwwgp3Ag65Q_WQxr4lxdmU=')
+SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'False') == 'False'
+DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
 ALLOWED_HOSTS = ['*']
 
@@ -26,8 +26,8 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 AUTH_USER_MODEL = 'user_management.User'
 
 STRIPE_PUBLIC_KEY = os.getenv("STRIPE_PUBLIC_KEY")
-STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "sk_test_51QOGGpAUjFrzBH99pmCE8d3IIuJc1rCFcTlVc5H9YlF1yS4MSc9RBYQQJnZwSCO4r2fhZ2SG00LDjpRXyJGgyYT800CSpvsujm")
-STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 
 # Application definition
 INSTALLED_APPS = [
@@ -51,11 +51,10 @@ INSTALLED_APPS = [
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000"
+    "http://localhost:3000",
     "http://34.16.122.142:3000",  # Cloud frontend
 ]
 CORS_ALLOW_ALL_ORIGINS = False  # Set this to False in production for better security
-
 
 # Rest JWT
 REST_FRAMEWORK = {
@@ -81,7 +80,7 @@ SIMPLE_JWT = {
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_HOST_USER = 'dennisgacharigachemi@gmail.com'
-EMAIL_HOST_PASSWORD = 'ehyh hqkb rpgf cuoo'  # Store password securely
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')  # Store password securely
 EMAIL_USE_TLS = True
 
 # Security Settings
@@ -90,7 +89,7 @@ CSRF_COOKIE_SAMESITE = 'None'
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True  # Not accessible via JavaScript
 CSRF_COOKIE_NAME = "csrftoken"  # Name of the CSRF cookie
-CSRF_COOKIE_HTTPONLY = False  # Mark the cookie as HTTP-only
+CSRF_COOKIE_HTTPONLY = True  # Mark the cookie as HTTP-only
 
 CORS_ALLOW_CREDENTIALS = True  # This allows cookies to be sent with requests
 
@@ -99,9 +98,9 @@ CORS_ALLOW_HEADERS = list(default_headers) + [
     'authorization', 
     'X-CSRFToken',  
 ]
-# settings.py
+
 CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:3000"
+    "http://localhost:3000",
     "http://34.16.122.142:3000",  # Cloud frontend
 ]
 
@@ -136,16 +135,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'EquipRentHub.wsgi.application'
 
-import os
-from dotenv import load_dotenv
-
-# Load environment variables from .env file
-
-import os
-from pathlib import Path
-
-BASE_DIR = Path(__file__).resolve().parent.parent
-
 # Attempt PostgreSQL configuration, fallback to SQLite3 if any error occurs
 try:
     DATABASES = {
@@ -177,7 +166,6 @@ except Exception:
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
-
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
