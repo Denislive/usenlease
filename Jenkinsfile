@@ -75,18 +75,18 @@ pipeline {
                 }
             }
         }
-        stage('Build and Deploy with Docker Compose') {
-            steps {
-                script {
-                    echo 'Building and deploying Docker images using Docker Compose...'
-                    sh '''
-                    docker-compose down
-                    docker-compose pull
-                    docker-compose up --build -d
-                    '''
-                }
-            }
-        }
+        // stage('Build and Deploy with Docker Compose') {
+        //     steps {
+        //         script {
+        //             echo 'Building and deploying Docker images using Docker Compose...'
+        //             sh '''
+        //             docker-compose down
+        //             docker-compose pull
+        //             docker-compose up --build -d
+        //             '''
+        //         }
+        //     }
+        // }
         stage('Initialize and Apply Terraform') {
             steps {
                 script {
