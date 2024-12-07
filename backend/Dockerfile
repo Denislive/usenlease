@@ -14,12 +14,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 # Copy requirements.txt and install dependencies
-COPY backend/requirements.txt /app/
+COPY ../backend/requirements.txt /app/
 RUN python3 -m venv /app/venv \
     && /app/venv/bin/pip install --no-cache-dir -r /app/requirements.txt
 
 # Copy the rest of the backend code
-COPY backend /app/backend
+COPY ../backend /app/backend
 
 # Set STATIC_ROOT for static file collection
 ENV STATIC_ROOT=/app/backend/staticfiles
