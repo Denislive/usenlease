@@ -52,8 +52,9 @@ CRISPY_TEMPLATE_PACK = 'bootstrap4'
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000"
+    "http://34.16.122.142:3000",  # Cloud frontend
 ]
-CORS_ALLOW_ALL_ORIGINS = True  # For development only
+CORS_ALLOW_ALL_ORIGINS = False  # Set this to False in production for better security
 
 
 # Rest JWT
@@ -101,6 +102,7 @@ CORS_ALLOW_HEADERS = list(default_headers) + [
 # settings.py
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000"
+    "http://34.16.122.142:3000",  # Cloud frontend
 ]
 
 MIDDLEWARE = [
