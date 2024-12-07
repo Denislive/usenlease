@@ -137,6 +137,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'EquipRentHub.wsgi.application'
 
+import os from dotenv import load_dotenv # Load environment variables from .env file import os from pathlib import Path BASE_DIR = Path(__file__).resolve().parent.parent
+
 # Attempt PostgreSQL configuration, fallback to SQLite3 if any error occurs
 try:
     DATABASES = {
