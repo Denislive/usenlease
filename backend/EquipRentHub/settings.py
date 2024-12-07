@@ -193,8 +193,14 @@ USE_TZ = True
 
 # Static files
 STATIC_URL = '/static/'
+
+# Define where static files are stored during development
 STATICFILES_DIRS = [BASE_DIR / 'static']
 
+# Define the directory where static files will be collected in production
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# Media files (uploads)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media/'
 
