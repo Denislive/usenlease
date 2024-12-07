@@ -66,7 +66,7 @@ pipeline {
                             withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                                 sh '''
                                 docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
-                                docker build -t ${BACKEND_IMAGE}:v1.1.0 ./backend
+                                docker build -t ${BACKEND_IMAGE}:v1.1.0 -f backend/Dockerfile .
                                 docker push ${BACKEND_IMAGE}:v1.1.0
                                 '''
                             }
@@ -111,12 +111,10 @@ pipeline {
                 script {
                     echo 'Authenticating and deploying to Google Cloud...'
                     sh '''
-                    # Authenticate to Google Cloud
                     gcloud auth activate-service-account --key-file=${GOOGLE_APPLICATION_CREDENTIALS}
 
                     INSTANCE_NAME="usenlease-website"
 
-                    # Check if instance exists, if not create it
                     INSTANCE_EXISTS=$(gcloud compute instances describe $INSTANCE_NAME --project=${GOOGLE_CLOUD_PROJECT} --zone=${GOOGLE_CLOUD_ZONE} --format="get(name)" || echo "not found")
 
                     if [[ "$INSTANCE_EXISTS" == "not found" ]]; then
@@ -137,7 +135,6 @@ pipeline {
                             docker-compose up -d'
                     else
                         echo "Instance $INSTANCE_NAME already exists. Skipping creation."
-                        # Update metadata if instance exists
                         gcloud compute instances add-metadata $INSTANCE_NAME \
                             --project=${GOOGLE_CLOUD_PROJECT} \
                             --zone=${GOOGLE_CLOUD_ZONE} \
