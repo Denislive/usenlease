@@ -15,7 +15,7 @@ export const useEquipmentsStore = defineStore('equipments', () => {
     error.value = null;
 
     try {
-      const response = await axios.get('http://127.0.0.1:8000/api/equipments/', {
+      const response = await axios.get('http://34.16.122.142:8000/api/equipments/', {
         withCredentials: true,
       });
       equipments.value = response.data;
@@ -34,7 +34,7 @@ export const useEquipmentsStore = defineStore('equipments', () => {
     error.value = null;
 
     try {
-      const response = await axios.get('http://127.0.0.1:8000/api/categories/', {
+      const response = await axios.get('http://34.16.122.142:8000/api/categories/', {
         withCredentials: true,
       });
       categories.value = response.data;
@@ -56,7 +56,7 @@ export const useEquipmentsStore = defineStore('equipments', () => {
       isLoading.value = true;
       error.value = null;
       try {
-        const response = await axios.get(`http://127.0.0.1:8000/api/equipments/${id}/`, {
+        const response = await axios.get(`http://34.16.122.142:8000/api/equipments/${id}/`, {
           withCredentials: true,
         });
         selectedEquipment.value = response.data;
