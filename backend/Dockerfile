@@ -13,6 +13,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Create a working directory
 WORKDIR /app
 
+# Add build argument for SECRET_KEY
+ARG SECRET_KEY
+
+# Set environment variable
+ENV SECRET_KEY=${SECRET_KEY}
+
 # Copy requirements.txt and install dependencies
 COPY ../backend/requirements.txt /app/
 RUN python3 -m venv /app/venv \
@@ -33,6 +39,12 @@ FROM python:3.11-slim-bullseye
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 ENV PATH="/app/venv/bin:$PATH"
+
+# Add build argument for SECRET_KEY
+ARG SECRET_KEY
+
+# Set environment variable
+ENV SECRET_KEY=${SECRET_KEY}
 
 # Copy the virtual environment and the application code from the builder stage
 COPY --from=builder /app /app

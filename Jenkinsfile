@@ -64,11 +64,13 @@ pipeline {
                         script {
                             echo 'Pushing backend Docker image to Docker Hub...'
                             withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                                sh '''
-                                docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
-                                docker build -t ${BACKEND_IMAGE}:v1.1.0 -f backend/Dockerfile .
-                                docker push ${BACKEND_IMAGE}:v1.1.0
-                                '''
+                                withEnv(["SECRET_KEY=django-insecure-^5zv2&aef@n*hi0icmu7lji6bqf0r&d@!x)%*gq-e^w)2e^kl!"]) {
+                                    sh '''
+                                    docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
+                                    docker build --build-arg SECRET_KEY=${SECRET_KEY} -t ${BACKEND_IMAGE}:v1.1.0 -f backend/Dockerfile .
+                                    docker push ${BACKEND_IMAGE}:v1.1.0
+                                    '''
+                                }
                             }
                         }
                     }
