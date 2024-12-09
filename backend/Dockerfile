@@ -59,4 +59,4 @@ RUN mkdir -p /app/backend/staticfiles
 EXPOSE 8000
 
 # Run migrations, create a superuser (if not exists), and start Gunicorn
-CMD ["sh", "-c", "python manage.py wait_for_db && python manage.py migrate && python manage.py create_superuser && exec gunicorn EquipRentHub.wsgi:application --bind 34.16.122.142:8000 --workers=3 --timeout 240 --graceful-timeout 240"]
+CMD ["sh", "-c", "python manage.py wait_for_db && python manage.py migrate && python manage.py create_superuser && exec gunicorn EquipRentHub.wsgi:application --bind 0.0.0.0:8000 --workers=3 --timeout 240 --graceful-timeout 240"]
