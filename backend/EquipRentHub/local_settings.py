@@ -3,7 +3,6 @@ from pathlib import Path
 from datetime import timedelta
 from corsheaders.defaults import default_headers
 import os
-import dj_database_url
 
 # Load environment variables from .env
 load_dotenv()
@@ -12,7 +11,7 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY', 'equiprentsecure-okgE-0f1jZv0y4FtyxOcOKwwgp3Ag65Q_WQxr4lxdmU=')
+SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False') == 'False'
@@ -26,7 +25,7 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 AUTH_USER_MODEL = 'user_management.User'
 
 STRIPE_PUBLIC_KEY = os.getenv("STRIPE_PUBLIC_KEY")
-STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "sk_test_51QOGGpAUjFrzBH99pmCE8d3IIuJc1rCFcTlVc5H9YlF1yS4MSc9RBYQQJnZwSCO4r2fhZ2SG00LDjpRXyJGgyYT800CSpvsujm")
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
 
 # Application definition
@@ -37,23 +36,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'crispy_forms',
-    'crispy_bootstrap4',
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
-    'djoser',
     'rest_framework_simplejwt.token_blacklist',
     'equipment_management.apps.EquipmentManagementConfig',
     'user_management.apps.UserManagementConfig',
 ]
 
-CRISPY_TEMPLATE_PACK = 'bootstrap4'
-
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000"
-]
-CORS_ALLOW_ALL_ORIGINS = True  # For development only
 
 
 # Rest JWT
@@ -77,31 +67,25 @@ SIMPLE_JWT = {
     "AUTH_COOKIE_REFRESH": "refresh",
 }
 
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_HOST_USER = 'dennisgacharigachemi@gmail.com'
-EMAIL_HOST_PASSWORD = 'ehyh hqkb rpgf cuoo'  # Store password securely
-EMAIL_USE_TLS = True
+EMAIL_HOST =  os.getenv('EMAIL_HOST')
+EMAIL_PORT = os.getenv('EMAIL_PORT')
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')  # Store password securely
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS')
 
 # Security Settings
-SESSION_COOKIE_SAMESITE = 'None'
-CSRF_COOKIE_SAMESITE = 'None'
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True  # Not accessible via JavaScript
-CSRF_COOKIE_NAME = "csrftoken"  # Name of the CSRF cookie
-CSRF_COOKIE_HTTPONLY = False  # Mark the cookie as HTTP-only
+SESSION_COOKIE_SAMESITE = os.getenv('SESSION_COOKIE_SAMESITE', 'None')
+CSRF_COOKIE_SAMESITE = os.getenv('CSRF_COOKIE_SAMESITE', 'None')
+SESSION_COOKIE_SECURE = os.getenv('SESSION_COOKIE_SECURE', 'True') == 'True'
+CSRF_COOKIE_SECURE = os.getenv('CSRF_COOKIE_SECURE', 'True') == 'True'
+CSRF_COOKIE_NAME = os.getenv('CSRF_COOKIE_NAME', 'csrftoken')
+CSRF_COOKIE_HTTPONLY = os.getenv('CSRF_COOKIE_HTTPONLY', 'False') == 'True'
 
-CORS_ALLOW_CREDENTIALS = True  # This allows cookies to be sent with requests
-
-CORS_ALLOW_HEADERS = list(default_headers) + [
-    'content-type',
-    'authorization', 
-    'X-CSRFToken',  
-]
-# settings.py
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:3000"
-]
+CORS_ALLOW_CREDENTIALS = os.getenv('CORS_ALLOW_CREDENTIALS', 'True') == 'True'
+CORS_ALLOW_HEADERS = os.getenv('CORS_ALLOW_HEADERS', 'content-type,authorization,X-CSRFToken').split(',')
+CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:3000').split(',')
+CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000').split(',')
+CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL_ORIGINS', 'True') == 'True'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

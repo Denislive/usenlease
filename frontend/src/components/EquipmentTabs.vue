@@ -105,12 +105,15 @@ import { format } from 'date-fns';
 import { useRoute } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
 
+
 import axios from 'axios';
 
 export default {
   setup() {
     const activeTab = ref('description');
     const route = useRoute();
+    const api_base_url = import.meta.env.VITE_API_BASE_URL;
+
     const newReview = ref({
       rating: null,
       text: ''
@@ -127,7 +130,6 @@ export default {
     });
     const submitReview = async () => {
   if (!authStore.isAuthenticated) {
-    console.log("User is not authenticated");
     // Optionally redirect to login or display an authentication prompt
     return;
   }
@@ -148,15 +150,14 @@ export default {
   }
 
     // Send a POST request to submit the review
-    const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/reviews/`, reviewData, {
+    const response = await axios.post(`${api_base_url}/api/reviews/`, reviewData, {
       withCredentials: true, // Send cookies for authentication if needed
     });
 
-    // Log success and handle the response as needed
-    console.log("Review submitted successfully:", response.data);
+  
+     // Directly update the reviews in the UI with the new review
+     selectedEquipment.value.equipment_reviews.push(response.data);
 
-    // Optionally update the reviews list in the UI
-    equipmentsStore.fetchEquipments(); // Re-fetch equipment data if reviews are part of it
 
     // Reset the review form
     newReview.value.rating = null;
@@ -177,6 +178,7 @@ export default {
     };
 
     return {
+      api_base_url,
       activeTab,
       newReview,
       selectedEquipment,

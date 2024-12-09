@@ -1,180 +1,121 @@
+<script setup>
+import { ref, computed, onMounted } from 'vue';
+import { useEquipmentsStore } from '@/store/equipments';
+
+const showFilters = ref(false);
+const toggleFilters = () => {
+  showFilters.value = !showFilters.value;
+};
+
+const store = useEquipmentsStore();
+const categories = computed(() => store.categories);
+const equipments = computed(() => store.equipments);
+const filteredEquipments = computed(() => store.filteredEquipments);
+
+// Reactive array to track selected category names
+const selectedCategories = ref([]);
+
+// Fetch categories and equipment on component mount
+onMounted(async () => {
+  await store.fetchCategories();
+  await store.fetchEquipments();
+});
+
+// Clear all selected filters
+const clearFilters = () => {
+  selectedCategories.value = [];
+  applyFilters(); // Reset the filters and show all equipment
+};
+
+// Apply filters based on selected category names
+const applyFilters = () => {
+  if (selectedCategories.value.length === 0) {
+    store.filteredEquipments = store.equipments; // No filters selected, show all
+  } else {
+    const selectedCategoryIds = categories.value
+      .filter((category) => selectedCategories.value.includes(category.name))
+      .map((category) => category.id);
+
+    store.filteredEquipments = store.equipments.filter((equipment) =>
+      selectedCategoryIds.includes(equipment.category)
+    );
+  }
+};
+
+// Toggle category selection
+const toggleCategory = (categoryName) => {
+  const index = selectedCategories.value.indexOf(categoryName);
+  if (index === -1) {
+    selectedCategories.value.push(categoryName);
+  } else {
+    selectedCategories.value.splice(index, 1);
+  }
+  applyFilters();
+};
+</script>
 <template>
-    <div class="md:hidden">
-      <button @click="toggleFilters" class="w-full text-xl font-bold mb-4 flex items-center">
-        <i class="pi pi-filter mr-2"></i> Filters
-      </button>
-      <div v-if="showFilters" class="border border-gray-300 rounded-lg p-4 mb-4">
-        <ul class="space-y-4">
-          <!-- Category Filter -->
-          <li class="product-filters-tab">
-            <a href="#" class="text-lg font-semibold hover:text-[#1c1c1c]">Category</a>
-            <ul class="ml-4 space-y-2">
-              <li>
-                <a href="#" class="text-xl text-gray-500" id="category-clear-all">Clear All</a>
-              </li>
-              <li><input id="category-checkbox1" type="checkbox" class="mr-2"><label for="category-checkbox1" class="text-xl">Category 1</label></li>
-              <li><input id="category-checkbox2" type="checkbox" class="mr-2"><label for="category-checkbox2" class="text-xl">Category 2</label></li>
-              <li><input id="category-checkbox3" type="checkbox" class="mr-2"><label for="category-checkbox3" class="text-xl">Category 3</label></li>
-              <li><input id="category-checkbox4" type="checkbox" class="mr-2"><label for="category-checkbox4" class="text-xl">Category 4</label></li>
-              <li><input id="category-checkbox5" type="checkbox" class="mr-2"><label for="category-checkbox5" class="text-xl">Category 5</label></li>
-              <li><input id="category-checkbox6" type="checkbox" class="mr-2"><label for="category-checkbox6" class="text-xl">Category 6</label></li>
-            </ul>
-          </li>
-  
-          <!-- Size Filter -->
-          <li class="product-filters-tab">
-            <a href="#" class="text-lg font-semibold hover:text-[#1c1c1c]">Size</a>
-            <ul class="ml-4 space-y-2">
-              <li>
-                <a href="#" class="text-xl text-gray-500" id="size-clear-all">Clear All</a>
-              </li>
-              <li><input id="size-checkbox1" type="checkbox" class="mr-2"><label for="size-checkbox1" class="text-xl">Small</label></li>
-              <li><input id="size-checkbox2" type="checkbox" class="mr-2"><label for="size-checkbox2" class="text-xl">Medium</label></li>
-              <li><input id="size-checkbox3" type="checkbox" class="mr-2"><label for="size-checkbox3" class="text-xl">Large</label></li>
-              <li><input id="size-checkbox4" type="checkbox" class="mr-2"><label for="size-checkbox4" class="text-xl">X-Large</label></li>
-              <li><input id="size-checkbox5" type="checkbox" class="mr-2"><label for="size-checkbox5" class="text-xl">XX-Large</label></li>
-            </ul>
-          </li>
-  
-          <!-- Color Filter -->
-          <li class="product-filters-tab">
-            <a href="#" class="text-lg font-semibold hover:text-[#1c1c1c]">Color</a>
-            <ul class="ml-4 space-y-2">
-              <li>
-                <a href="#" class="text-xl text-gray-500" id="color-clear-all">Clear All</a>
-              </li>
-              <li><input id="color-checkbox1" type="checkbox" class="mr-2"><label for="color-checkbox1" class="text-xl">All Color</label></li>
-              <li><input id="color-checkbox2" type="checkbox" class="mr-2"><label for="color-checkbox2" class="text-xl">Black</label></li>
-              <li><input id="color-checkbox3" type="checkbox" class="mr-2"><label for="color-checkbox3" class="text-xl">White</label></li>
-              <li><input id="color-checkbox4" type="checkbox" class="mr-2"><label for="color-checkbox4" class="text-xl">Grey</label></li>
-              <li><input id="color-checkbox5" type="checkbox" class="mr-2"><label for="color-checkbox5" class="text-xl">Red</label></li>
-              <li><input id="color-checkbox6" type="checkbox" class="mr-2"><label for="color-checkbox6" class="text-xl">Blue</label></li>
-              <li><input id="color-checkbox7" type="checkbox" class="mr-2"><label for="color-checkbox7" class="text-xl">Green</label></li>
-              <li><input id="color-checkbox8" type="checkbox" class="mr-2"><label for="color-checkbox8" class="text-xl">Purple</label></li>
-              <li><input id="color-checkbox9" type="checkbox" class="mr-2"><label for="color-checkbox9" class="text-xl">Multi-color</label></li>
-            </ul>
-          </li>
-  
-          <!-- Price Filter -->
-          <li class="product-filters-tab">
-            <a href="#" class="text-lg font-semibold hover:text-[#1c1c1c]">Price</a>
-            <ul class="ml-4 space-y-2">
-              <li>
-                <a href="#" class="text-xl text-gray-500" id="price-clear-all">Clear All</a>
-              </li>
-              <li><input id="price-checkbox1" type="checkbox" class="mr-2"><label for="price-checkbox1" class="text-xl">Under $25</label></li>
-              <li><input id="price-checkbox2" type="checkbox" class="mr-2"><label for="price-checkbox2" class="text-xl">$25–$50</label></li>
-              <li><input id="price-checkbox3" type="checkbox" class="mr-2"><label for="price-checkbox3" class="text-xl">$50–$250</label></li>
-              <li><input id="price-checkbox4" type="checkbox" class="mr-2"><label for="price-checkbox4" class="text-xl">$250–$600</label></li>
-              <li><input id="price-checkbox5" type="checkbox" class="mr-2"><label for="price-checkbox5" class="text-xl">$600–$1,000</label></li>
-            </ul>
-          </li>
-        </ul>
-      </div>
-    </div>
-  
-    <!-- Desktop View -->
-    <div class="hidden md:block">
-      <h1 class="text-xl font-bold mb-4">
-        <i class="pi pi-filter"></i> Filters
-      </h1>
-      <ul class="space-y-4">
+  <div class="md:hidden">
+    <!-- Filters Button -->
+    <button 
+      @click="toggleFilters" 
+      class="w-full text-xl font-bold mb-4 flex items-center justify-center bg-[#1c1c1c] text-white rounded-md py-2 hover:bg-[#ffc107] hover:text-[#1c1c1c] transition"
+    >
+      <i class="pi pi-filter mr-2"></i> Filters
+    </button>
+
+    <!-- Filters Panel -->
+    <div v-if="showFilters" class="border border-gray-300 rounded-lg p-4 shadow-md bg-white mb-4">
+      <ul class="space-y-6">
         <!-- Category Filter -->
         <li class="product-filters-tab">
-          <a href="#" class="text-lg font-semibold hover:text-[#1c1c1c]">Category</a>
-          <ul class="ml-4 space-y-2">
+          <a href="#" class="text-lg font-semibold text-gray-800 hover:text-blue-600 transition">
+            Category
+          </a>
+          <ul class="ml-4 mt-4 space-y-4">
+            <!-- Clear All -->
             <li>
-              <a href="#" class="text-xl text-gray-500" id="category-clear-all">Clear All</a>
+              <a 
+                href="#" 
+                class="text-sm font-medium text-red-500 hover:underline transition" 
+                @click="clearFilters" 
+                id="category-clear-all"
+              >
+                Clear All
+              </a>
             </li>
-            <li><input id="category-checkbox1" type="checkbox" class="mr-2"><label for="category-checkbox1" class="text-xl">Category 1</label></li>
-            <li><input id="category-checkbox2" type="checkbox" class="mr-2"><label for="category-checkbox2" class="text-xl">Category 2</label></li>
-            <li><input id="category-checkbox3" type="checkbox" class="mr-2"><label for="category-checkbox3" class="text-xl">Category 3</label></li>
-            <li><input id="category-checkbox4" type="checkbox" class="mr-2"><label for="category-checkbox4" class="text-xl">Category 4</label></li>
-            <li><input id="category-checkbox5" type="checkbox" class="mr-2"><label for="category-checkbox5" class="text-xl">Category 5</label></li>
-            <li><input id="category-checkbox6" type="checkbox" class="mr-2"><label for="category-checkbox6" class="text-xl">Category 6</label></li>
-          </ul>
-        </li>
-  
-        <!-- Size Filter -->
-        <li class="product-filters-tab">
-          <a href="#" class="text-lg font-semibold hover:text-[#1c1c1c]">Size</a>
-          <ul class="ml-4 space-y-2">
-            <li>
-              <a href="#" class="text-xl text-gray-500" id="size-clear-all">Clear All</a>
+            <!-- Category Items -->
+            <li 
+              v-for="category in categories" 
+              :key="category.id" 
+              @click="toggleCategory(category.name)" 
+              class="flex items-center cursor-pointer bg-gray-100 hover:bg-gray-200 rounded-md p-2 transition"
+            >
+              <input 
+                type="checkbox" 
+                :id="'category-checkbox' + category.id" 
+                :value="category.name" 
+                v-model="selectedCategories"
+                @change="applyFilters"
+                class="hidden" 
+              />
+              <label :for="'category-checkbox' + category.id" class="flex items-center space-x-3">
+                <!-- Dynamic Icon -->
+                <span 
+                  :class="{
+                    'pi pi-check-circle text-blue-500': selectedCategories.includes(category.name),
+                    'pi pi-circle text-gray-400': !selectedCategories.includes(category.name)
+                  }"
+                  class="text-xl"
+                ></span>
+                <!-- Category Name -->
+                <span class="text-gray-700 text-lg font-medium">
+                  {{ category.name }}
+                </span>
+              </label>
             </li>
-            <li><input id="size-checkbox1" type="checkbox" class="mr-2"><label for="size-checkbox1" class="text-xl">Small</label></li>
-            <li><input id="size-checkbox2" type="checkbox" class="mr-2"><label for="size-checkbox2" class="text-xl">Medium</label></li>
-            <li><input id="size-checkbox3" type="checkbox" class="mr-2"><label for="size-checkbox3" class="text-xl">Large</label></li>
-            <li><input id="size-checkbox4" type="checkbox" class="mr-2"><label for="size-checkbox4" class="text-xl">X-Large</label></li>
-            <li><input id="size-checkbox5" type="checkbox" class="mr-2"><label for="size-checkbox5" class="text-xl">XX-Large</label></li>
-          </ul>
-        </li>
-  
-        <!-- Color Filter -->
-        <li class="product-filters-tab">
-          <a href="#" class="text-lg font-semibold hover:text-[#1c1c1c]">Color</a>
-          <ul class="ml-4 space-y-2">
-            <li>
-              <a href="#" class="text-xl text-gray-500" id="color-clear-all">Clear All</a>
-            </li>
-            <li><input id="color-checkbox1" type="checkbox" class="mr-2"><label for="color-checkbox1" class="text-xl">All Color</label></li>
-            <li><input id="color-checkbox2" type="checkbox" class="mr-2"><label for="color-checkbox2" class="text-xl">Black</label></li>
-            <li><input id="color-checkbox3" type="checkbox" class="mr-2"><label for="color-checkbox3" class="text-xl">White</label></li>
-            <li><input id="color-checkbox4" type="checkbox" class="mr-2"><label for="color-checkbox4" class="text-xl">Grey</label></li>
-            <li><input id="color-checkbox5" type="checkbox" class="mr-2"><label for="color-checkbox5" class="text-xl">Red</label></li>
-            <li><input id="color-checkbox6" type="checkbox" class="mr-2"><label for="color-checkbox6" class="text-xl">Blue</label></li>
-            <li><input id="color-checkbox7" type="checkbox" class="mr-2"><label for="color-checkbox7" class="text-xl">Green</label></li>
-            <li><input id="color-checkbox8" type="checkbox" class="mr-2"><label for="color-checkbox8" class="text-xl">Purple</label></li>
-            <li><input id="color-checkbox9" type="checkbox" class="mr-2"><label for="color-checkbox9" class="text-xl">Multi-color</label></li>
-          </ul>
-        </li>
-  
-        <!-- Price Filter -->
-        <li class="product-filters-tab">
-          <a href="#" class="text-lg font-semibold hover:text-[#1c1c1c]">Price</a>
-          <ul class="ml-4 space-y-2">
-            <li>
-              <a href="#" class="text-xl text-gray-500" id="price-clear-all">Clear All</a>
-            </li>
-            <li><input id="price-checkbox1" type="checkbox" class="mr-2"><label for="price-checkbox1" class="text-xl">Under $25</label></li>
-            <li><input id="price-checkbox2" type="checkbox" class="mr-2"><label for="price-checkbox2" class="text-xl">$25–$50</label></li>
-            <li><input id="price-checkbox3" type="checkbox" class="mr-2"><label for="price-checkbox3" class="text-xl">$50–$250</label></li>
-            <li><input id="price-checkbox4" type="checkbox" class="mr-2"><label for="price-checkbox4" class="text-xl">$250–$600</label></li>
-            <li><input id="price-checkbox5" type="checkbox" class="mr-2"><label for="price-checkbox5" class="text-xl">$600–$1,000</label></li>
           </ul>
         </li>
       </ul>
     </div>
-  </template>
-  
-  <script setup>
-  import { ref } from 'vue';
-  
-  const showFilters = ref(false);
-  
-  const toggleFilters = () => {
-      showFilters.value = !showFilters.value;
-  };
-  </script>
-  
-  <style scoped>
-  /* Filter styles can go here if needed */
-  .product-filters-tab a {
-      color: #1c1c1c; /* Color for links */
-      transition: color 0.3s ease; /* Smooth transition for hover */
-  }
-  
-  .product-filters-tab a:hover {
-      color: #1c1c1c; /* Change text color on hover */
-  }
-  
-  input[type="checkbox"] {
-      accent-color: #ffc107; /* Custom color for checkboxes */
-  }
-  
-  /* Overall Filter Menu */
-  ul {
-      list-style: none; /* Remove bullet points */
-      padding-left: 0; /* Remove default padding */
-  }
-  </style>
+  </div>
+</template>

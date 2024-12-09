@@ -20,13 +20,14 @@ const search = useStore();
 // Computed property to get searchQuery from Vuex
 const searchQuery = computed(() => search.getters.getSearchQuery);
 
+const api_base_url = import.meta.env.VITE_API_BASE_URL;
 
 
 
 // Function to fetch category data and map slugs to IDs
 const fetchCategories = async () => {
   try {
-    const response = await axios.get('http://127.0.0.1:8000/api/categories/'); // Fetch categories from the API
+    const response = await axios.get(`${api_base_url}/api/categories/`); // Fetch categories from the API
     response.data.forEach(category => {
       categoryMap.value[category.slug] = category.id; // Create a mapping of slug to ID
     });
@@ -38,7 +39,7 @@ const fetchCategories = async () => {
 // Function to fetch equipment data from the API
 const fetchEquipments = async () => {
   try {
-    const response = await axios.get('http://127.0.0.1:8000/api/equipments/'); // Fetch equipment from the API
+    const response = await axios.get(`${api_base_url}/api/equipments/`); // Fetch equipment from the API
     equipmentList.value = response.data; // Store the fetched equipment data
     filterEquipments(); // Call the filter function once data is fetched
   } catch (error) {
@@ -48,7 +49,6 @@ const fetchEquipments = async () => {
 
 const filterEquipments = () => {
   const categorySlug = route.query.cat; // Get the 'cat' query parameter from the URL
-  console.log(`Filtering equipment for category slug: ${categorySlug}`); // Debug log
 
   // Get the corresponding category ID from the slug
   const categoryId = categoryMap.value[categorySlug];
@@ -78,7 +78,6 @@ const filterEquipments = () => {
     return matchesCategory; // Return only category match if no search query
   });
 
-  console.log('Filtered Equipments: ', filteredEquipments.value); // Debug log filtered results
 };
 
 

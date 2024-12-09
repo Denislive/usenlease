@@ -190,7 +190,7 @@
           'w-full rounded-md py-2 transition duration-200',
           isFormInvalid ? 'bg-red-500 text-white' : 'bg-[#1c1c1c] text-white'
         ]">
-          List Item
+          Submit
         </button>
       </form>
     </div>
@@ -207,6 +207,9 @@ import useNotifications from '@/store/notification';
 
 const authStore = useAuthStore();
 const { showNotification } = useNotifications();
+
+const api_base_url = import.meta.env.VITE_API_BASE_URL;
+
 
 const itemName = ref('');
 const hourlyRate = ref(null);
@@ -264,7 +267,7 @@ const fetchCountries = async () => {
 
 onMounted(async () => {
   try {
-    const response = await axios.get('http://127.0.0.1:8000/api/categories/');
+    const response = await axios.get(`${api_base_url}/api/categories/`);
     categories.value = response.data;
   } catch (error) {
     console.error('Error fetching categories:', error);
@@ -454,8 +457,6 @@ const handleSubmit = async () => {
   formData.append('is_available', true);
   formData.append('category', selectedCategory.value.id);
   formData.append('available_quantity', availableItems.value);
-
-
   formData.append('terms', terms.value);
   // Assuming other fields are already appended to formData
   formData.append('specifications', JSON.stringify(specifications.value));
@@ -474,9 +475,8 @@ const handleSubmit = async () => {
 
   if (userId) {
     try {
-      console.log("form data", formData);
       
-      const response = await axios.post('http://127.0.0.1:8000/api/equipments/', formData, {
+      const response = await axios.post(`${api_base_url}/api/equipments/`, formData, {
         withCredentials: true
       });
       if (response.status === 201) {

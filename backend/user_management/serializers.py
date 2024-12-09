@@ -3,25 +3,10 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from .models import User, Address, CreditCard,  PhysicalAddress, OTP,Message, Chat
 
+
 from rest_framework import serializers
 
 
-class MessageSerializer(serializers.ModelSerializer):
-    sender = serializers.PrimaryKeyRelatedField(queryset=get_user_model().objects.all(), required=False)
-    receiver = serializers.PrimaryKeyRelatedField(queryset=get_user_model().objects.all())
-    chat = serializers.PrimaryKeyRelatedField(queryset=Chat.objects.all(), required=False)  # Allow chat to be optional
-
-    class Meta:
-        model = Message
-        fields = ['id', 'sender', 'receiver', 'content', 'sent_at', 'is_deleted', 'seen', 'chat']
-
-class ChatSerializer(serializers.ModelSerializer):
-    participants = serializers.PrimaryKeyRelatedField(queryset=get_user_model().objects.all(), many=True)
-    messages = MessageSerializer(many=True, read_only=True)
-
-    class Meta:
-        model = Chat
-        fields = ['id', 'participants', 'messages', 'created_at', 'updated_at']
 
 
 
@@ -69,6 +54,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
+            'id',
             'image',
             'first_name',
             'last_name',
@@ -84,7 +70,6 @@ class UserSerializer(serializers.ModelSerializer):
             'password'
         ]
         extra_kwargs = {
-            'id': {'write_only': True},  # Make id write-only
             'password': {'write_only': True},  # Ensure password is write-only
             'document_type': {'write_only': True},
             'identity_document': {'write_only': True},
@@ -92,6 +77,31 @@ class UserSerializer(serializers.ModelSerializer):
         }
 
     
+
+class MessageSerializer(serializers.ModelSerializer):
+    sender = serializers.PrimaryKeyRelatedField(queryset=get_user_model().objects.all(), required=False)
+    receiver = serializers.PrimaryKeyRelatedField(queryset=get_user_model().objects.all())
+    chat = serializers.PrimaryKeyRelatedField(queryset=Chat.objects.all(), required=False)  # Allow chat to be optional
+
+    class Meta:
+        model = Message
+        fields = ['id', 'sender', 'receiver', 'content', 'sent_at', 'is_deleted', 'seen', 'chat']
+
+
+class ChatSerializer(serializers.ModelSerializer):
+    participants = UserSerializer(many=True, read_only=True)
+    messages = MessageSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Chat
+        fields = ['id', 'participants', 'messages', 'created_at', 'updated_at']
+
+
+
+
+
+        
+
 
 
 

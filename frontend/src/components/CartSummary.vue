@@ -1,11 +1,16 @@
 <template>
-    <h1>CartSummary</h1>
-   </template>
-   
-   <script>
-   
-   </script>
-   
-   <style scoped>
-   /* Additional styles can go here if needed */
-   </style>
+    <section class="cart-summary">
+        <h1 class="text-2xl font-semibold text-center">Cart Summary</h1>
+    </section>
+</template>
+
+<script setup>
+// Script logic can be added here if needed in the future
+</script>
+
+<style scoped>
+/* Scoped styles for CartSummary component can be added here */
+.cart-summary {
+    padding: 1rem;
+}
+</style>

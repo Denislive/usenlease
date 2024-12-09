@@ -18,7 +18,7 @@ const prevSlide = () => {
     <div class="container mx-auto p-4">
         <div class="grid grid-cols-12 gap-4">
             <!-- Carousel Section (8 columns) -->
-            <div class="col-span-8 relative" role="region" aria-label="Equipment Slider">
+            <div class="col-span-12 relative" role="region" aria-label="Equipment Slider">
                 <div class="overflow-hidden rounded-lg">
                     <div class="flex transition-transform duration-500 ease-in-out"
                         :style="`transform: translateX(-${currentSlide * 100}%)`">
@@ -48,9 +48,9 @@ const prevSlide = () => {
             </div>
 
             <!-- Square Button Section (4 columns) -->
-            <div class="col-span-4 flex items-center justify-end h-48 mr-4"> <!-- Match height with carousel -->
+            <!-- <div class="col-span-4 flex items-center justify-end h-48 mr-4"> 
                 <Cta />
-            </div>
+            </div> -->
         </div>
     </div>
 </template>

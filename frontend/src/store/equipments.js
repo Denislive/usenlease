@@ -3,6 +3,9 @@ import axios from 'axios';
 import { ref } from 'vue';
 
 export const useEquipmentsStore = defineStore('equipments', () => {
+
+  const api_base_url = import.meta.env.VITE_API_BASE_URL;
+
   const equipments = ref([]);
   const categories = ref([]);
   const selectedEquipment = ref(null);
@@ -15,11 +18,10 @@ export const useEquipmentsStore = defineStore('equipments', () => {
     error.value = null;
 
     try {
-      const response = await axios.get('http://127.0.0.1:8000/api/equipments/', {
+      const response = await axios.get(`${api_base_url}/api/equipments/`, {
         withCredentials: true,
       });
       equipments.value = response.data;
-      console.log('Fetched Equipments:', equipments.value);
     } catch (err) {
       error.value = 'Failed to fetch equipments.';
       console.error(err);
@@ -34,11 +36,10 @@ export const useEquipmentsStore = defineStore('equipments', () => {
     error.value = null;
 
     try {
-      const response = await axios.get('http://127.0.0.1:8000/api/categories/', {
+      const response = await axios.get(`${api_base_url}/api/categories/`, {
         withCredentials: true,
       });
       categories.value = response.data;
-      console.log('Fetched Categories:', categories.value);
     } catch (err) {
       error.value = 'Failed to fetch categories.';
       console.error('Error fetching categories:', err.response ? err.response.data : err);
@@ -56,11 +57,10 @@ export const useEquipmentsStore = defineStore('equipments', () => {
       isLoading.value = true;
       error.value = null;
       try {
-        const response = await axios.get(`http://127.0.0.1:8000/api/equipments/${id}/`, {
+        const response = await axios.get(`${api_base_url}/api/equipments/${id}/`, {
           withCredentials: true,
         });
         selectedEquipment.value = response.data;
-        console.log('Fetched Equipment by ID:', selectedEquipment.value);
       } catch (err) {
         error.value = `Failed to fetch equipment with ID ${id}.`;
         console.error(err);

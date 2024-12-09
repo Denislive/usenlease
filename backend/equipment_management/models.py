@@ -32,9 +32,10 @@ class Category(models.Model):
 
     class Meta:
         ordering = ('name',)
+        verbose_name_plural = "categories"
 
     def __str__(self):
-        return f"parent category: {self.parent} - category: {self.name}"
+        return self.name
     
 
     def get_absolute_url(self):
@@ -70,6 +71,9 @@ class Equipment(models.Model):
     date_updated = models.DateTimeField(auto_now=True)
     terms = models.TextField()
     slug = models.SlugField(unique=True, blank=True, editable=False)
+    is_trending = models.BooleanField(default=False)
+    is_featured = models.BooleanField(default=False)
+
 
     class Meta:
         ordering = ('-date_created',)

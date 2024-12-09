@@ -66,12 +66,14 @@
 import { ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
+import { useCartStore } from '@/store/cart';
 
 const email = ref('');
 const password = ref('');
 const emailError = ref('');
 const passwordError = ref('');
 const authStore = useAuthStore();
+const cartStore = useCartStore();
 const localLoginError = ref(''); // Local reactive error reference
 const router = useRouter();
 
@@ -95,10 +97,10 @@ const handleLogin = async () => {
   localLoginError.value = ''; // Clear previous errors
   if (!emailError.value && !passwordError.value) {
     try {
-      await authStore.login(email.value, password.value);
-      
+      await authStore.login(email.value, password.value, cartStore.cart);
+
+    
     } catch (error) {
-      console.error("Login error:", error);
     }
   }
 };

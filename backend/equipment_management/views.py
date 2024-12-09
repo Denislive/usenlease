@@ -375,6 +375,7 @@ class EquipmentViewSet(viewsets.ModelViewSet):
     serializer_class = EquipmentSerializer
 
     authentication_classes = [JWTAuthenticationFromCookie]
+    
 
     def list(self, request):
         # queryset = Equipment.objects.filter(owner=request.user.id)
@@ -402,6 +403,7 @@ class EquipmentViewSet(viewsets.ModelViewSet):
             }
             data['address'] = address
             print("Address data:", address)
+            
 
             # Convert tags to a list of dictionaries for `tags`
             if 'tags' in data:
@@ -414,6 +416,7 @@ class EquipmentViewSet(viewsets.ModelViewSet):
             print("Specifications data:", data.get('specifications', []))
 
             specifications_data = data['specifications']
+        
 
             # Initialize and validate the equipment serializer
             print("Initializing equipment serializer with data:", data)
@@ -479,22 +482,46 @@ class EquipmentViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     def update(self, request, pk=None):
-        self.permission_classes = [permissions.IsAuthenticated]
         self.check_permissions(request)  # Ensure permission check is applied
-        equipment = Equipment.objects.get(pk=pk)
-        serializer = EquipmentSerializer(equipment, data=request.data)
+        
+        # Retrieve the existing equipment instance or raise a 404 error
+        equipment = get_object_or_404(Equipment, pk=pk)
+        
+        data = request.data  # Get the request data
+        print(data)
+
+        # Get images if sent with the 'images' key
+        images = request.FILES.getlist('images')  # Assumes images are sent with the 'images' key
+
+        # Handle images if necessary
+        if images:
+            print(f"Processing {len(images)} images.")
+            for image in images:
+                # Example of saving images (if your Equipment model supports this)
+                equipment.images.create(image=image)
+                print(f"Image saved: {image}")
+
+
+
+
+        # Handle QueryDict for multipart/form-data
+        if isinstance(data, QueryDict):
+            data = data.dict()
+
+        # Validate and resolve the category if provided
+        category_instance = None
+        if 'category' in data:
+            category_instance = get_object_or_404(Category, id=data.get('category'))
+            data['category'] = category_instance.id  # Replace with the valid category ID
+
+        # Use the serializer for partial updates
+        serializer = EquipmentSerializer(equipment, data=data, partial=True)  # `partial=True` allows for partial updates
+        
         if serializer.is_valid():
-            serializer.save()
+            serializer.save()  # Save the updated data to the model
             return Response(serializer.data)
+        
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def destroy(self, request, pk=None):
-        self.permission_classes = [permissions.IsAuthenticated]
-        self.check_permissions(request)  # Ensure permission check is applied
-        equipment = Equipment.objects.get(pk=pk)
-        equipment.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
 
 class ImageViewSet(viewsets.ViewSet):
     authentication_classes = [JWTAuthentication]
@@ -674,43 +701,66 @@ class CartViewSet(viewsets.ModelViewSet):
         cart.delete()
         return Response({"detail": "Cart deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
 
+
 class CartItemViewSet(viewsets.ModelViewSet):
+
     authentication_classes = [JWTAuthenticationFromCookie]
     serializer_class = CartItemSerializer
     permission_classes = [permissions.IsAuthenticated]
-    
+
     def get_cart_item(self):
         user_cart, _ = Cart.objects.get_or_create(user=self.request.user)
         return CartItem.objects.get(id=self.request.data.get('id'))
 
     def get_queryset(self):
-        # Ensure a cart exists for the user and filter cart items by the user's cart
         user_cart, _ = Cart.objects.get_or_create(user=self.request.user)
         return CartItem.objects.filter(cart=user_cart)
 
     def create(self, request, *args, **kwargs):
-        # Ensure a cart exists for the user
         user_cart, _ = Cart.objects.get_or_create(user=self.request.user)
         
-        # Extract data for the item to be added/updated
         item_data = request.data
         item_id = item_data.get("item")  # Get the item ID
         item_quantity = item_data.get("quantity", 1)
         
+        # Normalize the start_date and end_date to only compare the date (ignore time)
+        new_start_date = datetime.strptime(item_data.get("start_date"), "%Y-%m-%d").date()
+        new_end_date = datetime.strptime(item_data.get("end_date"), "%Y-%m-%d").date()
+
+        # Check if the equipment is already in the cart and if dates overlap
+        overlapping_items = CartItem.objects.filter(
+            cart=user_cart,
+            item_id=item_id
+        ).filter(
+            start_date__lt=new_end_date,
+            end_date__gt=new_start_date
+        )
+
+        # If there is an overlap in dates
+        if overlapping_items.exists():
+            return Response(
+                {"error": "This equipment is already booked for the selected dates."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Check the available stock for the equipment
+        equipment = Equipment.objects.get(id=item_id)
+        if equipment.available_quantity < item_quantity:
+            return Response(
+                {"error": f"Only {equipment.available_quantity} units are available for this equipment."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         # Check if the item already exists in the user's cart
         existing_cart_item = CartItem.objects.filter(cart=user_cart, item_id=item_id).first()
 
         if existing_cart_item:
-            # Normalize the start_date and end_date to only compare the date (ignore time)
-            new_start_date = datetime.strptime(item_data.get("start_date"), "%Y-%m-%d").date()
-            new_end_date = datetime.strptime(item_data.get("end_date"), "%Y-%m-%d").date()
+            existing_start_date = existing_cart_item.start_date
+            existing_end_date = existing_cart_item.end_date
 
-            existing_start_date = existing_cart_item.start_date  # No need for .date(), it's already a date
-            existing_end_date = existing_cart_item.end_date  # No need for .date(), it's already a date
-
+            # If the dates are different, reset the quantity and update dates
             if (existing_start_date != new_start_date or existing_end_date != new_end_date):
-                # If the dates are different, reset the quantity and update dates
-                existing_cart_item.quantity = item_quantity  # Set the quantity to the new value
+                existing_cart_item.quantity = item_quantity
                 existing_cart_item.start_date = new_start_date
                 existing_cart_item.end_date = new_end_date
             else:
@@ -720,7 +770,7 @@ class CartItemViewSet(viewsets.ModelViewSet):
             existing_cart_item.save()
             serializer = self.get_serializer(existing_cart_item)
             return Response(serializer.data, status=status.HTTP_200_OK)
-        
+
         # If the item does not exist in the cart, create a new cart item
         item_data['cart'] = user_cart.id  # Associate the new cart item with the user's cart
         serializer = self.get_serializer(data=item_data)
@@ -728,243 +778,37 @@ class CartItemViewSet(viewsets.ModelViewSet):
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-        
     def update(self, request, *args, **kwargs):
-        # item_id = request.data.get('id') 
-        # cart_item = CartItem.objects.get(id=item_id)
+        """Update an existing cart item by checking the available quantity."""
         cart_item = self.get_cart_item()
-        serializer = self.get_serializer(cart_item, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
+        item_data = request.data
+
+        # Get the updated item quantity from the request data
+        item_quantity = item_data.get("quantity", cart_item.quantity)  # Default to current quantity if not specified
+
+        # Get the equipment (item) object associated with the cart item
+        equipment = cart_item.item  # CartItem has a foreign key to Equipment
+
+        # Check if the available quantity is sufficient
+        if equipment.available_quantity < item_quantity:
+            return Response(
+                {"error": "Some error occured updating the item"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # If the quantity is valid, update the cart item
+        cart_item.quantity = item_quantity
+        cart_item.save()
+
+        # Return the updated cart item as a response
+        serializer = self.get_serializer(cart_item)
         return Response(serializer.data)
 
+        
     def destroy(self, request, *args, **kwargs):
         cart_item = self.get_object()
         cart_item.delete()
         return Response({"detail": "Cart item deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
-
-# class CartViewSet(viewsets.ViewSet):
-#     authentication_classes = [JWTAuthenticationFromCookie]
-#     serializer_class = CartSerializer
-#     def get_queryset(self):
-#         # Only return the cart for the authenticated user
-#         return Cart.objects.filter(user=self.request.user)
-
-#     def list(self, request):
-#         try:
-#             # Get the cart for the authenticated user
-#             cart = Cart.objects.get(user=request.user)
-            
-#             # Get all cart items related to the cart
-#             cart_items = CartItem.objects.filter(cart=cart)  # Corrected here
-            
-#             # Serialize the cart data, including related cart items
-#             serializer = CartSerializer(cart)
-#             # Add cart_items to the serialized data
-#             cart_data = serializer.data
-#             cart_data['cart_items'] = CartItemSerializer(cart_items, many=True).data  # Ensure you have a CartItemSerializer
-            
-#             return Response(cart_data)
-        
-#         except Cart.DoesNotExist:
-#             return Response([], status=status.HTTP_204_NO_CONTENT)
-
-#     def create(self, request):
-#         # Print incoming request data for debugging purposes
-#         print()
-#         print("Creatiioon request data", request.data)
-
-#         # Ensure the user is authenticated
-#         self.check_permissions(request)
-
-#         # Ensure request data is a list of cart items
-#         if not isinstance(request.data.get('cart_items'), list):
-#             return Response({"detail": "Invalid data format. Expected a list of cart items."}, status=status.HTTP_400_BAD_REQUEST)
-
-#         cart_data = request.data.get('cart_items')
-#         if not cart_data:
-#             return Response({"detail": "Cart items are required."}, status=status.HTTP_400_BAD_REQUEST)
-#         print()
-
-#         print("Cart data received:", cart_data)
-
-#         # Retrieve or create a Cart for the authenticated user
-#         cart, created = Cart.objects.get_or_create(user=request.user)
-
-#         # Process each cart item
-#         for item_data in cart_data:
-#             item_response = self.process_cart_item(item_data, cart)
-#             if item_response:
-#                 return item_response
-
-#         # Serialize and return the updated cart
-#         cart_serializer = CartSerializer(cart)
-#         return Response(cart_serializer.data, status=status.HTTP_201_CREATED)
-
-#     def process_cart_item(self, item_data, cart):
-#         # Extract item details
-
-#         equipment_id = item_data.get('item')
-#         quantity = item_data.get("quantity")
-#         start_date = item_data.get("start_date")
-#         end_date = item_data.get("end_date")
-
-#         if not equipment_id or not start_date or not end_date:
-#             return Response({"detail": "Missing required fields for an item."}, status=status.HTTP_400_BAD_REQUEST)
-
-#         print(f"Processing item: Equipment ID: {equipment_id}, Quantity: {quantity}, Start Date: {start_date}, End Date: {end_date}")
-
-#         try:
-#             equipment = Equipment.objects.get(id=equipment_id)
-#         except Equipment.DoesNotExist:
-#             return Response({"detail": f"Equipment with ID {equipment_id} not found."}, status=status.HTTP_404_NOT_FOUND)
-
-#         # Create a new cart item (no updates)
-#         CartItem.objects.create(
-#             cart=cart,
-#             item=equipment,
-#             quantity=quantity,
-#             start_date=start_date,
-#             end_date=end_date
-#         )
-
-#         return None
-
-
-    
-
-#     def update(self, request, pk=None):
-#         # Print incoming request data for debugging purposes
-#         print()
-#         print("update requst data", request.data)
-        
-
-#         # If request data is a list of cart items, directly use it
-#         if isinstance(request.data, list):
-#             cart_data = request.data
-#         else:
-#             return Response({"detail": "Invalid data format. Expected a list of cart items."}, status=status.HTTP_400_BAD_REQUEST)
-        
-#         # Ensure cart_data is not empty
-#         if not cart_data:
-#             return Response({"detail": "Cart items are required."}, status=status.HTTP_400_BAD_REQUEST)
-#         print()
-
-#         print("Cart data received for update:", cart_data)
-
-#         # Retrieve the cart for the authenticated user
-#         cart = get_object_or_404(Cart, user=request.user)
-
-#         # Iterate over the cart items data
-#         for item_data in cart_data:
-#             equipment_id = item_data.get('item', {}).get('id')
-#             quantity = item_data.get("quantity")
-#             start_date = item_data.get("start_date")
-#             end_date = item_data.get("end_date")
-            
-#             if not equipment_id or not start_date or not end_date:
-#                 return Response({"detail": "Missing required fields for an item."}, status=status.HTTP_400_BAD_REQUEST)
-
-#             print(f"Equipment ID: {equipment_id}, Quantity: {quantity}, Start Date: {start_date}, End Date: {end_date}")
-            
-#             # Find the Equipment instance or return 404 if not found
-#             equipment = get_object_or_404(Equipment, id=equipment_id)
-            
-#             # Find the existing cart item
-#             cart_item = CartItem.objects.filter(cart=cart, item=equipment).first()
-
-#             if cart_item:
-#                 # If the item exists, update its quantity and dates
-#                 cart_item.quantity = quantity  # Update the quantity
-#                 cart_item.start_date = start_date  # Update the start date
-#                 cart_item.end_date = end_date  # Update the end date
-#                 cart_item.save()  # Save updated cart item
-#             else:
-#                 # If the item doesn't exist, create a new cart item
-#                 CartItem.objects.create(
-#                     cart=cart,
-#                     item=equipment,
-#                     quantity=quantity,
-#                     start_date=start_date,
-#                     end_date=end_date
-#                 )
-
-#         # Serialize and return the updated cart
-#         cart_serializer = CartSerializer(cart)
-#         return Response(cart_serializer.data, status=status.HTTP_200_OK)
-
-#     def retrieve(self, request, pk=None):
-#         self.permission_classes = [permissions.IsAuthenticated]
-#         self.check_permissions(request)  # Ensure permission check is applied
-#         try:
-#             cart = Cart.objects.get(pk=pk, user=request.user)
-#             serializer = CartSerializer(cart)
-#             return Response(serializer.data)
-#         except Cart.DoesNotExist:
-#             return Response(status=status.HTTP_404_NOT_FOUND)
-
-#     def destroy(self, request, pk=None):
-#         self.permission_classes = [permissions.IsAuthenticated]
-#         self.check_permissions(request)  # Ensure permission check is applied
-#         try:
-#             cart = Cart.objects.get(pk=pk, user=request.user)
-#             cart.delete()
-#             return Response(status=status.HTTP_204_NO_CONTENT)
-#         except Cart.DoesNotExist:
-#             return Response(status=status.HTTP_404_NOT_FOUND)
-        
-# class CartItemViewSet(viewsets.ViewSet):
-
-#     authentication_classes = [JWTAuthentication]
-
-#     def list(self, request):
-#         self.permission_classes = [permissions.IsAuthenticated]
-#         self.check_permissions(request)  # Ensure permission check is applied
-#         queryset = CartItem.objects.all()
-#         serializer = CartItemSerializer(queryset, many=True)
-#         return Response(serializer.data)
-
-#     def create(self, request):
-#         self.permission_classes = [permissions.IsAuthenticated]
-#         self.check_permissions(request)  # Ensure permission check is applied
-#         serializer = CartItemSerializer(data=request.data)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data, status=status.HTTP_201_CREATED)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-#     def retrieve(self, request, pk=None):
-#         self.permission_classes = [permissions.IsAuthenticated]
-#         self.check_permissions(request)  # Ensure permission check is applied
-#         try:
-#             cart_item = CartItem.objects.get(pk=pk)
-#             serializer = CartItemSerializer(cart_item)
-#             return Response(serializer.data)
-#         except CartItem.DoesNotExist:
-#             return Response(status=status.HTTP_404_NOT_FOUND)
-
-#     def update(self, request, pk=None):
-#         self.permission_classes = [permissions.IsAuthenticated]
-#         self.check_permissions(request)  # Ensure permission check is applied
-#         try:
-#             cart_item = CartItem.objects.get(pk=pk)
-#             serializer = CartItemSerializer(cart_item, data=request.data)
-#             if serializer.is_valid():
-#                 serializer.save()
-#                 return Response(serializer.data)
-#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-#         except CartItem.DoesNotExist:
-#             return Response(status=status.HTTP_404_NOT_FOUND)
-
-#     def destroy(self, request, pk=None):
-#         self.permission_classes = [permissions.IsAuthenticated]
-#         self.check_permissions(request)  # Ensure permission check is applied
-#         try:
-#             cart_item = CartItem.objects.get(pk=pk)
-#             cart_item.delete()
-#             return Response(status=status.HTTP_204_NO_CONTENT)
-#         except CartItem.DoesNotExist:
-#             return Response(status=status.HTTP_404_NOT_FOUND)
 
 
 class OrderActionView(APIView):
@@ -1100,7 +944,7 @@ class OrderViewSet(viewsets.ViewSet):
     def destroy(self, request, pk=None):
         self.permission_classes = [permissions.IsAuthenticated]
         self.check_permissions(request)  # Ensure permission check is applied
-        order = Order.objects.get(pk=pk, user=request.user)
+        order = Order.objects.get(pk=pk, user=request.user, status='completed')
         order.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 

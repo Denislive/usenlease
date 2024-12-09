@@ -86,8 +86,6 @@ class User(AbstractUser):
     document_type = models.CharField(max_length=10, choices=DOCUMENT_TYPE_CHOICES)
     identity_document = models.FileField(
         upload_to='identity_documents/',
-        blank=True,
-        null=True,
         validators=[FileExtensionValidator(allowed_extensions=['pdf', 'jpg', 'jpeg', 'png'])]
     )
 

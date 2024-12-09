@@ -1,14 +1,14 @@
 <template>
     <div class="flex items-center justify-center py-4 px-2 md:h-screen bg-gray-200">
         <div class="bg-white shadow-md rounded-lg m-0 p-2 w-full max-w-lg">
-            <h2 class="text-2xl font-bold text-center mb-6">Sign Up</h2>
+            <h2 class="text-2xl font-bold text-center mb-6">Create your account</h2>
 
             <form @submit.prevent="handleSignup">
                 <div v-if="currentStep === 1">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                         <div class="relative">
                             <label for="firstName" class="block text-sm font-medium text-gray-700">First Name</label>
-                            <input type="text" id="firstName" v-model="firstName" @input="validateFirstName"
+                            <input type="text" placeholder="First Name" id="firstName" v-model="firstName" @input="validateFirstName"
                                 :class="['mt-1 block w-full border rounded-md p-2 focus:outline-none', errors.firstName ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-green-500']">
                             <span v-if="errors.firstName" class="absolute right-2 top-10 text-red-500">
                                 <i class="pi pi-exclamation-triangle"></i>
@@ -20,7 +20,7 @@
                         </div>
                         <div class="relative">
                             <label for="lastName" class="block text-sm font-medium text-gray-700">Last Name</label>
-                            <input type="text" id="lastName" v-model="lastName" @input="validateLastName"
+                            <input type="text" placeholder="Last Name" id="lastName" v-model="lastName" @input="validateLastName"
                                 :class="['mt-1 block w-full border rounded-md p-2 focus:outline-none', errors.lastName ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-green-500']">
                             <span v-if="errors.lastName" class="absolute right-2 top-10 text-red-500">
                                 <i class="pi pi-exclamation-triangle"></i>
@@ -33,7 +33,7 @@
                         <div class="relative">
                             <label for="companyName" class="block text-sm font-medium text-gray-700">Company
                                 Name</label>
-                            <input type="text" id="companyName" v-model="companyName" @input="validateCompanyName"
+                            <input type="text" placeholder="Company Name" id="companyName" v-model="companyName" @input="validateCompanyName"
                                 :class="['mt-1 block w-full border rounded-md p-2 focus:outline-none', errors.companyName ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-green-500']">
                             <span v-if="errors.companyName" class="absolute right-2 top-10 text-red-500">
                                 <i class="pi pi-exclamation-triangle"></i>
@@ -60,10 +60,24 @@
                             </span>
                             <p v-if="errors.role" class="text-red-500 text-sm">{{ errors.role }}</p>
                         </div>
-                        <vue-tel-input v-model="phone"></vue-tel-input>
+                        <vue-tel-input v-model="phone" @input="debounceValidatePhone"
+                            :placeholder="'Enter your phone number'" :required="true">
+                        </vue-tel-input>
+
+                        <!-- Error/Success Icons -->
+                        <span v-if="errors.phone" class="absolute right-2 top-10 text-red-500">
+                            <i class="pi pi-exclamation-triangle"></i>
+                        </span>
+                        <span v-else-if="!errors.phone && phone" class="absolute right-2 top-10 text-green-500">
+                            <i class="pi pi-check"></i>
+                        </span>
+
+                        <!-- Error Message -->
+                        <p v-if="errors.phone" class="text-red-500 text-sm">{{ errors.phone }}</p>
+
                         <div class="relative">
                             <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
-                            <input type="email" id="email" v-model="email" @input="validateEmail"
+                            <input type="email" placeholder="user@email.com"id="email" v-model="email" @input="validateEmail"
                                 :class="['mt-1 block w-full border rounded-md p-2 focus:outline-none', errors.email ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-green-500']">
                             <span v-if="errors.email" class="absolute right-2 top-10 text-red-500">
                                 <i class="pi pi-exclamation-triangle"></i>
@@ -201,9 +215,10 @@
     </div>
 </template>
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import Cookies from 'js-cookie';
+import axios from 'axios';
 
 const currentStep = ref(1);
 const firstName = ref('');
@@ -221,9 +236,7 @@ const router = useRouter();
 
 // Example function to set the email in a cookie
 function setEmailCookie(email) {
-
-  Cookies.set('email', email, { expires: 7, secure: true, sameSite: 'None' });
-  console.log(`${email} set in the cookies`)
+    Cookies.set('email', email, { expires: 7, secure: true, sameSite: 'None' });
 }
 
 // Refs for file handling
@@ -251,20 +264,119 @@ const validateRole = () => {
     errors.value.role = role.value ? '' : 'Role is required';
 };
 
+const debounce = (func, delay = 1000) => {
+    let timeoutId;
+    return (...args) => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => func(...args), delay);
+    };
+};
 
-const validateEmail = () => {
+
+const validatePhone = async () => {
+    const phonePattern = /^\+?\d{1,3}[\s-]?(\(\d{1,4}\)|\d{1,4})[\s-]?\d{1,4}([\s-]?\d{1,4})+$/;
+        errors.value.phone = phone.value && phonePattern.test(phone.value)
+        ? ''
+        : 'A Valid Phone Number is required';
+
+    if (phone.value && !errors.value.phone) {
+        try {
+            const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/accounts/check-phone`, {
+                params: { phone: phone.value },
+            });
+            errors.value.phone = response.data.exists ? 'Phone number is already connected to an account!' : '';
+        } catch (error) {
+            console.error('Error checking phone:', error);
+            errors.value.phone = 'Error checking phone';
+        }
+    }
+};
+
+// Use the reusable debounce function
+const debounceValidatePhone = debounce(validatePhone);
+
+// Watch for changes in the phone input
+watch(phone, debounceValidatePhone);
+
+const validateEmail = async () => {
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     errors.value.email = email.value && emailPattern.test(email.value) ? '' : 'Valid Email is required';
+
+    if (email.value && !errors.value.email) {
+        try {
+            const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/accounts/check-email`, {
+                params: { email: email.value },
+            });
+            errors.value.email = response.data.exists ? 'Email is already connected to an account!' : '';
+        } catch (error) {
+            console.error('Error checking email:', error);
+            errors.value.email = 'Error checking email';
+        }
+    }
 };
+
+// Use the reusable debounce function
+const debounceValidateEmail = debounce(validateEmail);
+
+// Watch for changes in the email input
+watch(email, debounceValidateEmail);
 
 const validateDocumentType = () => {
     errors.value.documentType = documentType.value ? '' : 'Document Type is required';
 };
 
+
 const validatePassword = () => {
-    const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-    errors.value.password = password.value.match(passwordPattern) ? '' : 'Password must be at least 8 characters long, contain a letter, a number, and a special character';
+  // Clear previous error message
+  errors.value.password = '';
+
+  // Check for empty password
+  if (!password.value) {
+    errors.value.password = 'Password is required.';
+    return;
+  }
+
+  // Check password length
+  if (password.value.length < 12) {
+    errors.value.password = 'Password must be at least 12 characters long.';
+    return;
+  }
+
+  // Check for at least one lowercase letter
+  if (!/[a-z]/.test(password.value)) {
+    errors.value.password = 'Password must contain at least one lowercase letter.';
+    return;
+  }
+
+  // Check for at least one uppercase letter
+  if (!/[A-Z]/.test(password.value)) {
+    errors.value.password = 'Password must contain at least one uppercase letter.';
+    return;
+  }
+
+  // Check for at least one number
+  if (!/\d/.test(password.value)) {
+    errors.value.password = 'Password must contain at least one number.';
+    return;
+  }
+
+  // Check for at least one special character
+  if (!/[!@#$%^&*(),.?":{}|<>]/.test(password.value)) {
+    errors.value.password = 'Password must contain at least one special character.';
+    return;
+  }
+
+  // Check if the password contains common patterns
+  const commonPatterns = ['password', '1234', 'qwerty', 'letmein', 'abc123'];
+  if (commonPatterns.some(pattern => password.value.toLowerCase().includes(pattern))) {
+    errors.value.password = 'Password cannot contain common words or patterns.';
+    return;
+  }
+
+  // If all checks pass, clear any error messages
+  errors.value.password = '';  
 };
+
 
 const validateConfirmPassword = () => {
     errors.value.confirmPassword = (confirmPassword.value === password.value) ? '' : 'Passwords must match';
@@ -286,6 +398,7 @@ const nextStep = () => {
         validateLastName();
         validateCompanyName();
         validateRole();
+        validatePhone();
         validateEmail();
 
         if (!Object.values(errors.value).some(error => error)) {
@@ -320,19 +433,6 @@ const handleFileChange = (event, fileType) => {
 
 // Handle signup form submission
 const handleSignup = async () => {
-    console.log('Signing up with:', {
-        firstName: firstName.value,
-        lastName: lastName.value,
-        companyName: companyName.value,
-        role: role.value,
-        phone: phone.value,
-        email: email.value,
-        documentType: documentType.value,
-        identityDocument: identityDocumentFile.value,
-        proofOfAddress: proofOfAddressFile.value,
-        password: password.value, // Add this line
-    });
-
     try {
         const formData = new FormData();
         formData.append('first_name', firstName.value);
@@ -353,9 +453,9 @@ const handleSignup = async () => {
         }
 
         // Append the password
-        formData.append('password', password.value); // Ensure this line is added
+        formData.append('password', password.value);
 
-        const response = await fetch('http://127.0.0.1:8000/api/accounts/users/', {
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/accounts/users/`, {
             method: 'POST',
             body: formData,
         });
@@ -363,31 +463,25 @@ const handleSignup = async () => {
         if (response.ok) {
             const userData = await response.json();
             router.push('/verify');
-            
+
             successMessage.value = 'Signup successful!';
 
             // Usage example
             setEmailCookie(userData.email);
-            
+
             errorMessage.value = '';
-            console.log('Response:', userData);
-            console.log(userData);
-
-
         } else {
             const errorData = await response.json();
             errorMessage.value = errorData.message || 'Signup failed!';
             successMessage.value = '';
-            console.error('Error:', errorData);
         }
     } catch (error) {
         errorMessage.value = 'An error occurred during signup!';
         successMessage.value = '';
-        console.error('Error:', error);
     }
 };
-
 </script>
+
 
 
 

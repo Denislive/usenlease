@@ -11,7 +11,9 @@ const cartStore = useCartStore();
 const showDropdown = ref(false);
 const authStore = useAuthStore();
 const router = useRouter();
-const user = ref({});
+
+const api_base_url = import.meta.env.VITE_API_BASE_URL;
+
 
 
 let dropdownTimeout;
@@ -35,7 +37,7 @@ const showDropdownWithDelay = (show) => {
     const getUserData = async () => {
       try {
         const response = await axios.get(
-          `${import.meta.env.VITE_API_BASE_URL}/api/accounts/users/${authStore.user.id}/`,
+          `${api_base_url}/api/accounts/users/${authStore.user.id}/`,
           { withCredentials: true }
         );
         user.value = {
@@ -51,12 +53,14 @@ const showDropdownWithDelay = (show) => {
           }
         };
       } catch (error) {
-        console.error("Error fetching user data:", error);
       }
     };
-
-  onMounted(() => getUserData());
-
+    
+  onMounted(() => {
+      if (authStore.isAuthenticated) {
+        getUserData();
+      }
+    });
 
 // Handle Logout functionality
 const handleLogout = async () => {
@@ -64,13 +68,6 @@ const handleLogout = async () => {
   router.push('/'); // Redirect to login page
 };
 
-// Watch authentication state to handle navigation or component updates if necessary
-watchEffect(() => {
-  if (!authStore.isAuthenticated) {
-
-    console.log("User is not authenticated");
-  }
-});
 
 
 </script>
@@ -88,7 +85,7 @@ watchEffect(() => {
           <RouterLink :to="{ name: 'categories' }" class="sm:text-xxl md:text-2xxl lg:text-2xl">
             <!-- Browse Equipment Button -->
             <a 
-              class="px-6 py-2 bg-gradient-to-r from-[#ffc107] to-[#1c1c1c] text-white font-semibold rounded-lg shadow-lg transform transition duration-300 hover:scale-105 hover:shadow-2xl">
+              class="px-6 mx-2 py-2 bg-gradient-to-r from-[#ff6f00] to-[#ffc107] text-white font-semibold rounded-lg shadow-lg transform transition duration-300 hover:scale-105 hover:shadow-2xl">
               Browse Items
             </a>
 
@@ -101,7 +98,7 @@ watchEffect(() => {
           @mouseenter="showDropdownWithDelay(true)" @mouseleave="showDropdownWithDelay(false)">
             <!-- Profile Icon -->
             <button class="hidden md:block flex items-center space-x-2 focus:outline-none">
-              <img :src="`http://127.0.0.1:8000${user.image}`" alt="Profile Icon"
+              <img :src="`${api_base_url}${authStore.user.image}`" alt="Profile Icon"
                 class="w-10 h-10 rounded-full border border-gray-300" />
             </button>
 
@@ -131,7 +128,7 @@ watchEffect(() => {
             <!-- Browse Equipment Button -->
             <a href="/browse"
               class="px-6 py-2 bg-[#ffc107] text-[#1c1c1c] rounded-lg shadow-lg transform transition duration-300 hover:scale-105 hover:shadow-2xl">
-              Lease
+              Lease Now
             </a>
 
           </RouterLink>

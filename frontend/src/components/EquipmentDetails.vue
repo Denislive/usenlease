@@ -42,17 +42,29 @@
           class="button add-to-cart bg-[#ffc107] text-black py-2 px-4 rounded hover:bg-yellow-400 transition">
           Add to Cart
         </button>
+        
+        <!-- Trigger Chat Creation and Navigation -->
+        <RouterLink
+          :to="{ path: '/profile', query: {section: 'chats'} }"
+          @click="createChat"
+          class="text-black py-2 px-4 rounded">
+          Talk to Owner
+        </RouterLink>
       </form>
     </div>
   </div>
 </template>
+
 <script setup>
 import { ref } from 'vue';
 import { useAuthStore } from '@/store/auth'; // Correct import
-const authStore = useAuthStore(); // Initialize the auth store
 import { useCartStore } from '@/store/cart'; // Adjust the path as necessary
-const cartStore = useCartStore();
+import useNotifications from '@/store/notification';
 import axios from 'axios';  // Import axios
+
+const authStore = useAuthStore(); // Initialize the auth store
+
+const api_base_url = import.meta.env.VITE_API_BASE_URL;
 
 const props = defineProps({
   equipment: {
@@ -69,19 +81,39 @@ const props = defineProps({
   },
 });
 
+const cartStore = useCartStore();
+const { showNotification } = useNotifications();
+
 const startDate = ref('');
 const endDate = ref('');
 const quantity = ref(1);
 
-const submitBooking = async () => {
-  console.log('Booking Details:', {
-    startDate: startDate.value,
-    endDate: endDate.value,
-    quantity: quantity.value,
-    equipment: props.equipment.id,
-  });
+const createChat = async () => {
+  if (authStore.isAuthenticated) {
+    const receiver = props.equipment.owner;
 
-  // Prepare the payload
+    try {
+      const response = await axios.post(`${api_base_url}/api/accounts/chats/`, 
+        {
+          participants: [props.equipment.owner] // Including both sender and receiver in the participants array
+        },
+        {
+          withCredentials: true,  // Ensures cookies are sent with the request
+        }
+      );
+      showNotification('Chat Created', `Successfully started a chat with the owner!`, 'success');
+    } catch (error) {
+      showNotification('Chat Error', `Error starting chat with the owner!`, 'error');
+    }
+  } else {
+    showNotification('Authentication Required', `Please log in to start a chat!`, 'error');
+  }
+};
+
+
+
+const submitBooking = async () => {
+  // Prepare the payload for booking
   const payload = {
     item: props.equipment.id,
     quantity: quantity.value,
@@ -90,19 +122,16 @@ const submitBooking = async () => {
   };
 
   if (authStore.isAuthenticated) {
-    console.log("Adding equipment to cart", payload);
-
     try {
-      console.log("Synching cart to db ...");
-      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/cart-items/`, payload, {
+      const response = await axios.post(`${api_base_url}/api/cart-items/`, payload, {
         withCredentials: true,  // Ensures cookies are sent with the request
       });
-      console.log("Item saved to the database:", response.data);
+      cartStore.loadCart();
+      showNotification('Add to Cart', `Added to cart!`, 'success');
     } catch (error) {
-      console.error("Error saving cart:", error);
+      showNotification('Add to cart', 'Error adding to cart!', 'error');
     }
   } else {
-    // Prepare the payload for local storage
     const localPayload = {
       item: props.equipment,
       quantity: quantity.value,
@@ -113,7 +142,6 @@ const submitBooking = async () => {
     const existingCart = localStorage.getItem('cart');
     if (existingCart) {
       const parsedExistingCart = JSON.parse(existingCart);
-
       if (Array.isArray(parsedExistingCart)) {
         const existingItemIndex = parsedExistingCart.findIndex(
           (cartItem) =>
@@ -123,35 +151,21 @@ const submitBooking = async () => {
         );
 
         if (existingItemIndex !== -1) {
-          // Update the quantity and total for the existing item
           parsedExistingCart[existingItemIndex].quantity += localPayload.quantity;
-          parsedExistingCart[existingItemIndex].total =
-            parsedExistingCart[existingItemIndex].quantity *
-            parsedExistingCart[existingItemIndex].item.hourly_rate;
         } else {
-          // Add new item if not already in the cart
           parsedExistingCart.push(localPayload);
         }
 
         cartStore.cart = parsedExistingCart;
         localStorage.setItem('cart', JSON.stringify(parsedExistingCart));
-        console.log("Cart updated with new items, without overwriting.");
-      } else {
-        // If the existing cart isn't an array, just replace it with the new item
-        cartStore.cart = [localPayload];
-        localStorage.setItem('cart', JSON.stringify([localPayload]));
-        console.log("Cart saved to localStorage.");
       }
     } else {
-      // Save the new cart if no existing cart in localStorage
       const newCart = [localPayload];
       localStorage.setItem('cart', JSON.stringify(newCart));
       cartStore.cart = newCart;
-      console.log("Cart saved to localStorage.");
     }
   }
 };
-
 
 const renderStars = (rating) => {
   const fullStars = Math.floor(rating);

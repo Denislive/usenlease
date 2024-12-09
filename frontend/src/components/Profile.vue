@@ -1,31 +1,54 @@
 <template>
-  <div class="grid grid-cols-12 gap-8 p-8">
+  <div class="grid grid-cols-12 gap-8 md:px-32 py-4">
     <!-- Sidebar -->
-    <div class="col-span-12 md:col-span-4 lg:col-span-3 bg-white p-4 rounded-lg shadow-md">
+    <div class="col-span-12 lg:col-span-3 bg-white p-4 rounded-lg  hidden lg:block shadow-md">
       <div class="flex items-center space-x-4 mb-6">
         <i class="bi bi-person text-black text-2xl"></i>
         <span class="text-lg font-medium">Welcome, {{ user.first_name || user.email || "John Doe" }}</span>
       </div>
+
       <hr class="my-4">
-
-      <!-- Personal Information Section (Yellow color) -->
-      <div class="nav-item text-white bg-[#ffc107] font-semibold py-2 px-4 rounded-md mb-4 cursor-pointer"
-        :class="{ 'text-white bg-[#1c1c1c]': activeSection === 'personal-info' }"
-        @click="setActiveSection('personal-info')">
-        Personal Information
-      </div>
-
 
 
       <!-- Other Sections (Dark Gray) -->
-      <div v-for="(section, index) in otherSections" :key="index" :class="{
+      <div v-for="(section, index) in visibleSections" :key="index" :class="{
         'text-white bg-[#1c1c1c]': activeSection === section.name,
-        'text-[#ffc107]': activeSection !== section.name
-      }" class="nav-item font-semibold py-2 px-4 rounded-md cursor-pointer mb-2"
-        @click="setActiveSection(section.name)">
+        'text-[#ffc107]': activeSection !== section.name,
+      }" class="nav-item font-semibold py-2 px-4 rounded-md cursor-pointer mb-2" :id="section.name"
+        @click="navigateToSection(section.name)">
         {{ section.label }}
       </div>
+
     </div>
+
+    <!-- Sidebar -->
+    <div v-if="showSidebar" class="col-span-12 lg:col-span-3 bg-white p-4 rounded-lg shadow-md md:block lg:hidden">
+      <div class="flex items-center space-x-4 mb-6">
+        <i class="bi bi-person text-black text-2xl"></i>
+        <span class="text-lg font-medium">
+          Welcome, {{ user.first_name || user.email || "John Doe" }}
+        </span>
+      </div>
+      <!-- Logout Option -->
+      <button @click="handleLogout" class="w-full px-4 py-2 text-white bg-red-500 hover:text-[#1c1c1c] rounded">
+        Logout
+      </button>
+      <hr class="my-4" />
+
+
+      <!-- Other Sections (Dark Gray) -->
+      <div v-for="(section, index) in visibleSections" :key="index" :class="{
+        'text-white bg-[#1c1c1c]': activeSection === section.name,
+        'text-[#ffc107]': activeSection !== section.name,
+      }" class="nav-item font-semibold py-2 px-4 rounded-md cursor-pointer mb-2" :id="section.name"
+        @click="navigateToSection(section.name)">
+        {{ section.label }}
+      </div>
+
+    </div>
+
+
+
     <!-- Main Content Area -->
     <div class="col-span-12 md:col-span-8 lg:col-span-9 bg-white p-6 rounded-lg shadow-md">
       <div v-for="section in sections" :key="section.name" class="space-y-6">
@@ -36,11 +59,15 @@
 
           <!-- Personal Information Section -->
           <div v-if="activeSection === 'personal-info'" class="space-y-6">
-            <div class="flex items-center space-x-4">
-              <img :src="`http://127.0.0.1:8000${user.image}`" alt="Profile"
+            <button @click="closeSidebar"
+              class="mr-4 text-gray-800 mt-2 rounded-full p-2 focus:outline-none transition">
+              <i class="pi pi-arrow-circle-left" style="font-size: 1.5rem"></i>
+            </button>
+            <div class="flex items-center justify-center space-x-4">
+              <img :src="`${api_base_url}${user.image}`" alt="Profile"
                 class="w-16 h-16 rounded-full border-4 border-gray-200 shadow-lg" />
               <div>
-                <label for="profile-pic" class="cursor-pointer text-blue-600 underline">
+                <label for="profile-pic" class="cursor-pointer text-[#ffc107] underline">
                   {{ user.image ? 'Change Picture' : 'Add Picture' }}
                 </label>
                 <input id="profile-pic" type="file" accept="image/*" class="hidden" @change="uploadProfilePicture" />
@@ -48,7 +75,6 @@
               <div>
                 <p class="text-xl font-semibold text-gray-800">Welcome, {{ user.first_name || user.email || 'John Doe'
                   }}</p>
-                <p class="text-gray-500 text-sm">Manage your personal details below.</p>
               </div>
             </div>
 
@@ -69,7 +95,7 @@
                 <i class="bi bi-phone mr-2 text-xl text-gray-500"></i>
                 <span>
                   <strong>Phone Number:</strong> {{ user.phone_number || 'Not provided' }}
-                  <button @click="phoneModalVisible = !phoneModalVisible" class="ml-2 text-blue-600 underline">
+                  <button @click="phoneModalVisible = !phoneModalVisible" class="ml-2 text-[#ffc107] underline">
                     Edit
                   </button>
                 </span>
@@ -110,23 +136,29 @@
                 <i class="bi bi-globe mr-2 text-xl text-gray-500"></i>
                 <span><strong>Country:</strong> {{ user.user_address?.country || 'Not provided' }}</span>
               </p>
-              <button @click="addressModalVisible = !addressModalVisible" class="ml-2 text-blue-600 underline">
+              <button @click="addressModalVisible = !addressModalVisible" class="ml-2 text-[#ffc107] underline">
                 <i class="bi bi-pencil-square mr-2"></i>
-                {{ user.user_address.id ? 'Edit Address' : 'Add Address' }}
+                {{ user.user_address && user.user_address.id ? 'Edit Address' : 'Add Address' }}
               </button>
+
             </div>
 
           </div>
 
 
-          <div v-if="activeSection === 'my-equipments'">
-            <h1>My Equipments</h1>
 
+          <!-- My Equipments Section -->
+          <div v-if="activeSection === 'my-equipments'">
+            <button @click="closeSidebar"
+              class="mr-4 text-gray-800 mt-2 rounded-full p-2 focus:outline-none transition">
+              <i class="pi pi-arrow-circle-left" style="font-size: 1.5rem"></i>
+            </button>
             <div v-if="equipments.length > 0">
               <div class="container mx-auto p-4">
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+
                   <!-- Loop through the filtered equipments -->
-                  <div v-for="equipment in equipments" :key="equipment.id" @click="() => { goToDetail(equipment.id) }"
+                  <div v-for="equipment in equipments" :key="equipment.id" @click="openEditModal(equipment)"
                     class="bg-white rounded-lg shadow-lg overflow-hidden transition-transform hover:scale-105 cursor-pointer">
                     <div class="relative">
                       <!-- Availability Badge -->
@@ -143,16 +175,15 @@
                       </span>
 
                       <!-- Equipment Image -->
-                      <img v-if="equipment.images.length > 0"
-                        :src="`http://127.0.0.1:8000${equipment.images[0].image_url}`"
+                      <img v-if="equipment.images.length > 0" :src="`${api_base_url}${equipment.images[0].image_url}`"
                         :alt="equipment.images[0].image_url" class="w-full h-48 object-cover" />
                       <img v-else src="https://via.placeholder.com/350" alt="Placeholder Image"
                         class="w-full h-48 object-cover" />
 
-                      <!-- Add to Cart Button -->
-                      <a href="#"
+                      <!-- Edit Button -->
+                      <a href="#" @click.stop="openEditModal(equipment)"
                         class="absolute bottom-4 right-4 bg-[#1c1c1c] text-white rounded-full h-10 w-10 flex items-center justify-center hover:text-[#ffc107] transition">
-                        <i class="pi pi-cart-arrow-down"></i>
+                        <i class="pi pi-pencil"></i>
                       </a>
                     </div>
 
@@ -171,143 +202,152 @@
             </div>
           </div>
 
+
+
+
           <div v-if="activeSection === 'my-orders'">
-            <div class="p-6 bg-gray-100 min-h-screen">
-              <h1 class="text-3xl font-bold text-gray-800 mb-4">Order Management</h1>
+  <button @click="closeSidebar"
+    class="mr-4 text-gray-800 mt-2 rounded-full p-2 focus:outline-none transition">
+    <i class="pi pi-arrow-circle-left" style="font-size: 1.5rem"></i>
+  </button>
+  <div class="p-6 bg-gray-100 min-h-screen">
+    <h1 class="text-3xl font-bold text-gray-800 mb-4">Order Management</h1>
 
-              <!-- Filters Section -->
-              <div class="flex flex-wrap gap-4 mb-6">
-                <select v-model="selectedStatus" @change="filterOrders"
-                  class="px-4 py-2 bg-white border rounded-md shadow-sm focus:outline-none focus:ring focus:ring-blue-300">
-                  <option value="">All Statuses</option>
-                  <option value="pending">Pending</option>
-                  <option value="approved">Approved</option>
-                  <option value="rented">Rented</option>
-                  <option value="rejected">Rejected</option>
-                  <option value="canceled">Canceled</option>
-                  <option value="completed">Completed</option>
-                </select>
-                <input v-model="searchQuery" @input="filterOrders" type="text" placeholder="Search by Order ID"
-                  class="px-4 py-2 bg-white border rounded-md shadow-sm focus:outline-none focus:ring focus:ring-[#1c1c1c]" />
+    <!-- Filters Section -->
+    <div class="flex flex-wrap gap-4 mb-6">
+      <select v-model="selectedStatus" @change="filterOrders"
+        class="px-4 py-2 bg-white border rounded-md shadow-sm focus:outline-none focus:ring focus:ring-blue-300">
+        <option value="">All Statuses</option>
+        <option value="pending">Pending</option>
+        <option value="approved">Approved</option>
+        <option value="rented">Rented</option>
+        <option value="rejected">Rejected</option>
+        <option value="canceled">Canceled</option>
+        <option value="completed">Completed</option>
+      </select>
+      <input v-model="searchQuery" @input="filterOrders" type="text" placeholder="Search by Order ID"
+        class="px-4 py-2 bg-white border rounded-md shadow-sm focus:outline-none focus:ring focus:ring-[#1c1c1c]" />
+    </div>
 
-              </div>
+    <!-- Orders Table -->
+    <div v-if="!loading" class="overflow-hidden rounded-lg shadow-lg bg-white">
+      <div class="overflow-x-auto"> <!-- Make the table horizontally scrollable on small devices -->
+        <table class="table-auto w-full border-collapse">
+          <thead>
+            <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+              <th class="py-3 px-6 text-left">Order ID</th>
+              <th class="py-3 px-6 text-center">Status</th>
+              <th class="py-3 px-6 text-center">Total Items</th>
+              <th class="py-3 px-6 text-center">Total Price</th>
+              <th class="py-3 px-6 text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="text-gray-600 text-sm font-light">
 
-              <!-- Orders Table -->
-              <div v-if="!loading" class="overflow-hidden rounded-lg shadow-lg bg-white">
-                <table class="table-auto w-full border-collapse">
-                  <thead>
-                    <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
-                      <th class="py-3 px-6 text-left">Order ID</th>
-                      <th class="py-3 px-6 text-center">Status</th>
-                      <th class="py-3 px-6 text-center">Total Items</th>
-                      <th class="py-3 px-6 text-center">Total Price</th>
-                      <th class="py-3 px-6 text-center">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody class="text-gray-600 text-sm font-light">
-                    <tr v-for="order in filteredOrders" :key="order.id"
-                      class="border-b border-gray-200 hover:bg-gray-100">
-                      <td class="py-3 px-6 text-left">{{ order.id }}</td>
-                      <td class="py-3 px-6 text-center">
-                        <span :class="{
-                          'px-3 py-1 rounded-full text-white': true,
-                          'bg-yellow-500': order.status === 'pending',
-                          'bg-green-500': order.status === 'approved',
-                          'bg-blue-500': order.status === 'rented',
-                          'bg-red-500': order.status === 'rejected',
-                          'bg-red-500': order.status === 'canceled',
-                          'bg-gray-500': order.status === 'completed',
-                        }">
-                          {{ order.status }}
-                        </span>
-                      </td>
-                      <td class="py-3 px-6 text-center">{{ order.total_order_items }}</td>
-                      <td class="py-3 px-6 text-center">${{ order.order_total_price }}</td>
-                      <td class="py-3 px-6 text-center">
-                        <button @click="openModal(order)"
-                          class="px-4 py-2 bg-blue-500 text-white rounded-md shadow-sm hover:bg-blue-600">
-                          Manage
-                        </button>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              <div v-else class="text-center">Loading orders...</div>
-            </div>
-
-            <!-- Modal -->
-            <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-              <div class="bg-white rounded-lg shadow-lg w-96 p-6">
-                <h2 class="text-xl font-semibold mb-4">Manage Order #{{ selectedOrder.id }}</h2>
-                <p class="mb-4">Current Status: <strong>{{ selectedOrder.status }}</strong></p>
-
-                <!-- Actions -->
-                <div>
-                  <button v-if="selectedOrder.status === 'pending'"
-                    @click="performAction(selectedOrder.id, 'terminate')"
-                    class="px-4 py-2 bg-red-500 text-white rounded-md shadow-sm hover:bg-red-600">
-                    Terminate Rental
-                  </button>
-
-                  <button v-if="['rejected', 'canceled', 'completed'].includes(selectedOrder.status)"
-                    @click="performAction(selectedOrder.id, 'reorder')"
-                    class="px-4 py-2 bg-green-500 text-white rounded-md shadow-sm hover:bg-green-600">
-                    Reorder
-                  </button>
-
-                  <button @click="confirmDelete(selectedOrder)"
-                    class="mx-4 px-4 py-2 bg-red-500 text-white rounded-md shadow-sm hover:bg-red-600">
-                    Delete Rental
-                  </button>
-                </div>
-
-                <button @click="closeModal"
-                  class="mt-4 px-4 py-2 bg-gray-300 text-gray-800 rounded-md shadow-sm hover:bg-gray-400">
-                  Close
+            <tr v-for="order in filteredOrders" :key="order.id"
+              class="border-b border-gray-200 hover:bg-gray-100">
+              <td class="py-3 px-6 text-left">{{ order.id }}</td>
+              <td class="py-3 px-6 text-center">
+                <span :class="{
+                  'px-3 py-1 rounded-full text-white': true,
+                  'bg-yellow-500': order.status === 'pending',
+                  'bg-green-500': order.status === 'approved',
+                  'bg-blue-500': order.status === 'rented',
+                  'bg-red-500': order.status === 'rejected',
+                  'bg-red-500': order.status === 'canceled',
+                  'bg-gray-500': order.status === 'completed',
+                }">
+                  {{ order.status }}
+                </span>
+              </td>
+              <td class="py-3 px-6 text-center">{{ order.total_order_items }}</td>
+              <td class="py-3 px-6 text-center">${{ order.order_total_price }}</td>
+              <td class="py-3 px-6 text-center">
+                <button @click="openModal(order)"
+                  class="px-4 py-2 bg-blue-500 text-white rounded-md shadow-sm hover:bg-blue-600">
+                  Manage
                 </button>
-              </div>
-            </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
 
-            <!-- Delete Confirmation -->
-            <div v-if="showDeleteConfirm"
-              class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-              <div class="bg-white rounded-lg shadow-lg w-96 p-6">
-                <h2 class="text-xl font-semibold mb-4">Delete Order</h2>
-                <p class="mb-4">Are you sure you want to delete Order #{{ orderToDelete.id }}?</p>
-                <div class="flex justify-end">
-                  <button @click="performAction(orderToDelete.id, 'delete')"
-                    class="px-4 py-2 bg-red-500 text-white rounded-md shadow-sm hover:bg-red-600">
-                    Yes, Delete
-                  </button>
-                  <button @click="cancelDelete"
-                    class="ml-4 px-4 py-2 bg-gray-300 text-gray-800 rounded-md shadow-sm hover:bg-gray-400">
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+    <div v-else class="text-center">Loading orders...</div>
+  </div>
+
+  <!-- Modal -->
+  <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div class="bg-white rounded-lg shadow-lg w-96 p-6">
+      <h2 class="text-xl font-semibold mb-4">Manage Order #{{ selectedOrder.id }}</h2>
+      <p class="mb-4">Current Status: <strong>{{ selectedOrder.status }}</strong></p>
+
+      <!-- Actions -->
+      <div>
+        <button v-if="selectedOrder.status === 'pending'"
+          @click="performAction(selectedOrder.id, 'terminate')"
+          class="px-4 py-2 bg-red-500 text-white rounded-md shadow-sm hover:bg-red-600">
+          Terminate Rental
+        </button>
+
+        <button v-if="['rejected', 'canceled', 'completed'].includes(selectedOrder.status)"
+          @click="performAction(selectedOrder.id, 'reorder')"
+          class="px-4 py-2 bg-green-500 text-white rounded-md shadow-sm hover:bg-green-600">
+          Reorder
+        </button>
+
+        <button @click="confirmDelete(selectedOrder)"
+          class="mx-4 px-4 py-2 bg-red-500 text-white rounded-md shadow-sm hover:bg-red-600">
+          Delete Rental
+        </button>
+      </div>
+
+      <button @click="closeModal"
+        class="mt-4 px-4 py-2 bg-gray-300 text-gray-800 rounded-md shadow-sm hover:bg-gray-400">
+        Close
+      </button>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation -->
+  <div v-if="showDeleteConfirm"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div class="bg-white rounded-lg shadow-lg w-96 p-6">
+      <h2 class="text-xl font-semibold mb-4">Delete Order</h2>
+      <p class="mb-4">Are you sure you want to delete Order #{{ orderToDelete.id }}?</p>
+      <div class="flex justify-end">
+        <button @click="performAction(orderToDelete.id, 'delete')"
+          class="px-4 py-2 bg-red-500 text-white rounded-md shadow-sm hover:bg-red-600">
+          Yes, Delete
+        </button>
+        <button @click="cancelDelete"
+          class="ml-4 px-4 py-2 bg-gray-300 text-gray-800 rounded-md shadow-sm hover:bg-gray-400">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
 
 
-
-          <div v-if="activeSection === 'settings'">
+          <!-- <div v-if="activeSection === 'settings'">
             <h1>My equipments updated</h1>
 
-          </div>
+          </div> -->
 
 
-          <div v-if="activeSection === 'wishlist'">
-            <h1>My equipments updated</h1>
+          <div v-if="activeSection === 'chats'" class="lg:px-4 py-2 min-h-screen flex flex-col lg:flex-row">
 
-          </div>
-
-          <div v-if="activeSection === 'chats'" class="p-6 bg-gray-100 min-h-screen flex">
             <!-- Chat List -->
-            <div class="w-1/3 bg-white shadow-lg rounded-lg overflow-hidden">
+            <div v-if="!activeChat" class="w-full lg:w-3/3 bg-white shadow-lg rounded-lg overflow-hidden mb-4 lg:mb-0">
+
               <div class="border-b px-4 py-4 bg-[#ffc107] text-gray-800 font-bold text-lg flex items-center">
+                <button @click="closeSidebar"
+                  class="mr-4 text-gray-800 mt-2 rounded-full p-2 focus:outline-none transition">
+                  <i class="pi pi-arrow-circle-left" style="font-size: 1.5rem"></i>
+                </button>
                 <div class="text-xl mr-2">💬</div>
                 Chats
               </div>
@@ -322,59 +362,61 @@
                     <p class="font-medium text-gray-800">{{ chat.name }}</p>
                     <p class="text-sm text-gray-600 truncate">{{ chat.lastMessage }}</p>
                   </div>
-                  <span class="text-xs text-gray-500">{{ new Date().toLocaleTimeString([], {
-                    hour: '2-digit', minute:
-                    '2-digit' }) }}</span>
+                  <h6 class="text-xs text-gray-500">{{ formatDate(chat.created_at) }}</h6>
                 </li>
               </ul>
             </div>
 
-            <!-- Spacer -->
-            <div class="w-6"></div>
-
             <!-- Messages Window -->
-<div class="w-2/3 bg-white shadow-lg rounded-lg flex flex-col">
-  <!-- Header -->
-  <div class="border-b px-4 py-3 bg-[#ffc107] text-gray-800 font-bold flex items-center">
-    <button @click="activeChat = null"
-      class="mr-4 text-gray-800 bg-[#ffe58a] hover:bg-[#ffd740] rounded-full p-2 focus:outline-none transition"
-      v-if="activeChat">
-      ←
-    </button>
-    <span v-if="activeChat">
-      {{ chats.find((chat) => chat.id === activeChat)?.name }}
-    </span>
-    <span v-else>Messages</span>
-  </div>
+            <div v-if="activeChat" class="w-full lg:w-3/3 bg-white shadow-lg rounded-lg flex flex-col">
+              <!-- Header -->
+              <div class="border-b px-4 py-3 bg-[#ffc107] text-gray-800 font-bold flex items-center">
+                <button @click="activeChat = null"
+                  class="mr-4 text-gray-800 bg-[#ffe58a] hover:bg-[#ffd740] rounded-full p-2 focus:outline-none transition">
+                  ←
+                </button>
+                <span>
+                  {{ chats.find((chat) => chat.id === activeChat)?.name }}
+                </span>
+              </div>
 
-  <!-- Chat Content -->
-  <div v-if="activeChat" class="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50" style="height: 60vh">
-    <div v-for="message in messages[activeChat]" :key="message.id"
-      :class="message.sentBy === 'me' ? 'justify-end' : 'justify-start'"
-      class="flex">
-      <p :class="{
-        'bg-[#ffe58a] text-gray-800': message.sentBy === 'me',
-        'bg-gray-200 text-gray-700': message.sentBy !== 'me',
-      }" class="inline-block px-4 py-2 rounded-xl shadow-md max-w-xs">
-        {{ message.text }}
-      </p>
-    </div>
-  </div>
+              <!-- Chat Content -->
+              <div class="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 h-60 md:h-80 lg:h-auto">
+                <div v-for="message in messages[activeChat]" :key="message.id"
+                  :class="message.sentBy === 'me' ? 'justify-end' : 'justify-start'" class="flex">
+                  <div class="flex flex-col">
+                    <!-- Message -->
+                    <p :class="{
+                      'bg-[#ffe58a] text-gray-800': message.sentBy === 'me',
+                      'bg-gray-200 text-gray-700': message.sentBy !== 'me',
+                    }" class="inline-block px-4 py-2 rounded-xl shadow-md max-w-xs">
+                      {{ message.text }}
+                    </p>
+                    <!-- Timestamp -->
+                    <h6 class="text-xs text-gray-500 text-right mt-1">{{ formatDate(message.sent_at) }}</h6>
+                  </div>
+                </div>
+              </div>
 
-  <!-- Message Input -->
-  <div v-if="activeChat" class="border-t px-4 py-3 bg-gray-100 flex items-center">
-    <input v-model="newMessage" type="text" placeholder="Type a message..."
-      class="flex-1 px-3 py-2 rounded-full border border-gray-300 bg-white text-gray-800 placeholder-gray-500 focus:ring-2 focus:ring-[#ffc107] outline-none shadow-sm transition" />
-    <button @click="sendMessage"
-      class="ml-3 bg-[#ffc107] hover:bg-[#ffd740] text-gray-800 px-4 py-2 rounded-full shadow-md transition">
-      Send
-    </button>
-  </div>
-</div>
-</div>  
+              <!-- Message Input -->
+              <div class="border-t px-4 py-3 bg-gray-100 flex items-center">
+                <input v-model="newMessage" type="text" placeholder="Type a message..."
+                  class="flex-1 px-3 py-2 rounded-full border border-gray-300 bg-white text-gray-800 placeholder-gray-500 focus:ring-2 focus:ring-[#ffc107] outline-none shadow-sm transition" />
+                <button @click="sendMessage"
+                  class="ml-3 bg-[#ffc107] hover:bg-[#ffd740] text-gray-800 px-4 py-2 rounded-full shadow-md transition">
+                  Send
+                </button>
+              </div>
+            </div>
+          </div>
+
 
           <div v-if="activeSection === 'reports'">
-            <h1>My equipments updated</h1>
+            <button @click="closeSidebar"
+              class="mr-4 text-gray-800 mt-2 rounded-full p-2 focus:outline-none transition">
+              <i class="pi pi-arrow-circle-left" style="font-size: 1.5rem"></i>
+            </button>
+            <h1>My Reports</h1>
 
           </div>
 
@@ -448,14 +490,20 @@
         <button @click="updatePhoneNumber" class="px-4 py-2 bg-blue-500 text-white rounded-md">Update</button>
       </div>
     </div>
+
   </div>
+
 </template>
+
+
+
 <script>
 import { ref, onMounted, reactive } from 'vue';
 import axios from 'axios';
 import { useAuthStore } from '@/store/auth';
 
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
+import { format } from 'date-fns';
 
 export default {
   setup() {
@@ -466,18 +514,124 @@ export default {
     const activeChat = ref(null); // Currently open chat ID
     const newMessage = ref(""); // Message being typed  
 
+    const categories = ref([]);
+
+    const api_base_url = import.meta.env.VITE_API_BASE_URL;
+
+
+    // Handle Logout functionality
+    const handleLogout = async () => {
+      await authStore.logout();  // Wait for the logout method to finish
+      router.push('/'); // Redirect to login page
+    };
+
+
+    const editModalVisible = ref(false);
+    const editedEquipment = reactive({
+      id: null,
+      name: '',
+      hourly_rate: '',
+      description: '',
+      category: null,
+      is_available: true,
+      images: null,
+    });
+
+    const fetchCategories = async () => {
+      // Fetch categories from your API
+      const response = await axios.get(`${api_base_url}/api/categories`);
+      categories.value = response.data;
+    };
+
+
+
+    const openEditModal = (equipment) => {
+      Object.assign(editedEquipment, equipment); // Clone the equipment into the editedEquipment
+      fetchCategories(); // Fetch categories for the dropdown
+      editModalVisible.value = true;
+    };
+
+    const closeEditModal = () => {
+      editModalVisible.value = false;
+      Object.assign(editedEquipment, { id: null, name: '', hourly_rate: '', description: '', category: null, is_available: true, image: null });
+    };
+
+    const handleImageUpload = (event) => {
+      const files = event.target.files;
+      if (files.length > 0) {
+        // Store the selected files in an array
+        editedEquipment.images = Array.from(files); // Store multiple images in an array
+      }
+    };
+
+    const updateEquipment = async () => {
+      const payload = {};
+      const formData = new FormData();
+
+      // Append regular fields to the formData
+      formData.append('name', editedEquipment.name);
+      formData.append('hourly_rate', editedEquipment.hourly_rate);
+      formData.append('description', editedEquipment.description);
+      formData.append('category', editedEquipment.category);
+      formData.append('is_available', editedEquipment.is_available);
+
+      // Check if there are any images and convert them to base64 if necessary
+      if (editedEquipment.images && editedEquipment.images.length > 0) {
+        for (const image of editedEquipment.images) {
+          // Convert image to base64
+          const base64String = await fileToBase64(image);
+
+          // Add the base64 string to the payload (if needed for future use)
+          payload['images'] = payload['images'] || [];
+          payload['images'].push({ base64: base64String, name: image.name, type: image.type });
+
+          // Append each image file to the FormData for file upload
+          formData.append('images', image); // Append each image as 'images[]'
+        }
+      }
+
+      try {
+        // Make the API call to update the equipment
+        await axios.put(`${api_base_url}/api/equipments/${editedEquipment.id}/`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+
+        // Close the modal and refresh the equipment list after successful update
+        closeEditModal();
+        fetchUserEquipments(); // Refresh the equipment list
+      } catch (error) {
+        console.error('Error updating equipment:', error);
+      }
+    };
+
+    // Helper function to convert file to base64
+    const fileToBase64 = (file) => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]); // Remove data URL prefix
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    };
 
     // Fetch the list of chats
     const fetchChats = async () => {
       try {
-        const response = await axios.get("http://127.0.0.1:8000/api/accounts/chats/", { withCredentials: true });
-        chats.value = response.data.map((chat) => ({
-          id: chat.id,
-          name: chat.participants.map((p) => p).join(", "),
-          lastMessage: chat.messages.length
-            ? chat.messages[chat.messages.length - 1].content
-            : "No messages yet",
-        }));
+        const response = await axios.get(`${api_base_url}/api/accounts/chats/`, { withCredentials: true });
+
+        chats.value = response.data.map((chat) => {
+          const otherParticipant = chat.participants.find((participant) => participant.id !== authStore.user.id);
+
+          return {
+            id: chat.id,
+            name: otherParticipant?.username || "Unknown",
+            lastMessage: chat.messages.length
+              ? chat.messages[chat.messages.length - 1].content
+              : "No messages yet",
+            created_at: chat.created_at,
+            participants: chat.participants,
+          };
+        });
       } catch (error) {
         console.error("Error fetching chats:", error);
       }
@@ -486,14 +640,16 @@ export default {
     // Fetch messages for a specific chat
     const fetchMessages = async (chatId) => {
       try {
-        const response = await axios.get(`http://127.0.0.1:8000/api/accounts/chats/${chatId}/`, {
+        const response = await axios.get(`${api_base_url}/api/accounts/chats/${chatId}/`, {
           withCredentials: true,
         });
 
         messages[chatId] = response.data.messages.map((msg) => ({
           id: msg.id,
           text: msg.content,
-          sentBy: msg.sender ===  authStore.user.id ? 'me' : 'them'
+          sentBy: msg.sender === authStore.user.id ? 'me' : 'them',
+          sent_at: msg.sent_at,
+          sender: msg.sender
         }));
         activeChat.value = chatId;
       } catch (error) {
@@ -507,7 +663,7 @@ export default {
 
       try {
         const response = await axios.post(
-          "http://127.0.0.1:8000/api/accounts/messages/",
+          `${api_base_url}/api/accounts/messages/`,
           {
             content: newMessage.value,
             chat: activeChat.value, // Current chat ID
@@ -516,12 +672,7 @@ export default {
           { withCredentials: true }
         );
 
-        // Add the new message to the UI
-        messages[activeChat.value].push({
-          id: response.data.id,
-          text: newMessage.value,
-          sentBy: "me",
-        });
+        fetchMessages(activeChat.value);
         newMessage.value = ""; // Clear input field
       } catch (error) {
         console.error("Error sending message:", error);
@@ -541,8 +692,8 @@ export default {
     // Get the receiver's ID for a given chat
     const getReceiverId = (chatId) => {
       const chat = chats.value.find((c) => c.id === chatId);
-      const receiver = chat?.name.split(", ")[0];
-      
+      const receiver = chat.participants[0] !== authStore.user.id ? chat.participants[0].id : chat.participants[1].id;
+
       return receiver;
     };
 
@@ -590,7 +741,7 @@ export default {
     // Handle order action
     const performAction = async (order, action) => {
       try {
-        const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/orders/${order}/${action}/`, {}, {
+        const response = await axios.post(`${api_base_url}/api/orders/${order}/${action}/`, {}, {
           withCredentials: true,  // This ensures cookies (credentials) are sent with the request
         });
         showModal.value = false;
@@ -613,7 +764,7 @@ export default {
     // Fetch user equipments on mount with credentials
     const fetchUserEquipments = async () => {
       try {
-        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/equipments/`, {
+        const response = await axios.get(`${api_base_url}/api/equipments/`, {
           withCredentials: true,  // This ensures cookies (credentials) are sent with the request
         });
         equipments.value = response.data;  // Assign the fetched equipment to `equipments`
@@ -640,7 +791,7 @@ export default {
 
     const fetchOrders = async () => {
       try {
-        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/orders/`, {
+        const response = await axios.get(`${api_base_url}/api/orders/`, {
           withCredentials: true,
         });
         orders.value = response.data;
@@ -680,25 +831,59 @@ export default {
     });
     const addressModalVisible = ref(false);
     const phoneModalVisible = ref(false);
+    const showSidebar = ref(true); // Sidebar visibility state
+
+    const closeSidebar = () => {
+
+      showSidebar.value = true;
+      activeSection.value = null;
+
+    };
+
+
+
+    const route = useRoute();
+
+   // Function to navigate to a section
+const navigateToSection = (sectionName) => {
+  activeSection.value = sectionName;
+
+  // Update URL query parameter
+  router.replace({ query: { section: sectionName } });
+
+  // Scroll to the section
+  const sectionElement = document.getElementById(sectionName);
+  if (sectionElement) {
+    sectionElement.scrollIntoView({ behavior: "smooth" });
+  }
+
+  // Hide sidebar on small devices
+  if (window.innerWidth < 1024) {
+    showSidebar.value = false;
+  }
+};
+
 
     const sections = [
       { name: "personal-info", label: "Personal Information" },
-      { name: "my-equipments", label: "My Equipments" },
-      { name: "my-orders", label: "My Orders", content: "View your order history..." },
-      { name: "settings", label: "Settings", content: "Adjust your preferences..." },
-      { name: "wishlist", label: "Wishlist", content: "View your saved items..." },
-      { name: "chats", label: "Chats", content: "Check your conversations..." },
-      { name: "reports", label: "Reports", content: "View your account reports..." },
+      { name: "my-equipments", label: "My Equipments", show: authStore.user.role === 'lessor' },
+      { name: "my-orders", label: "My Orders", show: authStore.user.role === 'lessee' },
+      // { name: "settings", label: "Settings", content: "Adjust your preferences..." },
+      { name: "chats", label: "Chats" },
+      { name: "reports", label: "Reports", },
     ];
 
     const otherSections = [
       { name: "my-equipments", label: "My Equipments" },
       { name: "my-orders", label: "My Orders" },
-      { name: "settings", label: "Settings" },
-      { name: "wishlist", label: "Wishlist" },
+      // { name: "settings", label: "Settings" },
       { name: "chats", label: "Chats" },
       { name: "reports", label: "Reports" },
     ];
+
+    // Filter sections to only include those that should be shown
+    const visibleSections = sections.filter(section => section.show !== false);
+
 
     // Method to set the active section
     const setActiveSection = (sectionName) => {
@@ -714,7 +899,7 @@ export default {
       formData.append('image', file);
 
       try {
-        const response = await axios.put(`${import.meta.env.VITE_API_BASE_URL}/api/accounts/users/${authStore.user.id}/`, formData, {
+        const response = await axios.put(`${api_base_url}/api/accounts/users/${authStore.user.id}/`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
@@ -732,7 +917,7 @@ export default {
     const getUserData = async () => {
       try {
         const response = await axios.get(
-          `${import.meta.env.VITE_API_BASE_URL}/api/accounts/users/${authStore.user.id}/`,
+          `${api_base_url}/api/accounts/users/${authStore.user.id}/`,
           { withCredentials: true }
         );
         user.value = {
@@ -757,17 +942,15 @@ export default {
       try {
         const updatedUserData = { phone_number: phoneNumber.value };
         const response = await axios.put(
-          `${import.meta.env.VITE_API_BASE_URL}/api/accounts/users/${authStore.user.id}/`,
+          `${api_base_url}/api/accounts/users/${authStore.user.id}/`,
           updatedUserData,
           { withCredentials: true }
         );
         user.value = response.data;
 
         phoneModalVisible.value = false;
-        alert("Phone number updated successfully!");
       } catch (error) {
         console.error("Error updating phone number:", error);
-        alert("There was an error updating your phone number.");
       }
     };
 
@@ -787,14 +970,14 @@ export default {
         if (user.value.user_address.id) {
           // Update existing address
           response = await axios.put(
-            `${import.meta.env.VITE_API_BASE_URL}/api/accounts/physical-addresses/${user.value.user_address.id}/`,
+            `${api_base_url}/api/accounts/physical-addresses/${user.value.user_address.id}/`,
             updatedAddressData,
             { withCredentials: true }
           );
         } else {
           // Add new address
           response = await axios.post(
-            `${import.meta.env.VITE_API_BASE_URL}/api/accounts/physical-addresses/`,
+            `${api_base_url}/api/accounts/physical-addresses/`,
             updatedAddressData,
             { withCredentials: true }
           );
@@ -803,15 +986,29 @@ export default {
         user.value.user_address = response.data;
         addressModalVisible.value = false;
 
-        console.log(user.value)
       } catch (error) {
         console.error("Error saving address:", error);
       }
     };
 
 
+
+    const formatDate = (date) => {
+      try {
+        return format(new Date(date), 'Ppp');
+      } catch (error) {
+        return 'Invalid Date';
+      }
+    };
+
+
+
     // Fetch user data when the component is mounted
     onMounted(() => {
+      const section = route.query.section;
+  if (section) {
+    navigateToSection(section);
+  }
       getUserData();
       fetchChats();
       fetchUserEquipments();
@@ -819,6 +1016,22 @@ export default {
     });
 
     return {
+      navigateToSection,
+      closeSidebar,
+      showSidebar,
+      api_base_url,
+      handleLogout,
+      visibleSections,
+      formatDate,
+
+      categories,
+
+      editModalVisible,
+      editedEquipment,
+      openEditModal,
+      closeEditModal,
+      handleImageUpload,
+      updateEquipment,
 
       fetchChats,
       fetchMessages,

@@ -4,12 +4,14 @@ import { useAuthStore } from '@/store/auth';
 import axios from 'axios';
 import useNotifications from '@/store/notification.js'; // Import the notification service
 import { useRoute } from 'vue-router';
+import Cookies from 'js-cookie';
 export const useCartStore = defineStore('cart', () => {
+    const api_base_url = import.meta.env.VITE_API_BASE_URL;
+
     const cart = ref([]); // Array to hold cart items
     const authStore = useAuthStore();
     const route = useRoute();
     const { showNotification } = useNotifications(); // Initialize notification service
-    console.log(route)
 
     // Automatically calculated totals based on cart items
     const cartTotalPrice = computed(() => cart.value.reduce((total, item) => total + parseFloat(item.total), 0));
@@ -18,15 +20,12 @@ export const useCartStore = defineStore('cart', () => {
     // Load cart based on user's authentication status
     const loadCart = async () => {
         if (authStore.isAuthenticated) {
-            console.log("Getting cart from database");
             try {
-                const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/cart-items/`, {
+                const response = await axios.get(`${api_base_url}/api/cart-items/`, {
                     withCredentials: true,
                 });
                 cart.value = response.data;
-                console.log("Cart retrieved from the database:", cart.value.length);
             } catch (error) {
-                console.error("Error getting cart:", error);
                 showNotification('Error', 'Could not load your cart items.', 'error'); // Show error notification
             }
         } else {
@@ -47,7 +46,6 @@ export const useCartStore = defineStore('cart', () => {
             cart.value.splice(index, 1); // Remove the item at the found index
             localStorage.setItem('cart', JSON.stringify(cart.value));
 
-            showNotification('Item Removed', 'The item has been removed from your cart.', 'success'); // Show success notification
         } else {
             showNotification('Error', 'Item not found in cart.', 'error'); // Show error notification
         }
@@ -58,7 +56,6 @@ export const useCartStore = defineStore('cart', () => {
             const foundItem = cart.value.find(item => item.id === itemId);
             if (foundItem) {
                 foundItem.quantity = parseInt(quantity);
-                loadCart();
                 foundItem.total = parseFloat(foundItem.hourly_rate) * foundItem.quantity;
                 showNotification('Quantity Updated', `${foundItem.item_details.name} quantity has been updated.`, 'success');
             } else {
@@ -69,7 +66,6 @@ export const useCartStore = defineStore('cart', () => {
             if (foundItem) {
                 foundItem.quantity = parseInt(quantity);
                 foundItem.total = parseFloat(foundItem.hourly_rate) * foundItem.quantity;
-                loadCart();
                 showNotification('Quantity Updated', `${foundItem.item.name} quantity has been updated.`, 'success');
             } else {
                 showNotification('Error', 'Item not found in cart.', 'error');
@@ -81,14 +77,16 @@ export const useCartStore = defineStore('cart', () => {
     // Clear the cart
     const clearCart = () => {
         cart.value = [];
-        showNotification('Cart Cleared', 'All items have been removed from your cart.', 'success');
+        localStorage.removeItem('cart');
     };
 
 
     const currentCategory = computed(() => route.params.cat || ''); // Retrieve category from URL
+    
 
 
     return {
+        api_base_url,
         cart,
         currentCategory, // Make category available in the component
         cartTotalPrice,
