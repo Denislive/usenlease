@@ -3,7 +3,7 @@
     <!-- Main Image with Zoom Effect -->
     <div class="relative overflow-hidden">
       <img
-        :src="currentImage ? `http://127.0.0.1:8000${currentImage}` : placeholderImage"
+        :src="currentImage ? `${api_base_url}${currentImage}` : placeholderImage"
         alt="Main Equipment Image"
         class="w-full h-128 object-cover rounded-lg shadow-lg"
         @mousemove="zoomImage"
@@ -13,7 +13,7 @@
       <div
         class="zoomed-image"
         v-if="zoomed"
-        :style="{ backgroundImage: `url(http://127.0.0.1:8000${currentImage})`, backgroundPosition: zoomPosition }"
+        :style="{ backgroundImage: `url(${api_base_url}${currentImage})`, backgroundPosition: zoomPosition }"
       ></div>
     </div>
 
@@ -26,7 +26,7 @@
         <img
           v-for="(image, index) in images"
           :key="index"
-          :src="`http://127.0.0.1:8000${image.image_url}` || placeholderImage"
+          :src="`${api_base_url}${image.image_url}` || placeholderImage"
           alt="Equipment Thumbnail"
           class="w-24 h-24 object-cover rounded-lg cursor-pointer border-2"
           :class="{ 'border-[#ffc107]': currentImage === image.image_url }"
@@ -50,6 +50,8 @@ import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router'; // Import useRoute to get route params
 import axios from 'axios';
 
+
+
 export default {
   setup() {
     const placeholderImage = 'https://via.placeholder.com/300x200.png?text=No+Image';
@@ -59,6 +61,9 @@ export default {
     const zoomed = ref(false);
     const zoomPosition = ref('0%');
 
+    const api_base_url = import.meta.env.VITE_API_BASE_URL;
+
+
     // Get the equipment id from the URL
     const route = useRoute();
     const equipmentId = route.params.id; // assuming 'id' is the route parameter
@@ -66,7 +71,7 @@ export default {
     // Function to fetch equipment data
     const fetchEquipmentData = async () => {
       try {
-        const response = await axios.get(`http://127.0.0.1:8000/api/equipments/${equipmentId}`);
+        const response = await axios.get(`${api_base_url}/api/equipments/${equipmentId}`);
         if (response.data && response.data.images && response.data.images.length > 0) {
           equipment.value = response.data;
           images.value = response.data.images;
@@ -121,6 +126,7 @@ export default {
     };
 
     return {
+      api_base_url,
       equipment,
       currentImage,
       images,

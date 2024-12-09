@@ -59,7 +59,7 @@ export default {
       isSubmitting.value = true;
       try {
         const response = await axios.post(
-          'http://127.0.0.1:8000/api/accounts/otp/verify/',
+          `${import.meta.env.VITE_API_BASE_URL}/api/accounts/otp/verify/`,
           { otp: otp.value, email: email.value },
 
         );
@@ -78,7 +78,7 @@ export default {
       isSubmitting.value = true;
       try {
         await axios.post(
-          'http://127.0.0.1:8000/api/accounts/otp/',
+          `${import.meta.env.VITE_API_BASE_URL}/api/accounts/otp/`,
           { email: email.value },
         );
         showNotification("Success", "New OTP sent to your email.", "success");

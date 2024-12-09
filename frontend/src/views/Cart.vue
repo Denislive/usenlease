@@ -26,7 +26,7 @@
                   </button>
                 </td>
                 <td class="py-2 px-4 border-b">
-                  <img :src="`http://127.0.0.1:8000${getItemImage(item)}`" alt="" class="w-20 h-20 object-cover" />
+                  <img :src="`${api_base_url}${getItemImage(item)}`" alt="" class="w-20 h-20 object-cover" />
                 </td>
                 <td class="py-2 px-4 border-b">
                   <a href="#" class="text-blue-600 hover:underline">{{ getItemName(item) }}</a>
@@ -68,15 +68,15 @@
             </div>
             <div class="flex justify-between">
               <p>Shipping</p>
-              <p class="font-semibold">Flat Rate: $25.00</p>
+              <p class="font-semibold">Flat Rate: $0.00</p>
             </div>
             <div class="flex justify-between mt-2">
               <p>Total</p>
-              <p class="font-semibold">${{ (subtotal + 25).toFixed(2) }}</p>
+              <p class="font-semibold">${{ (subtotal + 0).toFixed(2) }}</p>
             </div>
           </div>
           <div class="text-right m-4">
-            <RouterLink :to="{ name: 'checkout'}"
+            <RouterLink :to="{ name: 'checkout' }"
               class="bg-[#1c1c1c] text-white py-2 px-4 rounded hover:text-[#ffc107] transition">Proceed to
               Checkout</RouterLink>
           </div>
@@ -94,23 +94,37 @@ import { computed, onMounted } from 'vue';
 import { useCartStore } from '@/store/cart';
 import { useAuthStore } from '@/store/auth';
 import axios from 'axios';
+import useNotifications from '@/store/notification.js'; // Import the notification service
+const { showNotification } = useNotifications(); // Initialize notification service
+
 
 export default {
   setup() {
     const cartStore = useCartStore();
     const authStore = useAuthStore();
 
+    const api_base_url = import.meta.env.VITE_API_BASE_URL;
+
+
+    // Load cart data when the component is mounted
+    onMounted(async () => {
+
+      cartStore.loadCart();
+    });
 
 
     const removeFromCart = async (item) => {
       if (authStore.isAuthenticated) {
         cartStore.removeItem(item.id);
         try {
-          await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/api/cart-items/${item.id}/`, {
+          await axios.delete(`${api_base_url}/api/cart-items/${item.id}/`, {
             withCredentials: true,
           });
+          showNotification('Item Removed', `${item.item_details.name} has been removed from your cart.`, 'success'); // Show success notification
+
         } catch (error) {
-          console.error("Error deleting item:", error);
+          showNotification('Error', `Error deleting ${item.name}.`, 'error'); // Show error notification
+
         }
       } else {
         cartStore.removeItem(item.id);
@@ -132,97 +146,89 @@ export default {
           };
 
           try {
-            await axios.put(`${import.meta.env.VITE_API_BASE_URL}/api/cart-items/${payload.id}/`, payload, {
+            await axios.put(`${api_base_url}/api/cart-items/${payload.id}/`, payload, {
               withCredentials: true,  // Ensures cookies are sent with the request
             });
-            console.log("Cart item updated in the database");
             cartStore.updateItemQuantity(item.id, newQuantity);
 
           } catch (error) {
-            console.error("Error updating cart item:", error);
+            showNotification('Error', `You can not add more than ${item.quantity} of ${item.item_details.name} to cart!`, 'error'); // Show error notification
           }
         } else {
           // Save to localStorage for anonymous users
           // Loop through each item in the cart and log its details
           const savedCart = localStorage.getItem('cart');
-            if (savedCart) {
-                cartStore.cart = JSON.parse(savedCart);
-            }
-          console.log("Saved cart", savedCart);
+          if (savedCart) {
+            cartStore.cart = JSON.parse(savedCart);
+          }
 
           cartStore.cart.forEach((storedItem, index) => {
-                console.log(`Item at index ${index}: CartStore.cart quantity ${storedItem.quantity}`);
+            if (storedItem.item.id == item.item.id) {
+              cartStore.updateItemQuantity(storedItem.item.id, newQuantity);
+            }
+          });
 
-                if ( storedItem.item.id == item.item.id){
-                  console.log("Stored Item", storedItem.item.id);
-  
-                  cartStore.updateItemQuantity(storedItem.item.id, newQuantity);
-                }
-
-            });
-
-          
-
-     
         }
       }
     };
 
 
     const calculateItemTotal = (item) => {
-  const price = authStore.isAuthenticated && item.item_details
-    ? item.item_details.hourly_rate
-    : item.item
-    ? item.item.hourly_rate
-    : 0; // Fallback price if neither item_details nor item exists
+      const price = authStore.isAuthenticated && item.item_details
+        ? item.item_details.hourly_rate
+        : item.item
+          ? item.item.hourly_rate
+          : 0; // Fallback price if neither item_details nor item exists
 
-  return price * item.quantity;
-};
+      return price * item.quantity;
+    };
 
-const subtotal = computed(() => {
-  return cartStore.cart.reduce((total, item) => {
-    const price = authStore.isAuthenticated && item.item_details
-      ? item.item_details.hourly_rate
-      : item.item
-      ? item.item.hourly_rate
-      : 0; // Fallback price if neither item_details nor item exists
+    const subtotal = computed(() => {
+      return cartStore.cart.reduce((total, item) => {
+        const price = authStore.isAuthenticated && item.item_details
+          ? item.item_details.hourly_rate
+          : item.item
+            ? item.item.hourly_rate
+            : 0; // Fallback price if neither item_details nor item exists
 
-    return total + price * item.quantity;
-  }, 0);
-});
+        return total + price * item.quantity;
+      }, 0);
+    });
 
 
 
-const getItemImage = (item) => {
-  if (authStore.isAuthenticated && item.item_details && item.item_details.images && item.item_details.images.length > 0) {
-    return item.item_details.images[0].image_url;
-  } else if (item.item && item.item.images && item.item.images.length > 0) {
-    return item.item.images[0].image_url;
-  } else {
-    // Return a placeholder image URL or null to handle it in the template
-    return item.item.name || item.item_details.name; // Or return null if you handle the fallback in the template
-  }
-};
+    const getItemImage = (item) => {
+      if (authStore.isAuthenticated && item.item_details && item.item_details.images && item.item_details.images.length > 0) {
+        return item.item_details.images[0].image_url;
+      } else if (item.item && item.item.images && item.item.images.length > 0) {
+        return item.item.images[0].image_url;
+      } else {
+        // Return a placeholder image URL or null to handle it in the template
+        return item.item.name || item.item_details.name; // Or return null if you handle the fallback in the template
+      }
+    };
 
-const getItemName = (item) => {
-  return authStore.isAuthenticated && item.item_details
-    ? item.item_details.name
-    : item.item
-    ? item.item.name
-    : 'Unknown'; // Fallback name
-};
+    const getItemName = (item) => {
+      return authStore.isAuthenticated && item.item_details
+        ? item.item_details.name
+        : item.item
+          ? item.item.name
+          : 'Unknown'; // Fallback name
+    };
 
-const getItemPrice = (item) => {
-  return authStore.isAuthenticated && item.item_details
-    ? item.item_details.hourly_rate
-    : item.item
-    ? item.item.hourly_rate
-    : 0; // Fallback price
-};
+    const getItemPrice = (item) => {
+      return authStore.isAuthenticated && item.item_details
+        ? item.item_details.hourly_rate
+        : item.item
+          ? item.item.hourly_rate
+          : 0; // Fallback price
+    };
 
+  
 
 
     return {
+      api_base_url,
       cartItems: computed(() => cartStore.cart),
       subtotal,
       removeFromCart,

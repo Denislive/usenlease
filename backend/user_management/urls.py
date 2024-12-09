@@ -16,6 +16,8 @@ from .views import (
     ChatViewSet,
     MessageViewSet,
     AllChatsViewSet,
+    CheckEmailView,
+    CheckPhoneNumberView
 
 )
 
@@ -25,13 +27,15 @@ router.register('users', UserViewSet, basename='user')
 router.register('addresses', AddressViewSet, basename='address')
 router.register('physical-addresses', PhysicalAddressViewSet, basename='physicaladdress')
 router.register('credit-cards', CreditCardViewSet, basename='creditcard')
-router.register(r'chats', ChatViewSet, basename='chat')
-router.register(r'messages', MessageViewSet, basename='message')
-router.register(r'all-chats', AllChatsViewSet, basename='all_chats')
+router.register('chats', ChatViewSet, basename='chat')
+router.register('messages', MessageViewSet, basename='message')
+router.register('all-chats', AllChatsViewSet, basename='all_chats')
 
 
 # Define urlpatterns with JWT token routes and router URLs
 urlpatterns = [
+    path('check-phone/', CheckPhoneNumberView.as_view(), name='check-phone'),
+    path('check-email/', CheckEmailView.as_view(), name='check-email'),
     # JWT Token management paths
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('token/verify/', TokenVerifyView.as_view(), name='token_verify'),

@@ -9,15 +9,24 @@ const props = defineProps({
   },
 });
 
+const renderStars = (rating) => {
+  const fullStars = Math.floor(rating);
+  const halfStar = rating % 1 >= 0.5 ? 1 : 0;
+  const emptyStars = 5 - fullStars - halfStar;
+
+  return '★'.repeat(fullStars) + (halfStar ? '☆' : '') + '☆'.repeat(emptyStars);
+};
+
 const router = useRouter();
+
+const api_base_url = import.meta.env.VITE_API_BASE_URL;
+
 
 const goToDetail = (equipmentId) => {
   if (equipmentId) {
     router.push({ name: 'equipment-details', params: { id: equipmentId } });
-  } else {
-    console.error('Equipment ID is missing!'); // Log an error if ID is missing
   }
-}
+};
 </script>
 
 <template>
@@ -52,7 +61,7 @@ const goToDetail = (equipmentId) => {
           <!-- Equipment Image -->
           <img
             v-if="equipment.images.length > 0"
-            :src="`http://127.0.0.1:8000${equipment.images[0].image_url}`"
+            :src="`${api_base_url}${equipment.images[0].image_url}`"
             :alt="equipment.images[0].image_url"
             class="w-full h-48 object-cover"
           />
@@ -63,19 +72,19 @@ const goToDetail = (equipmentId) => {
             class="w-full h-48 object-cover"
           />
 
-          <!-- Add to Cart Button -->
-          <a
-            href="#"
-            class="absolute bottom-4 right-4 bg-[#1c1c1c] text-white rounded-full h-10 w-10 flex items-center justify-center hover:text-[#ffc107] transition"
-          >
-            <i class="pi pi-cart-arrow-down"></i>
-          </a>
         </div>
 
         <!-- Equipment Details -->
         <div class="p-4">
-          <h5 class="text-lg font-semibold">{{ equipment.name }}</h5>
-          <p class="text-gray-600">{{ equipment.hourly_rate }} / Hr</p>
+          <div class="text-left text-sm">
+             <!-- reviews and rating -->
+           <span class="rating text-yellow-500">{{ renderStars(equipment.rating) }}</span>
+          <span class="reviews text-gray-600"> ({{ equipment.equipment_reviews ? equipment.equipment_reviews.length : 0 }} Reviews)</span>
+      
+          </div>
+          
+          <h5 class="text-xl font-semibold text-gray-800">{{ equipment.name }}</h5>
+          <p class="text-[#ff9e00] text-lg">{{ equipment.hourly_rate }} / Hr</p>
         </div>
       </div>
     </div>

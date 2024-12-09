@@ -18,30 +18,25 @@ const store = useStore();
 
 // Computed property to get searchQuery from Vuex
 const searchQuery = computed(() => store.getters.getSearchQuery);
+const api_base_url = import.meta.env.VITE_API_BASE_URL;
 
 // Fetch equipment and category data
 onMounted(async () => {
   try {
-    console.log('Fetching equipment data...');
-    const equipmentResponse = await axios.get('http://127.0.0.1:8000/api/equipments/');
+    const equipmentResponse = await axios.get(`${api_base_url}/api/equipments/`);
     equipments.value = equipmentResponse.data;
-    console.log('Equipment data fetched:', equipments.value);
 
-    console.log('Fetching category data...');
-    const categoryResponse = await axios.get('http://127.0.0.1:8000/api/categories');
+    const categoryResponse = await axios.get(`${api_base_url}/api/categories`);
     categories.value = categoryResponse.data;
-    console.log("Fetched categories", categories.value);
 
     // Initialize selected categories
     categories.value.forEach(category => {
       selectedCategories.value[category.name] = false;
     });
-    console.log('Initialized selected categories:', selectedCategories.value);
 
     // Extract cities from the equipment data (assuming each equipment has a city/location field)
     const equipmentCities = equipments.value.map(equipment => equipment.address?.city).filter(city => city);
     cities.value = [...new Set(equipmentCities)]; // Remove duplicates
-    console.log('Cities fetched from equipment data:', cities.value);
 
   } catch (error) {
     console.error('Error fetching data:', error);
@@ -78,32 +73,27 @@ const filteredEquipments = computed(() => {
 
   // Apply category filtering
   const selectedCategoryKeys = Object.keys(selectedCategories.value).filter(key => selectedCategories.value[key]);
-  console.log('Selected categories:', selectedCategoryKeys);
 
   if (selectedCategoryKeys.length > 0) {
     filtered = filtered.filter(equipment => {
       const equipmentCategoryId = equipment.category; // This is the ID
       const selectedCategoryIds = selectedCategoryKeys.map(name => categoryIdMap.value[name]); // Map names to IDs
       const match = selectedCategoryIds.includes(equipmentCategoryId);
-      console.log(`Filtering equipment ID ${equipmentCategoryId}:`, match);
       return match;
     });
   }
 
   // Apply city filtering
   const selectedCityKeys = Object.keys(selectedCities.value).filter(key => selectedCities.value[key]);
-  console.log('Selected cities:', selectedCityKeys);
 
   if (selectedCityKeys.length > 0) {
     filtered = filtered.filter(equipment => {
       const match = selectedCityKeys.includes(equipment.address.city);
-      console.log(`Filtering equipment in city ${equipment.address.city}:`, match);
       return match;
     });
   }
 
   // Log the number of filtered equipments
-  console.log('Filtered equipment list:', filtered.length, filtered);
   return filtered;
 });
 </script>
@@ -132,7 +122,7 @@ const filteredEquipments = computed(() => {
   </div>
 
   <div class="p-2 w-full text-xs md:hidden">
-    <MobileFilter />
+    <MobileFilter :categories="selectedCategories" />
     <Card :equipments="filteredEquipments" /> <!-- Pass filtered equipments -->
   </div>
 </template>

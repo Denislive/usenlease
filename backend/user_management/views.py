@@ -32,6 +32,8 @@ from django.contrib.auth import authenticate
 from rest_framework.views import APIView
 from .serializers import UserSerializer
 
+from django.http import JsonResponse
+
 
 from django.utils import timezone
 from datetime import timedelta, datetime
@@ -52,9 +54,15 @@ from .serializers import UserSerializer  # Adjust the import as necessary
 
 from rest_framework.parsers import MultiPartParser, FormParser
 
-
+from rest_framework import status, viewsets
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from .models import Chat, Message
+from .serializers import ChatSerializer, MessageSerializer
+from django.db.models import Q
 
 from .models import OTP
+from equipment_management.models import Cart, Equipment, CartItem
 from .serializers import OTPSerializer
 import random
 import smtplib
@@ -113,40 +121,45 @@ class JWTAuthenticationFromCookie(JWTAuthentication):
         return Response()
 
 
-from rest_framework import status, viewsets
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from .models import Chat, Message
-from .serializers import ChatSerializer, MessageSerializer
-from django.db.models import Q
+
 
 class ChatViewSet(viewsets.ModelViewSet):
     queryset = Chat.objects.all()
     serializer_class = ChatSerializer
-
     authentication_classes = [JWTAuthenticationFromCookie]
-    
 
     def get_queryset(self):
-        self.check_permissions(self.request)  
+        self.check_permissions(self.request)
         # Filter chats by current logged-in user
         return Chat.objects.filter(participants=self.request.user)
 
     def perform_create(self, serializer):
-        """Create a new chat with the logged-in user and specified participants."""
+        """Create a new chat with the logged-in user and specified participants, or prevent creating duplicate chats."""
         sender = self.request.user
-        recipient_ids = self.request.data.get('participants', [])
+        participants_ids = self.request.data.get('participants')
 
         # Ensure the logged-in user is included
         participants = [sender]
 
-        # Add recipients if they exist
-        if recipient_ids:
-            recipients = get_user_model().objects.filter(id__in=recipient_ids)
-            participants.extend(recipients)
-
-        # Save the chat with the combined participants
+        # Add the participants if they exist and are valid
+        if participants_ids:
+            try:
+                recipients = get_user_model().objects.filter(id__in=participants_ids)
+                if len(recipients) != len(participants_ids):
+                    raise serializers.ValidationError("Some recipients not found.")
+                participants.extend(recipients)
+            except get_user_model().DoesNotExist:
+                raise serializers.ValidationError("Recipient user(s) not found.")
+        
+        # Check if a chat already exists between the participants
+        existing_chat = Chat.objects.filter(participants__in=participants).distinct()
+        
+        # If a chat already exists, prevent creating a new one
+        if existing_chat.exists():
+            return
+        # Save the chat with the combined participants if no existing chat is found
         serializer.save(participants=participants)
+
 
 
 class MessageViewSet(viewsets.ModelViewSet):
@@ -310,6 +323,7 @@ class LoginView(APIView):
     permission_classes = [AllowAny]  # Allow any user to access this view
 
     def post(self, request):
+        print("Request Data:", request.data)  # Log the request data for debugging
         email = request.data.get("email")
         password = request.data.get("password")
         user = authenticate(request, email=email, password=password)
@@ -321,18 +335,19 @@ class LoginView(APIView):
             # Serialize the user details
             user_data = UserSerializer(user).data
 
+            # Set the response data
             response_data = {
                 "id": user.id,
                 "username": user.username,
                 "role": user.role,
-                "is_authenticated": user.is_authenticated
-                
+                "is_authenticated": user.is_authenticated,
+                "image": user.image.url if user.image else None,
             }
             response = Response(response_data, status=status.HTTP_200_OK)
 
             # Set the access token in an HTTP-only cookie
             response.set_cookie(
-                key="token", 
+                key="token",
                 value=str(refresh.access_token),
                 httponly=True,
                 secure=True,  # Change to True if using HTTPS in production
@@ -342,7 +357,7 @@ class LoginView(APIView):
 
             # Set the refresh token as an HTTP-only cookie
             response.set_cookie(
-                key="refresh", 
+                key="refresh",
                 value=str(refresh),
                 httponly=True,
                 secure=True,  # Change to True if using HTTPS in production
@@ -350,23 +365,53 @@ class LoginView(APIView):
                 path="/"
             )
 
-            # Log tokens for verification
-            print("Tokens before setting cookies:")
-            print(f"Access Token: {refresh.access_token}")
-            print(f"Refresh Token: {refresh}")
-
-            # Retrieve and log tokens from cookies in the response
-            access_cookie = response.cookies.get('token')
-            refresh_cookie = response.cookies.get('refresh')  # Updated to 'refresh_token'
-
-            print("Cookies set in the response:")
-            print(f"Access Token Cookie: {access_cookie}")
-            print(f"Refresh Token Cookie: {refresh_cookie}")
+            # Sync cart items with the authenticated user
+            cart_data = request.data.get("cart", [])
+            if cart_data:
+                self.sync_cart_with_db(user, cart_data)
 
             return response
         else:
             return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
 
+    def sync_cart_with_db(self, user, cart_data):
+        """Sync the cart items from the request data to the database for the authenticated user."""
+        # Get or create a cart for the user
+        user_cart, _ = Cart.objects.get_or_create(user=user)
+
+        for item_data in cart_data:
+            item_info = item_data.get("item")
+            item_id = item_info.get("id")
+            item_quantity = item_data.get("quantity", 1)
+            start_date = item_data.get("start_date")
+            end_date = item_data.get("end_date")
+            
+            # Check if the equipment exists in the database
+            try:
+                equipment = Equipment.objects.get(id=item_id)
+            except Equipment.DoesNotExist:
+                continue  # Skip the item if the equipment does not exist
+            
+            
+
+            # Check if there's already an existing cart item for this equipment
+            existing_cart_item = CartItem.objects.filter(
+                cart=user_cart, item_id=item_id, start_date=start_date, end_date=end_date
+            ).first()
+
+            if existing_cart_item:
+                # If the cart item exists, update the quantity
+                existing_cart_item.quantity += item_quantity
+                existing_cart_item.save()
+            else:
+                # If the cart item does not exist, create a new one
+                CartItem.objects.create(
+                    cart=user_cart,
+                    item=equipment,
+                    quantity=item_quantity,
+                    start_date=start_date,
+                    end_date=end_date,
+                )
 
 
 class TokenRefreshView(APIView):
@@ -459,6 +504,30 @@ class CustomLogoutView(APIView):
             print(f'General Exception: {str(e)}')
             return Response({'detail': f'An error occurred: {str(e)}'}, status=500) 
 
+
+class CheckPhoneNumberView(APIView):
+    """
+    API endpoint to check if a phone number is already registered.
+    """
+    def get(self, request):
+        phone_number = request.query_params.get('phone', None)
+        if not phone_number:
+            return JsonResponse({'error': 'Phone parameter is required.'}, status=400)
+
+        exists = User.objects.filter(phone_number=phone_number).exists()
+        return JsonResponse({'exists': exists})
+
+class CheckEmailView(APIView):
+    """
+    API endpoint to check if an email is already registered.
+    """
+    def get(self, request):
+        email = request.query_params.get('email', None)
+        if not email:
+            return JsonResponse({'error': 'Email parameter is required.'}, status=400)
+
+        exists = User.objects.filter(email=email).exists()
+        return JsonResponse({'exists': exists})
 
 class UserViewSet(viewsets.ViewSet):
     """

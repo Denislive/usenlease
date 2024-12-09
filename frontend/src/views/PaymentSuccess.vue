@@ -30,6 +30,8 @@
   
   <script>
   import axios from "axios";
+  const api_base_url = import.meta.env.VITE_API_BASE_URL;
+
   
   export default {
     data() {
@@ -50,7 +52,7 @@
   
       // Call backend API to retrieve the session details
       axios
-        .get("http://127.0.0.1:8000/api/session-status/", {
+        .get(`${api_base_url}/api/session-status/`, {
           params: { session_id: session_id },
         })
         .then((response) => {

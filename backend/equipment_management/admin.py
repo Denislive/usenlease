@@ -82,3 +82,10 @@ class ReviewAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Specification)
+
+# Change the site header
+admin.site.site_header = "UseNLease Admin"
+# Change the site title
+admin.site.site_title = "UseNLease Equipment Rental Site Admin"
+# Change the index title
+admin.site.index_title = "Welcome to UseNLease Admin Dashboard"

@@ -1,6 +1,5 @@
 <template>
   <main>
-    <Hero />
     <div class="mx-auto p-2 w-6/8 sm:w-11/12">
       <div class="grid grid-cols-1 md:grid-cols-12 gap-4 p-1">
         <!-- Sidebar Section -->
@@ -30,11 +29,13 @@ const equipment = ref(null);
 const loading = ref(true);
 const error = ref(null);
 const route = useRoute();
+const api_base_url = import.meta.env.VITE_API_BASE_URL;
+
 
 const fetchEquipment = async () => {
   const equipmentId = route.params.id; // Get the equipment ID from the route
   try {
-    const response = await fetch(`http://127.0.0.1:8000/api/equipments/${equipmentId}/`); // Adjust the URL based on your API
+    const response = await fetch(`${api_base_url}/api/equipments/${equipmentId}/`); // Adjust the URL based on your API
     if (!response.ok) throw new Error('Failed to fetch equipment details');
     equipment.value = await response.json();
   } catch (err) {

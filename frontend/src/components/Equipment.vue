@@ -1,19 +1,18 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { useEquipmentsStore } from '@/store/equipments'; // Import your Pinia store
+import { useEquipmentsStore } from '@/store/equipments'; // Pinia store for equipments
 import { useStore } from 'vuex';
 
 const router = useRouter();
-const store = useEquipmentsStore(); // Create an instance of the equipments store
-const search = useStore();
 
+const api_base_url = import.meta.env.VITE_API_BASE_URL;
+
+const store = useEquipmentsStore(); // Pinia store instance
+const search = useStore();
 
 // Computed property to get searchQuery from Vuex
 const searchQuery = computed(() => search.getters.getSearchQuery);
-
-
-
 
 // Fetch equipments and categories when the component is mounted
 onMounted(async () => {
@@ -21,40 +20,46 @@ onMounted(async () => {
   await store.fetchCategories(); // Fetch categories
 });
 
-// Use the fetched equipments from the store
+// Computed property for equipments and categories
 const equipments = computed(() => store.equipments);
 const categories = computed(() => store.categories);
-
 
 // Computed property for filtered equipments
 const filteredEquipments = computed(() => {
   if (!searchQuery.value) return equipments.value; // Return all if no search query
 
-  const query = searchQuery.value.toLowerCase(); // Convert search query to lower case for case insensitive matching
+  const query = searchQuery.value.toLowerCase(); // Case-insensitive matching
 
   return equipments.value.filter(equipment => {
-    // Check if the search query is found in any of the specified fields
+    // Check if the search query matches any of the specified fields
     return (
       equipment.name.toLowerCase().includes(query) ||
       equipment.description.toLowerCase().includes(query) ||
       equipment.hourly_rate.toString().includes(query) || // Ensure hourly_rate is a string
-      (equipment.address.street_address && equipment.address.street_address.toLowerCase().includes(query)) ||
-      (equipment.address.city && equipment.address.city.toLowerCase().includes(query)) ||
-      (equipment.address.state && equipment.address.state.toLowerCase().includes(query))
+      (equipment.address?.street_address?.toLowerCase().includes(query)) ||
+      (equipment.address?.city?.toLowerCase().includes(query)) ||
+      (equipment.address?.state?.toLowerCase().includes(query))
     );
   });
 });
 
+// Function to navigate to equipment details page
 const goToDetail = (equipmentId) => {
   if (equipmentId) {
     router.push({ name: 'equipment-details', params: { id: equipmentId } });
   } else {
-    console.error('Equipment ID is missing!'); // Log an error if ID is missing
+    console.error('Equipment ID is missing!');
   }
-}
+};
+
+const renderStars = (rating) => {
+  const fullStars = Math.floor(rating);
+  const halfStar = rating % 1 >= 0.5 ? 1 : 0;
+  const emptyStars = 5 - fullStars - halfStar;
+
+  return '★'.repeat(fullStars) + (halfStar ? '☆' : '') + '☆'.repeat(emptyStars);
+};
 </script>
-
-
 
 <template>
   <div class="container mx-auto p-4">
@@ -88,7 +93,7 @@ const goToDetail = (equipmentId) => {
           <!-- Equipment Image -->
           <img
             v-if="equipment.images.length > 0"
-            :src="`http://127.0.0.1:8000${equipment.images[0].image_url}`"
+            :src="`${api_base_url}${equipment.images[0].image_url}`"
             :alt="equipment.images[0].image_url"
             class="w-full h-48 object-cover"
           />
@@ -99,28 +104,24 @@ const goToDetail = (equipmentId) => {
             class="w-full h-48 object-cover"
           />
 
-          <!-- Add to Cart Button -->
-          <a
-            href="#"
-            class="absolute bottom-4 right-4 bg-[#1c1c1c] text-white rounded-full h-10 w-10 flex items-center justify-center hover:text-[#ffc107] transition"
-          >
-            <i class="pi pi-cart-arrow-down"></i>
-          </a>
+          <!-- reviews and rating -->
+          <span class="rating text-yellow-500">{{ renderStars(equipment.rating) }}</span>
+          <span class="reviews text-gray-600"> ({{ equipment.equipment_reviews ? equipment.equipment_reviews.length : 0 }} Reviews)</span>
         </div>
 
         <!-- Equipment Details -->
         <div class="p-4">
-          <h5 class="text-lg font-semibold">{{ equipment.name }}</h5>
+          <h5 class="text-sm font-semibold">{{ equipment.name }}</h5>
           <p class="text-gray-600">{{ equipment.hourly_rate }} / Hr</p>
         </div>
       </div>
     </div>
 
+    <!-- Empty State Message -->
     <div class="empty-list-container text-center py-16" v-if="filteredEquipments.length === 0">
-        <i class="pi pi-exclamation-circle text-9xl text-gray-500"></i>
+      <i class="pi pi-exclamation-circle text-9xl text-gray-500"></i>
       <p class="text-xl text-gray-500 mt-4">Oops! No items in here!</p>
       <p class="text-xl text-gray-500 mt-4">Try adding a new item by hitting the lease button.</p>
-
     </div>
   </div>
 </template>

@@ -4,8 +4,14 @@
 
     <!-- Payment Method -->
     <div class="mt-4">
-      <label class="block text-gray-700">Payment Method <span class="text-red-500">*</span></label>
-      <select v-model="paymentMethod" required class="w-full p-2 border border-[#1c1c1c] rounded focus:outline-none focus:ring focus:ring-[#1c1c1c]">
+      <label class="block text-gray-700">
+        Payment Method <span class="text-red-500">*</span>
+      </label>
+      <select
+        v-model="paymentMethod"
+        required
+        class="w-full p-2 border border-[#1c1c1c] rounded focus:outline-none focus:ring focus:ring-[#1c1c1c]"
+      >
         <option value="">Select Payment Method</option>
         <option value="stripe">Stripe</option>
         <option value="paypal">PayPal</option>
@@ -13,7 +19,12 @@
     </div>
 
     <!-- Submit Button -->
-    <button type="submit" class="mt-4 bg-[#1c1c1c] text-white py-2 px-4 rounded hover:text-[#ffc107]">Checkout</button>
+    <button
+      type="submit"
+      class="mt-4 bg-[#1c1c1c] text-white py-2 px-4 rounded hover:text-[#ffc107]"
+    >
+      Checkout
+    </button>
   </form>
 </template>
 
@@ -21,8 +32,10 @@
 import { ref } from 'vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
-
 import { useCartStore } from '@/store/cart';
+
+const api_base_url = import.meta.env.VITE_API_BASE_URL;
+
 
 const paymentMethod = ref('');
 const router = useRouter();
@@ -35,13 +48,12 @@ const submitForm = async () => {
       paymentMethod: paymentMethod.value,
     };
 
-    // Log the payload for debugging (optional)
-    console.log("Final Payload:", payload);
-
     // Send the payload to the server with credentials
-    const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/create-checkout-session/`, payload, {
-      withCredentials: true,
-    });
+    const response = await axios.post(
+      `${api_base_url}/api/create-checkout-session/`,
+      payload,
+      { withCredentials: true }
+    );
 
     // Redirect to payment page (Stripe or PayPal)
     if (paymentMethod.value === 'stripe') {
@@ -49,9 +61,6 @@ const submitForm = async () => {
     } else if (paymentMethod.value === 'paypal') {
       window.location.href = response.data.paypalUrl;
     }
-
-    // Handle the successful response
-    console.log('Checkout successful:', response.data);
   } catch (error) {
     // Handle errors
     console.error('Checkout error:', error.response?.data || error.message);
