@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   usenlease-frontend:
-    image: ngumonelson123/frontend-image:latest  # Use Docker Hub image
+    image: ngumonelson123/frontend-image:v1.1.0  # Use Docker Hub image
     container_name: usenlease-frontend
     ports:
       - "3000:3000"
@@ -14,7 +14,7 @@ services:
       - .env
 
   usenlease-backend:
-    image: ngumonelson123/backend-image:latest  # Use Docker Hub image
+    image: ngumonelson123/backend-image:v1.1.0  # Use Docker Hub image
     container_name: usenlease-backend
     ports:
       - "8000:8000"
@@ -26,10 +26,12 @@ services:
     env_file:
       - .env
     command: >
-      bash -c "cd /app/backend &&
-               python manage.py wait_for_db &&
+      bash -c "python manage.py wait_for_db &&
                python manage.py migrate &&
-               python manage.py runserver 0.0.0.0:8000"
+               python manage.py collectstatic --noinput &&
+               gunicorn EquipRentHub.wsgi:application --bind 0.0.0.0:8000 --workers=3"
+    volumes:
+      - ./backend/staticfiles:/app/backend/staticfiles  # Map static files directory
 
   usenlease-db:
     image: postgres:latest
@@ -47,6 +49,20 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  nginx:
+    image: nginx:latest  # Use official Nginx image
+    container_name: usenlease-nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - usenlease-frontend
+      - usenlease-backend
+    volumes:
+      - ./backend/staticfiles:/usr/share/nginx/html/static  # Map static files
+      - ./nginx.conf:/etc/nginx/nginx.conf  # Nginx configuration file
+    networks:
+      - app-net
 
 networks:
   app-net:

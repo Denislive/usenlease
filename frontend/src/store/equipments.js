@@ -18,7 +18,9 @@ export const useEquipmentsStore = defineStore('equipments', () => {
     error.value = null;
 
     try {
+
       const response = await axios.get(`${api_base_url}/api/equipments/`, {
+
         withCredentials: true,
       });
       equipments.value = response.data;
@@ -36,7 +38,9 @@ export const useEquipmentsStore = defineStore('equipments', () => {
     error.value = null;
 
     try {
+
       const response = await axios.get(`${api_base_url}/api/categories/`, {
+
         withCredentials: true,
       });
       categories.value = response.data;
@@ -58,6 +62,7 @@ export const useEquipmentsStore = defineStore('equipments', () => {
       error.value = null;
       try {
         const response = await axios.get(`${api_base_url}/api/equipments/${id}/`, {
+
           withCredentials: true,
         });
         selectedEquipment.value = response.data;

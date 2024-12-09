@@ -1,26 +1,62 @@
-# Use Python 3.11 as the base image
-FROM python:3.11
+# Stage 1: Build Stage
+FROM python:3.11-slim-bullseye AS builder
 
-# Set environment variables to prevent Python from buffering output (useful for logging)
+# Set environment variables
 ENV PYTHONUNBUFFERED=1
 
-# Create a working directory for the application inside the container
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create a working directory
 WORKDIR /app
 
-# Copy the requirements.txt file first to leverage Docker layer caching
-COPY requirements.txt .
+# Add build argument for SECRET_KEY
+ARG SECRET_KEY
 
-# Install dependencies from requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+# Set environment variable
+ENV SECRET_KEY=${SECRET_KEY}
 
-# Install PostgreSQL dependencies for Django (if not in the requirements.txt)
-RUN pip install psycopg2-binary
+# Copy requirements.txt and install dependencies
+COPY ../backend/requirements.txt /app/
+RUN python3 -m venv /app/venv \
+    && /app/venv/bin/pip install --no-cache-dir -r /app/requirements.txt
 
-# Copy the rest of the project files into the containers
-COPY . .
+# Copy the rest of the backend code
+COPY ../backend /app/backend
 
-# Expose port 8000 for the Django app
+# Set STATIC_ROOT for static file collection
+ENV STATIC_ROOT=/app/backend/staticfiles
+
+# Collect static files during the build stage
+RUN /app/venv/bin/python /app/backend/manage.py collectstatic --noinput
+
+# Stage 2: Production Image
+FROM python:3.11-slim-bullseye
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV PATH="/app/venv/bin:$PATH"
+
+# Add build argument for SECRET_KEY
+ARG SECRET_KEY
+
+# Set environment variable
+ENV SECRET_KEY=${SECRET_KEY}
+
+# Copy the virtual environment and the application code from the builder stage
+COPY --from=builder /app /app
+
+# Set the working directory for the application
+WORKDIR /app/backend
+
+# Ensure the staticfiles directory exists
+RUN mkdir -p /app/backend/staticfiles
+
+# Expose the application port
 EXPOSE 8000
 
-# Run migrations and then start the Gunicorn server to serve the Django app
-CMD ["sh", "-c", "python manage.py migrate && gunicorn EquipRentHub.wsgi:application --bind 0.0.0.0:8000"]
+# Run migrations, create a superuser (if not exists), and start Gunicorn
+CMD ["sh", "-c", "python manage.py wait_for_db && python manage.py migrate && python manage.py create_superuser && exec gunicorn EquipRentHub.wsgi:application --bind 0.0.0.0:8000 --workers=3 --timeout 240 --graceful-timeout 240"]

@@ -52,8 +52,8 @@ pipeline {
                             withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                                 sh '''
                                 docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
-                                docker build -t ${FRONTEND_IMAGE}:latest ./frontend
-                                docker push ${FRONTEND_IMAGE}:latest
+                                docker build -t ${FRONTEND_IMAGE}:v1.1.0 ./frontend
+                                docker push ${FRONTEND_IMAGE}:v1.1.0
                                 '''
                             }
                         }
@@ -64,29 +64,31 @@ pipeline {
                         script {
                             echo 'Pushing backend Docker image to Docker Hub...'
                             withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                                sh '''
-                                docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
-                                docker build -t ${BACKEND_IMAGE}:latest ./backend
-                                docker push ${BACKEND_IMAGE}:latest
-                                '''
+                                withEnv(["SECRET_KEY=django-insecure-^5zv2&aef@n*hi0icmu7lji6bqf0r&d@!x)%*gq-e^w)2e^kl!"]) {
+                                    sh '''
+                                    docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
+                                    docker build --build-arg SECRET_KEY=${SECRET_KEY} -t ${BACKEND_IMAGE}:v1.1.0 -f backend/Dockerfile .
+                                    docker push ${BACKEND_IMAGE}:v1.1.0
+                                    '''
+                                }
                             }
                         }
                     }
                 }
             }
         }
-        stage('Build and Deploy with Docker Compose') {
-            steps {
-                script {
-                    echo 'Building and deploying Docker images using Docker Compose...'
-                    sh '''
-                    docker-compose down
-                    docker-compose pull
-                    docker-compose up --build -d
-                    '''
-                }
-            }
-        }
+        // stage('Build and Deploy with Docker Compose') {
+        //     steps {
+        //         script {
+        //             echo 'Building and deploying Docker images using Docker Compose...'
+        //             sh '''
+        //             docker-compose down
+        //             docker-compose pull
+        //             docker-compose up --build -d
+        //             '''
+        //         }
+        //     }
+        // }
         stage('Initialize and Apply Terraform') {
             steps {
                 script {
@@ -111,12 +113,10 @@ pipeline {
                 script {
                     echo 'Authenticating and deploying to Google Cloud...'
                     sh '''
-                    # Authenticate to Google Cloud
                     gcloud auth activate-service-account --key-file=${GOOGLE_APPLICATION_CREDENTIALS}
 
                     INSTANCE_NAME="usenlease-website"
 
-                    # Check if instance exists, if not create it
                     INSTANCE_EXISTS=$(gcloud compute instances describe $INSTANCE_NAME --project=${GOOGLE_CLOUD_PROJECT} --zone=${GOOGLE_CLOUD_ZONE} --format="get(name)" || echo "not found")
 
                     if [[ "$INSTANCE_EXISTS" == "not found" ]]; then
@@ -137,7 +137,6 @@ pipeline {
                             docker-compose up -d'
                     else
                         echo "Instance $INSTANCE_NAME already exists. Skipping creation."
-                        # Update metadata if instance exists
                         gcloud compute instances add-metadata $INSTANCE_NAME \
                             --project=${GOOGLE_CLOUD_PROJECT} \
                             --zone=${GOOGLE_CLOUD_ZONE} \

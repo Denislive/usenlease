@@ -13,8 +13,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY')
 
+if not SECRET_KEY:
+    raise ValueError("The SECRET_KEY environment variable is not set")
+
+
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'False') == 'False'
+DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
 ALLOWED_HOSTS = ['*']
 
@@ -26,7 +30,9 @@ AUTH_USER_MODEL = 'user_management.User'
 
 STRIPE_PUBLIC_KEY = os.getenv("STRIPE_PUBLIC_KEY")
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
-STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
+
 
 # Application definition
 INSTALLED_APPS = [
@@ -66,6 +72,7 @@ SIMPLE_JWT = {
     "AUTH_COOKIE": "token",
     "AUTH_COOKIE_REFRESH": "refresh",
 }
+
 
 EMAIL_HOST =  os.getenv('EMAIL_HOST')
 EMAIL_PORT = os.getenv('EMAIL_PORT')
@@ -119,13 +126,13 @@ TEMPLATES = [
 WSGI_APPLICATION = 'EquipRentHub.wsgi.application'
 
 import os
-from dotenv import load_dotenv
-
-# Load environment variables from .env file
-
-import os
+from dotenv import load_dotenv  # Load environment variables from .env file
 from pathlib import Path
 
+# Load environment variables from .env
+load_dotenv()
+
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Attempt PostgreSQL configuration, fallback to SQLite3 if any error occurs
@@ -160,7 +167,6 @@ except Exception:
         }
     }
 
-
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -177,8 +183,14 @@ USE_TZ = True
 
 # Static files
 STATIC_URL = '/static/'
+
+# Define where static files are stored during development
 STATICFILES_DIRS = [BASE_DIR / 'static']
 
+# Define the directory where static files will be collected in production
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# Media files (uploads)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media/'
 
