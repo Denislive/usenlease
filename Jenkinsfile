@@ -108,7 +108,7 @@ pipeline {
                 }
             }
         }
-        stage('Authenticate and Deploy to Google Cloud') {
+        stage('Authenticate and Deploying to Google Cloud') {
             steps {
                 script {
                     echo 'Authenticating and deploying to Google Cloud...'
