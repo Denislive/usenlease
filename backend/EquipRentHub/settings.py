@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
+    'whitenoise.runserver_nostatic',
     'rest_framework_simplejwt.token_blacklist',
     'equipment_management.apps.EquipmentManagementConfig',
     'user_management.apps.UserManagementConfig',
@@ -97,6 +98,7 @@ CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL_ORIGINS', 'True') == 'True'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -183,6 +185,8 @@ STATIC_URL = '/static/'
 
 # Define where static files are stored during development
 STATICFILES_DIRS = [BASE_DIR / 'static']
+
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Define the directory where static files will be collected in production
 STATIC_ROOT = BASE_DIR / 'staticfiles'
