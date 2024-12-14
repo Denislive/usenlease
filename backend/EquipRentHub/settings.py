@@ -3,6 +3,7 @@ from pathlib import Path
 from datetime import timedelta
 import os
 import dj_database_url
+import logging
 
 # Load environment variables from .env
 load_dotenv()
@@ -19,7 +20,7 @@ if not SECRET_KEY:
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = ['https://usenlease-2f8583d212bc.herokuapp.com']
+ALLOWED_HOSTS = ['usenlease-2f8583d212bc.herokuapp.com', 'usenlease.com']
 
 LOGIN_URL = '/accounts/user/login'
 
@@ -73,19 +74,19 @@ EMAIL_HOST = os.getenv('EMAIL_HOST')
 EMAIL_PORT = os.getenv('EMAIL_PORT')
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')  # Store password securely
-EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS')
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'False').lower() == 'true'
 
 # Security Settings
 SESSION_COOKIE_SAMESITE = os.getenv('SESSION_COOKIE_SAMESITE', 'None')
 CSRF_COOKIE_SAMESITE = os.getenv('CSRF_COOKIE_SAMESITE', 'None')
-SESSION_COOKIE_SECURE = os.getenv('SESSION_COOKIE_SECURE', 'True') == 'True'
-CSRF_COOKIE_SECURE = os.getenv('CSRF_COOKIE_SECURE', 'True') == 'True'
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
 SECURE_SSL_REDIRECT = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 CSRF_COOKIE_NAME = os.getenv('CSRF_COOKIE_NAME', 'csrftoken')
-CSRF_COOKIE_HTTPONLY = os.getenv('CSRF_COOKIE_HTTPONLY', 'False') == 'True'
+CSRF_COOKIE_HTTPONLY = os.getenv('CSRF_COOKIE_HTTPONLY', 'False').lower() == 'true'
 
-CORS_ALLOW_CREDENTIALS = os.getenv('CORS_ALLOW_CREDENTIALS', 'True') == 'True'
+CORS_ALLOW_CREDENTIALS = os.getenv('CORS_ALLOW_CREDENTIALS', 'True').lower() == 'true'
 CORS_ALLOW_HEADERS = os.getenv('CORS_ALLOW_HEADERS', 'content-type,authorization,X-CSRFToken').split(',')
 
 # Explicitly set CSRF_TRUSTED_ORIGINS and CORS_ALLOWED_ORIGINS
@@ -97,7 +98,6 @@ CORS_ALLOWED_ORIGINS = [
     'https://usenlease-ba2103147f4b.herokuapp.com',
     'https://usenlease.com',
 ]
-CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL_ORIGINS', 'True') == 'True'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -149,15 +149,11 @@ try:
         port=DATABASES['default']['PORT']
     )
     connection.close()
+    logging.info("Database connection successful.")
 
 except Exception as e:
-    print(f"PostgreSQL configuration failed: {e}. Falling back to SQLite3.")
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
+    logging.error(f"PostgreSQL configuration failed: {e}")
+    raise ValueError("Database connection failed. Check DATABASE_URL and Heroku environment variables.")
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
