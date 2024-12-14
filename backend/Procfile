@@ -1,0 +1,1 @@
+web: gunicorn EquipRentHub.wsgi:application --bind 0.0.0.0:$PORT --workers=3 --timeout 240 --graceful-timeout 240
