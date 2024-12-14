@@ -25,8 +25,11 @@ WORKDIR /app
 # Copy only the necessary files from the build stage to the production image
 COPY --from=builder /app /app
 
-# Expose port 3000 to allow communication with the host machine
-EXPOSE 3000
+# Install a simple HTTP server to serve your static files
+RUN npm install -g serve
 
-# Run the application in development mode
-CMD ["npm", "run", "dev"]
+# Expose the port Heroku will use
+EXPOSE $PORT
+
+# Run the application in production mode using the "serve" package
+CMD ["serve", "-s", "dist", "-l", "$PORT"]
