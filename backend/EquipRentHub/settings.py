@@ -3,6 +3,7 @@ from pathlib import Path
 from datetime import timedelta
 from corsheaders.defaults import default_headers
 import os
+import dj_database_url
 
 # Load environment variables from .env
 load_dotenv()
@@ -135,18 +136,14 @@ load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Attempt PostgreSQL configuration, fallback to SQLite3 if any error occurs
 try:
+    # Attempt to configure PostgreSQL using Heroku DATABASE_URL
     DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.getenv('POSTGRES_DB', 'usenlease_db'),
-            'USER': os.getenv('POSTGRES_USER', 'postgres'),
-            'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'mysecretpassword'),
-            'HOST': os.getenv('POSTGRES_HOST', 'usenlease-db'),
-            'PORT': os.getenv('POSTGRES_PORT', '5432'),
-        }
+        'default': dj_database_url.config(
+            default=os.getenv('DATABASE_URL')  # Use DATABASE_URL from Heroku environment
+        )
     }
+
     # Test connection with the PostgreSQL database to ensure availability
     import psycopg2
     connection = psycopg2.connect(
@@ -158,8 +155,8 @@ try:
     )
     connection.close()
 
-except Exception:
-    print("PostgreSQL configuration failed; falling back to SQLite3.")
+except Exception as e:
+    print(f"PostgreSQL configuration failed: {e}. Falling back to SQLite3.")
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
