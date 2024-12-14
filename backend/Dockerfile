@@ -20,18 +20,18 @@ ARG SECRET_KEY
 ENV SECRET_KEY=${SECRET_KEY}
 
 # Copy requirements.txt and install dependencies
-COPY ../backend/requirements.txt /app/
+COPY requirements.txt /app/
 RUN python3 -m venv /app/venv \
     && /app/venv/bin/pip install --no-cache-dir -r /app/requirements.txt
 
 # Copy the rest of the backend code
-COPY ../backend /app/backend
+COPY . /app/backend
 
 # Set STATIC_ROOT for static file collection
 ENV STATIC_ROOT=/app/backend/staticfiles
 
 # Collect static files during the build stage
-RUN /app/venv/bin/python /app/backend/manage.py collectstatic --noinput
+RUN SECRET_KEY=${SECRET_KEY} /app/venv/bin/python /app/backend/manage.py collectstatic --noinput
 
 # Stage 2: Production Image
 FROM python:3.11-slim-bullseye
@@ -59,4 +59,4 @@ RUN mkdir -p /app/backend/staticfiles
 EXPOSE 8000
 
 # Run migrations, create a superuser (if not exists), and start Gunicorn
-CMD ["sh", "-c", "python manage.py wait_for_db && python manage.py migrate && python manage.py create_superuser && exec gunicorn EquipRentHub.wsgi:application --bind 0.0.0.0:8000 --workers=3 --timeout 240 --graceful-timeout 240"]
+CMD ["sh", "-c", "python manage.py wait_for_db && python manage.py migrate && python manage.py create_superuser && exec gunicorn EquipRentHub.wsgi:application --bind 0.0.0.0:$PORT --workers=3 --timeout 240 --graceful-timeout 240"]
