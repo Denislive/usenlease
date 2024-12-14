@@ -87,9 +87,15 @@ CSRF_COOKIE_HTTPONLY = os.getenv('CSRF_COOKIE_HTTPONLY', 'False') == 'True'
 CORS_ALLOW_CREDENTIALS = os.getenv('CORS_ALLOW_CREDENTIALS', 'True') == 'True'
 CORS_ALLOW_HEADERS = os.getenv('CORS_ALLOW_HEADERS', 'content-type,authorization,X-CSRFToken').split(',')
 
-# Ensure CSRF_TRUSTED_ORIGINS is properly set
-CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', 'https://usenlease-ba2103147f4b.herokuapp.com,https://usenlease.com').split(',')
-CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'https://usenlease-ba2103147f4b.herokuapp.com,https://usenlease.com').split(',')
+# Explicitly set CSRF_TRUSTED_ORIGINS and CORS_ALLOWED_ORIGINS
+CSRF_TRUSTED_ORIGINS = [
+    'https://usenlease-ba2103147f4b.herokuapp.com',
+    'https://usenlease.com',
+]
+CORS_ALLOWED_ORIGINS = [
+    'https://usenlease-ba2103147f4b.herokuapp.com',
+    'https://usenlease.com',
+]
 CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL_ORIGINS', 'True') == 'True'
 
 MIDDLEWARE = [
