@@ -19,7 +19,17 @@ if not SECRET_KEY:
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = ['*']
+# Add Trusted Origins
+CSRF_TRUSTED_ORIGINS = [
+    'https://usenlease-2f8583d212bc.herokuapp.com'
+]
+
+# Check ALLOWED_HOSTS
+ALLOWED_HOSTS = [
+    'usenlease-2f8583d212bc.herokuapp.com',
+    'usenlease.com',
+    '*'
+]
 
 LOGIN_URL = '/accounts/user/login'
 
@@ -92,13 +102,16 @@ CORS_ALLOW_HEADERS = os.getenv('CORS_ALLOW_HEADERS', 'content-type,authorization
 CSRF_TRUSTED_ORIGINS = [
     'https://usenlease-ba2103147f4b.herokuapp.com',
     'https://usenlease.com',
+    'https://usenlease-2f8583d212bc.herokuapp.com'
 ]
 CORS_ALLOWED_ORIGINS = [
     'https://usenlease-ba2103147f4b.herokuapp.com',
     'https://usenlease.com',
+    'https://usenlease-2f8583d212bc.herokuapp.com'
 ]
 CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL_ORIGINS', 'True') == 'True'
 
+# Ensure CSRF Middleware is Enabled
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
