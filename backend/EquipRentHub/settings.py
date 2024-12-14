@@ -17,7 +17,6 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 if not SECRET_KEY:
     raise ValueError("The SECRET_KEY environment variable is not set")
 
-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
@@ -31,9 +30,7 @@ AUTH_USER_MODEL = 'user_management.User'
 
 STRIPE_PUBLIC_KEY = os.getenv("STRIPE_PUBLIC_KEY")
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
-
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
-
 
 # Application definition
 INSTALLED_APPS = [
@@ -51,8 +48,6 @@ INSTALLED_APPS = [
     'equipment_management.apps.EquipmentManagementConfig',
     'user_management.apps.UserManagementConfig',
 ]
-
-
 
 # Rest JWT
 REST_FRAMEWORK = {
@@ -75,8 +70,7 @@ SIMPLE_JWT = {
     "AUTH_COOKIE_REFRESH": "refresh",
 }
 
-
-EMAIL_HOST =  os.getenv('EMAIL_HOST')
+EMAIL_HOST = os.getenv('EMAIL_HOST')
 EMAIL_PORT = os.getenv('EMAIL_PORT')
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')  # Store password securely
@@ -92,8 +86,10 @@ CSRF_COOKIE_HTTPONLY = os.getenv('CSRF_COOKIE_HTTPONLY', 'False') == 'True'
 
 CORS_ALLOW_CREDENTIALS = os.getenv('CORS_ALLOW_CREDENTIALS', 'True') == 'True'
 CORS_ALLOW_HEADERS = os.getenv('CORS_ALLOW_HEADERS', 'content-type,authorization,X-CSRFToken').split(',')
-CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS',"https://usenlease-ba2103147f4b.herokuapp.com")
-CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS')
+
+# Ensure CSRF_TRUSTED_ORIGINS is properly set
+CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', 'https://usenlease-ba2103147f4b.herokuapp.com,https://usenlease.com').split(',')
+CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'https://usenlease-ba2103147f4b.herokuapp.com,https://usenlease.com').split(',')
 CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL_ORIGINS', 'True') == 'True'
 
 MIDDLEWARE = [
@@ -127,16 +123,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'EquipRentHub.wsgi.application'
-
-import os
-from dotenv import load_dotenv  # Load environment variables from .env file
-from pathlib import Path
-
-# Load environment variables from .env
-load_dotenv()
-
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
 
 try:
     # Attempt to configure PostgreSQL using Heroku DATABASE_URL
@@ -182,13 +168,8 @@ USE_TZ = True
 
 # Static files
 STATIC_URL = '/static/'
-
-# Define where static files are stored during development
 STATICFILES_DIRS = [BASE_DIR / 'static']
-
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-
-# Define the directory where static files will be collected in production
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Media files (uploads)
