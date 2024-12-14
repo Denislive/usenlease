@@ -88,8 +88,8 @@ CSRF_COOKIE_NAME = os.getenv('CSRF_COOKIE_NAME', 'csrftoken')
 CSRF_COOKIE_HTTPONLY = os.getenv('CSRF_COOKIE_HTTPONLY', 'False') == 'True' 
 CORS_ALLOW_CREDENTIALS = os.getenv('CORS_ALLOW_CREDENTIALS', 'True') == 'True' 
 CORS_ALLOW_HEADERS = os.getenv('CORS_ALLOW_HEADERS', 'content-type,authorization,X-CSRFToken').split(',') # Explicitly set CSRF_TRUSTED_ORIGINS and CORS_ALLOWED_ORIGINS 
-CSRF_TRUSTED_ORIGINS = [ 'https://usenlease-2f8583d212bc.herokuapp.com/', 'https://usenlease.com', ] 
-CORS_ALLOWED_ORIGINS = [ 'https://usenlease-2f8583d212bc.herokuapp.com/', 'https://usenlease.com', ] 
+CSRF_TRUSTED_ORIGINS = [ 'https://usenlease-2f8583d212bc.herokuapp.com', 'https://usenlease.com', ] 
+CORS_ALLOWED_ORIGINS = [ 'https://usenlease-2f8583d212bc.herokuapp.com', 'https://usenlease.com', ] 
 CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL_ORIGINS', 'True') == 'True'
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
