@@ -75,26 +75,22 @@ SIMPLE_JWT = {
     "AUTH_COOKIE_REFRESH": "refresh",
 }
 
-
-EMAIL_HOST =  os.getenv('EMAIL_HOST')
-EMAIL_PORT = os.getenv('EMAIL_PORT')
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')  # Store password securely
-EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS')
-
-# Security Settings
-SESSION_COOKIE_SAMESITE = os.getenv('SESSION_COOKIE_SAMESITE', 'None')
-CSRF_COOKIE_SAMESITE = os.getenv('CSRF_COOKIE_SAMESITE', 'None')
-SESSION_COOKIE_SECURE = os.getenv('SESSION_COOKIE_SECURE', 'True') == 'True'
-CSRF_COOKIE_SECURE = os.getenv('CSRF_COOKIE_SECURE', 'True') == 'True'
-CSRF_COOKIE_NAME = os.getenv('CSRF_COOKIE_NAME', 'csrftoken')
-CSRF_COOKIE_HTTPONLY = os.getenv('CSRF_COOKIE_HTTPONLY', 'False') == 'True'
-
-CORS_ALLOW_CREDENTIALS = os.getenv('CORS_ALLOW_CREDENTIALS', 'True') == 'True'
-CORS_ALLOW_HEADERS = os.getenv('CORS_ALLOW_HEADERS', 'content-type,authorization,X-CSRFToken').split(',')
-CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS')
+EMAIL_HOST = os.getenv('EMAIL_HOST') 
+EMAIL_PORT = os.getenv('EMAIL_PORT') 
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER') 
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD') # Store password securely 
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS') # Security Settings 
+SESSION_COOKIE_SAMESITE = os.getenv('SESSION_COOKIE_SAMESITE', 'None') 
+CSRF_COOKIE_SAMESITE = os.getenv('CSRF_COOKIE_SAMESITE', 'None') 
+SESSION_COOKIE_SECURE = os.getenv('SESSION_COOKIE_SECURE', 'True') == 'True' 
+CSRF_COOKIE_SECURE = os.getenv('CSRF_COOKIE_SECURE', 'True') == 'True' 
+CSRF_COOKIE_NAME = os.getenv('CSRF_COOKIE_NAME', 'csrftoken') 
+CSRF_COOKIE_HTTPONLY = os.getenv('CSRF_COOKIE_HTTPONLY', 'False') == 'True' 
+CORS_ALLOW_CREDENTIALS = os.getenv('CORS_ALLOW_CREDENTIALS', 'True') == 'True' 
+CORS_ALLOW_HEADERS = os.getenv('CORS_ALLOW_HEADERS', 'content-type,authorization,X-CSRFToken').split(',') # Explicitly set CSRF_TRUSTED_ORIGINS and CORS_ALLOWED_ORIGINS 
+CSRF_TRUSTED_ORIGINS = [ 'https://usenlease-ba2103147f4b.herokuapp.com', 'https://usenlease.com', ] 
+CORS_ALLOWED_ORIGINS = [ 'https://usenlease-ba2103147f4b.herokuapp.com', 'https://usenlease.com', ] 
 CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL_ORIGINS', 'True') == 'True'
-
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
