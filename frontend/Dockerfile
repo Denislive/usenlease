@@ -32,4 +32,4 @@ RUN npm install -g serve
 EXPOSE $PORT
 
 # Run the application in production mode using the "serve" package
-CMD ["serve", "-s", "dist", "-l", "$PORT"]
+CMD ["npm", "start"]
