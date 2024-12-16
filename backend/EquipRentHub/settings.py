@@ -1,8 +1,8 @@
 from dotenv import load_dotenv
 from pathlib import Path
 from datetime import timedelta
+from corsheaders.defaults import default_headers
 import os
-import dj_database_url
 
 # Load environment variables from .env
 load_dotenv()
@@ -13,23 +13,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY')
 
-if not SECRET_KEY:
-    raise ValueError("The SECRET_KEY environment variable is not set")
-
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+DEBUG = os.getenv('DEBUG', 'False') == 'False'
 
-# Add Trusted Origins
-CSRF_TRUSTED_ORIGINS = [
-    'https://usenlease-2f8583d212bc.herokuapp.com'
-]
+ALLOWED_HOSTS = ['*']
 
-# Check ALLOWED_HOSTS
-ALLOWED_HOSTS = [
-    'usenlease-2f8583d212bc.herokuapp.com',
-    'usenlease.com',
-    '*'
-]
+DOMAIN_URL = 'http://127.0.0.1:8000'
 
 LOGIN_URL = '/accounts/user/login'
 
@@ -39,7 +28,7 @@ AUTH_USER_MODEL = 'user_management.User'
 
 STRIPE_PUBLIC_KEY = os.getenv("STRIPE_PUBLIC_KEY")
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
-STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
 
 # Application definition
 INSTALLED_APPS = [
@@ -52,11 +41,12 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
-    'whitenoise.runserver_nostatic',
     'rest_framework_simplejwt.token_blacklist',
     'equipment_management.apps.EquipmentManagementConfig',
     'user_management.apps.UserManagementConfig',
 ]
+
+
 
 # Rest JWT
 REST_FRAMEWORK = {
@@ -79,7 +69,7 @@ SIMPLE_JWT = {
     "AUTH_COOKIE_REFRESH": "refresh",
 }
 
-EMAIL_HOST = os.getenv('EMAIL_HOST')
+EMAIL_HOST =  os.getenv('EMAIL_HOST')
 EMAIL_PORT = os.getenv('EMAIL_PORT')
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')  # Store password securely
@@ -90,31 +80,17 @@ SESSION_COOKIE_SAMESITE = os.getenv('SESSION_COOKIE_SAMESITE', 'None')
 CSRF_COOKIE_SAMESITE = os.getenv('CSRF_COOKIE_SAMESITE', 'None')
 SESSION_COOKIE_SECURE = os.getenv('SESSION_COOKIE_SECURE', 'True') == 'True'
 CSRF_COOKIE_SECURE = os.getenv('CSRF_COOKIE_SECURE', 'True') == 'True'
-SECURE_SSL_REDIRECT = False
-
 CSRF_COOKIE_NAME = os.getenv('CSRF_COOKIE_NAME', 'csrftoken')
 CSRF_COOKIE_HTTPONLY = os.getenv('CSRF_COOKIE_HTTPONLY', 'False') == 'True'
 
 CORS_ALLOW_CREDENTIALS = os.getenv('CORS_ALLOW_CREDENTIALS', 'True') == 'True'
 CORS_ALLOW_HEADERS = os.getenv('CORS_ALLOW_HEADERS', 'content-type,authorization,X-CSRFToken').split(',')
-
-# Explicitly set CSRF_TRUSTED_ORIGINS and CORS_ALLOWED_ORIGINS
-CSRF_TRUSTED_ORIGINS = [
-    'https://usenlease-ba2103147f4b.herokuapp.com',
-    'https://usenlease.com',
-    'https://usenlease-2f8583d212bc.herokuapp.com'
-]
-CORS_ALLOWED_ORIGINS = [
-    'https://usenlease-ba2103147f4b.herokuapp.com',
-    'https://usenlease.com',
-    'https://usenlease-2f8583d212bc.herokuapp.com'
-]
+CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:3000').split(',')
+CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000').split(',')
 CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL_ORIGINS', 'True') == 'True'
 
-# Ensure CSRF Middleware is Enabled
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -144,14 +120,28 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'EquipRentHub.wsgi.application'
 
-try:
-    # Attempt to configure PostgreSQL using Heroku DATABASE_URL
-    DATABASES = {
-        'default': dj_database_url.config(
-            default=os.getenv('DATABASE_URL')  # Use DATABASE_URL from Heroku environment
-        )
-    }
+import os
+from dotenv import load_dotenv
 
+# Load environment variables from .env file
+
+import os
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Attempt PostgreSQL configuration, fallback to SQLite3 if any error occurs
+try:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('POSTGRES_DB', 'usenlease_db'),
+            'USER': os.getenv('POSTGRES_USER', 'postgres'),
+            'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'mysecretpassword'),
+            'HOST': os.getenv('POSTGRES_HOST', 'usenlease-db'),
+            'PORT': os.getenv('POSTGRES_PORT', '5432'),
+        }
+    }
     # Test connection with the PostgreSQL database to ensure availability
     import psycopg2
     connection = psycopg2.connect(
@@ -163,14 +153,15 @@ try:
     )
     connection.close()
 
-except Exception as e:
-    print(f"PostgreSQL configuration failed: {e}. Falling back to SQLite3.")
+except Exception:
+    print("PostgreSQL configuration failed; falling back to SQLite3.")
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
+
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -189,10 +180,7 @@ USE_TZ = True
 # Static files
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# Media files (uploads)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media/'
 

@@ -126,6 +126,7 @@ export default {
     });
 
     return {
+      api_base_url,
       cartItems: computed(() => cartStore.cart),
       subtotal,
       shippingCost,

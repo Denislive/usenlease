@@ -42,7 +42,9 @@ export const useAuthStore = defineStore('auth', () => {
       );
 
       user.value = response.data;
-      Cookies.set('user', JSON.stringify(user.value), { expires: 1 });
+      
+      Cookies.set('user', JSON.stringify(user.value), { expires: 1, sameSite: 'None',
+        secure: true });
 
       setTimeout(() => logout(), 86400000);
 

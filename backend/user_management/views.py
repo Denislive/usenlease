@@ -6,9 +6,13 @@ from django.contrib.auth.hashers import make_password
 
 from rest_framework import viewsets
 from rest_framework.views import APIView
-
+from datetime import date
 from rest_framework.response import Response
 from rest_framework import status
+
+from rest_framework.exceptions import ValidationError
+from django.db.models import Q
+
 
 from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework_simplejwt.authentication import JWTAuthentication
@@ -31,6 +35,8 @@ from rest_framework_simplejwt.views import TokenBlacklistView, TokenRefreshView,
 from django.contrib.auth import authenticate
 from rest_framework.views import APIView
 from .serializers import UserSerializer
+from rest_framework import serializers
+
 
 from django.http import JsonResponse
 
@@ -130,37 +136,37 @@ class ChatViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         self.check_permissions(self.request)
-        # Filter chats by current logged-in user
+        # Filter chats by the current logged-in user
         return Chat.objects.filter(participants=self.request.user)
 
     def perform_create(self, serializer):
         """Create a new chat with the logged-in user and specified participants, or prevent creating duplicate chats."""
         sender = self.request.user
-        participants_ids = self.request.data.get('participants')
+        participants_ids = self.request.data.get('participants', [])
 
-        # Ensure the logged-in user is included
-        participants = [sender]
-
-        # Add the participants if they exist and are valid
+        # Ensure the logged-in user is included in the participants list
+        participants = [sender.id]
         if participants_ids:
-            try:
-                recipients = get_user_model().objects.filter(id__in=participants_ids)
-                if len(recipients) != len(participants_ids):
-                    raise serializers.ValidationError("Some recipients not found.")
-                participants.extend(recipients)
-            except get_user_model().DoesNotExist:
-                raise serializers.ValidationError("Recipient user(s) not found.")
-        
-        # Check if a chat already exists between the participants
-        existing_chat = Chat.objects.filter(participants__in=participants).distinct()
-        
-        # If a chat already exists, prevent creating a new one
-        if existing_chat.exists():
-            return
+            participants.extend(participants_ids)
+
+        # Prevent chat creation if the logged-in user is the only participant
+        if len(participants) < 2:
+            raise ValidationError("You must include at least one other participant.")
+
+        # Check if the sender is trying to contact themselves
+        if sender.id in participants_ids:
+            raise ValidationError("You cannot contact yourself.")
+
+        # Check if a chat with these participants already exists
+        existing_chats = Chat.objects.filter(participants=sender)
+        for participant_id in participants_ids:
+            existing_chats = existing_chats.filter(participants=participant_id)
+
+        if existing_chats.exists():
+            raise ValidationError("A chat already exists with these participants.")
+
         # Save the chat with the combined participants if no existing chat is found
-        serializer.save(participants=participants)
-
-
+        serializer.save(participants=[sender] + list(User.objects.filter(id__in=participants_ids)))
 
 class MessageViewSet(viewsets.ModelViewSet):
     queryset = Message.objects.all()
@@ -374,6 +380,7 @@ class LoginView(APIView):
         else:
             return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
 
+
     def sync_cart_with_db(self, user, cart_data):
         """Sync the cart items from the request data to the database for the authenticated user."""
         # Get or create a cart for the user
@@ -385,14 +392,38 @@ class LoginView(APIView):
             item_quantity = item_data.get("quantity", 1)
             start_date = item_data.get("start_date")
             end_date = item_data.get("end_date")
+
+            # Validate dates
+            if not start_date or not end_date:
+                continue  # Skip if dates are missing
+            try:
+                start_date = date.fromisoformat(start_date)
+                end_date = date.fromisoformat(end_date)
+            except ValueError:
+                continue  # Skip if dates are invalid
             
+            # Check that start_date is not in the past
+            today = date.today()
+            if start_date < today:
+                continue  # Skip if start_date is in the past
+
+            # Check that start_date is not after end_date
+            if start_date > end_date:
+                continue  # Skip if start_date is after end_date
+
             # Check if the equipment exists in the database
             try:
                 equipment = Equipment.objects.get(id=item_id)
             except Equipment.DoesNotExist:
                 continue  # Skip the item if the equipment does not exist
-            
-            
+
+            # Validate quantity
+            if item_quantity <= 0:
+                continue  # Skip if quantity is invalid
+
+            available_quantity = equipment.is_available_for_dates(start_date, end_date)
+            if item_quantity > available_quantity:
+                continue  # Skip if quantity exceeds available stock
 
             # Check if there's already an existing cart item for this equipment
             existing_cart_item = CartItem.objects.filter(
@@ -400,18 +431,16 @@ class LoginView(APIView):
             ).first()
 
             if existing_cart_item:
-                # If the cart item exists, update the quantity
-                existing_cart_item.quantity += item_quantity
+                # If the cart item exists, update the quantity and validate limits
+                new_quantity = item_quantity  # Only set the new quantity
+                if new_quantity > available_quantity:
+                    continue  # Skip if new quantity exceeds available stock
+                existing_cart_item.quantity = new_quantity
                 existing_cart_item.save()
             else:
-                # If the cart item does not exist, create a new one
-                CartItem.objects.create(
-                    cart=user_cart,
-                    item=equipment,
-                    quantity=item_quantity,
-                    start_date=start_date,
-                    end_date=end_date,
-                )
+                # Skip creating a new cart item if it doesn't exist
+                continue
+
 
 
 class TokenRefreshView(APIView):

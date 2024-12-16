@@ -58,91 +58,113 @@
           </h3>
 
           <!-- Personal Information Section -->
-          <div v-if="activeSection === 'personal-info'" class="space-y-6">
+          <div v-if="activeSection === 'personal-info'" class="bg-white rounded-lg shadow-lg p-6 space-y-8">
+            <!-- Back Button -->
             <button @click="closeSidebar"
-              class="mr-4 text-gray-800 mt-2 rounded-full p-2 focus:outline-none transition">
-              <i class="pi pi-arrow-circle-left" style="font-size: 1.5rem"></i>
+              class="flex items-center text-gray-800 rounded-full p-2 transition hover:bg-gray-200">
+              <i class="pi pi-arrow-circle-left text-xl mr-2"></i> Back
             </button>
-            <div class="flex items-center justify-center space-x-4">
+
+            <!-- Profile Info -->
+            <div class="flex items-center justify-center space-x-6">
               <img :src="`${api_base_url}${user.image}`" alt="Profile"
-                class="w-16 h-16 rounded-full border-4 border-gray-200 shadow-lg" />
+                class="w-20 h-20 rounded-full border-4 border-gray-300 shadow-md" />
               <div>
-                <label for="profile-pic" class="cursor-pointer text-[#ffc107] underline">
+                <label for="profile-pic" class="block text-sm text-[#ffc107] font-semibold cursor-pointer">
                   {{ user.image ? 'Change Picture' : 'Add Picture' }}
                 </label>
                 <input id="profile-pic" type="file" accept="image/*" class="hidden" @change="uploadProfilePicture" />
               </div>
               <div>
-                <p class="text-xl font-semibold text-gray-800">Welcome, {{ user.first_name || user.email || 'John Doe'
-                  }}</p>
+                <p class="text-lg font-bold text-gray-800">
+                  Welcome, {{ user.first_name || user.email || 'John Doe' }}
+                </p>
               </div>
             </div>
 
-            <hr class="my-6 border-gray-200" />
+            <hr class="border-gray-200" />
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Personal Information Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <!-- Full Name -->
               <p class="flex items-center text-gray-700">
-                <i class="bi bi-person-circle mr-2 text-xl text-gray-500"></i>
+                <i class="bi bi-person-circle mr-3 text-xl text-gray-500"></i>
                 <span><strong>Full Name:</strong> {{ user.first_name }} {{ user.last_name }}</span>
               </p>
 
+              <!-- Email -->
               <p class="flex items-center text-gray-700">
-                <i class="bi bi-envelope mr-2 text-xl text-gray-500"></i>
+                <i class="bi bi-envelope mr-3 text-xl text-gray-500"></i>
                 <span><strong>Email:</strong> {{ user.email }}</span>
               </p>
 
+              <!-- Phone -->
               <p class="flex items-center text-gray-700">
-                <i class="bi bi-phone mr-2 text-xl text-gray-500"></i>
+                <i class="bi bi-phone mr-3 text-xl text-gray-500"></i>
                 <span>
-                  <strong>Phone Number:</strong> {{ user.phone_number || 'Not provided' }}
-                  <button @click="phoneModalVisible = !phoneModalVisible" class="ml-2 text-[#ffc107] underline">
+                  <strong>Phone:</strong> {{ user.phone_number || 'Not provided' }}
+                  <button @click="phoneModalVisible = !phoneModalVisible"
+                    class="ml-2  bg-[#1c1c1c] p-1 rounded text-[#ffc107]  hover:text-yellow-600">
                     Edit
                   </button>
                 </span>
               </p>
 
-              <p class="flex items-center text-gray-700">
-                <i class="bi bi-shield-lock mr-2 text-xl text-gray-500"></i>
-                <span><strong>Role:</strong> {{ user.role || 'Not assigned' }}</span>
-              </p>
+              <!-- Role Switch -->
+              <div class="flex items-center justify-between bg-gray-50 p-4 rounded-lg shadow-md">
+                <div class="flex items-center text-gray-700 space-x-3">
+                  <i class="bi bi-shield-lock text-xl text-gray-500"></i>
+                  <span class="text-sm">
+                    <strong>Role:</strong> {{ authStore.user.role || 'Not assigned' }}
+                  </span>
+                </div>
+                <div class="flex items-center space-x-3">
+                  <span class="text-sm text-gray-600">Switch to {{ role ? 'lessor' : 'lessee' }}:</span>
+                  <label for="role-toggle" class="inline-flex relative items-center cursor-pointer">
+                    <input type="checkbox" id="role-toggle" v-model="role" class="sr-only peer"
+                      @change="updateUserRole" />
+                    <div
+                      class="w-11 h-6 bg-gray-200 rounded-full peer-checked:bg-[#ffc107] peer-checked:after:translate-x-5 after:content-[''] after:absolute after:left-0.5 after:top-0.5 after:w-5 after:h-5 after:rounded-full after:bg-white transition-all">
+                    </div>
+                  </label>
+                </div>
+              </div>
 
               <!-- Address Information -->
               <p class="flex items-center text-gray-700">
-                <i class="bi bi-building mr-2 text-xl text-gray-500"></i>
+                <i class="bi bi-building mr-3 text-xl text-gray-500"></i>
                 <span><strong>Company Name:</strong> {{ user.user_address?.company_name || 'Not provided' }}</span>
               </p>
 
               <p class="flex items-center text-gray-700">
-                <i class="bi bi-building mr-2 text-xl text-gray-500"></i>
-                <span>
-                  <strong>Address:</strong>
-                  {{ user.user_address?.street_address || 'No address provided' }}
-                </span>
+                <i class="bi bi-building mr-3 text-xl text-gray-500"></i>
+                <span><strong>Address:</strong> {{ user.user_address?.street_address || 'No address provided' }}</span>
               </p>
 
               <p class="flex items-center text-gray-700">
-                <i class="bi bi-geo-alt mr-2 text-xl text-gray-500"></i>
+                <i class="bi bi-geo-alt mr-3 text-xl text-gray-500"></i>
                 <span><strong>City:</strong> {{ user.user_address?.city || 'Not provided' }}</span>
               </p>
 
               <p class="flex items-center text-gray-700">
-                <i class="bi bi-code-slash mr-2 text-xl text-gray-500"></i>
+                <i class="bi bi-code-slash mr-3 text-xl text-gray-500"></i>
                 <span><strong>Zip Code:</strong> {{ user.user_address?.zip_code || 'Not provided' }}</span>
               </p>
 
-
-
               <p class="flex items-center text-gray-700">
-                <i class="bi bi-globe mr-2 text-xl text-gray-500"></i>
+                <i class="bi bi-globe mr-3 text-xl text-gray-500"></i>
                 <span><strong>Country:</strong> {{ user.user_address?.country || 'Not provided' }}</span>
               </p>
-              <button @click="addressModalVisible = !addressModalVisible" class="ml-2 text-[#ffc107] underline">
+            </div>
+
+            <!-- Edit Address Button -->
+            <div class="flex justify-start">
+              <button @click="addressModalVisible = !addressModalVisible"
+                class="mr-2 text-[#ffc107] bg-[#1c1c1c] rounded p-2 hover:text-yellow-600">
                 <i class="bi bi-pencil-square mr-2"></i>
                 {{ user.user_address && user.user_address.id ? 'Edit Address' : 'Add Address' }}
               </button>
-
             </div>
-
           </div>
 
 
@@ -206,129 +228,129 @@
 
 
           <div v-if="activeSection === 'my-orders'">
-  <button @click="closeSidebar"
-    class="mr-4 text-gray-800 mt-2 rounded-full p-2 focus:outline-none transition">
-    <i class="pi pi-arrow-circle-left" style="font-size: 1.5rem"></i>
-  </button>
-  <div class="p-6 bg-gray-100 min-h-screen">
-    <h1 class="text-3xl font-bold text-gray-800 mb-4">Order Management</h1>
+            <button @click="closeSidebar"
+              class="mr-4 text-gray-800 mt-2 rounded-full p-2 focus:outline-none transition">
+              <i class="pi pi-arrow-circle-left" style="font-size: 1.5rem"></i>
+            </button>
+            <div class="p-6 bg-gray-100 min-h-screen">
+              <h1 class="text-3xl font-bold text-gray-800 mb-4">Order Management</h1>
 
-    <!-- Filters Section -->
-    <div class="flex flex-wrap gap-4 mb-6">
-      <select v-model="selectedStatus" @change="filterOrders"
-        class="px-4 py-2 bg-white border rounded-md shadow-sm focus:outline-none focus:ring focus:ring-blue-300">
-        <option value="">All Statuses</option>
-        <option value="pending">Pending</option>
-        <option value="approved">Approved</option>
-        <option value="rented">Rented</option>
-        <option value="rejected">Rejected</option>
-        <option value="canceled">Canceled</option>
-        <option value="completed">Completed</option>
-      </select>
-      <input v-model="searchQuery" @input="filterOrders" type="text" placeholder="Search by Order ID"
-        class="px-4 py-2 bg-white border rounded-md shadow-sm focus:outline-none focus:ring focus:ring-[#1c1c1c]" />
-    </div>
+              <!-- Filters Section -->
+              <div class="flex flex-wrap gap-4 mb-6">
+                <select v-model="selectedStatus" @change="filterOrders"
+                  class="px-4 py-2 bg-white border rounded-md shadow-sm focus:outline-none focus:ring focus:ring-blue-300">
+                  <option value="">All Statuses</option>
+                  <option value="pending">Pending</option>
+                  <option value="approved">Approved</option>
+                  <option value="rented">Rented</option>
+                  <option value="rejected">Rejected</option>
+                  <option value="canceled">Canceled</option>
+                  <option value="completed">Completed</option>
+                </select>
+                <input v-model="searchQuery" @input="filterOrders" type="text" placeholder="Search by Order ID"
+                  class="px-4 py-2 bg-white border rounded-md shadow-sm focus:outline-none focus:ring focus:ring-[#1c1c1c]" />
+              </div>
 
-    <!-- Orders Table -->
-    <div v-if="!loading" class="overflow-hidden rounded-lg shadow-lg bg-white">
-      <div class="overflow-x-auto"> <!-- Make the table horizontally scrollable on small devices -->
-        <table class="table-auto w-full border-collapse">
-          <thead>
-            <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
-              <th class="py-3 px-6 text-left">Order ID</th>
-              <th class="py-3 px-6 text-center">Status</th>
-              <th class="py-3 px-6 text-center">Total Items</th>
-              <th class="py-3 px-6 text-center">Total Price</th>
-              <th class="py-3 px-6 text-center">Actions</th>
-            </tr>
-          </thead>
-          <tbody class="text-gray-600 text-sm font-light">
+              <!-- Orders Table -->
+              <div v-if="!loading" class="overflow-hidden rounded-lg shadow-lg bg-white">
+                <div class="overflow-x-auto"> <!-- Make the table horizontally scrollable on small devices -->
+                  <table class="table-auto w-full border-collapse">
+                    <thead>
+                      <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                        <th class="py-3 px-6 text-left">Order ID</th>
+                        <th class="py-3 px-6 text-center">Status</th>
+                        <th class="py-3 px-6 text-center">Total Items</th>
+                        <th class="py-3 px-6 text-center">Total Price</th>
+                        <th class="py-3 px-6 text-center">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody class="text-gray-600 text-sm font-light">
 
-            <tr v-for="order in filteredOrders" :key="order.id"
-              class="border-b border-gray-200 hover:bg-gray-100">
-              <td class="py-3 px-6 text-left">{{ order.id }}</td>
-              <td class="py-3 px-6 text-center">
-                <span :class="{
-                  'px-3 py-1 rounded-full text-white': true,
-                  'bg-yellow-500': order.status === 'pending',
-                  'bg-green-500': order.status === 'approved',
-                  'bg-blue-500': order.status === 'rented',
-                  'bg-red-500': order.status === 'rejected',
-                  'bg-red-500': order.status === 'canceled',
-                  'bg-gray-500': order.status === 'completed',
-                }">
-                  {{ order.status }}
-                </span>
-              </td>
-              <td class="py-3 px-6 text-center">{{ order.total_order_items }}</td>
-              <td class="py-3 px-6 text-center">${{ order.order_total_price }}</td>
-              <td class="py-3 px-6 text-center">
-                <button @click="openModal(order)"
-                  class="px-4 py-2 bg-blue-500 text-white rounded-md shadow-sm hover:bg-blue-600">
-                  Manage
+                      <tr v-for="order in filteredOrders" :key="order.id"
+                        class="border-b border-gray-200 hover:bg-gray-100">
+                        <td class="py-3 px-6 text-left">{{ order.id }}</td>
+                        <td class="py-3 px-6 text-center">
+                          <span :class="{
+                            'px-3 py-1 rounded-full text-white': true,
+                            'bg-yellow-500': order.status === 'pending',
+                            'bg-green-500': order.status === 'approved',
+                            'bg-blue-500': order.status === 'rented',
+                            'bg-red-500': order.status === 'rejected',
+                            'bg-red-500': order.status === 'canceled',
+                            'bg-gray-500': order.status === 'completed',
+                          }">
+                            {{ order.status }}
+                          </span>
+                        </td>
+                        <td class="py-3 px-6 text-center">{{ order.total_order_items }}</td>
+                        <td class="py-3 px-6 text-center">${{ order.order_total_price }}</td>
+                        <td class="py-3 px-6 text-center">
+                          <button @click="openModal(order)"
+                            class="px-4 py-2 bg-blue-500 text-white rounded-md shadow-sm hover:bg-blue-600">
+                            Manage
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div v-else class="text-center">Loading orders...</div>
+            </div>
+
+            <!-- Modal -->
+            <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+              <div class="bg-white rounded-lg shadow-lg w-96 p-6">
+                <h2 class="text-xl font-semibold mb-4">Manage Order #{{ selectedOrder.id }}</h2>
+                <p class="mb-4">Current Status: <strong>{{ selectedOrder.status }}</strong></p>
+
+                <!-- Actions -->
+                <div>
+                  <button v-if="selectedOrder.status === 'pending'"
+                    @click="performAction(selectedOrder.id, 'terminate')"
+                    class="px-4 py-2 bg-red-500 text-white rounded-md shadow-sm hover:bg-red-600">
+                    Terminate Rental
+                  </button>
+
+                  <button v-if="['rejected', 'canceled', 'completed'].includes(selectedOrder.status)"
+                    @click="performAction(selectedOrder.id, 'reorder')"
+                    class="px-4 py-2 bg-green-500 text-white rounded-md shadow-sm hover:bg-green-600">
+                    Reorder
+                  </button>
+
+                  <button @click="confirmDelete(selectedOrder)"
+                    class="mx-4 px-4 py-2 bg-red-500 text-white rounded-md shadow-sm hover:bg-red-600">
+                    Delete Rental
+                  </button>
+                </div>
+
+                <button @click="closeModal"
+                  class="mt-4 px-4 py-2 bg-gray-300 text-gray-800 rounded-md shadow-sm hover:bg-gray-400">
+                  Close
                 </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+              </div>
+            </div>
 
-    <div v-else class="text-center">Loading orders...</div>
-  </div>
-
-  <!-- Modal -->
-  <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-    <div class="bg-white rounded-lg shadow-lg w-96 p-6">
-      <h2 class="text-xl font-semibold mb-4">Manage Order #{{ selectedOrder.id }}</h2>
-      <p class="mb-4">Current Status: <strong>{{ selectedOrder.status }}</strong></p>
-
-      <!-- Actions -->
-      <div>
-        <button v-if="selectedOrder.status === 'pending'"
-          @click="performAction(selectedOrder.id, 'terminate')"
-          class="px-4 py-2 bg-red-500 text-white rounded-md shadow-sm hover:bg-red-600">
-          Terminate Rental
-        </button>
-
-        <button v-if="['rejected', 'canceled', 'completed'].includes(selectedOrder.status)"
-          @click="performAction(selectedOrder.id, 'reorder')"
-          class="px-4 py-2 bg-green-500 text-white rounded-md shadow-sm hover:bg-green-600">
-          Reorder
-        </button>
-
-        <button @click="confirmDelete(selectedOrder)"
-          class="mx-4 px-4 py-2 bg-red-500 text-white rounded-md shadow-sm hover:bg-red-600">
-          Delete Rental
-        </button>
-      </div>
-
-      <button @click="closeModal"
-        class="mt-4 px-4 py-2 bg-gray-300 text-gray-800 rounded-md shadow-sm hover:bg-gray-400">
-        Close
-      </button>
-    </div>
-  </div>
-
-  <!-- Delete Confirmation -->
-  <div v-if="showDeleteConfirm"
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-    <div class="bg-white rounded-lg shadow-lg w-96 p-6">
-      <h2 class="text-xl font-semibold mb-4">Delete Order</h2>
-      <p class="mb-4">Are you sure you want to delete Order #{{ orderToDelete.id }}?</p>
-      <div class="flex justify-end">
-        <button @click="performAction(orderToDelete.id, 'delete')"
-          class="px-4 py-2 bg-red-500 text-white rounded-md shadow-sm hover:bg-red-600">
-          Yes, Delete
-        </button>
-        <button @click="cancelDelete"
-          class="ml-4 px-4 py-2 bg-gray-300 text-gray-800 rounded-md shadow-sm hover:bg-gray-400">
-          Cancel
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
+            <!-- Delete Confirmation -->
+            <div v-if="showDeleteConfirm"
+              class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+              <div class="bg-white rounded-lg shadow-lg w-96 p-6">
+                <h2 class="text-xl font-semibold mb-4">Delete Order</h2>
+                <p class="mb-4">Are you sure you want to delete Order #{{ orderToDelete.id }}?</p>
+                <div class="flex justify-end">
+                  <button @click="performAction(orderToDelete.id, 'delete')"
+                    class="px-4 py-2 bg-red-500 text-white rounded-md shadow-sm hover:bg-red-600">
+                    Yes, Delete
+                  </button>
+                  <button @click="cancelDelete"
+                    class="ml-4 px-4 py-2 bg-gray-300 text-gray-800 rounded-md shadow-sm hover:bg-gray-400">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
 
 
 
@@ -368,7 +390,7 @@
             </div>
 
             <!-- Messages Window -->
-            <div v-if="activeChat" class="w-full lg:w-3/3 bg-white shadow-lg rounded-lg flex flex-col">
+            <div v-if="activeChat" class="w-full  lg:h-2/3 lg:w-3/3 bg-white shadow-lg rounded-lg flex flex-col">
               <!-- Header -->
               <div class="border-b px-4 py-3 bg-[#ffc107] text-gray-800 font-bold flex items-center">
                 <button @click="activeChat = null"
@@ -469,7 +491,7 @@
       </div>
       <div class="flex justify-between">
         <button @click="addressModalVisible = false" class="px-4 py-2 bg-gray-300 text-white rounded-md">Cancel</button>
-        <button @click="updateAddress" class="px-4 py-2 bg-blue-500 text-white rounded-md">
+        <button @click="updateAddress" class="px-4 py-2 bg-[#ffc107] text-[#1c1c1c] rounded-md">
           <i class="bi bi-pencil-square"></i> {{ user.user_address.id ? 'Save Address' : 'Add Address' }}
         </button>
       </div>
@@ -487,7 +509,7 @@
       </div>
       <div class="flex justify-between">
         <button @click="phoneModalVisible = false" class="px-4 py-2 bg-gray-300 text-white rounded-md">Cancel</button>
-        <button @click="updatePhoneNumber" class="px-4 py-2 bg-blue-500 text-white rounded-md">Update</button>
+        <button @click="updatePhoneNumber" class="px-4 py-2 bg-[#ffc107] text-[#1c1c1c] rounded-md">Update</button>
       </div>
     </div>
 
@@ -498,12 +520,14 @@
 
 
 <script>
-import { ref, onMounted, reactive } from 'vue';
+import { ref, onMounted, reactive, computed} from 'vue';
 import axios from 'axios';
 import { useAuthStore } from '@/store/auth';
+import useNotifications from '@/store/notification.js'; // Import the notification service
 
 import { useRouter, useRoute } from 'vue-router';
 import { format } from 'date-fns';
+import Cookies from 'js-cookie';
 
 export default {
   setup() {
@@ -514,9 +538,42 @@ export default {
     const activeChat = ref(null); // Currently open chat ID
     const newMessage = ref(""); // Message being typed  
 
+    const role = ref('true');
+    const { showNotification } = useNotifications(); // Initialize notification service
+
+
     const categories = ref([]);
 
     const api_base_url = import.meta.env.VITE_API_BASE_URL;
+
+    const updateUserRole = async () => {
+      try {
+        // Send the updated role to the backend
+        const response = await axios.put(`${api_base_url}/api/accounts/users/${authStore.user.id}/`, {
+          role: role.value ? 'lessee' : 'lessor',
+        }, {
+          withCredentials: true,
+        },);
+
+
+        // Update the role in the local state
+        authStore.user.role = response.data.role;
+
+        Cookies.set('user', JSON.stringify(authStore.user), {
+          expires: 1,
+          sameSite: 'None',
+          secure: true, // Only for development; ensure secure: true in production
+        });
+
+        
+        // Optionally show a success toast
+        showNotification('success', `You are now a ${authStore.user.role}.`, 'success');
+      } catch (error) {
+        // Handle error (e.g., show error toast)
+        showNotification('Error', 'Error switching role.', 'error');
+      }
+    };
+
 
 
     // Handle Logout functionality
@@ -844,45 +901,47 @@ export default {
 
     const route = useRoute();
 
-   // Function to navigate to a section
-const navigateToSection = (sectionName) => {
-  activeSection.value = sectionName;
+    // Function to navigate to a section
+    const navigateToSection = (sectionName) => {
+      activeSection.value = sectionName;
 
-  // Update URL query parameter
-  router.replace({ query: { section: sectionName } });
+      // Update URL query parameter
+      router.replace({ query: { section: sectionName } });
 
-  // Scroll to the section
-  const sectionElement = document.getElementById(sectionName);
-  if (sectionElement) {
-    sectionElement.scrollIntoView({ behavior: "smooth" });
-  }
+      // Scroll to the section
+      const sectionElement = document.getElementById(sectionName);
+      if (sectionElement) {
+        sectionElement.scrollIntoView({ behavior: "smooth" });
+      }
 
-  // Hide sidebar on small devices
-  if (window.innerWidth < 1024) {
-    showSidebar.value = false;
-  }
-};
+      // Hide sidebar on small devices
+      if (window.innerWidth < 1024) {
+        showSidebar.value = false;
+      }
+    };
 
 
-    const sections = [
-      { name: "personal-info", label: "Personal Information" },
-      { name: "my-equipments", label: "My Equipments", show: authStore.user.role === 'lessor' },
-      { name: "my-orders", label: "My Orders", show: authStore.user.role === 'lessee' },
-      // { name: "settings", label: "Settings", content: "Adjust your preferences..." },
-      { name: "chats", label: "Chats" },
-      { name: "reports", label: "Reports", },
-    ];
-
+    
+const sections = computed(() => [
+  { name: "personal-info", label: "Personal Information" },
+  { name: "my-equipments", label: "My Equipments", show: authStore.user.role === 'lessor' },
+  { name: "my-orders", label: "My Orders", show: authStore.user.role === 'lessee' },
+  { name: "chats", label: "Chats" },
+  { name: "reports", label: "Reports" },
+]);
     const otherSections = [
-      { name: "my-equipments", label: "My Equipments" },
-      { name: "my-orders", label: "My Orders" },
+      { name: "my-equipments", label: "My Equipments"},
+      { name: "my-orders", label: "My Orders"},
       // { name: "settings", label: "Settings" },
       { name: "chats", label: "Chats" },
       { name: "reports", label: "Reports" },
     ];
 
-    // Filter sections to only include those that should be shown
-    const visibleSections = sections.filter(section => section.show !== false);
+// Filter sections to only include those that should be shown
+const visibleSections = computed(() =>
+  sections.value.filter(section => section.show !== false)
+);
+
 
 
     // Method to set the active section
@@ -1002,13 +1061,12 @@ const navigateToSection = (sectionName) => {
     };
 
 
-
     // Fetch user data when the component is mounted
     onMounted(() => {
       const section = route.query.section;
-  if (section) {
-    navigateToSection(section);
-  }
+      if (section) {
+        navigateToSection(section);
+      }
       getUserData();
       fetchChats();
       fetchUserEquipments();
@@ -1016,6 +1074,8 @@ const navigateToSection = (sectionName) => {
     });
 
     return {
+      role,
+      updateUserRole,
       navigateToSection,
       closeSidebar,
       showSidebar,

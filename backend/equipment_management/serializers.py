@@ -4,6 +4,7 @@ from user_management.serializers import AddressSerializer
 from user_management.models import Address, User
 from django.shortcuts import get_object_or_404
 
+from rest_framework.exceptions import PermissionDenied
 
 import json
 
@@ -107,11 +108,20 @@ class EquipmentSerializer(serializers.ModelSerializer):
         # Access the request from the context
         request = self.context.get('request')
 
+        # Retrieve the logged-in user from the request user
+        user = request.user  # Assuming 'user' is part of the request context
+        
+        # Check the role of the user
+        if user.role == 'lessee':  # Replace 'lessee' with the actual role name if different
+            raise PermissionDenied("You are a Lessee!")
+
         # Retrieve the uploaded images from request.FILES
         images = request.FILES.getlist('images') if request else []
         print("Received images:", images)
 
-        user = validated_data.pop('owner')
+        # Remove 'owner' from validated_data as it will now be set from the logged-in user
+        validated_data.pop('owner', None)
+        
         address_data = validated_data.pop('address')
         name = validated_data.get('name')
         description = validated_data.get('description')
@@ -119,7 +129,7 @@ class EquipmentSerializer(serializers.ModelSerializer):
         is_available = validated_data.get('is_available')
         category = validated_data.get('category')
         available_quantity = validated_data.get('available_quantity')
-        terms =validated_data.get('terms')
+        terms = validated_data.get('terms')
 
         # Create Address instance
         address = Address.objects.create(user=user, **address_data)
@@ -149,6 +159,7 @@ class CartSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cart
         fields = ['id', 'cart_items']
+    
 
 class CartItemSerializer(serializers.ModelSerializer):
     item_details = EquipmentSerializer(source='item', read_only=True)  # Full details on read
@@ -156,6 +167,26 @@ class CartItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = CartItem
         fields = ['id', 'cart', 'item', 'item_details', 'quantity', 'start_date', 'end_date', 'ordered', 'total']
+
+    def validate(self, data):
+        """Validate the availability of the equipment at the time of order creation."""
+        item = data.get('item')
+        quantity = data.get('quantity')
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+
+        # Retrieve the equipment and validate its availability
+        equipment = Equipment.objects.get(id=item.id)
+
+        # Check if the item is available during the provided dates
+        if not equipment.is_available_for_dates(start_date, end_date):
+            raise serializers.ValidationError(f"The item '{equipment.name}' is not available for the selected dates.")
+
+        # If the item is available, check quantity
+        if quantity > equipment.get_available_quantity(start_date, end_date):
+            raise serializers.ValidationError(f"Only {equipment.get_available_quantity(start_date, end_date)} items are available for the selected dates.")
+
+        return data
 
 class OrderSerializer(serializers.ModelSerializer):
  

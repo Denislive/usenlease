@@ -6,7 +6,8 @@
 
     <div class="rating-reviews mb-2">
       <span class="rating text-yellow-500">{{ renderStars(equipment.rating) }}</span>
-      <span class="reviews text-gray-600"> ({{ equipment.equipment_reviews ? equipment.equipment_reviews.length : 0 }} Reviews)</span>
+      <span class="reviews text-gray-600"> ({{ equipment.equipment_reviews ? equipment.equipment_reviews.length : 0 }}
+        Reviews)</span>
     </div>
 
     <p class="price text-xl font-semibold mb-4">${{ equipment.hourly_rate }}/Hour</p>
@@ -42,14 +43,15 @@
           class="button add-to-cart bg-[#ffc107] text-black py-2 px-4 rounded hover:bg-yellow-400 transition">
           Add to Cart
         </button>
-        
+
         <!-- Trigger Chat Creation and Navigation -->
-        <RouterLink
-          :to="{ path: '/profile', query: {section: 'chats'} }"
-          @click="createChat"
+        <RouterLink v-if="authStore.isAuthenticated && props.equipment.owner !== authStore.user.id"
+          :to="{ path: '/profile', query: { section: 'chats' } }" @click="createChat"
           class="text-black py-2 px-4 rounded">
           Talk to Owner
         </RouterLink>
+
+
       </form>
     </div>
   </div>
@@ -61,8 +63,10 @@ import { useAuthStore } from '@/store/auth'; // Correct import
 import { useCartStore } from '@/store/cart'; // Adjust the path as necessary
 import useNotifications from '@/store/notification';
 import axios from 'axios';  // Import axios
+import { useChatStore } from '@/store/chat';
 
 const authStore = useAuthStore(); // Initialize the auth store
+const chatStore = useChatStore();
 
 const api_base_url = import.meta.env.VITE_API_BASE_URL;
 
@@ -89,27 +93,9 @@ const endDate = ref('');
 const quantity = ref(1);
 
 const createChat = async () => {
-  if (authStore.isAuthenticated) {
-    const receiver = props.equipment.owner;
-
-    try {
-      const response = await axios.post(`${api_base_url}/api/accounts/chats/`, 
-        {
-          participants: [props.equipment.owner] // Including both sender and receiver in the participants array
-        },
-        {
-          withCredentials: true,  // Ensures cookies are sent with the request
-        }
-      );
-      showNotification('Chat Created', `Successfully started a chat with the owner!`, 'success');
-    } catch (error) {
-      showNotification('Chat Error', `Error starting chat with the owner!`, 'error');
-    }
-  } else {
-    showNotification('Authentication Required', `Please log in to start a chat!`, 'error');
-  }
+  const recepient = props.equipment.owner; // Owner's ID
+  const chat = await chatStore.createChat(recepient);
 };
-
 
 
 const submitBooking = async () => {
@@ -121,17 +107,47 @@ const submitBooking = async () => {
     end_date: endDate.value,
   };
 
+  // Validate start_date: it should not be in the past
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (new Date(payload.start_date) < today) {
+    showNotification('Invalid Start Date', 'Start date cannot be in the past.', 'error');
+    return;
+  }
+
+  // Validate date range
+  if (new Date(payload.start_date) > new Date(payload.end_date)) {
+    showNotification('Invalid Date Range', 'End date must be after start date.', 'error');
+    return;
+  }
+
+  // Validate quantity
+  if (payload.quantity <= 0) {
+    showNotification('Invalid Quantity', 'Quantity must be greater than zero.', 'error');
+    return;
+  }
+
+  // Check the available quantity for the equipment
+  const availableQuantity = props.equipment.available_quantity;
+  if (payload.quantity > availableQuantity) {
+    showNotification('Insufficient Stock', `Only ${availableQuantity} items available.`, 'error');
+    return;
+  }
+
+  // If user is authenticated, proceed with backend API
   if (authStore.isAuthenticated) {
     try {
       const response = await axios.post(`${api_base_url}/api/cart-items/`, payload, {
-        withCredentials: true,  // Ensures cookies are sent with the request
+        withCredentials: true, // Ensures cookies are sent with the request
       });
-      cartStore.loadCart();
-      showNotification('Add to Cart', `Added to cart!`, 'success');
+      cartStore.loadCart(); // Refresh the cart after successful addition
+      showNotification('Add to Cart', 'Item added to cart!', 'success');
     } catch (error) {
-      showNotification('Add to cart', 'Error adding to cart!', 'error');
+      showNotification('Failed adding to Cart', `Error: ${error.response.data.detail || 'Unknown error'}. Switch to lesee`, 'error');
     }
   } else {
+    // Handle for anonymous users using localStorage
     const localPayload = {
       item: props.equipment,
       quantity: quantity.value,
@@ -139,7 +155,7 @@ const submitBooking = async () => {
       end_date: endDate.value,
     };
 
-    const existingCart = localStorage.getItem('cart');
+    const existingCart = localStorage.getItem("cart");
     if (existingCart) {
       const parsedExistingCart = JSON.parse(existingCart);
       if (Array.isArray(parsedExistingCart)) {
@@ -151,21 +167,36 @@ const submitBooking = async () => {
         );
 
         if (existingItemIndex !== -1) {
-          parsedExistingCart[existingItemIndex].quantity += localPayload.quantity;
+          // Check if the total quantity exceeds the available stock
+          const newQuantity = parsedExistingCart[existingItemIndex].quantity + localPayload.quantity;
+
+          if (newQuantity > availableQuantity) {
+            showNotification(
+              "Quantity Error",
+              `Adding this quantity exceeds the available stock. Only ${availableQuantity} items are available.`,
+              "error"
+            );
+            return; // Prevent adding to the cart if it exceeds availability
+          }
+
+          parsedExistingCart[existingItemIndex].quantity = newQuantity;
         } else {
           parsedExistingCart.push(localPayload);
         }
 
         cartStore.cart = parsedExistingCart;
-        localStorage.setItem('cart', JSON.stringify(parsedExistingCart));
+        localStorage.setItem("cart", JSON.stringify(parsedExistingCart));
       }
     } else {
       const newCart = [localPayload];
-      localStorage.setItem('cart', JSON.stringify(newCart));
+      localStorage.setItem("cart", JSON.stringify(newCart));
       cartStore.cart = newCart;
     }
+
+    showNotification("Add to Cart", `Item added to the cart!`, "success");
   }
 };
+
 
 const renderStars = (rating) => {
   const fullStars = Math.floor(rating);

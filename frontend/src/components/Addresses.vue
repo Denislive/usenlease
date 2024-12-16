@@ -7,11 +7,8 @@
       <label class="block text-gray-700">
         Payment Method <span class="text-red-500">*</span>
       </label>
-      <select
-        v-model="paymentMethod"
-        required
-        class="w-full p-2 border border-[#1c1c1c] rounded focus:outline-none focus:ring focus:ring-[#1c1c1c]"
-      >
+      <select v-model="paymentMethod" required
+        class="w-full p-2 border border-[#1c1c1c] rounded focus:outline-none focus:ring focus:ring-[#1c1c1c]">
         <option value="">Select Payment Method</option>
         <option value="stripe">Stripe</option>
         <option value="paypal">PayPal</option>
@@ -19,10 +16,7 @@
     </div>
 
     <!-- Submit Button -->
-    <button
-      type="submit"
-      class="mt-4 bg-[#1c1c1c] text-white py-2 px-4 rounded hover:text-[#ffc107]"
-    >
+    <button type="submit" class="mt-4 bg-[#1c1c1c] text-white py-2 px-4 rounded hover:text-[#ffc107]">
       Checkout
     </button>
   </form>
@@ -48,18 +42,28 @@ const submitForm = async () => {
       paymentMethod: paymentMethod.value,
     };
 
-    // Send the payload to the server with credentials
-    const response = await axios.post(
-      `${api_base_url}/api/create-checkout-session/`,
-      payload,
-      { withCredentials: true }
-    );
+
+
+    const handlePaypal = (response) => {
+      // Show an alert to the user
+      alert('Coming Soon! Try another method!');
+
+      // Redirect back to the same page immediately
+      router.push({ path: router.currentRoute.value.fullPath });
+    };
+
 
     // Redirect to payment page (Stripe or PayPal)
     if (paymentMethod.value === 'stripe') {
+      // Send the payload to the server with credentials
+      const response = await axios.post(
+        `${api_base_url}/api/create-checkout-session/`,
+        payload,
+        { withCredentials: true }
+      );
       window.location.href = response.data.url;
     } else if (paymentMethod.value === 'paypal') {
-      window.location.href = response.data.paypalUrl;
+      handlePaypal();
     }
   } catch (error) {
     // Handle errors

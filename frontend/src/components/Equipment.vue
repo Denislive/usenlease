@@ -80,6 +80,7 @@ const renderStars = (rating) => {
             }"
             class="absolute top-2 left-2 text-white text-xs font-bold px-2 py-1 rounded flex items-center"
           >
+         
             <i
               :class="{
                 'pi pi-check-circle': equipment.is_available,
@@ -87,6 +88,10 @@ const renderStars = (rating) => {
               }"
               class="mr-1"
             ></i>
+            <div v-if="equipment.is_available">
+              {{ equipment.available_quantity }}
+
+            </div>
             {{ equipment.is_available ? 'Available' : 'Unavailable' }}
           </span>
 

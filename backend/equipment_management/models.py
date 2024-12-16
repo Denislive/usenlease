@@ -84,6 +84,36 @@ class Equipment(models.Model):
     def get_absolute_url(self):
         return reverse('equipment_detail', kwargs={'slug': self.slug, 'id': self.id})
 
+    
+    def get_available_quantity(self, start_date, end_date):
+        """Calculate available quantity for a given date range."""
+        # Find all rented items that overlap with the given date range
+        rented_items = CartItem.objects.filter(
+            item=self,
+            start_date__lt=end_date,  # Existing bookings that start before the new end_date
+            end_date__gt=start_date,   # Existing bookings that end after the new start_date
+            ordered=True               # Only confirmed bookings
+        )
+
+        # Calculate the total quantity rented during the period
+        rented_quantity = rented_items.aggregate(models.Sum('quantity'))['quantity__sum'] or 0
+
+        # Return the available quantity, ensuring it doesn't go below 0
+        available_quantity = self.available_quantity - rented_quantity
+        return max(available_quantity, 0)  # Prevent negative available quantity
+
+    def is_available_for_dates(self, start_date, end_date):
+        """Check if the equipment is available for a given date range."""
+        rented_items = CartItem.objects.filter(
+            item=self,
+            start_date__lt=end_date,
+            end_date__gt=start_date,
+            ordered=True
+        )
+
+        rented_quantity = rented_items.aggregate(models.Sum('quantity'))['quantity__sum'] or 0
+        return self.available_quantity - rented_quantity > 0
+
     def get_average_rating(self):
         # Calculate the average rating of the equipment
         reviews = self.equipment_reviews.all()  # Get all reviews for the equipment

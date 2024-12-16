@@ -23,6 +23,6 @@ export default defineConfig({
   },
   define: {
     // Hardcoding the API base URL
-    'import.meta.env.VITE_API_BASE_URL': JSON.stringify('https://usenlease-2f8583d212bc.herokuapp.com'),
+    'import.meta.env.VITE_API_BASE_URL': JSON.stringify('http://127.0.0.1:8000'),
   },
 });

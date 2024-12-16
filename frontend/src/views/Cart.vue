@@ -146,7 +146,7 @@ export default {
           };
 
           try {
-            await axios.put(`${api_base_url}/api/cart-items/${payload.id}/`, payload, {
+            const response = await axios.put(`${api_base_url}/api/cart-items/${payload.id}/`, payload, {
               withCredentials: true,  // Ensures cookies are sent with the request
             });
             cartStore.updateItemQuantity(item.id, newQuantity);

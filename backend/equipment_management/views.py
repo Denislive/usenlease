@@ -13,6 +13,10 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_POST
 
+
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.response import Response
+from rest_framework import status
 from rest_framework.permissions import AllowAny
 
 
@@ -43,7 +47,7 @@ from .serializers import (
 import stripe
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
-DOMAIN = 'http://localhost:3000'
+DOMAIN = settings.DOMAIN_URL
 
 
 
@@ -465,8 +469,7 @@ class EquipmentViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
         except Exception as e:
-            print("Error during data processing:", e)
-            return Response({'detail': 'An error occurred while processing the data.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': f'{e}'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 
@@ -670,10 +673,16 @@ class CartViewSet(viewsets.ModelViewSet):
         return Cart.objects.filter(user=self.request.user)
 
     
-
     def create(self, request, *args, **kwargs):
+        # Access the logged-in user from the request
+        user = request.user
+
+        # Check if the user has the 'lessor' role
+        if user.role == 'lessor':  # Replace 'lessor' with the actual role name if different
+            raise PermissionDenied("You are a lessor!")
+
         # Get or create a cart for the user
-        cart, created = Cart.objects.get_or_create(user=self.request.user)
+        cart, created = Cart.objects.get_or_create(user=user)
         
         if not created:
             # If the cart already exists, return its details with a custom message
@@ -688,6 +697,14 @@ class CartViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def update(self, request, *args, **kwargs):
+
+         # Access the logged-in user from the request
+        user = request.user
+
+        # Check if the user has the 'lessor' role
+        if user.role == 'lessor':  # Replace 'lessor' with the actual role name if different
+            raise PermissionDenied("You are a lessor!")
+
         # Ensure a cart exists for the user before updating
         cart = self.get_object()
         serializer = self.get_serializer(cart, data=request.data, partial=True)
@@ -717,6 +734,13 @@ class CartItemViewSet(viewsets.ModelViewSet):
         return CartItem.objects.filter(cart=user_cart)
 
     def create(self, request, *args, **kwargs):
+
+        user = request.user
+        
+        # Check if the user is a 'lessor' (adjust role checking as needed)
+        if user.role == 'lessor':  # Replace 'lessor' with your actual role attribute
+            raise PermissionDenied("You are a lessor!")
+        
         user_cart, _ = Cart.objects.get_or_create(user=self.request.user)
         
         item_data = request.data
@@ -779,25 +803,33 @@ class CartItemViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def update(self, request, *args, **kwargs):
-        """Update an existing cart item by checking the available quantity."""
+        """Update an existing cart item by checking the available quantity and date availability."""
         cart_item = self.get_cart_item()
         item_data = request.data
 
         # Get the updated item quantity from the request data
         item_quantity = item_data.get("quantity", cart_item.quantity)  # Default to current quantity if not specified
 
+        # Get the updated start and end dates from the request data
+        start_date = item_data.get("start_date", cart_item.start_date)
+        end_date = item_data.get("end_date", cart_item.end_date)
+
         # Get the equipment (item) object associated with the cart item
         equipment = cart_item.item  # CartItem has a foreign key to Equipment
 
-        # Check if the available quantity is sufficient
-        if equipment.available_quantity < item_quantity:
+        # Check if the available quantity is sufficient for the given dates
+        available_quantity = equipment.get_available_quantity(start_date, end_date)
+
+        if available_quantity < item_quantity:
             return Response(
-                {"error": "Some error occured updating the item"},
+                {"error": f"Only {available_quantity} items are available for the selected date range."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # If the quantity is valid, update the cart item
+        # If the quantity and availability are valid, update the cart item
         cart_item.quantity = item_quantity
+        cart_item.start_date = start_date
+        cart_item.end_date = end_date
         cart_item.save()
 
         # Return the updated cart item as a response

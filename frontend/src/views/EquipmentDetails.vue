@@ -12,7 +12,7 @@
           <EquipmentDetails :equipment="equipment" :loading="loading" :error="error" />
         </main>
       </div>
-      <EquipmentTabs :equipment="equipment" />
+      <EquipmentTabs />
     </div>
   </main>
 </template>

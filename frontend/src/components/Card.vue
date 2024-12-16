@@ -55,6 +55,10 @@ const goToDetail = (equipmentId) => {
               }"
               class="mr-1"
             ></i>
+            <div v-if="equipment.is_available">
+              {{ equipment.available_quantity }}
+
+            </div>
             {{ equipment.is_available ? 'Available' : 'Unavailable' }}
           </span>
 

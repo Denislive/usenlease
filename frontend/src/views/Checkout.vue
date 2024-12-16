@@ -22,7 +22,6 @@ import CheckoutSummary from '@/components/CheckoutSummary.vue';
         <Addresses />
       </aside>
     </div>
-    <EquipmentTabs />
 
   </div>
 
