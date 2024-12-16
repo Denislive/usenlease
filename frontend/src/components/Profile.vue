@@ -538,7 +538,7 @@ export default {
     const activeChat = ref(null); // Currently open chat ID
     const newMessage = ref(""); // Message being typed  
 
-    const role = ref('true');
+    const role = ref('false');
     const { showNotification } = useNotifications(); // Initialize notification service
 
 
