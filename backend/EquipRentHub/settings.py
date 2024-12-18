@@ -164,12 +164,16 @@ TEMPLATES = [
 WSGI_APPLICATION = 'EquipRentHub.wsgi.application'
 
 # Database configuration (PostgreSQL on Heroku)
+DATABASE_URL = os.getenv('DATABASE_URL')
+print(f"DATABASE_URL={DATABASE_URL}")  # Debug print
+
 try:
     DATABASES = {
         'default': dj_database_url.config(
-            default=os.getenv('DATABASE_URL')  # Use DATABASE_URL from Heroku environment
+            default=DATABASE_URL
         )
     }
+    print(f"DATABASES={DATABASES}")  # Debug print
 
     import psycopg2
     connection = psycopg2.connect(
