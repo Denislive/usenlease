@@ -1,8 +1,13 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import User, Address, CreditCard, PhysicalAddress, Chat, Message
+from .models import User, Address, CreditCard, PhysicalAddress, Chat, Message, CompanyInfo
 
 from django.utils.html import format_html
+
+@admin.register(CompanyInfo)
+class CompanyInfoAdmin(admin.ModelAdmin):
+    list_display = ('name', 'email', 'created_at', 'updated_at')
+    search_fields = ('name', 'email')
 
 
 class CreditCardInline(admin.TabularInline):

@@ -20,6 +20,8 @@ ALLOWED_HOSTS = ['*']
 
 DOMAIN_URL = 'http://127.0.0.1:8000'
 
+RECIPIENT_LIST = os.getenv('RECIPIENT_LIST')
+
 LOGIN_URL = '/accounts/user/login'
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

@@ -17,7 +17,7 @@ from .views import (
     MessageViewSet,
     AllChatsViewSet,
     CheckEmailView,
-    CheckPhoneNumberView
+    CheckPhoneNumberView,
 
 )
 
@@ -30,6 +30,7 @@ router.register('credit-cards', CreditCardViewSet, basename='creditcard')
 router.register('chats', ChatViewSet, basename='chat')
 router.register('messages', MessageViewSet, basename='message')
 router.register('all-chats', AllChatsViewSet, basename='all_chats')
+
 
 
 # Define urlpatterns with JWT token routes and router URLs

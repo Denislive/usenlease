@@ -1,13 +1,16 @@
 # rentals/serializers.py
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
-from .models import User, Address, CreditCard,  PhysicalAddress, OTP,Message, Chat
+from .models import User, Address, CreditCard,  PhysicalAddress, OTP,Message, Chat, Contact, CompanyInfo
 
 
 from rest_framework import serializers
 
 
-
+class ContactSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Contact
+        fields = ['name', 'email', 'message']
 
 
 class OTPSerializer(serializers.ModelSerializer):
@@ -31,6 +34,25 @@ class AddressSerializer(serializers.ModelSerializer):
             
         ]
         write_only_fields = ['id', 'address_type', 'is_default']  # Make these fields read-only
+
+
+
+class CompanyInfoSerializer(serializers.ModelSerializer):
+    address = AddressSerializer(read_only=True)  # Nested serializer for address
+
+    class Meta:
+        model = CompanyInfo
+        fields = '__all__'  # Include all fields from the CompanyInfo model
+
+    def update(self, instance, validated_data):
+        # Handle nested address update if address is included in the data
+        address_data = validated_data.pop('address', None)
+        if address_data:
+            address_serializer = AddressSerializer(instance.address, data=address_data)
+            if address_serializer.is_valid():
+                address_serializer.save()
+
+        return super().update(instance, validated_data)
 
 
 class PhysicalAddressSerializer(serializers.ModelSerializer):

@@ -179,3 +179,37 @@ class CreditCard(models.Model):
 
     def __str__(self):
         return f"Credit Card for {self.user.email} - Default: {self.is_default}"
+
+
+class CompanyInfo(models.Model):
+    name = models.CharField(max_length=255, verbose_name="Company Name")
+    email = models.EmailField(max_length=255, verbose_name="Contact Email")
+    about = models.TextField(verbose_name="About Us")
+    terms_and_conditions = models.TextField(verbose_name="Terms and Conditions")
+    facebook_link = models.URLField(blank=True, null=True, verbose_name="Facebook Link")
+    twitter_link = models.URLField(blank=True, null=True, verbose_name="Twitter Link")
+    instagram_link = models.URLField(blank=True, null=True, verbose_name="Instagram Link")
+    linkedin_link = models.URLField(blank=True, null=True, verbose_name="LinkedIn Link")
+    youtube_link = models.URLField(blank=True, null=True, verbose_name="YouTube Link")
+    logo = models.ImageField(upload_to='company_logos/', blank=True, null=True, verbose_name="Company Logo")
+    address = models.OneToOneField(Address, on_delete=models.PROTECT, blank=True, null=True)
+    phone_number = models.CharField(max_length=20, blank=True, null=True, verbose_name="Phone Number")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = "Company Information"
+        verbose_name_plural = "Company Information"
+
+
+class Contact(models.Model):
+    name = models.CharField(max_length=255)
+    email = models.EmailField()
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Message from {self.name}"
