@@ -12,7 +12,7 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Application domain
-DOMAIN_URL=os.getenv("DOMAIN_URL")
+DOMAIN_URL= os.getenv("DOMAIN_URL")
 
 # Google Cloud Storage Bucket Name
 GS_BUCKET_NAME = os.getenv("GS_BUCKET_NAME")  # e.g., 'my-app-media'
