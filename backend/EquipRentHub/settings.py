@@ -15,9 +15,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 GS_BUCKET_NAME = os.getenv("GS_BUCKET_NAME")  # e.g., 'my-app-media'
 
 # Decode the base64 encoded credentials and write to a temporary file
-creds_path = '/app/backend/credentials/burnished-ether-439413-s1-579bee90267c.json'
+creds_path = os.path.join(BASE_DIR, 'credentials', 'google-credentials.json')
 creds_content = os.getenv('GOOGLE_APPLICATION_CREDENTIALS_CONTENT')
 if creds_content:
+    os.makedirs(os.path.dirname(creds_path), exist_ok=True)
     with open(creds_path, 'wb') as f:
         f.write(base64.b64decode(creds_content))
 
