@@ -3,9 +3,7 @@ from pathlib import Path
 from datetime import timedelta
 import os
 import dj_database_url
-import base64
 import json
-from google.auth import credentials as google_credentials
 from google.oauth2 import service_account
 
 # Load environment variables from .env
@@ -20,20 +18,14 @@ DOMAIN_URL = os.getenv("DOMAIN_")
 # Google Cloud Storage Bucket Name
 GS_BUCKET_NAME = os.getenv("GS_BUCKET_NAME")  # e.g., 'my-app-media'
 
-# Decode the base64 encoded credentials and write to a temporary file
-creds_path = os.path.join(BASE_DIR, 'credentials', 'google-credentials.json')
-creds_content = os.getenv('GOOGLE_APPLICATION_CREDENTIALS_CONTENT')
-if creds_content:
-    os.makedirs(os.path.dirname(creds_path), exist_ok=True)
-    with open(creds_path, 'wb') as f:
-        f.write(base64.b64decode(creds_content))
+# Path to the credentials JSON file mounted inside the container
+creds_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS', '/app/credentials/burnished-ether-439413-s1-579bee90267c.json')
 
+# Set the GOOGLE_APPLICATION_CREDENTIALS environment variable to the mounted file path
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = creds_path
 
 # Google Cloud Storage credentials
-GS_CREDENTIALS = service_account.Credentials.from_service_account_info(
-    json.loads(os.getenv('GOOGLE_APPLICATION_CREDENTIALS_CONTENT'))
-)
+GS_CREDENTIALS = service_account.Credentials.from_service_account_file(creds_path)
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY')
