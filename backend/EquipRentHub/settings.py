@@ -12,10 +12,10 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Application domain
-DOMAIN_URL= os.getenv("DOMAIN_URL")
+DOMAIN_URL= os.getenv('DOMAIN_URL')
 
 # Google Cloud Storage Bucket Name
-GS_BUCKET_NAME = os.getenv("GS_BUCKET_NAME")  # e.g., 'my-app-media'
+GS_BUCKET_NAME = os.getenv('GS_BUCKET_NAME')  # e.g., 'my-app-media'
 
 # Decode the base64 encoded credentials and write to a temporary file
 creds_path = os.path.join(BASE_DIR, 'credentials', 'google-credentials.json')
