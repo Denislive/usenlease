@@ -9,6 +9,10 @@ pipeline {
         POSTGRES_USER = credentials('postgres-user')
         POSTGRES_PASSWORD = credentials('postgres-password')
         POSTGRES_DB = 'usenlease_db'
+        HEROKU_BACKEND_API_KEY = credentials('heroku-backend-api-key')  // Backend Heroku API key
+        HEROKU_FRONTEND_API_KEY = credentials('heroku-frontend-api-key')  // Frontend Heroku API key
+        HEROKU_BACKEND_APP_NAME = 'usenlease'
+        HEROKU_FRONTEND_APP_NAME = 'usenlease-v1'
     }
     stages {
         stage('Setup') {
@@ -105,6 +109,36 @@ pipeline {
                     -var="POSTGRES_PASSWORD=${POSTGRES_PASSWORD}" \
                     -var="POSTGRES_DB=${POSTGRES_DB}"
                     '''
+                }
+            }
+        }
+        stage('Heroku Backend Deployment') {
+            steps {
+                script {
+                    echo 'Deploying backend to Heroku...'
+                    withEnv(["HEROKU_API_KEY=${HEROKU_BACKEND_API_KEY}", "HEROKU_APP_NAME=${HEROKU_BACKEND_APP_NAME}"]) {
+                        sh '''
+                        echo "$HEROKU_API_KEY" | docker login --username=_ --password-stdin registry.heroku.com
+                        docker tag ${BACKEND_IMAGE}:v1.1.0 registry.heroku.com/$HEROKU_APP_NAME/web
+                        docker push registry.heroku.com/$HEROKU_APP_NAME/web
+                        heroku container:release web --app $HEROKU_APP_NAME
+                        '''
+                    }
+                }
+            }
+        }
+        stage('Heroku Frontend Deployment') {
+            steps {
+                script {
+                    echo 'Deploying frontend to Heroku...'
+                    withEnv(["HEROKU_API_KEY=${HEROKU_FRONTEND_API_KEY}", "HEROKU_APP_NAME=${HEROKU_FRONTEND_APP_NAME}"]) {
+                        sh '''
+                        echo "$HEROKU_API_KEY" | docker login --username=_ --password-stdin registry.heroku.com
+                        docker tag ${FRONTEND_IMAGE}:v1.1.0 registry.heroku.com/$HEROKU_APP_NAME/web
+                        docker push registry.heroku.com/$HEROKU_APP_NAME/web
+                        heroku container:release web --app $HEROKU_APP_NAME
+                        '''
+                    }
                 }
             }
         }

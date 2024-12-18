@@ -1,4 +1,4 @@
-# Stage 1: Build Stage
+# Stage 1: Build Stage for Backend
 FROM python:3.11-slim-bullseye AS builder
 
 # Set environment variables
@@ -16,19 +16,20 @@ WORKDIR /app
 # Add build argument for SECRET_KEY
 ARG SECRET_KEY
 
-# Set environment variable
+# Set environment variable for SECRET_KEY
 ENV SECRET_KEY=${SECRET_KEY}
 
 # Copy requirements.txt and install dependencies
-COPY requirements.txt /app/
+COPY backend/requirements.txt /app/
 RUN python3 -m venv /app/venv \
     && /app/venv/bin/pip install --no-cache-dir -r /app/requirements.txt
 
-# Copy the rest of the backend code
-COPY . /app/backend
+# Copy the rest of the backend application code
+COPY backend/ /app/backend
 
-# Set STATIC_ROOT for static file collection
+# Set STATIC_ROOT and MEDIA_ROOT for static and media file collection
 ENV STATIC_ROOT=/app/backend/staticfiles
+ENV MEDIA_ROOT=/app/backend/media
 
 # Collect static files during the build stage
 RUN SECRET_KEY=${SECRET_KEY} /app/venv/bin/python /app/backend/manage.py collectstatic --noinput
@@ -43,7 +44,7 @@ ENV PATH="/app/venv/bin:$PATH"
 # Add build argument for SECRET_KEY
 ARG SECRET_KEY
 
-# Set environment variable
+# Set environment variable for SECRET_KEY
 ENV SECRET_KEY=${SECRET_KEY}
 
 # Copy the virtual environment and the application code from the builder stage
@@ -52,8 +53,8 @@ COPY --from=builder /app /app
 # Set the working directory for the application
 WORKDIR /app/backend
 
-# Ensure the staticfiles directory exists
-RUN mkdir -p /app/backend/staticfiles
+# Ensure the staticfiles and media directories exist
+RUN mkdir -p /app/backend/staticfiles /app/backend/media
 
 # Expose the application port
 EXPOSE 8000
