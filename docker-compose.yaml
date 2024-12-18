@@ -25,8 +25,6 @@ services:
       - app-net
     env_file:
       - .env
-    environment:
-      - GOOGLE_APPLICATION_CREDENTIALS=/app/credentials/burnished-ether-439413-s1-579bee90267c.json  # Environment variable for the JSON file
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8000/health/ || exit 1"]
       interval: 10s
@@ -40,7 +38,6 @@ services:
     volumes:
       - ./backend/staticfiles:/app/backend/staticfiles
       - ./backend/media:/app/backend/media
-      - /home/nelson-ngumo/Documents/burnished-ether-439413-s1-579bee90267c.json:/app/credentials/burnished-ether-439413-s1-579bee90267c.json  # Mount the JSON file
 
   usenlease-db:
     image: postgres:latest
