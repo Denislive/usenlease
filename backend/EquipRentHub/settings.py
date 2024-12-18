@@ -4,6 +4,9 @@ from datetime import timedelta
 import os
 import dj_database_url
 import base64
+import json
+from google.auth import credentials as google_credentials
+from google.oauth2 import service_account
 
 # Load environment variables from .env
 load_dotenv()
@@ -26,6 +29,11 @@ if creds_content:
         f.write(base64.b64decode(creds_content))
 
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = creds_path
+
+# Google Cloud Storage credentials
+GS_CREDENTIALS = service_account.Credentials.from_service_account_info(
+    json.loads(os.getenv('GOOGLE_APPLICATION_CREDENTIALS_CONTENT'))
+)
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY')
