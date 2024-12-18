@@ -3,31 +3,71 @@ from pathlib import Path
 from datetime import timedelta
 from corsheaders.defaults import default_headers
 import os
+<<<<<<< HEAD
+=======
+import dj_database_url
+import base64
+>>>>>>> ec867583 (update settings.py && jenkins)
 
 # Load environment variables from .env
 load_dotenv()
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+# Base directory setup
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Google Cloud Storage Bucket Name
+GS_BUCKET_NAME = os.getenv("GS_BUCKET_NAME")  # e.g., 'my-app-media'
+
+# Decode the base64 encoded credentials and write to a temporary file
+creds_path = '/app/backend/credentials/burnished-ether-439413-s1-579bee90267c.json'
+creds_content = os.getenv('GOOGLE_APPLICATION_CREDENTIALS_CONTENT')
+if creds_content:
+    with open(creds_path, 'wb') as f:
+        f.write(base64.b64decode(creds_content))
+
+os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = creds_path
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY')
+<<<<<<< HEAD
+=======
+
+if not SECRET_KEY:
+    raise ValueError("The SECRET_KEY environment variable is not set")
+>>>>>>> ec867583 (update settings.py && jenkins)
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False') == 'False'
 
+<<<<<<< HEAD
 ALLOWED_HOSTS = ['*']
 
 DOMAIN_URL = 'http://127.0.0.1:8000'
 
 RECIPIENT_LIST = os.getenv('RECIPIENT_LIST')
+=======
+# Trusted Origins
+CSRF_TRUSTED_ORIGINS = [
+    'https://usenlease-2f8583d212bc.herokuapp.com',
+]
 
+ALLOWED_HOSTS = [
+    'usenlease-2f8583d212bc.herokuapp.com',
+    'usenlease.com',
+    '*'
+]
+>>>>>>> ec867583 (update settings.py && jenkins)
+
+# Login URL
 LOGIN_URL = '/accounts/user/login'
 
+# Email Backend
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
+# Custom User Model
 AUTH_USER_MODEL = 'user_management.User'
 
+# Stripe Keys (from .env file)
 STRIPE_PUBLIC_KEY = os.getenv("STRIPE_PUBLIC_KEY")
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
@@ -46,11 +86,18 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'equipment_management.apps.EquipmentManagementConfig',
     'user_management.apps.UserManagementConfig',
+<<<<<<< HEAD
 ]
 
 
 
 # Rest JWT
+=======
+    'storages',  # Google Cloud Storage for media
+]
+
+# Rest Framework Configuration
+>>>>>>> ec867583 (update settings.py && jenkins)
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -71,7 +118,12 @@ SIMPLE_JWT = {
     "AUTH_COOKIE_REFRESH": "refresh",
 }
 
+<<<<<<< HEAD
 EMAIL_HOST =  os.getenv('EMAIL_HOST')
+=======
+# Email settings
+EMAIL_HOST = os.getenv('EMAIL_HOST')
+>>>>>>> ec867583 (update settings.py && jenkins)
 EMAIL_PORT = os.getenv('EMAIL_PORT')
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')  # Store password securely
@@ -91,6 +143,10 @@ CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:3000'
 CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000').split(',')
 CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL_ORIGINS', 'True') == 'True'
 
+<<<<<<< HEAD
+=======
+# Middleware Configuration
+>>>>>>> ec867583 (update settings.py && jenkins)
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -122,6 +178,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'EquipRentHub.wsgi.application'
 
+<<<<<<< HEAD
 import os
 from dotenv import load_dotenv
 
@@ -145,6 +202,16 @@ try:
         }
     }
     # Test connection with the PostgreSQL database to ensure availability
+=======
+# Database configuration (PostgreSQL on Heroku)
+try:
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=os.getenv('DATABASE_URL')  # Use DATABASE_URL from Heroku environment
+        )
+    }
+
+>>>>>>> ec867583 (update settings.py && jenkins)
     import psycopg2
     connection = psycopg2.connect(
         dbname=DATABASES['default']['NAME'],
@@ -179,12 +246,19 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# Static files
+# Static files (CSS, JavaScript, images)
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 
+<<<<<<< HEAD
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media/'
+=======
+# Media files (uploads) – use Google Cloud Storage for media
+DEFAULT_FILE_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
+GS_DEFAULT_ACL = 'publicRead'  # Adjust based on your needs
+MEDIA_URL = f"https://storage.googleapis.com/{GS_BUCKET_NAME}/"
+>>>>>>> ec867583 (update settings.py && jenkins)
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
