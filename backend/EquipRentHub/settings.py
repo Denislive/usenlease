@@ -126,10 +126,14 @@ CORS_ALLOW_HEADERS = os.getenv('CORS_ALLOW_HEADERS', 'content-type,authorization
 
 # Explicitly set CSRF_TRUSTED_ORIGINS and CORS_ALLOWED_ORIGINS
 CSRF_TRUSTED_ORIGINS = [
+    'https://usenlease-ba2103147f4b.herokuapp.com',
+    'https://usenlease.com',
     'https://usenlease-2f8583d212bc.herokuapp.com'
 ]
 CORS_ALLOWED_ORIGINS = [
-    'https://usenlease-2f8583d212bc.herokuapp.com',
+    'https://usenlease-ba2103147f4b.herokuapp.com',
+    'https://usenlease.com',
+    'https://usenlease-2f8583d212bc.herokuapp.com'
 ]
 CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL_ORIGINS', 'True') == 'True'
 
