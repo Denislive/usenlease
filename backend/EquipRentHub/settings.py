@@ -41,11 +41,15 @@ CSRF_TRUSTED_ORIGINS = [
     'https://usenlease-2f8583d212bc.herokuapp.com',
 ]
 
+
 ALLOWED_HOSTS = [
     'usenlease-2f8583d212bc.herokuapp.com',
     'usenlease.com',
     '*'
 ]
+
+RECIPIENT_LIST = os.getenv('RECIPIENT_LIST')
+
 
 # Login URL
 LOGIN_URL = '/accounts/user/login'

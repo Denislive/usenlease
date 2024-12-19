@@ -120,9 +120,18 @@
                     <div class="mb-4">
                         <label for="identityDocument" class="block text-sm font-medium text-gray-700">Identity
                             Document</label>
-                        <input type="file" id="identityDocument"
+                        <input type="file" id="identityDocument" class="mt-1 block w-full border border-gray-300 rounded-md p-2"
                             @change="(e) => handleFileChange(e, 'identityDocument')" required
-                            class="mt-1 block w-full border border-gray-300 rounded-md p-2">
+                            >
+
+                            <span v-if="errors.identityDocumentFile" class="absolute right-2 top-10 text-red-500">
+                            <i class="pi pi-exclamation-triangle"></i>
+                        </span>
+                        <span v-if="!errors.identityDocumentFile && identityDocumentFile"
+                            class="absolute right-2 top-10 text-green-500">
+                            <i class="pi pi-check"></i>
+                        </span>
+                        <p v-if="errors.identityDocumentFile" class="text-red-500 text-sm">{{ errors.identityDocumentFile }}</p>
                     </div>
                     <div class="mb-4">
                         <label for="proofOfAddress" class="block text-sm font-medium text-gray-700">Proof of
@@ -175,22 +184,13 @@
                 <div v-else-if="currentStep === 3">
                     <!-- Step 3: Terms and Conditions -->
                     <div class="h-48 overflow-y-scroll mb-4 border border-gray-300 p-2">
-                        <h3 class="text-lg font-bold mb-2">Terms and Conditions</h3>
-                        <p>Your terms and conditions text goes here. This should be a long enough text to enable
-                            scrolling.</p>
-                        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut
-                            labore et dolore magna aliqua.</p>
-                        <p>Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea
-                            commodo consequat.</p>
-                        <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
-                            pariatur.</p>
-                        <p>Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit
-                            anim id est laborum.</p>
-                    </div>
-                    <div class="flex items-center mb-4">
+                            {{ companyInfoStore.companyInfo?.terms_and_conditions }}
+                        <div class="flex items-center mb-4">
                         <input type="checkbox" id="acceptTerms" v-model="acceptedTerms" required class="mr-2">
-                        <label for="acceptTerms" class="text-sm text-gray-700">I accept the terms and conditions</label>
+                        <label for="acceptTerms" class="text-xl text-gray-700">I accept the terms and conditions</label>
                     </div>
+                    </div>
+                    
                     <div class="flex justify-between">
                         <button type="button" @click="prevStep" class="bg-gray-300 text-gray-700 rounded-md py-2 px-4">
                             Back
@@ -219,7 +219,14 @@ import { ref, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import Cookies from 'js-cookie';
 import axios from 'axios';
+import { useCompanyInfoStore } from '@/store/company';
+const companyInfoStore = useCompanyInfoStore();
 
+
+const api_base_url = import.meta.env.VITE_API_BASE_URL;
+const router = useRouter();
+
+// Refs for file handling
 const currentStep = ref(1);
 const firstName = ref('');
 const lastName = ref('');
@@ -231,7 +238,15 @@ const documentType = ref('');
 const password = ref('');
 const confirmPassword = ref('');
 const acceptedTerms = ref(false);
-const router = useRouter();
+
+
+const identityDocumentFile = ref(null);
+const proofOfAddressFile = ref(null);
+
+const errors = ref({});
+const successMessage = ref('');
+const errorMessage = ref('');
+
 
 
 // Example function to set the email in a cookie
@@ -239,13 +254,7 @@ function setEmailCookie(email) {
     Cookies.set('email', email, { expires: 7, secure: true, sameSite: 'None' });
 }
 
-// Refs for file handling
-const identityDocumentFile = ref(null);
-const proofOfAddressFile = ref(null);
 
-const errors = ref({});
-const successMessage = ref('');
-const errorMessage = ref('');
 
 // Validation functions
 const validateFirstName = () => {
@@ -264,6 +273,7 @@ const validateRole = () => {
     errors.value.role = role.value ? '' : 'Role is required';
 };
 
+
 const debounce = (func, delay = 1000) => {
     let timeoutId;
     return (...args) => {
@@ -271,6 +281,9 @@ const debounce = (func, delay = 1000) => {
         timeoutId = setTimeout(() => func(...args), delay);
     };
 };
+
+
+    
 
 
 const validatePhone = async () => {
@@ -294,6 +307,8 @@ const validatePhone = async () => {
 
 // Use the reusable debounce function
 const debounceValidatePhone = debounce(validatePhone);
+
+
 
 // Watch for changes in the phone input
 watch(phone, debounceValidatePhone);
@@ -323,6 +338,12 @@ watch(email, debounceValidateEmail);
 
 const validateDocumentType = () => {
     errors.value.documentType = documentType.value ? '' : 'Document Type is required';
+};
+
+const validateIdentityDocument = () => {
+    errors.value.identityDocumentFile = identityDocumentFile.value
+        ? ''
+        : 'Identity Document is required';
 };
 
 
@@ -382,14 +403,27 @@ const validateConfirmPassword = () => {
     errors.value.confirmPassword = (confirmPassword.value === password.value) ? '' : 'Passwords must match';
 };
 
-// Computed properties to check if steps are valid
+// Computed properties
 const isStepOneValid = computed(() => {
-    return !errors.value.firstName && !errors.value.lastName && !errors.value.companyName && !errors.value.role && !errors.value.phone && !errors.value.email;
+    return (
+        !errors.value.firstName &&
+        !errors.value.lastName &&
+        !errors.value.companyName &&
+        !errors.value.role &&
+        !errors.value.phone &&
+        !errors.value.email
+    );
 });
 
 const isStepTwoValid = computed(() => {
-    return !errors.value.documentType && !errors.value.password && !errors.value.confirmPassword;
+    return (
+        !errors.value.identityDocumentFile &&
+        !errors.value.documentType &&
+        !errors.value.password &&
+        !errors.value.confirmPassword
+    );
 });
+
 
 // Handle navigation between steps
 const nextStep = () => {
@@ -406,6 +440,7 @@ const nextStep = () => {
         }
     } else if (currentStep.value === 2) {
         validateDocumentType();
+        validateIdentityDocument();
         validatePassword();
         validateConfirmPassword();
 
@@ -421,13 +456,15 @@ const prevStep = () => {
     }
 };
 
-// Handle file input changes
+
+// File input handling
 const handleFileChange = (event, fileType) => {
     const file = event.target.files[0];
     if (fileType === 'identityDocument') {
-        identityDocumentFile.value = file;
+        identityDocumentFile.value = file || null;
+        validateIdentityDocument();
     } else if (fileType === 'proofOfAddress') {
-        proofOfAddressFile.value = file;
+        proofOfAddressFile.value = file || null;
     }
 };
 

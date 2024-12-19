@@ -104,6 +104,7 @@ import { useEquipmentsStore } from '@/store/equipments';
 import { format } from 'date-fns';
 import { useRoute } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
+import useNotifications from '@/store/notification';
 
 
 import axios from 'axios';
@@ -113,6 +114,8 @@ export default {
     const activeTab = ref('description');
     const route = useRoute();
     const api_base_url = import.meta.env.VITE_API_BASE_URL;
+    const { showNotification } = useNotifications();
+
 
     const newReview = ref({
       rating: null,
@@ -144,8 +147,8 @@ export default {
 
      // Check for null or empty fields
   if (!reviewData.rating || !reviewData.equipment) {
-    console.error("All fields are required.");
-    alert("Please complete all fields before submitting your review.");
+    showNotification('Review Error', 'Please complete all fields before submitting your review.!', 'error');
+
     return;
   }
 

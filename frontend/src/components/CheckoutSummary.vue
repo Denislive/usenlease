@@ -65,6 +65,7 @@
 import { computed, onMounted, ref } from "vue";
 import { useCartStore } from "@/store/cart";
 import { useAuthStore } from "@/store/auth";
+import useNotifications from '@/store/notification';
 
 export default {
   setup() {
@@ -73,13 +74,14 @@ export default {
     const shippingCost = ref(0); // Fixed shipping cost
 
     const api_base_url = import.meta.env.VITE_API_BASE_URL;
+    const { showNotification } = useNotifications();
 
     // Fetch the cart data
     const fetchCart = async () => {
       try {
         cartStore.loadCart(); // Load from Vuex or local storage
       } catch (error) {
-        console.error("Failed to load cart data:", error.response?.data || error.message);
+        showNotification('Cart Error', `Failed to load cart data: ${ error.response?.data || error.message}!`, 'info');
       }
     };
 
@@ -91,7 +93,13 @@ export default {
         ? item.item.hourly_rate
         : 0; // Fallback price
 
-      return price * item.quantity;
+      // Calculate the time difference between start_date and end_date in hours
+      const startDate = new Date(item.start_date);
+      const endDate = new Date(item.end_date);
+      const timeDiff = endDate - startDate; // Time difference in milliseconds
+      const hours = timeDiff / (1000 * 3600); // Convert milliseconds to hours
+
+      return price * item.quantity * hours;
     };
 
     // Calculate the subtotal
@@ -101,9 +109,15 @@ export default {
           ? item.item_details.hourly_rate
           : item.item
           ? item.item.hourly_rate
-          : 0;
+          : 0; // Fallback price
 
-        return total + price * item.quantity;
+        // Calculate the time difference between start_date and end_date in hours
+        const startDate = new Date(item.start_date);
+        const endDate = new Date(item.end_date);
+        const timeDiff = endDate - startDate; // Time difference in milliseconds
+        const hours = timeDiff / (1000 * 3600); // Convert milliseconds to hours
+
+        return total + price * item.quantity * hours;
       }, 0);
     });
 

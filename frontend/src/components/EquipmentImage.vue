@@ -49,6 +49,7 @@
 import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router'; // Import useRoute to get route params
 import axios from 'axios';
+import useNotifications from '@/store/notification';
 
 
 
@@ -62,6 +63,8 @@ export default {
     const zoomPosition = ref('0%');
 
     const api_base_url = import.meta.env.VITE_API_BASE_URL;
+    const { showNotification } = useNotifications();
+
 
 
     // Get the equipment id from the URL
@@ -80,7 +83,7 @@ export default {
           equipment.value = null; // Handle case where no images exist
         }
       } catch (error) {
-        console.error('Error fetching equipment data:', error);
+        showNotification('Item Details', `Error Fetching Item Data:', ${error}`, 'error');
         equipment.value = null; // Handle error state
       }
     };

@@ -30,9 +30,6 @@ router.register('cart-items', CartItemViewSet, basename='cart-item')
 router.register('cart', CartViewSet, basename='cart')
 router.register('reports', ReportViewSet, basename='report')
 router.register('contact', ContactViewSet, basename='contact')
-
-
-
 router.register('orders', OrderViewSet, basename='order')
 router.register('order-items', OrderItemViewSet, basename='order-item')
 
@@ -42,6 +39,5 @@ urlpatterns = [
     path('session-status/', SessionStatusView.as_view(), name='session_status'),
     path('orders/<str:pk>/<str:action>/', OrderActionView.as_view(), name='order-action'),
     path('root-categories/', RootCategoryListView.as_view(), name='root-category-list'),
-    path('company-info/', CompanyInfoView.as_view(), name='company-info')
-
+    path('company-info/', CompanyInfoView.as_view(), name='company-info'),
 ]

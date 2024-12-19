@@ -10,7 +10,6 @@ from django.utils import timezone
 from datetime import timedelta
 
 
-
 class OTP(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -26,16 +25,16 @@ class OTP(models.Model):
 
     def is_expired(self):
         return timezone.now() > self.expires_at
-    
+
     def expire(self):
         """Mark this OTP as expired."""
         if self.is_expired() and not self.expired:
             self.expired = True
             self.save()
 
-    def _str_(self):
+    def __str__(self):
         return f"OTP for {self.user.email} - {self.code}"
-        
+
 
 def generate_short_uuid():
     # Generate a UUID, convert to bytes, then encode in base64, removing padding
@@ -50,6 +49,7 @@ class Chat(models.Model):
     def __str__(self):
         return f"Chat between {', '.join([user.email for user in self.participants.all()])}"
 
+
 class Message(models.Model):
     chat = models.ForeignKey(Chat, related_name='messages', on_delete=models.CASCADE)
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='sent_messages')
@@ -61,7 +61,6 @@ class Message(models.Model):
 
     def __str__(self):
         return f"Message from {self.sender.email} to {self.receiver.email} on {self.sent_at}"
-
 
 
 class User(AbstractUser):
@@ -76,13 +75,13 @@ class User(AbstractUser):
         ('passport', 'Passport'),
         ('dl', 'Driver\'s License'),
     ]
-    image= models.ImageField(upload_to='user_images', blank=True, null=True, validators=[FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png'])])
+    image = models.ImageField(upload_to='user_images', blank=True, null=True, validators=[FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png'])])
     username = models.CharField(max_length=100, blank=True, null=True, unique=False)  # Make username optional
     phone_number = models.CharField(max_length=20, unique=True)
     email = models.EmailField(unique=True)
     role = models.CharField(max_length=10, choices=ROLE_CHOICES)
     company_name = models.CharField(max_length=150, blank=True, null=True)
-    
+
     document_type = models.CharField(max_length=10, choices=DOCUMENT_TYPE_CHOICES)
     identity_document = models.FileField(
         upload_to='identity_documents/',
@@ -95,13 +94,12 @@ class User(AbstractUser):
         null=True,
         validators=[FileExtensionValidator(allowed_extensions=['pdf', 'jpg', 'jpeg', 'png'])]
     )
-    
 
     is_verified = models.BooleanField(default=False)
     is_active = models.BooleanField(default=False)
     # is_user_admin = models.BooleanField(default=False)
     # is_authenticated = models.BooleanField(default=False)
-    
+
     USERNAME_FIELD = 'email'  # Use email for login instead of username
     REQUIRED_FIELDS = []  # Remove 'username' from REQUIRED_FIELDS
 

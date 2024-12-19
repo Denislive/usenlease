@@ -97,7 +97,6 @@ const createChat = async () => {
   const chat = await chatStore.createChat(recepient);
 };
 
-
 const submitBooking = async () => {
   // Prepare the payload for booking
   const payload = {
@@ -144,7 +143,7 @@ const submitBooking = async () => {
       cartStore.loadCart(); // Refresh the cart after successful addition
       showNotification('Add to Cart', 'Item added to cart!', 'success');
     } catch (error) {
-      showNotification('Failed adding to Cart', `Error: ${error.response.data.detail || 'Unknown error'}. Switch to lesee`, 'error');
+      showNotification('Failed adding to Cart', `Error: ${error.response.data.error || error.response.data.detail || 'Unknown error'}`, 'error');
     }
   } else {
     // Handle for anonymous users using localStorage
@@ -155,45 +154,45 @@ const submitBooking = async () => {
       end_date: endDate.value,
     };
 
-    const existingCart = localStorage.getItem("cart");
+    const existingCart = localStorage.getItem('cart');
     if (existingCart) {
       const parsedExistingCart = JSON.parse(existingCart);
       if (Array.isArray(parsedExistingCart)) {
         const existingItemIndex = parsedExistingCart.findIndex(
-          (cartItem) =>
-            cartItem.item.id === localPayload.item.id &&
-            cartItem.start_date === localPayload.start_date &&
-            cartItem.end_date === localPayload.end_date
+          (cartItem) => cartItem.item.id === localPayload.item.id
         );
 
         if (existingItemIndex !== -1) {
-          // Check if the total quantity exceeds the available stock
+          // Update the quantity if the item exists in the cart
           const newQuantity = parsedExistingCart[existingItemIndex].quantity + localPayload.quantity;
 
           if (newQuantity > availableQuantity) {
             showNotification(
-              "Quantity Error",
+              'Quantity Error',
               `Adding this quantity exceeds the available stock. Only ${availableQuantity} items are available.`,
-              "error"
+              'error'
             );
             return; // Prevent adding to the cart if it exceeds availability
           }
 
           parsedExistingCart[existingItemIndex].quantity = newQuantity;
+
+          // Notify the user that the quantity was updated
+          showNotification('Updated Quantity', 'Quantity updated in the cart!', 'info');
         } else {
           parsedExistingCart.push(localPayload);
+          showNotification('Add to Cart', 'Item added to the cart!', 'success');
         }
 
         cartStore.cart = parsedExistingCart;
-        localStorage.setItem("cart", JSON.stringify(parsedExistingCart));
+        localStorage.setItem('cart', JSON.stringify(parsedExistingCart));
       }
     } else {
       const newCart = [localPayload];
-      localStorage.setItem("cart", JSON.stringify(newCart));
+      localStorage.setItem('cart', JSON.stringify(newCart));
       cartStore.cart = newCart;
+      showNotification('Add to Cart', 'Item added to the cart!', 'success');
     }
-
-    showNotification("Add to Cart", `Item added to the cart!`, "success");
   }
 };
 

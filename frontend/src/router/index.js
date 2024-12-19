@@ -18,6 +18,8 @@ import PaymentFailure from '@/views/PaymentFailure.vue';
 import ContactView from '@/views/ContactView.vue';
 import ServicesView from '@/views/ServicesView.vue';
 import FaqView from '@/views/FaqView.vue';
+import PasswordResetRequest from '@/views/PasswordResetRequest.vue';
+import PasswordResetView from '@/views/PasswordResetView.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -101,6 +103,21 @@ const router = createRouter({
       component: CreateEquipment,
       // meta: { requiresAuth: true }, // Protecting this route
 
+    },
+    {
+      path: '/password-reset-request',
+      name: 'PasswordResetRequest',
+      component: PasswordResetRequest,
+    },
+    {
+      path: '/password-reset',
+      name: 'PasswordReset',
+      component: PasswordResetView,
+      props: (route) => ({
+        uid: route.query.uid,  // Extract email from query params
+        token: route.query.token,  // Extract token from query params
+
+      }),
     },
     {
       path: '/payment-successful', // Ensure this starts with '/'

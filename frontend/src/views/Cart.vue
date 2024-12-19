@@ -191,7 +191,14 @@ export default {
             ? item.item.hourly_rate
             : 0; // Fallback price if neither item_details nor item exists
 
-        return total + price * item.quantity;
+        // Calculate the time difference between start_date and end_date in hours
+        const startDate = new Date(item.start_date);
+        const endDate = new Date(item.end_date);
+        const timeDiff = endDate - startDate; // Time difference in milliseconds
+        const hours = timeDiff / (1000 * 3600); // Convert milliseconds to hours
+
+        // Return the total calculated based on price, quantity, and hours
+        return total + price * item.quantity * hours;
       }, 0);
     });
 
@@ -224,7 +231,7 @@ export default {
           : 0; // Fallback price
     };
 
-  
+
 
 
     return {

@@ -4,7 +4,8 @@
     <div class="col-span-12 lg:col-span-3 bg-white p-4 rounded-lg  hidden lg:block shadow-md">
       <div class="flex items-center space-x-4 mb-6">
         <i class="bi bi-person text-black text-2xl"></i>
-        <span class="text-lg font-medium">Welcome, {{ user.first_name || user.email || "John Doe" }}</span>
+        <span class="text-lg font-medium">Welcome, {{ authStore.user.first_name || authStore.user.email || "John Doe"
+          }}</span>
       </div>
 
       <hr class="my-4">
@@ -26,7 +27,7 @@
       <div class="flex items-center space-x-4 mb-6">
         <i class="bi bi-person text-black text-2xl"></i>
         <span class="text-lg font-medium">
-          Welcome, {{ user.first_name || user.email || "John Doe" }}
+          Welcome, {{ authStore.user.first_name || authStore.user.email || "John Doe" }}
         </span>
       </div>
       <!-- Logout Option -->
@@ -71,13 +72,13 @@
                 class="w-20 h-20 rounded-full border-4 border-gray-300 shadow-md" />
               <div>
                 <label for="profile-pic" class="block text-sm text-[#ffc107] font-semibold cursor-pointer">
-                  {{ user.image ? 'Change Picture' : 'Add Picture' }}
+                  {{ authStore.user.image ? 'Change Picture' : 'Add Picture' }}
                 </label>
                 <input id="profile-pic" type="file" accept="image/*" class="hidden" @change="uploadProfilePicture" />
               </div>
               <div>
                 <p class="text-lg font-bold text-gray-800">
-                  Welcome, {{ user.first_name || user.email || 'John Doe' }}
+                  Welcome, {{ authStore.user.first_name || authStore.user.email || 'John Doe' }}
                 </p>
               </div>
             </div>
@@ -89,23 +90,23 @@
               <!-- Full Name -->
               <p class="flex items-center text-gray-700">
                 <i class="bi bi-person-circle mr-3 text-xl text-gray-500"></i>
-                <span><strong>Full Name:</strong> {{ user.first_name }} {{ user.last_name }}</span>
+                <span><strong>Full Name:</strong> {{ authStore.user.first_name }} {{ authStore.user.last_name }}</span>
               </p>
 
               <!-- Email -->
               <p class="flex items-center text-gray-700">
                 <i class="bi bi-envelope mr-3 text-xl text-gray-500"></i>
-                <span><strong>Email:</strong> {{ user.email }}</span>
+                <span><strong>Email:</strong> {{ authStore.user.email }}</span>
               </p>
 
               <!-- Phone -->
               <p class="flex items-center text-gray-700">
                 <i class="bi bi-phone mr-3 text-xl text-gray-500"></i>
                 <span>
-                  <strong>Phone:</strong> {{ user.phone_number || 'Not provided' }}
+                  <strong>Phone:</strong> {{ authStore.user.phone_number || 'Not provided' }}
                   <button @click="phoneModalVisible = !phoneModalVisible"
                     class="ml-2  bg-[#1c1c1c] p-1 rounded text-[#ffc107]  hover:text-yellow-600">
-                    Edit
+                    Edit Phone
                   </button>
                 </span>
               </p>
@@ -133,27 +134,29 @@
               <!-- Address Information -->
               <p class="flex items-center text-gray-700">
                 <i class="bi bi-building mr-3 text-xl text-gray-500"></i>
-                <span><strong>Company Name:</strong> {{ user.user_address?.company_name || 'Not provided' }}</span>
+                <span><strong>Company Name:</strong> {{ authStore.user.user_address?.company_name || 'Not provided'
+                  }}</span>
               </p>
 
               <p class="flex items-center text-gray-700">
                 <i class="bi bi-building mr-3 text-xl text-gray-500"></i>
-                <span><strong>Address:</strong> {{ user.user_address?.street_address || 'No address provided' }}</span>
+                <span><strong>Address:</strong> {{ authStore.user.user_address?.street_address || 'No address provided'
+                  }}</span>
               </p>
 
               <p class="flex items-center text-gray-700">
                 <i class="bi bi-geo-alt mr-3 text-xl text-gray-500"></i>
-                <span><strong>City:</strong> {{ user.user_address?.city || 'Not provided' }}</span>
+                <span><strong>City:</strong> {{ authStore.user.user_address?.city || 'Not provided' }}</span>
               </p>
 
               <p class="flex items-center text-gray-700">
                 <i class="bi bi-code-slash mr-3 text-xl text-gray-500"></i>
-                <span><strong>Zip Code:</strong> {{ user.user_address?.zip_code || 'Not provided' }}</span>
+                <span><strong>Zip Code:</strong> {{ authStore.user.user_address?.zip_code || 'Not provided' }}</span>
               </p>
 
               <p class="flex items-center text-gray-700">
                 <i class="bi bi-globe mr-3 text-xl text-gray-500"></i>
-                <span><strong>Country:</strong> {{ user.user_address?.country || 'Not provided' }}</span>
+                <span><strong>Country:</strong> {{ authStore.user.user_address?.country || 'Not provided' }}</span>
               </p>
             </div>
 
@@ -162,7 +165,7 @@
               <button @click="addressModalVisible = !addressModalVisible"
                 class="mr-2 text-[#ffc107] bg-[#1c1c1c] rounded p-2 hover:text-yellow-600">
                 <i class="bi bi-pencil-square mr-2"></i>
-                {{ user.user_address && user.user_address.id ? 'Edit Address' : 'Add Address' }}
+                {{ authStore.user.user_address && authStore.user.user_address.id ? 'Edit Address' : 'Add Address' }}
               </button>
             </div>
           </div>
@@ -172,9 +175,10 @@
           <!-- My Equipments Section -->
           <div v-if="activeSection === 'my-equipments'">
             <button @click="closeSidebar"
-              class="mr-4 text-gray-800 mt-2 rounded-full p-2 focus:outline-none transition">
-              <i class="pi pi-arrow-circle-left" style="font-size: 1.5rem"></i>
+              class="flex items-center text-gray-800 rounded-full p-2 transition hover:bg-gray-200">
+              <i class="pi pi-arrow-circle-left text-xl mr-2"></i> Back
             </button>
+
             <div v-if="equipments.length > 0">
               <div class="container mx-auto p-4">
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -224,14 +228,80 @@
             </div>
           </div>
 
+          <!-- Edit Equipment Modal -->
+          <div v-if="editModalVisible" @click.self="closeEditModal"
+            class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-lg p-6 w-1/2">
+              <h3 class="text-xl font-semibold mb-4">Edit Equipment</h3>
+              <form @submit.prevent="updateEquipment">
+                <div class="mb-4">
+                  <label for="name" class="block text-sm font-medium text-gray-700">Name</label>
+                  <input v-model="editedEquipment.name" type="text" id="name" class="w-full p-2 border rounded mt-1"
+                    required />
+                </div>
+
+                <div class="mb-4">
+                  <label for="hourly_rate" class="block text-sm font-medium text-gray-700">Hourly Rate</label>
+                  <input v-model="editedEquipment.hourly_rate" type="float" id="hourly_rate"
+                    class="w-full p-2 border rounded mt-1" required />
+                </div>
+                <!-- Available Items -->
+                <div class="mb-4 relative">
+                  <label for="availableItems" class="block text-sm font-medium text-gray-700">Available Items</label>
+                  <input type="number" min=1 placeholder="Available items for renting out" id="availableItems"
+                    v-model.number="editedEquipment.available_quantity"  class="w-full p-2 border rounded mt-1" />
+                </div>
+
+                <div class="mb-4">
+                  <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
+                  <textarea v-model="editedEquipment.description" id="description"
+                    class="w-full p-2 border rounded mt-1" rows="4"></textarea>
+                </div>
+
+                <div class="mb-4">
+                  <label for="category" class="block text-sm font-medium text-gray-700">Category</label>
+                  <select v-model="editedEquipment.category" id="category" class="w-full p-2 border rounded mt-1">
+                    <option v-for="category in store.categories" :key="category.id" :value="category.id">
+                      {{ category.name }}
+                    </option>
+                  </select>
+                </div>
+
+
+                <div class="mb-4">
+                  <label for="is_available" class="block text-sm font-medium text-gray-700">Availability</label>
+                  <select v-model="editedEquipment.is_available" id="is_available"
+                    class="w-full p-2 border rounded mt-1">
+                    <option :value="true">Available</option>
+                    <option :value="false">Unavailable</option>
+                  </select>
+                </div>
+
+                <div class="mb-4">
+                  <label for="images" class="block text-sm font-medium text-gray-700">Upload Images</label>
+                  <input type="file" id="images" @change="handleImageUpload" class="w-full p-2 border rounded mt-1"
+                    multiple />
+                </div>
+
+
+                <div class="flex justify-end space-x-2">
+                  <button type="button" @click="closeEditModal"
+                    class="px-4 py-2 bg-gray-400 text-white rounded">Cancel</button>
+                  <button type="submit" class="px-4 py-2 bg-[#1c1c1c] text-[#ffc107] rounded">Update</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
 
 
 
           <div v-if="activeSection === 'my-orders'">
             <button @click="closeSidebar"
-              class="mr-4 text-gray-800 mt-2 rounded-full p-2 focus:outline-none transition">
-              <i class="pi pi-arrow-circle-left" style="font-size: 1.5rem"></i>
+              class="flex items-center text-gray-800 rounded-full p-2 transition hover:bg-gray-200">
+              <i class="pi pi-arrow-circle-left text-xl mr-2"></i> Back
             </button>
+
             <div class="p-6 bg-gray-100 min-h-screen">
               <h1 class="text-3xl font-bold text-gray-800 mb-4">Order Management</h1>
 
@@ -433,13 +503,107 @@
           </div>
 
 
-          <div v-if="activeSection === 'reports'">
+          <div v-if="activeSection === 'reports'" class="p-6 bg-gray-50 min-h-screen">
+            <!-- Back Button -->
             <button @click="closeSidebar"
-              class="mr-4 text-gray-800 mt-2 rounded-full p-2 focus:outline-none transition">
-              <i class="pi pi-arrow-circle-left" style="font-size: 1.5rem"></i>
+              class="flex items-center text-gray-800 bg-white shadow-md rounded-full px-4 py-2 transition duration-300 transform hover:bg-gray-100 hover:shadow-lg hover:-translate-x-1">
+              <i class="pi pi-arrow-circle-left text-2xl text-[#1c1c1c] mr-2"></i>
+              Back
             </button>
-            <h1>My Reports</h1>
 
+            <div class="mt-6">
+              <!-- Loading/Error States -->
+              <div v-if="loading" class="flex items-center justify-center text-gray-500 space-x-2 animate-pulse">
+                <i class="pi pi-spin pi-spinner text-2xl"></i>
+                <span>Loading...</span>
+              </div>
+
+              <div v-else-if="error"
+                class="flex items-center justify-center text-red-500 space-x-2 bg-red-100 rounded-md p-4">
+                <i class="pi pi-exclamation-circle text-2xl"></i>
+                <span>{{ error }}</span>
+              </div>
+
+              <!-- Report Data -->
+              <div v-else>
+                <!-- Lessor Report -->
+                <div v-if="authStore.user.role === 'lessor'"
+                  class="bg-gradient-to-br bg-[#ffc107] rounded-lg shadow-md p-6 border-l-4 border-[#1c1c1c]">
+                  <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center space-x-3">
+                    <i class="pi pi-chart-bar text-yellow-500 text-3xl"></i>
+                    <span>Report</span>
+                  </h2>
+                  <ul class="space-y-4">
+                    <li
+                      class="flex items-center justify-between bg-white p-4 rounded-md shadow-sm transition duration-300 transform hover:scale-105">
+                      <i class="pi pi-cog text-[#1c1c1c] text-2xl"></i>
+                      <span>Total Equipments</span>
+                      <span class="font-bold">{{ report.total_equipments }}</span>
+                    </li>
+                    <li
+                      class="flex items-center justify-between bg-white p-4 rounded-md shadow-sm transition duration-300 transform hover:scale-105">
+                      <i class="pi pi-shopping-cart text-[#1c1c1c] text-2xl"></i>
+                      <span>Total Orders</span>
+                      <span class="font-bold">{{ report.total_orders }}</span>
+                    </li>
+                    <li
+                      class="flex items-center justify-between bg-white p-4 rounded-md shadow-sm transition duration-300 transform hover:scale-105">
+                      <i class="pi pi-dollar text-yellow-500 text-2xl"></i>
+                      <span>Total Revenue</span>
+                      <span class="font-bold text-[#1c1c1c]">${{ report.total_revenue }}</span>
+                    </li>
+                    <li
+                      class="flex items-center justify-between bg-white p-4 rounded-md shadow-sm transition duration-300 transform hover:scale-105">
+                      <i class="pi pi-star text-[#1c1c1c] text-2xl"></i>
+                      <span>Average Rating</span>
+                      <span class="font-bold">{{ report.average_rating }}</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <!-- Lessee Report -->
+                <div v-else-if="authStore.user.role === 'lessee'"
+                  class="bg-gradient-to-br bg-[#ffc107] rounded-lg shadow-md p-6 border-l-4 border-[#1c1c1c]">
+                  <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center space-x-3">
+                    <i class="pi pi-chart-bar text-[#1c1c1c] text-3xl"></i>
+                    <span>Report</span>
+                  </h2>
+                  <ul class="space-y-4">
+                    <li
+                      class="flex items-center justify-between bg-white p-4 rounded-md shadow-sm transition duration-300 transform hover:scale-105">
+                      <i class="pi pi-shopping-cart text-[#1c1c1c] text-2xl"></i>
+                      <span>Total Orders</span>
+                      <span class="font-bold">{{ report.total_orders }}</span>
+                    </li>
+                    <li
+                      class="flex items-center justify-between bg-white p-4 rounded-md shadow-sm transition duration-300 transform hover:scale-105">
+                      <i class="pi pi-box text-[#1c1c1c] text-2xl"></i>
+                      <span>Total Rented Items</span>
+                      <span class="font-bold">{{ report.total_rented_items }}</span>
+                    </li>
+                    <li
+                      class="flex items-center justify-between bg-white p-4 rounded-md shadow-sm transition duration-300 transform hover:scale-105">
+                      <i class="pi pi-dollar text-[#1c1c1c] text-2xl"></i>
+                      <span>Total Spending</span>
+                      <span class="font-bold text-yellow-500">${{ report.total_spending }}</span>
+                    </li>
+                    <li
+                      class="flex items-center justify-between bg-white p-4 rounded-md shadow-sm transition duration-300 transform hover:scale-105">
+                      <i class="pi pi-star text-[#1c1c1c] text-2xl"></i>
+                      <span>Average Rating Given</span>
+                      <span class="font-bold">{{ report.average_rating_given }}</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <!-- Unauthorized Access -->
+                <div v-else
+                  class="bg-red-100 text-red-600 rounded-lg shadow-lg p-6 flex items-center space-x-4 transition duration-300">
+                  <i class="pi pi-lock text-3xl"></i>
+                  <span class="text-lg font-semibold">Unauthorized access or role not recognized.</span>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Other Sections Content -->
@@ -453,7 +617,8 @@
   <!-- Modal for Editing Address -->
   <div v-if="addressModalVisible" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
     <div class="bg-white p-8 rounded-lg shadow-lg w-full sm:w-96">
-      <h2 class="text-xl font-semibold mb-4">{{ user.user_address.id ? 'Update Address' : 'Add Address' }}</h2>
+      <h2 class="text-xl font-semibold mb-4">{{ authStore.user.user_address.id ? 'Update Address' : 'Add Address' }}
+      </h2>
       <div class="mb-4">
         <label for="full_name" class="block text-sm font-medium">Full Name</label>
         <input v-model="user.user_address.full_name" id="full_name" type="text"
@@ -491,8 +656,8 @@
       </div>
       <div class="flex justify-between">
         <button @click="addressModalVisible = false" class="px-4 py-2 bg-gray-300 text-white rounded-md">Cancel</button>
-        <button @click="updateAddress" class="px-4 py-2 bg-[#ffc107] text-[#1c1c1c] rounded-md">
-          <i class="bi bi-pencil-square"></i> {{ user.user_address.id ? 'Save Address' : 'Add Address' }}
+        <button @click="updateAddress" class="px-4 py-2 bg-[#1c1c1c] text-[#ffc107] rounded-md">
+          <i class="bi bi-pencil-square"></i> {{ authStore.user.user_address.id ? 'Save Address' : 'Add Address' }}
         </button>
       </div>
     </div>
@@ -505,11 +670,11 @@
       <div class="mb-4">
         <input v-model="phoneNumber" id="phone_number" type="text"
           class="mt-1 p-2 border border-gray-300 rounded-md w-full"
-          :placeholder="user.phone_number || 'Enter phone number'" />
+          :placeholder="authStore.user.phone_number || 'Enter phone number'" />
       </div>
       <div class="flex justify-between">
         <button @click="phoneModalVisible = false" class="px-4 py-2 bg-gray-300 text-white rounded-md">Cancel</button>
-        <button @click="updatePhoneNumber" class="px-4 py-2 bg-[#ffc107] text-[#1c1c1c] rounded-md">Update</button>
+        <button @click="updatePhoneNumber" class="px-4 py-2 bg-[#1c1c1c] text-[#ffc107] rounded-md">Update</button>
       </div>
     </div>
 
@@ -520,11 +685,11 @@
 
 
 <script>
-import { ref, onMounted, reactive, computed} from 'vue';
+import { ref, onMounted, reactive, computed } from 'vue';
 import axios from 'axios';
 import { useAuthStore } from '@/store/auth';
 import useNotifications from '@/store/notification.js'; // Import the notification service
-
+import { useEquipmentsStore } from '@/store/equipments';
 import { useRouter, useRoute } from 'vue-router';
 import { format } from 'date-fns';
 import Cookies from 'js-cookie';
@@ -536,7 +701,40 @@ export default {
     const chats = ref([]); // List of chats
     const messages = reactive({}); // Messages for each chat, keyed by chat ID
     const activeChat = ref(null); // Currently open chat ID
-    const newMessage = ref(""); // Message being typed  
+    const newMessage = ref(""); // Message being typed 
+
+    const store = useEquipmentsStore();
+
+
+    const report = ref({});
+    const error = ref(null);
+
+
+    const fetchUserReport = async () => {
+
+      try {
+
+        const response = await axios.get(`${api_base_url}/api/reports/`, {
+
+          withCredentials: true, // Include credentials (cookies) in the request
+
+        });
+
+        report.value = response.data;
+
+
+      } catch (err) {
+
+        error.value = err.message;
+
+      } finally {
+
+        loading.value = false;
+
+      }
+
+    };
+
 
     const role = ref('false');
     const { showNotification } = useNotifications(); // Initialize notification service
@@ -565,7 +763,9 @@ export default {
           secure: true, // Only for development; ensure secure: true in production
         });
 
-        
+        await fetchUserReport();
+
+
         // Optionally show a success toast
         showNotification('success', `You are now a ${authStore.user.role}.`, 'success');
       } catch (error) {
@@ -594,17 +794,13 @@ export default {
       images: null,
     });
 
-    const fetchCategories = async () => {
-      // Fetch categories from your API
-      const response = await axios.get(`${api_base_url}/api/categories`);
-      categories.value = response.data;
-    };
 
 
 
-    const openEditModal = (equipment) => {
+
+    const openEditModal = async (equipment) => {
       Object.assign(editedEquipment, equipment); // Clone the equipment into the editedEquipment
-      fetchCategories(); // Fetch categories for the dropdown
+      await store.fetchCategories(); // Fetch categories for the dropdown
       editModalVisible.value = true;
     };
 
@@ -622,27 +818,19 @@ export default {
     };
 
     const updateEquipment = async () => {
-      const payload = {};
       const formData = new FormData();
 
       // Append regular fields to the formData
       formData.append('name', editedEquipment.name);
       formData.append('hourly_rate', editedEquipment.hourly_rate);
+      formData.append('available_quantity', editedEquipment.available_quantity);
       formData.append('description', editedEquipment.description);
       formData.append('category', editedEquipment.category);
       formData.append('is_available', editedEquipment.is_available);
 
-      // Check if there are any images and convert them to base64 if necessary
+      // Append images only if they are provided
       if (editedEquipment.images && editedEquipment.images.length > 0) {
         for (const image of editedEquipment.images) {
-          // Convert image to base64
-          const base64String = await fileToBase64(image);
-
-          // Add the base64 string to the payload (if needed for future use)
-          payload['images'] = payload['images'] || [];
-          payload['images'].push({ base64: base64String, name: image.name, type: image.type });
-
-          // Append each image file to the FormData for file upload
           formData.append('images', image); // Append each image as 'images[]'
         }
       }
@@ -661,15 +849,6 @@ export default {
       }
     };
 
-    // Helper function to convert file to base64
-    const fileToBase64 = (file) => {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result.split(',')[1]); // Remove data URL prefix
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-    };
 
     // Fetch the list of chats
     const fetchChats = async () => {
@@ -873,8 +1052,6 @@ export default {
 
 
 
-
-
     // Mock user object for demonstration purposes
     const user = ref({
       user_address: {
@@ -921,26 +1098,26 @@ export default {
     };
 
 
-    
-const sections = computed(() => [
-  { name: "personal-info", label: "Personal Information" },
-  { name: "my-equipments", label: "My Equipments", show: authStore.user.role === 'lessor' },
-  { name: "my-orders", label: "My Orders", show: authStore.user.role === 'lessee' },
-  { name: "chats", label: "Chats" },
-  { name: "reports", label: "Reports" },
-]);
+
+    const sections = computed(() => [
+      { name: "personal-info", label: "Personal Information" },
+      { name: "my-equipments", label: "My Equipments", show: authStore.user.role === 'lessor' },
+      { name: "my-orders", label: "My Orders", show: authStore.user.role === 'lessee' },
+      { name: "chats", label: "Chats" },
+      { name: "reports", label: "Reports" },
+    ]);
     const otherSections = [
-      { name: "my-equipments", label: "My Equipments"},
-      { name: "my-orders", label: "My Orders"},
+      { name: "my-equipments", label: "My Equipments" },
+      { name: "my-orders", label: "My Orders" },
       // { name: "settings", label: "Settings" },
       { name: "chats", label: "Chats" },
       { name: "reports", label: "Reports" },
     ];
 
-// Filter sections to only include those that should be shown
-const visibleSections = computed(() =>
-  sections.value.filter(section => section.show !== false)
-);
+    // Filter sections to only include those that should be shown
+    const visibleSections = computed(() =>
+      sections.value.filter(section => section.show !== false)
+    );
 
 
 
@@ -966,35 +1143,13 @@ const visibleSections = computed(() =>
         });
 
         user.image = response.data.image_url; // Update the image URL
-        await getUserData();
+        await authStore.getUserData();
       } catch (error) {
         console.error(error);
       }
     };
 
-    // Fetch user data from API
-    const getUserData = async () => {
-      try {
-        const response = await axios.get(
-          `${api_base_url}/api/accounts/users/${authStore.user.id}/`,
-          { withCredentials: true }
-        );
-        user.value = {
-          ...response.data,
-          user_address: response.data.user_address || {
-            full_name: '',
-            street_address: '',
-            street_address2: '',
-            city: '',
-            state: '',
-            zip_code: '',
-            country: ''
-          }
-        };
-      } catch (error) {
-        console.error("Error fetching user data:", error);
-      }
-    };
+
 
     // Update phone number via PUT request
     const updatePhoneNumber = async () => {
@@ -1005,7 +1160,7 @@ const visibleSections = computed(() =>
           updatedUserData,
           { withCredentials: true }
         );
-        user.value = response.data;
+        authStore.user = response.data;
 
         phoneModalVisible.value = false;
       } catch (error) {
@@ -1062,18 +1217,25 @@ const visibleSections = computed(() =>
 
 
     // Fetch user data when the component is mounted
-    onMounted(() => {
+    onMounted(async () => {
       const section = route.query.section;
       if (section) {
         navigateToSection(section);
       }
-      getUserData();
+      await authStore.getUserData();
+      user.value = authStore.user;
+
       fetchChats();
       fetchUserEquipments();
       fetchOrders();  // Fetch orders on mount
+      fetchUserReport();
     });
 
     return {
+      store,
+      report,
+      error,
+      fetchUserReport,
       role,
       updateUserRole,
       navigateToSection,

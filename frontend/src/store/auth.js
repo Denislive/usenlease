@@ -13,7 +13,8 @@ const getCSRFToken = () => {
   return parts.length === 2 ? parts.pop().split(';').shift() : null;
 };
 
-const api_base_url = import.meta.env.VITE_API_BASE_URL;
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+
 
 export const useAuthStore = defineStore('auth', () => {
   const cartStore = useCartStore();
@@ -32,19 +33,46 @@ export const useAuthStore = defineStore('auth', () => {
     }
   });
 
+
+  // Fetch user data from API
+  const getUserData = async () => {
+    try {
+      const response = await axios.get(
+        `${apiBaseUrl}/api/accounts/users/${user.id}/`,
+        { withCredentials: true }
+      );
+      user.value = {
+        ...response.data,
+        user_address: response.data.user_address || {
+          full_name: '',
+          street_address: '',
+          street_address2: '',
+          city: '',
+          state: '',
+          zip_code: '',
+          country: ''
+        }
+      };
+    } catch (error) {
+    }
+  };
+
   const login = async (email, password, cart) => {
     isLoading.value = true;
     try {
       const response = await axios.post(
-        `${api_base_url}/api/accounts/login/`,
-        { email, password, cart},
+        `${apiBaseUrl}/api/accounts/login/`,
+        { email, password, cart },
         { withCredentials: true }
       );
 
       user.value = response.data;
-      
-      Cookies.set('user', JSON.stringify(user.value), { expires: 1, sameSite: 'None',
-        secure: true });
+
+      Cookies.set('user', JSON.stringify(user.value), {
+        expires: 1,
+        sameSite: 'None',
+        secure: true,
+      });
 
       setTimeout(() => logout(), 86400000);
 
@@ -55,7 +83,7 @@ export const useAuthStore = defineStore('auth', () => {
         formData.set('owner', user.value.id);
         try {
           const createResponse = await axios.post(
-            `${api_base_url}/api/equipments/`,
+            `${apiBaseUrl}/api/equipments/`,
             formData,
             { withCredentials: true }
           );
@@ -69,7 +97,6 @@ export const useAuthStore = defineStore('auth', () => {
             'success'
           );
           localStorage.removeItem('payload');
-          return;
         } catch (error) {
           showNotification(
             'Error Listing Item',
@@ -109,7 +136,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const csrfToken = getCSRFToken();
       await axios.post(
-        `${api_base_url}/api/accounts/logout/`,
+        `${apiBaseUrl}/api/accounts/logout/`,
         {},
         {
           headers: { 'X-CSRFToken': csrfToken },
@@ -120,19 +147,13 @@ export const useAuthStore = defineStore('auth', () => {
       Cookies.remove('user');
 
       cartStore.clearCart();
-      
+
       showNotification('Logout Successful', 'You have been logged out.', 'success');
       router.push('/');
     } catch (error) {
-
-      showNotification(
-        'Logout Error',
-        'An error occurred while logging out.',
-        'error'
-      );
+      showNotification('Logout Error', 'An error occurred while logging out.', 'error');
       Cookies.remove('user');
     } finally {
-
       isLoading.value = false;
     }
   };
@@ -144,15 +165,15 @@ export const useAuthStore = defineStore('auth', () => {
     if (!payload) return null;
 
     const formData = new FormData();
-    for (const key in payload) {
-      if (payload[key].base64) {
-        const { base64, name, type } = payload[key];
+    Object.entries(payload).forEach(([key, value]) => {
+      if (value.base64) {
+        const { base64, name, type } = value;
         const file = base64ToFile(base64, name, type);
         formData.append(key, file);
       } else {
-        formData.append(key, payload[key]);
+        formData.append(key, value);
       }
-    }
+    });
     return formData;
   };
 
@@ -172,6 +193,7 @@ export const useAuthStore = defineStore('auth', () => {
     isLoading,
     login,
     logout,
+    getUserData,
     redirectTo,
     isAuthenticated,
   };

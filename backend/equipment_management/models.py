@@ -1,24 +1,21 @@
+from datetime import datetime
+import uuid
+import base64
 from django.db import models
 from django.conf import settings
 from django.shortcuts import reverse
 from django.utils.text import slugify
-
-from django.core.validators import FileExtensionValidator
-from django.core.validators import MinValueValidator
+from django.core.validators import FileExtensionValidator, MinValueValidator
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+from django.db.models import Avg
 
 from user_management.models import Address
-from datetime import datetime
-import uuid
-import base64
-from django.db.models import Avg
 
 
 def generate_short_uuid():
-    # Generate a UUID, convert to bytes, then encode in base64, removing padding
+    """Generate a shortened version of UUID using base64 encoding."""
     return base64.urlsafe_b64encode(uuid.uuid4().bytes).decode('utf-8')[:16]
-
 
 
 class Category(models.Model):
@@ -27,8 +24,8 @@ class Category(models.Model):
     description = models.TextField(blank=True, null=True)
     slug = models.SlugField(unique=True, blank=True)
     parent = models.ForeignKey('self', on_delete=models.PROTECT, null=True, blank=True, related_name='subcategories')
-    image = models.ImageField(upload_to="category_images", blank=True, null=True, validators=[FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png'])])  # Assuming you want to store images as URLs
-
+    image = models.ImageField(upload_to="category_images", blank=True, null=True, 
+                              validators=[FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png'])])
 
     class Meta:
         ordering = ('name',)
@@ -37,12 +34,10 @@ class Category(models.Model):
     def __str__(self):
         return self.name
     
-
     def get_absolute_url(self):
         return f'/{self.slug}/'
     
     def save(self, *args, **kwargs):
-        # Generate slug if it is not provided
         if not self.slug:
             self.slug = slugify(self.name)
         super().save(*args, **kwargs)
@@ -65,7 +60,7 @@ class Equipment(models.Model):
     description = models.TextField()
     hourly_rate = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0.00)])
     address = models.ForeignKey(Address, on_delete=models.CASCADE)
-    available_quantity = models.PositiveIntegerField(default=0)  # Track the available quantity
+    available_quantity = models.PositiveIntegerField(default=0)
     is_available = models.BooleanField(default=True)
     date_created = models.DateTimeField(auto_now_add=True)
     date_updated = models.DateTimeField(auto_now=True)
@@ -73,7 +68,6 @@ class Equipment(models.Model):
     slug = models.SlugField(unique=True, blank=True, editable=False)
     is_trending = models.BooleanField(default=False)
     is_featured = models.BooleanField(default=False)
-
 
     class Meta:
         ordering = ('-date_created',)
@@ -84,10 +78,8 @@ class Equipment(models.Model):
     def get_absolute_url(self):
         return reverse('equipment_detail', kwargs={'slug': self.slug, 'id': self.id})
 
-    
     def get_available_quantity(self, start_date, end_date):
         """Calculate available quantity for a given date range."""
-        # Find all rented items that overlap with the given date range
         rented_items = CartItem.objects.filter(
             item=self,
             start_date__lt=end_date,  # Existing bookings that start before the new end_date
@@ -95,10 +87,7 @@ class Equipment(models.Model):
             ordered=True               # Only confirmed bookings
         )
 
-        # Calculate the total quantity rented during the period
         rented_quantity = rented_items.aggregate(models.Sum('quantity'))['quantity__sum'] or 0
-
-        # Return the available quantity, ensuring it doesn't go below 0
         available_quantity = self.available_quantity - rented_quantity
         return max(available_quantity, 0)  # Prevent negative available quantity
 
@@ -115,14 +104,12 @@ class Equipment(models.Model):
         return self.available_quantity - rented_quantity > 0
 
     def get_average_rating(self):
-        # Calculate the average rating of the equipment
-        reviews = self.equipment_reviews.all()  # Get all reviews for the equipment
+        """Calculate the average rating of the equipment."""
+        reviews = self.equipment_reviews.all()
         if reviews.exists():
-            # Calculate the average rating
             avg_rating = reviews.aggregate(Avg('rating'))['rating__avg']
             return avg_rating
-        return None  # or return a default value like 0
-        
+        return None
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -132,7 +119,6 @@ class Equipment(models.Model):
         super().save(*args, **kwargs)
 
 
-# Image Model
 class Image(models.Model):
     id = models.CharField(primary_key=True, max_length=16, default=generate_short_uuid, editable=False)
     equipment = models.ForeignKey(Equipment, related_name='images', on_delete=models.CASCADE)
@@ -140,18 +126,12 @@ class Image(models.Model):
 
     def __str__(self):
         return f"Image for {self.equipment.name}"
-    
+
     def clean(self):
-        # Ensure the instance has been saved or exists in the database
+        """Ensure no more than 4 images per equipment."""
         if Equipment.objects.filter(pk=self.pk).exists():
-            # Now it's safe to check related images
             if self.images.count() >= 4:
                 raise ValidationError("An equipment item cannot have more than 4 images.")
-        else:
-            # Skipping validation for unsaved instances
-            pass
-        
-        # Always call the parent class's clean method
         super().clean()
 
     @property
@@ -162,7 +142,6 @@ class Image(models.Model):
         unique_together = ('equipment', 'id')
 
 
-        
 class Specification(models.Model):
     id = models.CharField(primary_key=True, max_length=16, default=generate_short_uuid, editable=False)
     equipment = models.ForeignKey(Equipment, on_delete=models.CASCADE, related_name='specifications')
@@ -221,28 +200,30 @@ class Cart(models.Model):
         return total
 
     def save(self, *args, **kwargs):
-        # Update cart_total_price and total_cart_items before saving
         self.cart_total_price = self.get_cart_total  # Update total price
         self.total_cart_items = self.get_cart_items  # Update item count
-        super().save(*args, **kwargs)  # Save the cart instance
+        super().save(*args, **kwargs)
 
-       
 
 class CartItem(models.Model):
-    id = models.CharField(primary_key=True, max_length=16, default=generate_short_uuid, editable=False)
+    id = models.CharField(
+        primary_key=True, max_length=16, default=generate_short_uuid, editable=False)
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='cart_items')
     item = models.ForeignKey(Equipment, on_delete=models.PROTECT)
     quantity = models.PositiveIntegerField(default=1)
     start_date = models.DateField()
     end_date = models.DateField()
     ordered = models.BooleanField(default=False)
-    total = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)  # New total field
+    total = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
     def __str__(self):
         return f"{self.quantity} x {self.item.name} in cart"
 
     @property
     def get_cart_item_total(self):
+        """
+        Calculate and return the total price for this cart item.
+        """
         if self.item and self.item.hourly_rate is not None:
             # Ensure start_date and end_date are datetime.date objects
             start_date = self.start_date
@@ -256,7 +237,6 @@ class CartItem(models.Model):
 
             # Calculate rental days
             rental_days = (end_date - start_date).days
-            print("rental days", rental_days)
             if rental_days < 0:
                 rental_days = 0
 
@@ -264,27 +244,30 @@ class CartItem(models.Model):
             total_hours = rental_days * 24
             calculated_total = self.quantity * self.item.hourly_rate * total_hours
             self.total = calculated_total  # Update the total field
-            print("type of calculated total", type(calculated_total))
 
         return self.total if self.total else 0
-    
+
     def clean(self):
-        # Validate rental dates
+        """
+        Validate rental dates and availability of the item in the cart.
+        """
         if self.start_date < timezone.now().date():
             raise ValidationError("Start date cannot be in the past.")
-        
+
         if self.end_date < self.start_date:
             raise ValidationError("End date must be after the start date.")
 
-        # Validate availability
         if not self.item.is_available:
             raise ValidationError(f"{self.item.name} is not available for rent.")
 
         if self.quantity > self.item.available_quantity:
-            raise ValidationError(f"Cannot add more than {self.item.available_quantity} of {self.item.name} to the cart.")
+            raise ValidationError(
+                f"Cannot add more than {self.item.available_quantity} of {self.item.name} to the cart.")
 
     def save(self, *args, **kwargs):
-        # Update the total field before saving
+        """
+        Save the cart item, ensuring the total is calculated beforehand.
+        """
         self.total = self.get_cart_item_total  # Ensures total is calculated before saving
         super().save(*args, **kwargs)
 
@@ -293,9 +276,10 @@ class CartItem(models.Model):
             self.cart.save()
 
 
-# Order Model
 class Order(models.Model):
-    id = models.CharField(primary_key=True, max_length=16, default=generate_short_uuid, editable=False)
+    id = models.CharField(
+        primary_key=True, max_length=16, default=generate_short_uuid, editable=False)
+    
     STATUS_CHOICES = [
         ('pending', 'Pending'),
         ('approved', 'Approved'),
@@ -307,30 +291,27 @@ class Order(models.Model):
     ]
 
     payment_token = models.CharField(max_length=255, blank=True, null=True)
-
     cart = models.ForeignKey(Cart, on_delete=models.PROTECT, blank=True, null=True)
-    
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
     shipping_address = models.ForeignKey(Address, related_name='shipping_address', on_delete=models.PROTECT, blank=True, null=True)
     billing_address = models.ForeignKey(Address, related_name='billing_address', on_delete=models.PROTECT, blank=True, null=True)
-    payment_status = models.CharField(max_length=10, choices=[('paid', 'Paid'), ('pending', 'pending'), ('unpaid', 'unpaid')], default='unpaid')
+    payment_status = models.CharField(
+        max_length=10, choices=[('paid', 'Paid'), ('pending', 'pending'), ('unpaid', 'unpaid')], default='unpaid')
     date_created = models.DateTimeField(auto_now_add=True)
     date_ordered = models.DateTimeField(blank=True, null=True)
 
     order_total_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     total_order_items = models.IntegerField(default=0)
-
     ordered = models.BooleanField(default=False)
-
-
 
     def __str__(self):
         return f"Order {self.id} for {self.user.username}"
 
-
-
     def terminate_rental(self):
+        """
+        Terminate the rental, setting the order status to 'canceled'.
+        """
         if self.status in ['pending', 'rented']:
             self.status = 'canceled'
             self.save()
@@ -338,6 +319,9 @@ class Order(models.Model):
             raise ValueError("Rental cannot be terminated in the current status.")
 
     def reorder(self):
+        """
+        Reorder a completed, returned, or canceled order.
+        """
         if self.status in ['completed', 'returned', 'canceled']:
             new_order = Order.objects.create(
                 user=self.user,
@@ -359,41 +343,50 @@ class Order(models.Model):
 
     @property
     def get_order_total(self):
+        """
+        Calculate the total price of the order based on the order items.
+        """
         order_items = self.order_items.all()
         total = sum([item.get_order_item_total for item in order_items])
         return total
 
     @property
     def get_order_items(self):
+        """
+        Calculate the total number of items in the order.
+        """
         order_items = self.order_items.all()
         total = sum([item.quantity for item in order_items])
         return total
-    
+
     def save(self, *args, **kwargs):
-        # Update cart_total_price and total_cart_items before saving
+        """
+        Save the order, updating the total price and item count.
+        """
         self.order_total_price = self.get_order_total  # Update total price
         self.total_order_items = self.get_order_items  # Update item count
-        super().save(*args, **kwargs)  # Save the cart instance
+        super().save(*args, **kwargs)  # Save the order instance
 
 
-# OrderItem Model
 class OrderItem(models.Model):
-    id = models.CharField(primary_key=True, max_length=16, default=generate_short_uuid, editable=False)
+    id = models.CharField(
+        primary_key=True, max_length=16, default=generate_short_uuid, editable=False)
     ordered = models.BooleanField(default=False)
     item = models.ForeignKey(Equipment, on_delete=models.PROTECT)
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='order_items')
     quantity = models.PositiveIntegerField(default=0, null=True, blank=True)
     start_date = models.DateField()
     end_date = models.DateField()
-    total = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)  # New total field
-
+    total = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
     def __str__(self):
         return f"{self.quantity} x {self.item.name} in order"
 
     @property
     def get_order_item_total(self):
-        # Check if start_date and end_date are both set
+        """
+        Calculate and return the total price for this order item.
+        """
         if not self.start_date or not self.end_date:
             return 0.00  # Return 0 if the dates are missing
         
@@ -403,9 +396,10 @@ class OrderItem(models.Model):
         total_hours = rental_days * 24  # Convert rental days to total hours
         return self.quantity * self.item.hourly_rate * total_hours
 
-    
     def save(self, *args, **kwargs):
-        # Update the total field before saving
+        """
+        Save the order item, ensuring the total is calculated beforehand.
+        """
         self.total = self.get_order_item_total  # Ensures total is calculated before saving
         super().save(*args, **kwargs)
 

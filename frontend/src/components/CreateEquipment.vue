@@ -360,7 +360,7 @@ const validateZipCode = () => {
 };
 
 const validateCountry = () => {
-  countryError.value = !country.value ? 'Country is required.' : '';
+  countryError.value = country.value ? 'Country is required.' : '';
 };
 
 const validateImages = () => {
@@ -443,6 +443,7 @@ const handleSubmit = async () => {
     imageError.value;
 
   if (hasErrors) {
+
     console.log('Form has validation errors, cannot submit.');
     return; // Exit early if there are errors
   }
@@ -475,7 +476,7 @@ const handleSubmit = async () => {
 
   if (userId) {
     try {
-      
+
       const response = await axios.post(`${api_base_url}/api/equipments/`, formData, {
         withCredentials: true
       });
@@ -491,7 +492,6 @@ const handleSubmit = async () => {
       handleError(error);
     }
   } else {
-    console.log("User not logged in. Redirecting to login.");
     router.push('/login');
     await saveFormDataToLocalStorage(formData);
   }

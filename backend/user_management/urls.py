@@ -1,9 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from rest_framework_simplejwt.views import (
-    TokenRefreshView,
-    TokenVerifyView
-)
+from rest_framework_simplejwt.views import TokenRefreshView, TokenVerifyView
 
 from .views import (
     UserViewSet,
@@ -12,13 +9,13 @@ from .views import (
     CreditCardViewSet,
     LoginView,
     CustomLogoutView,
-    OTPViewSet, 
+    OTPViewSet,
     ChatViewSet,
     MessageViewSet,
     AllChatsViewSet,
     CheckEmailView,
     CheckPhoneNumberView,
-
+    PasswordResetViewSet
 )
 
 # Initialize the router
@@ -31,7 +28,7 @@ router.register('chats', ChatViewSet, basename='chat')
 router.register('messages', MessageViewSet, basename='message')
 router.register('all-chats', AllChatsViewSet, basename='all_chats')
 
-
+router.register('password-reset', PasswordResetViewSet, basename='password-reset')
 
 # Define urlpatterns with JWT token routes and router URLs
 urlpatterns = [

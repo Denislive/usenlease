@@ -16,6 +16,7 @@
             type="email"
             id="email"
             v-model="email"
+            placeholder="user@email.com"
             @input="validateEmail"
             required
             :class="[
@@ -31,6 +32,7 @@
           <input
             type="password"
             id="password"
+            placeholder="password"
             v-model="password"
             @input="validatePassword"
             required
@@ -52,8 +54,9 @@
           Login
         </button>
       </form>
+      <p class="mt-4 text-center text-sm">Forgot Password?<router-link to="/password-reset-request" class="text-[#ffc107] font-bold hover:underline"> Reset</router-link></p>
 
-      <p class="mt-4 text-center text-sm">
+      <p class="mt-4 text-center text-sm font-bold">
         Don't have an account?
         <RouterLink :to="{ name: 'signup' }" class="text-[#ffc107] hover:underline">Sign up</RouterLink>
       </p>
@@ -63,7 +66,7 @@
 
 <script setup>
 // Login.vue
-import { ref, watch } from 'vue';
+import { ref, watch, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
 import { useCartStore } from '@/store/cart';
@@ -90,7 +93,7 @@ const validateEmail = () => {
 };
 
 const validatePassword = () => {
-  passwordError.value = password.value.length >= 4 ? '' : 'Password must be at least 4 characters long.';
+  passwordError.value = password.value.length >= 12 ? '' : 'Password must be at least 12 characters long.';
 };
 
 const handleLogin = async () => {
@@ -101,8 +104,10 @@ const handleLogin = async () => {
 
     
     } catch (error) {
+      showNotification('Login error', `${error.response?.data || error.message}!`, 'error');
     }
   }
 };
+
 
 </script>

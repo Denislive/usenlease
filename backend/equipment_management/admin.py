@@ -1,10 +1,12 @@
 from django.contrib import admin
 from .models import Category, Tag, Equipment, Image, Cart, CartItem, Order, OrderItem, Specification, Review
 
+
 # Inline model for Images in Equipment
 class ImageInline(admin.TabularInline):
     model = Image
     extra = 1  # Number of extra blank images to display in the admin
+
 
 # Equipment Admin
 @admin.register(Equipment)
@@ -14,6 +16,7 @@ class EquipmentAdmin(admin.ModelAdmin):
     search_fields = ('name', 'description', 'owner__username', 'category__name')
     inlines = [ImageInline]
 
+
 # Category Admin
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
@@ -21,16 +24,19 @@ class CategoryAdmin(admin.ModelAdmin):
     prepopulated_fields = {'slug': ('name',)}
     search_fields = ('name', 'description')
 
+
 # Tag Admin
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):
     list_display = ('name',)
     search_fields = ('name',)
 
+
 # Cart Item Inline
 class CartItemInline(admin.TabularInline):
     model = CartItem
     extra = 1
+
 
 # Cart Admin
 @admin.register(Cart)
@@ -39,10 +45,12 @@ class CartAdmin(admin.ModelAdmin):
     inlines = [CartItemInline]
     readonly_fields = ('get_cart_total', 'get_cart_items')
 
+
 # Order Item Inline
 class OrderItemInline(admin.TabularInline):
     model = OrderItem
     extra = 1
+
 
 # Order Admin
 @admin.register(Order)
@@ -53,6 +61,7 @@ class OrderAdmin(admin.ModelAdmin):
     inlines = [OrderItemInline]
     readonly_fields = ('get_order_total', 'get_order_items')
 
+
 # Order Item Admin
 @admin.register(OrderItem)
 class OrderItemAdmin(admin.ModelAdmin):
@@ -61,6 +70,7 @@ class OrderItemAdmin(admin.ModelAdmin):
     search_fields = ('item__name', 'order__user__username')
     readonly_fields = ('get_order_item_total',)
 
+
 # CartItem Admin (if you want to register it separately)
 @admin.register(CartItem)
 class CartItemAdmin(admin.ModelAdmin):
@@ -68,6 +78,7 @@ class CartItemAdmin(admin.ModelAdmin):
     list_filter = ('start_date', 'end_date')
     search_fields = ('item__name', 'cart__user__username')
     readonly_fields = ('get_cart_item_total',)
+
 
 @admin.register(Review)
 class ReviewAdmin(admin.ModelAdmin):
@@ -78,7 +89,6 @@ class ReviewAdmin(admin.ModelAdmin):
     class Meta:
         model = Review
         fields = '__all__'  # This is not necessary in the admin class
-
 
 
 admin.site.register(Specification)

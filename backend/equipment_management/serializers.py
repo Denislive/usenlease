@@ -3,10 +3,9 @@ from .models import Category, Tag, Equipment, Image, Specification, Review, Cart
 from user_management.serializers import AddressSerializer
 from user_management.models import Address, User
 from django.shortcuts import get_object_or_404
-
 from rest_framework.exceptions import PermissionDenied
-
 import json
+
 
 class SubcategorySerializer(serializers.ModelSerializer):
     ad_count = serializers.SerializerMethodField()
@@ -18,6 +17,7 @@ class SubcategorySerializer(serializers.ModelSerializer):
     def get_ad_count(self, obj):
         # Assuming you have a related_name 'equipments' in your Category model
         return obj.equipments.count()  # Count of equipments in this subcategory
+
 
 class CategorySerializer(serializers.ModelSerializer):
     subcategories = SubcategorySerializer(many=True, read_only=True)
@@ -35,11 +35,9 @@ class CategorySerializer(serializers.ModelSerializer):
         if obj.subcategories.exists():
             subcategory_count = sum(sub.equipments.count() for sub in obj.subcategories.all())
             return direct_count + subcategory_count
-        
+
         # If no subcategories, return only the direct count
         return direct_count
-
-      
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -60,12 +58,11 @@ class SpecificationSerializer(serializers.ModelSerializer):
         fields = ['value']
 
         extra_kwargs = {
-            'equipment': {'write_only':True},
-            'name': {'write_only':True}
+            'equipment': {'write_only': True},
+            'name': {'write_only': True}
         }
 
 
-# Serializer for the Image model
 class ImageSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
 
@@ -77,24 +74,27 @@ class ImageSerializer(serializers.ModelSerializer):
     def get_image_url(self, obj):
         return obj.image.url
 
+
 class EquipmentSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True, required=False)
     images = ImageSerializer(many=True, read_only=True)  # Include related images
     address = AddressSerializer()  # Allow writable Address field
     hourly_rate = serializers.FloatField()
-    specifications = SpecificationSerializer(many=True,required=False)
+    specifications = SpecificationSerializer(many=True, required=False)
     equipment_reviews = ReviewSerializer(many=True, read_only=True)
     rating = serializers.SerializerMethodField()
 
     class Meta:
         model = Equipment
-        fields = ['owner', 'id', 'category', 'tags', 'name', 'description', 
-                  'images', 'hourly_rate', 'address', 'available_quantity', 
-                  'is_available', "specifications", 'terms', 'equipment_reviews', 'rating', 'is_trending', 'is_featured']
+        fields = [
+            'owner', 'id', 'category', 'tags', 'name', 'description', 'images', 'hourly_rate', 'address',
+            'available_quantity', 'is_available', "specifications", 'equipment_reviews', 'rating', 'is_trending',
+            'is_featured'
+        ]
         extra_kwargs = {
-            'slug': {'write_only': True},   # Slug is write-only and not exposed
+            'slug': {'write_only': True},  # Slug is write-only and not exposed
         }
-    
+
     def to_representation(self, instance):
         # Filter out reviews with no review_text before returning the data
         data = super().to_representation(instance)
@@ -110,7 +110,7 @@ class EquipmentSerializer(serializers.ModelSerializer):
 
         # Retrieve the logged-in user from the request user
         user = request.user  # Assuming 'user' is part of the request context
-        
+
         # Check the role of the user
         if user.role == 'lessee':  # Replace 'lessee' with the actual role name if different
             raise PermissionDenied("You are a Lessee!")
@@ -121,7 +121,7 @@ class EquipmentSerializer(serializers.ModelSerializer):
 
         # Remove 'owner' from validated_data as it will now be set from the logged-in user
         validated_data.pop('owner', None)
-        
+
         address_data = validated_data.pop('address')
         name = validated_data.get('name')
         description = validated_data.get('description')
@@ -136,8 +136,8 @@ class EquipmentSerializer(serializers.ModelSerializer):
 
         # Create Equipment instance with the remaining validated data
         equipment = Equipment.objects.create(
-            owner=user, 
-            address=address, 
+            owner=user,
+            address=address,
             name=name,
             description=description,
             hourly_rate=hourly_rate,
@@ -150,20 +150,16 @@ class EquipmentSerializer(serializers.ModelSerializer):
         return equipment
 
 
-
-
-
-
-
 class CartSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cart
         fields = ['id', 'cart_items']
-    
+
 
 class CartItemSerializer(serializers.ModelSerializer):
     item_details = EquipmentSerializer(source='item', read_only=True)  # Full details on read
     total = serializers.FloatField(required=False)
+
     class Meta:
         model = CartItem
         fields = ['id', 'cart', 'item', 'item_details', 'quantity', 'start_date', 'end_date', 'ordered', 'total']
@@ -188,12 +184,13 @@ class CartItemSerializer(serializers.ModelSerializer):
 
         return data
 
+
 class OrderSerializer(serializers.ModelSerializer):
- 
     class Meta:
         model = Order
-        fields = ['id', 'payment_token', 'user', 'status', 'shipping_address', 'billing_address', 
+        fields = ['id', 'payment_token', 'user', 'status', 'shipping_address', 'billing_address',
                   'payment_status', 'date_created', 'date_ordered', 'ordered', 'cart', 'order_total_price', 'total_order_items']
+
 
 class OrderItemSerializer(serializers.ModelSerializer):
     class Meta:

@@ -1,10 +1,16 @@
-# rentals/serializers.py
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
-from .models import User, Address, CreditCard,  PhysicalAddress, OTP,Message, Chat, Contact, CompanyInfo
-
-
-from rest_framework import serializers
+from .models import (
+    User,
+    Address,
+    CreditCard,
+    PhysicalAddress,
+    OTP,
+    Message,
+    Chat,
+    Contact,
+    CompanyInfo
+)
 
 
 class ContactSerializer(serializers.ModelSerializer):
@@ -20,7 +26,6 @@ class OTPSerializer(serializers.ModelSerializer):
         read_only_fields = ['created_at', 'expires_at']
 
 
-
 class AddressSerializer(serializers.ModelSerializer):
     class Meta:
         model = Address
@@ -31,10 +36,8 @@ class AddressSerializer(serializers.ModelSerializer):
             'state',
             'zip_code',
             'country',
-            
         ]
-        write_only_fields = ['id', 'address_type', 'is_default']  # Make these fields read-only
-
+        write_only_fields = ['id', 'address_type', 'is_default']  # Make these fields write-only
 
 
 class CompanyInfoSerializer(serializers.ModelSerializer):
@@ -71,8 +74,10 @@ class PhysicalAddressSerializer(serializers.ModelSerializer):
             'is_default'
         ]
 
+
 class UserSerializer(serializers.ModelSerializer):
     user_address = PhysicalAddressSerializer(read_only=True)
+
     class Meta:
         model = User
         fields = [
@@ -98,7 +103,6 @@ class UserSerializer(serializers.ModelSerializer):
             'proof_of_address': {'write_only': True},
         }
 
-    
 
 class MessageSerializer(serializers.ModelSerializer):
     sender = serializers.PrimaryKeyRelatedField(queryset=get_user_model().objects.all(), required=False)
@@ -117,14 +121,6 @@ class ChatSerializer(serializers.ModelSerializer):
     class Meta:
         model = Chat
         fields = ['id', 'participants', 'messages', 'created_at', 'updated_at']
-
-
-
-
-
-        
-
-
 
 
 class CreditCardSerializer(serializers.ModelSerializer):

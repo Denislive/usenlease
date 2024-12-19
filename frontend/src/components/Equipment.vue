@@ -48,7 +48,7 @@ const goToDetail = (equipmentId) => {
   if (equipmentId) {
     router.push({ name: 'equipment-details', params: { id: equipmentId } });
   } else {
-    console.error('Equipment ID is missing!');
+    showNotification('Item Error', 'Equipment ID is missing!', 'error');
   }
 };
 
@@ -88,9 +88,8 @@ const renderStars = (rating) => {
               }"
               class="mr-1"
             ></i>
-            <div v-if="equipment.is_available">
+            <div v-if="equipment.is_available" class="mr-1">
               {{ equipment.available_quantity }}
-
             </div>
             {{ equipment.is_available ? 'Available' : 'Unavailable' }}
           </span>

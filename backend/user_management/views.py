@@ -15,6 +15,9 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from django.utils.encoding import force_str
+from django.contrib.auth.tokens import default_token_generator
 
 # Third-party imports
 from rest_framework import (
@@ -39,6 +42,7 @@ from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 from rest_framework_simplejwt.views import TokenBlacklistView, TokenRefreshView, TokenVerifyView
+
 
 # Local app imports
 from .models import (
@@ -133,6 +137,101 @@ class JWTAuthenticationFromCookie(JWTAuthentication):
         """
         from rest_framework.response import Response
         return Response()
+
+
+
+class PasswordResetViewSet(viewsets.ViewSet):
+    """
+    A ViewSet for handling password reset functionality.
+    """
+    authentication_classes = [JWTAuthenticationFromCookie]
+
+    @action(detail=False, methods=['post'])
+    def send_reset_email(self, request):
+        """
+        Generate a password reset token and send it via email.
+        """
+        email = request.data.get("email")
+
+        if not email:
+            return Response({"error": "Email not provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return Response({"error": "User with this email does not exist."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Generate token and UID
+        token = default_token_generator.make_token(user)
+        uid = urlsafe_base64_encode(force_str(user.pk).encode())
+
+        reset_url = f"{settings.DOMAIN_URL}/password-reset/?uid={uid}&token={token}"
+
+        subject = "Password Reset Request"
+        message_body = (
+            f"Hello {user.email},\n\n"
+            f"You have requested to reset your password. Please use the link below to reset it:\n\n"
+            f"{reset_url}\n\n"
+            f"If you did not request a password reset, please ignore this email.\n\n"
+            f"Best regards,\n"
+            f"The Use And Lease Team"
+        )
+
+        try:
+            # Send the email
+            msg = MIMEText(message_body)
+            msg['Subject'] = subject
+            msg['From'] = f"Use N Lease <{settings.EMAIL_HOST_USER}>"
+            msg['To'] = user.email
+
+            server = smtplib.SMTP(settings.EMAIL_HOST, settings.EMAIL_PORT)
+            server.starttls()
+            server.login(settings.EMAIL_HOST_USER, settings.EMAIL_HOST_PASSWORD)
+            server.send_message(msg)
+            server.quit()
+
+            return Response({"message": "Password reset email sent successfully!"}, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({"error": "Failed to send password reset email", "details": str(e)},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=False, methods=['post'], url_path='confirm/(?P<uidb64>[^/.]+)/(?P<token>[^/.]+)')
+    def reset_password(self, request, uidb64, token):
+        """
+        Verify the token and reset the user's password, with confirmation.
+        """
+        new_password = request.data.get("new_password")
+        confirm_password = request.data.get("confirm_password")
+
+        if not new_password or not confirm_password:
+            return Response({"error": "Both new password and confirmation are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if new_password != confirm_password:
+            return Response({"error": "Passwords do not match."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Decode UID and get user
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=uid)
+
+            if not default_token_generator.check_token(user, token):
+                return Response({"error": "Invalid token or token expired."}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Check if the new password matches the current password
+            if user.check_password(new_password):
+                return Response({"error": "Previous Passwords cannot be reused. Enter a new password!"}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+
+            # Update password
+            user.set_password(new_password)
+            user.save()
+            return Response({"message": "Password reset successfully!"}, status=status.HTTP_200_OK)
+
+        except (User.DoesNotExist, ValueError):
+            return Response({"error": "Invalid UID."}, status=status.HTTP_400_BAD_REQUEST)
+
+
 
 
 class ContactViewSet(viewsets.ViewSet):
@@ -655,10 +754,8 @@ class CustomLogoutView(APIView):
         except OutstandingToken.DoesNotExist:
             return Response({'detail': 'Outstanding token not found.'}, status=status.HTTP_404_NOT_FOUND)
         except TokenError as e:
-            print(f'TokenError: {str(e)}')
             return Response({'detail': f'Token error: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            print(f'General Exception: {str(e)}')
             return Response({'detail': f'An error occurred: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 

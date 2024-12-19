@@ -14,7 +14,7 @@
         </div>
 
         <!-- Dynamic Category Cards -->
-        <div v-for="category in categories" :key="category.id">
+        <div v-for="category in store.categories" :key="category.id">
           <div class="bg-white rounded-lg shadow-lg overflow-hidden">
             <RouterLink :to="{ name: 'category-details', query: { cat: category.slug } }">
               <img :src="category.image ? `${category.image}` || placeholderImage
@@ -34,33 +34,22 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import Carousels from "./Carousels.vue";
+import { useEquipmentsStore } from '@/store/equipments'; // Pinia store for equipments
 
 
 const api_base_url = import.meta.env.VITE_API_BASE_URL;
+const store = useEquipmentsStore(); // Pinia store instance
+
+
 
 // Placeholder image in case category image is null
 const placeholderImage = 'https://via.placeholder.com/300x200.png?text=No+Image';
 
-// Dynamic categories data
-const categories = ref([]);
 
-// Function to fetch categories from the API
-const fetchCategories = async () => {
-  try {
-    const response = await fetch(`${api_base_url}/api/categories/`);
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
-    }
-    const data = await response.json();
-    categories.value = data; // Assuming data is an array of categories
-  } catch (error) {
-    console.error('Error fetching categories:', error);
-  }
-};
 
 // Fetch categories when the component mounts
-onMounted(() => {
-  fetchCategories();
+onMounted(async () => {
+  await store.fetchCategories();
 });
 </script>
 

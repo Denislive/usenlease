@@ -1,35 +1,29 @@
-# rentals/views.py
-from rest_framework import viewsets, permissions
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.exceptions import AuthenticationFailed
-from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
-from django.utils.translation import gettext_lazy as _
-from django.shortcuts import get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.csrf import csrf_protect
-from django.views.decorators.http import require_POST
-
-
-from rest_framework.exceptions import PermissionDenied
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.permissions import AllowAny
-
-
-from django.http import JsonResponse
-from django.db import transaction
+# Standard library imports
 import json
 from datetime import datetime
+
+# Django imports
 from django.conf import settings
-from rest_framework import generics
+from django.db import transaction
+from django.http import JsonResponse, QueryDict
+from django.shortcuts import get_object_or_404
+from django.utils.translation import gettext_lazy as _
+from django.views.decorators.csrf import csrf_exempt, csrf_protect
+from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
 
-from django.http import QueryDict
+# Third-party imports
+import stripe
+from rest_framework.views import APIView
+from rest_framework import viewsets, permissions, status, generics
+from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
+from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 
-from rest_framework import status
+# Local application imports
 from .models import Category, Tag, Equipment, Image, Specification, Review, Cart, CartItem, Order, OrderItem
 from .serializers import (
     CategorySerializer,
@@ -43,62 +37,14 @@ from .serializers import (
     OrderSerializer,
     OrderItemSerializer
 )
+from user_management.views import JWTAuthenticationFromCookie
 
-import stripe
+# Stripe API Key setup
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
+# Other constants
 DOMAIN = settings.DOMAIN_URL
 
-
-
-
-
-class JWTAuthenticationFromCookie(JWTAuthentication):
-    def authenticate(self, request):
-        access_token = request.COOKIES.get('token')  # Access token cookie
-        refresh_token = request.COOKIES.get('refresh')  # Refresh token cookie
-        
-        # If no access token is present, return None (unauthenticated)
-        if not access_token:
-            return None
-
-        try:
-            # Try to validate the access token
-            validated_token = self.get_validated_token(access_token)
-            return self.get_user(validated_token), validated_token
-        except InvalidToken:
-            # If the access token is expired or invalid, attempt to refresh using the refresh token
-            if refresh_token:
-                try:
-                    # Attempt to get a new access token using the refresh token
-                    refresh = RefreshToken(refresh_token)
-                    new_access_token = str(refresh.access_token)
-
-                    # Set the new access token in the cookies (or headers as needed)
-                    response = self.get_user_response(request)
-                    response.set_cookie('token', new_access_token, httponly=True, secure=True)
-                    
-                    
-                    # Validate the new access token
-                    validated_token = self.get_validated_token(new_access_token)
-                    return self.get_user(validated_token), validated_token
-                except TokenError as e:
-                    raise AuthenticationFailed(_('Token is invalid or expired.'))
-
-            # If no refresh token is available, raise an authentication error
-            raise AuthenticationFailed(_('Token is expired and no refresh token is provided.'))
-
-    def get_user_response(self, request):
-        """
-        Helper method to return the response object where the new access token can be set.
-        """
-        # The `request` object doesn't provide response, this method is just an example.
-        # You can adjust this method to work with your response handling logic.
-        from rest_framework.response import Response
-        return Response()
-
-
-        
 
 class CreateCheckoutSessionView(APIView):
     """
@@ -114,7 +60,10 @@ class CreateCheckoutSessionView(APIView):
             cart = Cart.objects.get(user=user)
 
             if not cart.cart_items.exists():
-                return Response({"error": "Cart is empty, cannot create a session."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"error": "Cart is empty, cannot create a session."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
             # Prepare order data
             cart_items = cart.cart_items.all()
@@ -167,7 +116,6 @@ class CreateCheckoutSessionView(APIView):
                 },
             )
 
-
             session = stripe.checkout.Session.create(
                 mode='payment',
                 customer_email=request.data.get('customer_email'),
@@ -183,14 +131,17 @@ class CreateCheckoutSessionView(APIView):
             order.payment_status = 'pending'
             order.save()
 
-            # Clear the cart
-            cart_items.delete()
+            # Do not delete cart items here, as we want to retain them if payment is canceled
+            # cart_items.delete()  <-- Remove this line
 
-            return Response({
-                'session_id': session.id,
-                'url': session.url,
-                'order_id': order.id,
-            }, status=status.HTTP_201_CREATED)
+            return Response(
+                {
+                    'session_id': session.id,
+                    'url': session.url,
+                    'order_id': order.id,
+                },
+                status=status.HTTP_201_CREATED,
+            )
         except Cart.DoesNotExist:
             return Response({"error": "No cart found for the user"}, status=status.HTTP_404_NOT_FOUND)
         except stripe.error.StripeError as e:
@@ -201,20 +152,22 @@ class CreateCheckoutSessionView(APIView):
             return Response({"error": "An unexpected error occurred."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-
 class SessionStatusView(APIView):
     """
     Retrieves the status of a Stripe checkout session.
     """
 
-    authentication_classes = [JWTAuthenticationFromCookie]
+    authentication_classes = [JWTAuthentication]  # Adjusted to match the JWTAuthentication class name
     permission_classes = [AllowAny]  # Allow unauthenticated users to access
 
     def get(self, request):
         session_id = request.query_params.get('session_id')
 
         if not session_id:
-            return Response({'error': 'Session ID is required.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {'error': 'Session ID is required.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         try:
             # Retrieve Stripe session details
@@ -222,13 +175,23 @@ class SessionStatusView(APIView):
 
             # Attempt to find the order associated with this session
             order = Order.objects.filter(payment_token=session_id).first()
+
+            if not order:
+                return Response(
+                    {'error': 'Order not found for the given session ID.'},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+            # Mark the order as paid
             order.payment_status = 'paid'
             order.ordered = True
             order.date_ordered = datetime.now()
             order.save()
 
-            if not order:
-                return Response({'error': 'Order not found for the given session ID.'}, status=status.HTTP_404_NOT_FOUND)
+            # Clear the cart after the payment is successful
+            cart = Cart.objects.filter(user=order.user).first()  # Retrieve the cart for the user
+            if cart:
+                cart.cart_items.all().delete()  # Delete all items in the cart
 
             # Build the response with session and order details
             status_response = {
@@ -241,27 +204,36 @@ class SessionStatusView(APIView):
             }
 
             return Response(status_response, status=status.HTTP_200_OK)
-        except stripe.error.StripeError as e:
-            return Response({'error': f'Stripe error: {e.user_message}'}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            return Response({'error': f'An error occurred: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+        except stripe.error.StripeError as e:
+            return Response(
+                {'error': f'Stripe error: {e.user_message}'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except Exception as e:
+            return Response(
+                {'error': f'An error occurred: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
 
 def convert_querydict_to_dict(querydict):
-    # Convert the QueryDict to a dictionary
+    """
+    Converts a QueryDict to a regular dictionary, handling specific field 
+    conversions such as address and tags serialized as JSON strings.
+    """
     result = {}
+
     for key, value in querydict.lists():
         # If there's only one item in the value list, unpack it
         if len(value) == 1:
             result[key] = value[0]
         else:
             result[key] = value
-    
-    # Handle specific conversions
-    # Convert address and tags if they are serialized as JSON strings
+
+    # Handle specific conversions for 'address' and 'tags'
     if 'address' in result and isinstance(result['address'], list):
-        # Convert address string to a dictionary if nested
+        # Convert the 'address' list to a dictionary if nested
         result['address'] = {
             'street_address': result['address'][0].get('street_address', [])[0],
             'city': result['address'][0].get('city', [])[0],
@@ -272,23 +244,29 @@ def convert_querydict_to_dict(querydict):
 
     if 'tags' in result:
         try:
-            # Parse the tags JSON string to a Python list
-            result['tags'] = eval(result['tags'])
-        except Exception as e:
-            print("Error converting tags:", e)
+            # Safely parse the tags JSON string to a Python list
+            result['tags'] = json.loads(result['tags'])
+        except (json.JSONDecodeError, TypeError) as e:
+            return Response(f"error: {str(e)}", status=status.HTTP_400_BAD_REQUEST)
 
     return result
+
 
 class CategoryViewSet(viewsets.ViewSet):
     authentication_classes = [JWTAuthenticationFromCookie]
 
     def list(self, request):
-         # Ensure permission check is applied
+        """
+        List all categories.
+        """
         queryset = Category.objects.all()
         serializer = CategorySerializer(queryset, many=True)
         return Response(serializer.data)
 
     def create(self, request):
+        """
+        Create a new category.
+        """
         self.permission_classes = [permissions.IsAdminUser]
         self.check_permissions(request)  # Ensure permission check is applied
 
@@ -299,15 +277,23 @@ class CategoryViewSet(viewsets.ViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def retrieve(self, request, pk=None):
+        """
+        Retrieve a specific category by primary key.
+        """
         self.permission_classes = [permissions.IsAdminUser]
         self.check_permissions(request)  # Ensure permission check is applied
+
         category = Category.objects.get(pk=pk)
         serializer = CategorySerializer(category)
         return Response(serializer.data)
 
     def update(self, request, pk=None):
+        """
+        Update an existing category.
+        """
         self.permission_classes = [permissions.IsAdminUser]
         self.check_permissions(request)  # Ensure permission check is applied
+
         category = Category.objects.get(pk=pk)
         serializer = CategorySerializer(category, data=request.data)
         if serializer.is_valid():
@@ -316,17 +302,27 @@ class CategoryViewSet(viewsets.ViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def destroy(self, request, pk=None):
+        """
+        Delete a category.
+        """
         self.permission_classes = [permissions.IsAdminUser]
         self.check_permissions(request)  # Ensure permission check is applied
+
         category = Category.objects.get(pk=pk)
         category.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-        
+
 
 class RootCategoryListView(generics.ListAPIView):
+    """
+    List root categories (categories with no parent).
+    """
     serializer_class = CategorySerializer
 
     def get_queryset(self):
+        """
+        Return root categories (categories without parent).
+        """
         return Category.objects.filter(parent__isnull=True)
 
 
@@ -334,15 +330,23 @@ class TagViewSet(viewsets.ViewSet):
     authentication_classes = [JWTAuthentication]
 
     def list(self, request):
+        """
+        List all tags.
+        """
         self.permission_classes = [permissions.IsAdminUser]
         self.check_permissions(request)  # Ensure permission check is applied
+
         queryset = Tag.objects.all()
         serializer = TagSerializer(queryset, many=True)
         return Response(serializer.data)
 
     def create(self, request):
+        """
+        Create a new tag.
+        """
         self.permission_classes = [permissions.IsAuthenticated]
         self.check_permissions(request)  # Ensure permission check is applied
+
         serializer = TagSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -350,15 +354,23 @@ class TagViewSet(viewsets.ViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def retrieve(self, request, pk=None):
+        """
+        Retrieve a specific tag by primary key.
+        """
         self.permission_classes = [permissions.IsAuthenticated]
         self.check_permissions(request)  # Ensure permission check is applied
+
         tag = Tag.objects.get(pk=pk)
         serializer = TagSerializer(tag)
         return Response(serializer.data)
 
     def update(self, request, pk=None):
+        """
+        Update an existing tag.
+        """
         self.permission_classes = [permissions.IsAuthenticated]
         self.check_permissions(request)  # Ensure permission check is applied
+
         tag = Tag.objects.get(pk=pk)
         serializer = TagSerializer(tag, data=request.data)
         if serializer.is_valid():
@@ -367,37 +379,47 @@ class TagViewSet(viewsets.ViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def destroy(self, request, pk=None):
+        """
+        Delete a tag.
+        """
         self.permission_classes = [permissions.IsAuthenticated]
         self.check_permissions(request)  # Ensure permission check is applied
+
         tag = Tag.objects.get(pk=pk)
         tag.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class EquipmentViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for handling Equipment objects.
+    Provides list, create, retrieve, and update actions.
+    """
     queryset = Equipment.objects.all()
     serializer_class = EquipmentSerializer
-
     authentication_classes = [JWTAuthenticationFromCookie]
-    
 
     def list(self, request):
-        # queryset = Equipment.objects.filter(owner=request.user.id)
+        """
+        List all equipment.
+        """
         queryset = Equipment.objects.all()
         serializer = EquipmentSerializer(queryset, many=True)
         return Response(serializer.data)
 
     def create(self, request, *args, **kwargs):
+        """
+        Create a new equipment item.
+        Handles file uploads and data processing.
+        """
         try:
-            # Get images if sent with the 'images' key
-            images = request.FILES.getlist('images')  # Assumes images are sent with the 'images' key
-            print("Images received:", images)
+            # Handle images if provided in the 'images' key
+            images = request.FILES.getlist('images')
 
             # Convert incoming querydict to a structured dictionary
             data = convert_querydict_to_dict(request.data)
-            print("Converted form data:", data)
 
-            # Ensure address fields are grouped in a dictionary for the `address` field
+            # Group address fields into a dictionary
             address = {
                 'street_address': data.pop('street_address', None),
                 'city': data.pop('city', None),
@@ -406,130 +428,116 @@ class EquipmentViewSet(viewsets.ModelViewSet):
                 'country': data.pop('country', None)
             }
             data['address'] = address
-            print("Address data:", address)
-            
 
-            # Convert tags to a list of dictionaries for `tags`
+            # Convert tags to a list of dictionaries
             if 'tags' in data:
                 data['tags'] = [{'name': tag} for tag in data.pop('tags')]
-            print("Tags data:", data.get('tags', []))
 
             # Convert specifications from string to list of dictionaries
             if 'specifications' in data:
                 data['specifications'] = json.loads(data.pop('specifications'))
-            print("Specifications data:", data.get('specifications', []))
 
             specifications_data = data['specifications']
-        
 
             # Initialize and validate the equipment serializer
-            print("Initializing equipment serializer with data:", data)
             serializer = self.get_serializer(data=data, context={'request': request})
             serializer.is_valid(raise_exception=True)
 
-            # Save the equipment instance first to generate the ID
+            # Save the equipment instance
             equipment = serializer.save()
-            print("Equipment instance saved:", equipment)
 
-            # Now create the specifications associated with the equipment
+            # Save associated specifications
             for spec in specifications_data:
-                print("Processing specification:", spec)
-                
+
                 # Rename 'key' to 'name' in the specification data
                 if 'key' in spec:
-                    spec['name'] = spec.pop('key', None)  # Rename 'key' to 'name'
-                    print(f"Renamed specification: {spec}")
-                
-                # Ensure 'name' is now present
+                    spec['name'] = spec.pop('key', None)
+
+                # Ensure 'name' is present
                 if not spec.get('name'):
-                    print("Specification 'name' is missing")
                     return Response({'detail': 'Specification name is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
-                # Ensure we include the equipment instance in the context for the Specification serializer
+                # Create the specification instance
                 specification_serializer = SpecificationSerializer(data=spec, context={'equipment': equipment})
-                print("Spec data for specification serializer:", spec)
                 if specification_serializer.is_valid():
-                    specification_serializer.save(equipment=equipment)  # Create the specification instance
-                    print(f"Specification saved: {specification_serializer.data}")
+                    specification_serializer.save(equipment=equipment)
                 else:
-                    print("Specification serializer errors:", specification_serializer.errors)
                     return Response(specification_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
             # Handle images if necessary
             if images:
-                print(f"Processing {len(images)} images.")
                 for image in images:
-                    # Example of saving images (if your Equipment model supports this)
                     equipment.images.create(image=image)
-                    print(f"Image saved: {image}")
 
-            # Return the response with the created equipment data
+            # Return the created equipment data
             headers = self.get_success_headers(serializer.data)
-            print("Returning response data:", serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
         except Exception as e:
-            return Response({'detail': f'{e}'}, status=status.HTTP_400_BAD_REQUEST)
-
-
-
-
-
-
+            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     def retrieve(self, request, pk=None):
-    
+        """
+        Retrieve a specific equipment item by primary key.
+        """
         equipment = Equipment.objects.get(pk=pk)
         equipment_reviews = equipment.equipment_reviews.filter(review_text__isnull=False).exclude(review_text="")
         serializer = EquipmentSerializer(equipment)
         return Response(serializer.data)
 
     def update(self, request, pk=None):
-        self.check_permissions(request)  # Ensure permission check is applied
-        
-        # Retrieve the existing equipment instance or raise a 404 error
+        """
+        Update an existing equipment item.
+        Handles images and category updates.
+        """
+        self.check_permissions(request)
+
+        # Retrieve the existing equipment instance or raise 404 error
         equipment = get_object_or_404(Equipment, pk=pk)
-        
-        data = request.data  # Get the request data
-        print(data)
+        data = request.data
 
-        # Get images if sent with the 'images' key
-        images = request.FILES.getlist('images')  # Assumes images are sent with the 'images' key
 
-        # Handle images if necessary
+        # Handle images if provided
+        images = request.FILES.getlist('images')
+        # Overwrite images if provided
+        images = request.FILES.getlist('images')
         if images:
-            print(f"Processing {len(images)} images.")
+            # Clear existing images
+            equipment.images.all().delete()
+
+            # Add new images
             for image in images:
-                # Example of saving images (if your Equipment model supports this)
                 equipment.images.create(image=image)
-                print(f"Image saved: {image}")
-
-
-
-
-        # Handle QueryDict for multipart/form-data
+        # Handle multipart/form-data query dict
         if isinstance(data, QueryDict):
             data = data.dict()
 
-        # Validate and resolve the category if provided
+        # Resolve category if provided
         category_instance = None
         if 'category' in data:
             category_instance = get_object_or_404(Category, id=data.get('category'))
-            data['category'] = category_instance.id  # Replace with the valid category ID
+            data['category'] = category_instance.id  # Replace with valid category ID
 
-        # Use the serializer for partial updates
-        serializer = EquipmentSerializer(equipment, data=data, partial=True)  # `partial=True` allows for partial updates
-        
+        # Perform partial updates
+        serializer = EquipmentSerializer(equipment, data=data, partial=True)
         if serializer.is_valid():
-            serializer.save()  # Save the updated data to the model
+            serializer.save()
             return Response(serializer.data)
-        
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
 class ImageViewSet(viewsets.ViewSet):
+    """
+    ViewSet for handling image-related actions such as listing, creating, 
+    retrieving, updating, and deleting images.
+    """
     authentication_classes = [JWTAuthentication]
 
     def list(self, request):
+        """
+        List all images. Requires admin user permissions.
+        """
         self.permission_classes = [permissions.IsAdminUser]
         self.check_permissions(request)  # Ensure permission check is applied
         queryset = Image.objects.all()
@@ -537,8 +545,13 @@ class ImageViewSet(viewsets.ViewSet):
         return Response(serializer.data)
 
     def create(self, request):
+        """
+        Create a new image. Requires authenticated user permissions.
+        """
+        # Uncomment to enforce permission check for authenticated users
         # self.permission_classes = [permissions.IsAuthenticated]
-        # self.check_permissions(request)  # Ensure permission check is applied
+        # self.check_permissions(request)
+
         serializer = ImageSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -546,6 +559,9 @@ class ImageViewSet(viewsets.ViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def retrieve(self, request, pk=None):
+        """
+        Retrieve a specific image by primary key. Requires authenticated user.
+        """
         self.permission_classes = [permissions.IsAuthenticated]
         self.check_permissions(request)  # Ensure permission check is applied
         image = Image.objects.get(pk=pk)
@@ -553,6 +569,9 @@ class ImageViewSet(viewsets.ViewSet):
         return Response(serializer.data)
 
     def update(self, request, pk=None):
+        """
+        Update an existing image by primary key. Requires authenticated user.
+        """
         self.permission_classes = [permissions.IsAuthenticated]
         self.check_permissions(request)  # Ensure permission check is applied
         image = Image.objects.get(pk=pk)
@@ -563,6 +582,9 @@ class ImageViewSet(viewsets.ViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def destroy(self, request, pk=None):
+        """
+        Delete an image by primary key. Requires authenticated user.
+        """
         self.permission_classes = [permissions.IsAuthenticated]
         self.check_permissions(request)  # Ensure permission check is applied
         image = Image.objects.get(pk=pk)
@@ -570,11 +592,18 @@ class ImageViewSet(viewsets.ViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+    
 class SpecificationViewSet(viewsets.ViewSet):
-
+    """
+    ViewSet for handling specification-related actions such as listing, 
+    creating, retrieving, updating, and deleting specifications.
+    """
     authentication_classes = [JWTAuthentication]
 
     def list(self, request):
+        """
+        List all specifications. Requires admin user permissions.
+        """
         self.permission_classes = [permissions.IsAdminUser]
         self.check_permissions(request)  # Ensure permission check is applied
         queryset = Specification.objects.all()
@@ -582,6 +611,9 @@ class SpecificationViewSet(viewsets.ViewSet):
         return Response(serializer.data)
 
     def create(self, request):
+        """
+        Create a new specification. Requires authenticated user permissions.
+        """
         self.permission_classes = [permissions.IsAuthenticated]
         self.check_permissions(request)  # Ensure permission check is applied
         serializer = SpecificationSerializer(data=request.data)
@@ -591,6 +623,9 @@ class SpecificationViewSet(viewsets.ViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def retrieve(self, request, pk=None):
+        """
+        Retrieve a specific specification by primary key. Requires authenticated user.
+        """
         self.permission_classes = [permissions.IsAuthenticated]
         self.check_permissions(request)  # Ensure permission check is applied
         specification = Specification.objects.get(pk=pk)
@@ -598,6 +633,9 @@ class SpecificationViewSet(viewsets.ViewSet):
         return Response(serializer.data)
 
     def update(self, request, pk=None):
+        """
+        Update an existing specification by primary key. Requires authenticated user.
+        """
         self.permission_classes = [permissions.IsAuthenticated]
         self.check_permissions(request)  # Ensure permission check is applied
         specification = Specification.objects.get(pk=pk)
@@ -608,6 +646,9 @@ class SpecificationViewSet(viewsets.ViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def destroy(self, request, pk=None):
+        """
+        Delete a specification by primary key. Requires authenticated user.
+        """
         self.permission_classes = [permissions.IsAuthenticated]
         self.check_permissions(request)  # Ensure permission check is applied
         specification = Specification.objects.get(pk=pk)
@@ -616,29 +657,40 @@ class SpecificationViewSet(viewsets.ViewSet):
 
 
 class ReviewViewSet(viewsets.ViewSet):
+    """
+    ViewSet for handling review-related actions such as listing, creating, 
+    retrieving, updating, and deleting reviews.
+    """
     authentication_classes = [JWTAuthenticationFromCookie]
     serializer_class = ReviewSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def list(self, request):
-        # Filter reviews to include only those with non-null, non-empty review_text
+        """
+        List all reviews with non-null, non-empty review_text.
+        """
         queryset = Review.objects.filter(review_text__isnull=False).exclude(review_text="")
-        
         serializer = ReviewSerializer(queryset, many=True)
         return Response(serializer.data)
 
     def create(self, request):
+        """
+        Create a new review. Requires authenticated user and adds user info.
+        """
         # Add the user to the request data before validation
         data = request.data.copy()
         data['user'] = request.user.id  # or request.user.pk, depending on your setup
 
         serializer = ReviewSerializer(data=data)
         if serializer.is_valid():
-            serializer.save(user=request.user)  # pass the user to the save method
+            serializer.save(user=request.user)  # Pass the user to the save method
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def retrieve(self, request, pk=None):
+        """
+        Retrieve a specific review by primary key. Requires authenticated user.
+        """
         self.permission_classes = [permissions.IsAuthenticated]
         self.check_permissions(request)  # Ensure permission check is applied
         review = Review.objects.get(pk=pk)
@@ -646,6 +698,9 @@ class ReviewViewSet(viewsets.ViewSet):
         return Response(serializer.data)
 
     def update(self, request, pk=None):
+        """
+        Update an existing review by primary key. Requires authenticated user.
+        """
         self.permission_classes = [permissions.IsAuthenticated]
         self.check_permissions(request)  # Ensure permission check is applied
         review = Review.objects.get(pk=pk)
@@ -656,25 +711,36 @@ class ReviewViewSet(viewsets.ViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def destroy(self, request, pk=None):
+        """
+        Delete a review by primary key. Requires authenticated user.
+        """
         self.permission_classes = [permissions.IsAuthenticated]
         self.check_permissions(request)  # Ensure permission check is applied
         review = Review.objects.get(pk=pk)
         review.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+
 class CartViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for handling cart-related actions such as listing, creating, 
+    updating, and deleting carts. Only authenticated users can access their carts.
+    """
     authentication_classes = [JWTAuthenticationFromCookie]
     serializer_class = CartSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        # Ensure a cart exists for the user before returning the queryset
+        """
+        Return the user's cart. If no cart exists, create one.
+        """
         Cart.objects.get_or_create(user=self.request.user)
         return Cart.objects.filter(user=self.request.user)
 
-    
     def create(self, request, *args, **kwargs):
-        # Access the logged-in user from the request
+        """
+        Create a cart for the logged-in user. If the user is a 'lessor', raise a permission error.
+        """
         user = request.user
 
         # Check if the user has the 'lessor' role
@@ -683,7 +749,7 @@ class CartViewSet(viewsets.ModelViewSet):
 
         # Get or create a cart for the user
         cart, created = Cart.objects.get_or_create(user=user)
-        
+
         if not created:
             # If the cart already exists, return its details with a custom message
             serializer = self.get_serializer(cart)
@@ -697,8 +763,9 @@ class CartViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def update(self, request, *args, **kwargs):
-
-         # Access the logged-in user from the request
+        """
+        Update the user's cart. If the user is a 'lessor', raise a permission error.
+        """
         user = request.user
 
         # Check if the user has the 'lessor' role
@@ -713,35 +780,51 @@ class CartViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     def destroy(self, request, *args, **kwargs):
-        # Ensure a cart exists before attempting to delete it
+        """
+        Delete the user's cart. If the cart exists, remove it from the database.
+        """
         cart = self.get_object()
         cart.delete()
         return Response({"detail": "Cart deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
 
 
-class CartItemViewSet(viewsets.ModelViewSet):
 
+class CartItemViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for handling cart item actions such as listing, creating, 
+    updating, and deleting cart items. Only authenticated users can 
+    access their cart items.
+    """
     authentication_classes = [JWTAuthenticationFromCookie]
     serializer_class = CartItemSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_cart_item(self):
+        """
+        Return the cart item based on the provided ID in the request data.
+        """
         user_cart, _ = Cart.objects.get_or_create(user=self.request.user)
         return CartItem.objects.get(id=self.request.data.get('id'))
 
     def get_queryset(self):
+        """
+        Return the user's cart items.
+        """
         user_cart, _ = Cart.objects.get_or_create(user=self.request.user)
         return CartItem.objects.filter(cart=user_cart)
 
     def create(self, request, *args, **kwargs):
-
+        """
+        Create a new cart item for the logged-in user. If the user is a 'lessor',
+        raise a permission error. Ensure no date overlaps and enough stock is available.
+        """
         user = request.user
-        
-        # Check if the user is a 'lessor' (adjust role checking as needed)
-        if user.role == 'lessor':  # Replace 'lessor' with your actual role attribute
+
+        # Check if the user is a 'lessor'
+        if user.role == 'lessor':
             raise PermissionDenied("You are a lessor!")
-        
-        user_cart, _ = Cart.objects.get_or_create(user=self.request.user)
+
+        user_cart, _ = Cart.objects.get_or_create(user=user)
         
         item_data = request.data
         item_id = item_data.get("item")  # Get the item ID
@@ -751,7 +834,7 @@ class CartItemViewSet(viewsets.ModelViewSet):
         new_start_date = datetime.strptime(item_data.get("start_date"), "%Y-%m-%d").date()
         new_end_date = datetime.strptime(item_data.get("end_date"), "%Y-%m-%d").date()
 
-        # Check if the equipment is already in the cart and if dates overlap
+        # Check for overlapping items in the cart
         overlapping_items = CartItem.objects.filter(
             cart=user_cart,
             item_id=item_id
@@ -760,14 +843,13 @@ class CartItemViewSet(viewsets.ModelViewSet):
             end_date__gt=new_start_date
         )
 
-        # If there is an overlap in dates
         if overlapping_items.exists():
             return Response(
                 {"error": "This equipment is already booked for the selected dates."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Check the available stock for the equipment
+        # Check if the available stock is sufficient
         equipment = Equipment.objects.get(id=item_id)
         if equipment.available_quantity < item_quantity:
             return Response(
@@ -775,20 +857,20 @@ class CartItemViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Check if the item already exists in the user's cart
+        # Check if the item already exists in the cart
         existing_cart_item = CartItem.objects.filter(cart=user_cart, item_id=item_id).first()
 
         if existing_cart_item:
             existing_start_date = existing_cart_item.start_date
             existing_end_date = existing_cart_item.end_date
 
-            # If the dates are different, reset the quantity and update dates
-            if (existing_start_date != new_start_date or existing_end_date != new_end_date):
+            # If dates differ, reset quantity and update dates
+            if existing_start_date != new_start_date or existing_end_date != new_end_date:
                 existing_cart_item.quantity = item_quantity
                 existing_cart_item.start_date = new_start_date
                 existing_cart_item.end_date = new_end_date
             else:
-                # If the dates are the same, increment the quantity
+                # If dates are the same, just increment quantity
                 existing_cart_item.quantity += item_quantity
 
             existing_cart_item.save()
@@ -796,28 +878,30 @@ class CartItemViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_200_OK)
 
         # If the item does not exist in the cart, create a new cart item
-        item_data['cart'] = user_cart.id  # Associate the new cart item with the user's cart
+        item_data['cart'] = user_cart.id  # Associate the cart item with the user's cart
         serializer = self.get_serializer(data=item_data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def update(self, request, *args, **kwargs):
-        """Update an existing cart item by checking the available quantity and date availability."""
+        """
+        Update an existing cart item by checking the available quantity and date availability.
+        """
         cart_item = self.get_cart_item()
         item_data = request.data
 
         # Get the updated item quantity from the request data
-        item_quantity = item_data.get("quantity", cart_item.quantity)  # Default to current quantity if not specified
+        item_quantity = item_data.get("quantity", cart_item.quantity)
 
         # Get the updated start and end dates from the request data
         start_date = item_data.get("start_date", cart_item.start_date)
         end_date = item_data.get("end_date", cart_item.end_date)
 
-        # Get the equipment (item) object associated with the cart item
-        equipment = cart_item.item  # CartItem has a foreign key to Equipment
+        # Get the equipment object associated with the cart item
+        equipment = cart_item.item
 
-        # Check if the available quantity is sufficient for the given dates
+        # Check if available quantity is sufficient for the date range
         available_quantity = equipment.get_available_quantity(start_date, end_date)
 
         if available_quantity < item_quantity:
@@ -826,7 +910,7 @@ class CartItemViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # If the quantity and availability are valid, update the cart item
+        # Update the cart item with the new quantity and dates
         cart_item.quantity = item_quantity
         cart_item.start_date = start_date
         cart_item.end_date = end_date
@@ -836,52 +920,90 @@ class CartItemViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(cart_item)
         return Response(serializer.data)
 
-        
     def destroy(self, request, *args, **kwargs):
+        """
+        Delete an existing cart item.
+        """
         cart_item = self.get_object()
         cart_item.delete()
         return Response({"detail": "Cart item deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
 
 
+
 class OrderActionView(APIView):
+    """
+    View for handling various actions on an order, such as terminating, 
+    deleting, or reordering the order. Only authenticated users can 
+    perform these actions on their orders.
+    """
     authentication_classes = [JWTAuthenticationFromCookie]
 
-
     def post(self, request, pk, action):
-        print("data", request.data)
+        """
+        Handle order actions like terminate, delete, or reorder.
+        Each action corresponds to a specific modification to the order.
+        """
         try:
+            # Fetch the order object associated with the user
             order = Order.objects.get(id=pk, user=request.user)
 
+            # Handle the corresponding action
             if action == 'terminate':
                 order.terminate_rental()
             elif action == 'delete':
                 order.delete()
             elif action == 'reorder':
                 new_order = order.reorder()
-                return Response({'message': 'Order reordered successfully', 'new_order_id': new_order.id}, status=status.HTTP_200_OK)
+                return Response(
+                    {'message': 'Order reordered successfully', 'new_order_id': new_order.id},
+                    status=status.HTTP_200_OK
+                )
             else:
-                return Response({'error': 'Invalid action'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {'error': 'Invalid action'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
-            return Response({'message': f'Order {action} action successful'}, status=status.HTTP_200_OK)
+            # Return success message after action
+            return Response(
+                {'message': f'Order {action} action successful'},
+                status=status.HTTP_200_OK
+            )
 
         except Order.DoesNotExist:
-            return Response({'error': 'Order not found'}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {'error': 'Order not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
         except ValueError as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 class OrderViewSet(viewsets.ViewSet):
+    """
+    A viewset for listing, creating, retrieving, updating, and deleting orders.
+    Only authenticated users can access and modify their orders.
+    """
     authentication_classes = [JWTAuthenticationFromCookie]
 
     def list(self, request):
+        """
+        List all orders for the authenticated user.
+        """
         self.permission_classes = [permissions.IsAuthenticated]
         self.check_permissions(request)  # Ensure permission check is applied
+
         queryset = Order.objects.filter(user=request.user)
         serializer = OrderSerializer(queryset, many=True)
         return Response(serializer.data)
 
     def create(self, request):
+        """
+        Create a new order from the user's cart, including payment processing.
+        """
         self.check_permissions(request)
 
         data = request.data
@@ -951,49 +1073,33 @@ class OrderViewSet(viewsets.ViewSet):
                 return Response({"error": f"Payment processing failed: {e.user_message}"}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(order_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
-    def retrieve(self, request, pk=None):
-        self.permission_classes = [permissions.IsAuthenticated]
-        self.check_permissions(request)  # Ensure permission check is applied
-        try:
-            order = Order.objects.get(pk=pk, user=request.user)
-        except Order.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-
-        serializer = OrderSerializer(order)
-        return Response(serializer.data)
-
-    def update(self, request, pk=None):
-        self.permission_classes = [permissions.IsAuthenticated]
-        self.check_permissions(request)  # Ensure permission check is applied
-        order = Order.objects.get(pk=pk, user=request.user)
-        serializer = OrderSerializer(order, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def destroy(self, request, pk=None):
-        self.permission_classes = [permissions.IsAuthenticated]
-        self.check_permissions(request)  # Ensure permission check is applied
-        order = Order.objects.get(pk=pk, user=request.user, status='completed')
-        order.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class OrderItemViewSet(viewsets.ViewSet):
+    """
+    A viewset for listing, creating, retrieving, updating, and deleting order items.
+    Only authenticated users can access and modify their order items.
+    """
     authentication_classes = [JWTAuthenticationFromCookie]
 
     def list(self, request):
+        """
+        List all order items.
+        """
         self.permission_classes = [permissions.IsAuthenticated]
         self.check_permissions(request)  # Ensure permission check is applied
+
         queryset = OrderItem.objects.all()
         serializer = OrderItemSerializer(queryset, many=True)
         return Response(serializer.data)
 
     def create(self, request):
+        """
+        Create a new order item.
+        """
         self.permission_classes = [permissions.IsAuthenticated]
         self.check_permissions(request)  # Ensure permission check is applied
+
         serializer = OrderItemSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -1001,16 +1107,32 @@ class OrderItemViewSet(viewsets.ViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def retrieve(self, request, pk=None):
+        """
+        Retrieve a specific order item by its ID.
+        """
         self.permission_classes = [permissions.IsAuthenticated]
         self.check_permissions(request)  # Ensure permission check is applied
-        order_item = OrderItem.objects.get(pk=pk, user=request.user)
+
+        try:
+            order_item = OrderItem.objects.get(pk=pk, user=request.user)
+        except OrderItem.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
         serializer = OrderItemSerializer(order_item)
         return Response(serializer.data)
 
     def update(self, request, pk=None):
+        """
+        Update an existing order item.
+        """
         self.permission_classes = [permissions.IsAuthenticated]
         self.check_permissions(request)  # Ensure permission check is applied
-        order_item = OrderItem.objects.get(pk=pk)
+
+        try:
+            order_item = OrderItem.objects.get(pk=pk)
+        except OrderItem.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
         serializer = OrderItemSerializer(order_item, data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -1018,8 +1140,16 @@ class OrderItemViewSet(viewsets.ViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def destroy(self, request, pk=None):
+        """
+        Delete an order item.
+        """
         self.permission_classes = [permissions.IsAuthenticated]
         self.check_permissions(request)  # Ensure permission check is applied
-        order_item = OrderItem.objects.get(pk=pk)
+
+        try:
+            order_item = OrderItem.objects.get(pk=pk)
+        except OrderItem.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
         order_item.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

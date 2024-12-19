@@ -2,7 +2,7 @@
   <form @submit.prevent="submitForm">
     <h3 class="text-2xl font-semibold text-gray-800 mb-4">Payment Method</h3>
 
-    <!-- Payment Method -->
+    <!-- Payment Method Selection -->
     <div class="mt-4">
       <label class="block text-gray-700">
         Payment Method <span class="text-red-500">*</span>
@@ -23,53 +23,62 @@
 </template>
 
 <script setup>
+// Import necessary Vue and external dependencies
 import { ref } from 'vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
 import { useCartStore } from '@/store/cart';
+import useNotifications from '@/store/notification';
 
+
+// Define constants
 const api_base_url = import.meta.env.VITE_API_BASE_URL;
+const { showNotification } = useNotifications();
 
 
+// Reactive state for the selected payment method
 const paymentMethod = ref('');
+
+// Router and store references
 const router = useRouter();
 const cartStore = useCartStore();
 
+// Form submission handler
 const submitForm = async () => {
   try {
-    // Construct the payload
-    const payload = {
-      paymentMethod: paymentMethod.value,
-    };
+    // Construct the payload with the selected payment method
+    const payload = { paymentMethod: paymentMethod.value };
 
-
-
+    // Handle PayPal payment (currently a placeholder)
     const handlePaypal = (response) => {
-      // Show an alert to the user
-      alert('Coming Soon! Try another method!');
+      // Alert the user that PayPal is coming soon
+      showNotification('Payment Method', 'Coming Soon! Try another method!!', 'info');
 
-      // Redirect back to the same page immediately
+      // Redirect back to the current page immediately
       router.push({ path: router.currentRoute.value.fullPath });
     };
 
-
-    // Redirect to payment page (Stripe or PayPal)
+    // Determine the payment method and proceed accordingly
     if (paymentMethod.value === 'stripe') {
-      // Send the payload to the server with credentials
+      // Send request to the backend to create a Stripe checkout session
       const response = await axios.post(
         `${api_base_url}/api/create-checkout-session/`,
         payload,
         { withCredentials: true }
       );
+      // Redirect the user to the Stripe checkout page
       window.location.href = response.data.url;
     } else if (paymentMethod.value === 'paypal') {
+      // Placeholder logic for PayPal
       handlePaypal();
     }
   } catch (error) {
-    // Handle errors
-    console.error('Checkout error:', error.response?.data || error.message);
+    // Handle any errors that occur during the form submission
+    showNotification('Checkout error', `Checkout Error: ${error.response?.data || error.message}!`, 'error');
   }
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+/* Scoped styles for the form */
+</style>
