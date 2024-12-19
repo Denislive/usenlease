@@ -402,18 +402,9 @@ class EquipmentViewSet(viewsets.ModelViewSet):
 
     def list(self, request):
         """
-        List equipment based on authentication status.
-        - Authenticated users see their own equipment.
-        - Unauthenticated users see all equipment.
+        List all equipment.
         """
-        user = request.user
-        if user.is_authenticated:
-            # Show only the user's equipment
-            queryset = Equipment.objects.filter(owner=user)  # Replace 'owner' with your model's user-related field
-        else:
-            # Show all equipment for unauthenticated users
-            queryset = Equipment.objects.all()
-
+        queryset = Equipment.objects.all()
         serializer = EquipmentSerializer(queryset, many=True)
         return Response(serializer.data)
 
