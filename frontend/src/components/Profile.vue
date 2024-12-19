@@ -67,7 +67,7 @@
 
             <!-- Profile Info -->
             <div class="flex items-center justify-center space-x-6">
-              <img :src="`${api_base_url}${user.image}`" alt="Profile"
+              <img :src="`${user.image}`" alt="Profile"
                 class="w-20 h-20 rounded-full border-4 border-gray-300 shadow-md" />
               <div>
                 <label for="profile-pic" class="block text-sm text-[#ffc107] font-semibold cursor-pointer">
@@ -197,7 +197,7 @@
                       </span>
 
                       <!-- Equipment Image -->
-                      <img v-if="equipment.images.length > 0" :src="`${api_base_url}${equipment.images[0].image_url}`"
+                      <img v-if="equipment.images.length > 0" :src="`${equipment.images[0].image_url}`"
                         :alt="equipment.images[0].image_url" class="w-full h-48 object-cover" />
                       <img v-else src="https://via.placeholder.com/350" alt="Placeholder Image"
                         class="w-full h-48 object-cover" />
