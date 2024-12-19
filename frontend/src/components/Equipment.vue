@@ -7,7 +7,6 @@ import { useStore } from 'vuex';
 const router = useRouter();
 
 const api_base_url = import.meta.env.VITE_API_BASE_URL;
-const media_base_url = import.meta.env.VITE_STORAGE_BASE_URL;
 
 const store = useEquipmentsStore(); // Pinia store instance
 const search = useStore();
@@ -99,7 +98,7 @@ const renderStars = (rating) => {
           <!-- Equipment Image -->
           <img
             v-if="equipment.images.length > 0"
-            :src="`${media_base_url}${equipment.images[0].image_url}`"
+            :src="`${equipment.images[0].image_url}`"
             :alt="equipment.images[0].image_url"
             class="w-full h-48 object-cover"
           />
