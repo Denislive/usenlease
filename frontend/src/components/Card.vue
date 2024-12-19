@@ -65,7 +65,7 @@ const goToDetail = (equipmentId) => {
           <!-- Equipment Image -->
           <img
             v-if="equipment.images.length > 0"
-            :src="`${api_base_url}${equipment.images[0].image_url}`"
+            :src="`${equipment.images[0].image_url}`"
             :alt="equipment.images[0].image_url"
             class="w-full h-48 object-cover"
           />

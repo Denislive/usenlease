@@ -17,7 +17,7 @@
         <div v-for="category in categories" :key="category.id">
           <div class="bg-white rounded-lg shadow-lg overflow-hidden">
             <RouterLink :to="{ name: 'category-details', query: { cat: category.slug } }">
-              <img :src="category.image ? `${api_base_url}${category.image}` || placeholderImage
+              <img :src="category.image ? `${category.image}` || placeholderImage
                 : alt = `${category.name}`" class="w-full h-32 object-cover" />
               <div class="p-4 text-center">
                 <h5 class="text-sm">{{ category.name }}</h5>

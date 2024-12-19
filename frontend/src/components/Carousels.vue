@@ -110,7 +110,7 @@ const fetchEquipments = async () => {
 };
 
 const getFullImageUrl = (imagePath) => {
-  return imagePath ? `${api_base_url}${imagePath}` : null;
+  return imagePath ? `${imagePath}` : null;
 };
 
 const goToDetail = (equipmentId) => {

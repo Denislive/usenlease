@@ -18,7 +18,7 @@
           >
             <td class="py-3 px-6">
               <img
-                :src="`${api_base_url}${getItemImage(item)}`"
+                :src="`${getItemImage(item)}`"
                 alt="Product Image"
                 class="w-12 h-12 inline-block mr-4"
               />

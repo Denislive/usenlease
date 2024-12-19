@@ -23,7 +23,7 @@
           <div class="relative" @mouseenter="showDropdownWithDelay(true)"
             @mouseleave="showDropdownWithDelay(false)">
             <button class="hidden md:flex items-center space-x-2 focus:outline-none">
-              <img :src="`${api_base_url}${authStore.user.image}`" alt="Profile Icon"
+              <img :src="`${authStore.user.image}`" alt="Profile Icon"
                 class="w-10 h-10 rounded-full border border-gray-300" />
             </button>
             <div

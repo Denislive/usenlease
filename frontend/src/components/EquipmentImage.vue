@@ -3,7 +3,7 @@
     <!-- Main Image with Zoom Effect -->
     <div class="relative overflow-hidden">
       <img
-        :src="currentImage ? `${api_base_url}${currentImage}` : placeholderImage"
+        :src="currentImage ? `${currentImage}` : placeholderImage"
         alt="Main Equipment Image"
         class="w-full h-128 object-cover rounded-lg shadow-lg"
         @mousemove="zoomImage"
@@ -13,7 +13,7 @@
       <div
         class="zoomed-image"
         v-if="zoomed"
-        :style="{ backgroundImage: `url(${api_base_url}${currentImage})`, backgroundPosition: zoomPosition }"
+        :style="{ backgroundImage: `url(${currentImage})`, backgroundPosition: zoomPosition }"
       ></div>
     </div>
 
@@ -26,7 +26,7 @@
         <img
           v-for="(image, index) in images"
           :key="index"
-          :src="`${api_base_url}${image.image_url}` || placeholderImage"
+          :src="`${image.image_url}` || placeholderImage"
           alt="Equipment Thumbnail"
           class="w-24 h-24 object-cover rounded-lg cursor-pointer border-2"
           :class="{ 'border-[#ffc107]': currentImage === image.image_url }"
