@@ -7,6 +7,7 @@ from django.conf import settings
 from django.db import transaction
 from django.http import JsonResponse, QueryDict
 from django.shortcuts import get_object_or_404
+from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.views.decorators.http import require_POST
@@ -401,9 +402,18 @@ class EquipmentViewSet(viewsets.ModelViewSet):
 
     def list(self, request):
         """
-        List all equipment.
+        List equipment based on authentication status.
+        - Authenticated users see their own equipment.
+        - Unauthenticated users see all equipment.
         """
-        queryset = Equipment.objects.all()
+        user = request.user
+        if user.is_authenticated:
+            # Show only the user's equipment
+            queryset = Equipment.objects.filter(owner=user)  # Replace 'owner' with your model's user-related field
+        else:
+            # Show all equipment for unauthenticated users
+            queryset = Equipment.objects.all()
+
         serializer = EquipmentSerializer(queryset, many=True)
         return Response(serializer.data)
 
