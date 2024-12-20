@@ -36,10 +36,7 @@ if not SECRET_KEY:
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG')
 
-# Trusted Origins
-CSRF_TRUSTED_ORIGINS = [
-    'https://usenlease-2f8583d212bc.herokuapp.com',
-]
+
 
 
 ALLOWED_HOSTS = [
@@ -128,12 +125,17 @@ CORS_ALLOW_HEADERS = os.getenv('CORS_ALLOW_HEADERS', 'content-type,authorization
 CSRF_TRUSTED_ORIGINS = [
     'https://usenlease-ba2103147f4b.herokuapp.com',
     'https://usenlease.com',
-    'https://usenlease-2f8583d212bc.herokuapp.com'
+    'https://usenlease-2f8583d212bc.herokuapp.com',
+    "http:localhost:3000"
+
 ]
 CORS_ALLOWED_ORIGINS = [
     'https://usenlease-ba2103147f4b.herokuapp.com',
     'https://usenlease.com',
-    'https://usenlease-2f8583d212bc.herokuapp.com'
+    'https://usenlease-2f8583d212bc.herokuapp.com',
+    "http:localhost:3000"
+
+
 ]
 CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL_ORIGINS', 'True') == 'True'
 

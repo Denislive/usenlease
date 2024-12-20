@@ -6,7 +6,7 @@
         
         <!-- Logo -->
         <RouterLink :to="{ name: 'home' }" class="flex items-center">
-          <img :src="company.companyInfo?.logo ? `${company.companyInfo?.logo}` : 'Logo.jpeg'" :alt="companyInfoStore.companyInfo?.logo"
+          <img :src="company.companyInfo?.logo ? `${company.companyInfo?.logo}` : 'Logo.jpeg'" :alt="company.companyInfo?.logo"
             class="h-20" />
         </RouterLink>
 
@@ -168,9 +168,8 @@ import { useAuthStore } from '@/store/auth';  // Import the auth store
 import { useCartStore } from '@/store/cart'; // Adjust the path as necessary
 import axios from 'axios';
 import { useCompanyInfoStore } from '@/store/company';
-const companyInfoStore = useCompanyInfoStore();
-const cartStore = useCartStore();
 const company = useCompanyInfoStore();
+const cartStore = useCartStore();
 
 
 const showDropdown = ref(false);
@@ -205,7 +204,7 @@ onMounted(async () => {
     await authStore.getUserData();
 
   }
-  await companyInfoStore.fetchCompanyInfo();
+  await company.fetchCompanyInfo();
 
 });
 
