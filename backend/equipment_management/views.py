@@ -398,7 +398,6 @@ class EquipmentViewSet(viewsets.ModelViewSet):
     """
     queryset = Equipment.objects.all()
     serializer_class = EquipmentSerializer
-    authentication_classes = [JWTAuthenticationFromCookie]
 
     def list(self, request):
         """
