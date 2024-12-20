@@ -126,14 +126,12 @@ CSRF_TRUSTED_ORIGINS = [
     'https://usenlease-ba2103147f4b.herokuapp.com',
     'https://usenlease.com',
     'https://usenlease-2f8583d212bc.herokuapp.com',
-    "http:localhost:3000"
 
 ]
 CORS_ALLOWED_ORIGINS = [
     'https://usenlease-ba2103147f4b.herokuapp.com',
     'https://usenlease.com',
     'https://usenlease-2f8583d212bc.herokuapp.com',
-    "http:localhost:3000"
 
 
 ]
