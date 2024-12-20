@@ -26,7 +26,6 @@ export const useEquipmentsStore = defineStore('equipments', () => {
     try {
       // API request to fetch equipments
       const response = await axios.get(`${api_base_url}/api/equipments/`, {
-        withCredentials: true, // Include credentials (cookies) in the request
       });
       equipments.value = response.data; // Store the fetched equipments
     } catch (err) {
