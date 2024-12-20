@@ -6,7 +6,7 @@
         
         <!-- Logo -->
         <RouterLink :to="{ name: 'home' }" class="flex items-center">
-          <img :src="company.companyInfo?.logo ? `${company.companyInfo?.logo}` : 'Logo.jpeg'" :alt="company.companyInfo?.logo"
+          <img :src="company.companyInfo?.logo ? company.companyInfo?.logo : 'Logo.jpeg'" :alt="company.companyInfo?.logo"
             class="h-20" />
         </RouterLink>
 
