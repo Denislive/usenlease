@@ -26,7 +26,7 @@
                   </button>
                 </td>
                 <td class="py-2 px-4 border-b">
-                  <img :src="`${api_base_url}${getItemImage(item)}`" alt="" class="w-20 h-20 object-cover" />
+                  <img :src="`${getItemImage(item)}`" alt="" class="w-20 h-20 object-cover" />
                 </td>
                 <td class="py-2 px-4 border-b">
                   <a href="#" class="text-blue-600 hover:underline">{{ getItemName(item) }}</a>
