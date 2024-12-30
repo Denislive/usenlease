@@ -263,7 +263,7 @@ const fetchCountries = async () => {
   } catch (error) {
     console.error("Error fetching countries:", error);
   }
-};
+};onMount
 
 onMounted(async () => {
   try {
