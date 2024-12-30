@@ -9,7 +9,7 @@ import { useCartStore } from './cart';
 
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
-const apiEncryptKey = import.meta.env.VITE_ENCRYPTION_KEY;
+const apiEncryptKey = import.meta.env.VITE_ENCRYPTION_KEY
 
 const encryptData = (data) => {
   return CryptoJS.AES.encrypt(JSON.stringify(data), apiEncryptKey).toString();
@@ -80,9 +80,8 @@ const getUserData = async () => {
   }
 };
 
-const login = async (email, password, cart) => {
+ const login = async (email, password, cart) => {
   isLoading.value = true;
-
   try {
     const response = await axios.post(
       `${apiBaseUrl}/api/accounts/login/`,
@@ -94,21 +93,23 @@ const login = async (email, password, cart) => {
 
       user.value = response.data;
 
-      // Encrypt user data and store in a secure cookie
-      Cookies.set('user', encryptData(user.value), {
+      // Encrypt user data before storing in cookies
+      Cookies.set('user', encryptData(response.data), {
         sameSite: 'None',
         secure: true,
       });
 
-      // Automatically remove the cookie after 24 hours
+      // Set a timeout for 24 hours to remove the cookie
       setTimeout(() => {
         Cookies.remove('user');
         user.value = null; // Clear user data
       }, 86400000); // 24 hours in milliseconds
 
       showNotification('Login Successful', 'Welcome back!', 'success');
+      
+      user.value = decryptData(storedUser);
 
-      // Handle form data for equipment listing
+
       const formData = loadFormDataFromLocalStorage();
       if (formData) {
         formData.set('owner', user.value.id);
@@ -119,7 +120,6 @@ const login = async (email, password, cart) => {
             formData,
             { withCredentials: true }
           );
-
           if (createResponse.status === 201) {
             router.push({
               name: 'equipment-details',
@@ -130,68 +130,48 @@ const login = async (email, password, cart) => {
               `${createResponse.data.name} created successfully!`,
               'success'
             );
-
-            // Clear saved form data
             localStorage.removeItem('payload');
           } else {
-            showNotification(
-              'Error Listing Item',
-              'Failed to list the item. Please try again later.',
-              'error'
-            );
+            console.error("Item listing response not successful. Status:");
           }
         } catch (error) {
-          console.error('Error listing item:', error);
           showNotification(
             'Error Listing Item',
-            'An error occurred while listing the item.',
+            'An error occurred during item listing!',
             'error'
           );
         }
       }
 
-      // Redirect to the intended page or default to home
       const redirectPath = redirectTo.value || '/';
       redirectTo.value = '';
       router.push(redirectPath);
-
       loginError.value = '';
     } else {
-      showNotification('Login Failed', 'Unexpected response from server.', 'error');
+      console.error("Login response not successful.");
     }
   } catch (error) {
-    console.error('Error occurred during login or equipment listing:', error);
-  
-    // Check if the error has a response (for API errors)
-    if (error.response) {
-      console.error('Response error:', error.response);
-      showNotification(
-        'Login Failed',
-        `Error: ${error.response.status} - ${error.response.statusText}`,
-        'error'
-      );
-    } else if (error.request) {
-      // Handle errors with the request
-      console.error('Request error:', error.request);
-      showNotification(
-        'Login Failed',
-        'No response received from server. Please check your connection.',
-        'error'
-      );
-    } else {
-
-      // Handle other types of errors (e.g., setup errors)
-      console.error('General error:', error.message);
-      showNotification(
-        'Login Failed',
-        'An unexpected error occurred. Please try again later.',
-        'error'
-      );
-    }
-  }finally {
+    console.error("Error during login.");
+    handleLoginError(error);
+  } finally {
     isLoading.value = false;
   }
 };
+
+
+  const handleLoginError = (error) => {
+    if (error.response?.status === 401) {
+      loginError.value = 'Incorrect email or password.';
+      showNotification('Login Failed', 'Incorrect email or password.', 'error');
+    } else {
+      loginError.value = 'An error occurred. Please try again later.';
+      showNotification(
+        'Login Error',
+        'An error occurred. Please try again later.',
+        'error'
+      );
+    }
+  };
 
   const refreshToken = async () => {
     try {

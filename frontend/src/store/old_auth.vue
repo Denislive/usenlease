@@ -7,21 +7,16 @@ import CryptoJS from 'crypto-js'; // Import CryptoJS
 import useNotifications from '@/store/notification';
 import { useCartStore } from './cart';
 
-const getCSRFToken = () => {
-  const name = 'csrftoken';
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  return parts.length === 2 ? parts.pop().split(';').shift() : null;
-};
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+const apiEncryptKey = import.meta.env.VITE_ENCRYPTION_KEY;
 
 const encryptData = (data) => {
-  return CryptoJS.AES.encrypt(JSON.stringify(data), 'your-secret-key').toString();
+  return CryptoJS.AES.encrypt(JSON.stringify(data), apiEncryptKey).toString();
 };
 
 const decryptData = (data) => {
-  const bytes = CryptoJS.AES.decrypt(data, 'your-secret-key');
+  const bytes = CryptoJS.AES.decrypt(data, apiEncryptKey);
   return JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
 };
 
@@ -35,7 +30,11 @@ export const useAuthStore = defineStore('auth', () => {
   const isLoading = ref(false);
   const router = useRouter();
   const { showNotification } = useNotifications();
+
   const storedUser  = Cookies.get('user');
+
+  const isAuthenticated = computed(() => !!user.value);
+
 
 
   onMounted(() => {
@@ -44,13 +43,15 @@ export const useAuthStore = defineStore('auth', () => {
     }
   });
 
-  // Fetch user data from API
-  const getUserData = async () => {
-    try {
-      const response = await axios.get(
-        `${apiBaseUrl}/api/accounts/users/${user.id}/`,
-        { withCredentials: true }
-      );
+
+const getUserData = async () => {
+  try {
+    const response = await axios.get(
+      `${apiBaseUrl}/api/accounts/users/${user?.id}/`,
+      { withCredentials: true }
+    );
+    
+    if (response.status === 200) {
       user.value = {
         ...response.data,
         user_address: response.data.user_address || {
@@ -63,31 +64,43 @@ export const useAuthStore = defineStore('auth', () => {
           country: ''
         }
       };
-    } catch (error) {
-      // Handle error
-    }
-  };
+      // Encrypt the user data and store it in cookies
+      Cookies.set('user', encryptData(user.value), {
+        sameSite: 'None',
+        secure: true,
 
-  const login = async (email, password, cart) => {
-    isLoading.value = true;
-    try {
-      const response = await axios.post(
-        `${apiBaseUrl}/api/accounts/login/`,
-        { email, password, cart },
-        { withCredentials: true }
-      );
+      });
+
+    } else {
+      console.error(`Request completed but not successful.`);
+    }
+  } catch (error) {
+    console.error("Error fetching user data:");
+    // Handle error
+  }
+};
+
+const login = async (email, password, cart) => {
+  isLoading.value = true;
+
+  try {
+    const response = await axios.post(
+      `${apiBaseUrl}/api/accounts/login/`,
+      { email, password, cart },
+      { withCredentials: true }
+    );
+
+    if (response.status === 200) {
 
       user.value = response.data;
 
-
-      // Encrypt user data before storing in cookies
+      // Encrypt user data and store in a secure cookie
       Cookies.set('user', encryptData(user.value), {
-        expires: 15 / (24 * 60), // 15 minutes
         sameSite: 'None',
         secure: true,
       });
 
-      // Set a timeout for 24 hours to remove the cookie
+      // Automatically remove the cookie after 24 hours
       setTimeout(() => {
         Cookies.remove('user');
         user.value = null; // Clear user data
@@ -95,89 +108,180 @@ export const useAuthStore = defineStore('auth', () => {
 
       showNotification('Login Successful', 'Welcome back!', 'success');
 
+      // Handle form data for equipment listing
       const formData = loadFormDataFromLocalStorage();
       if (formData) {
-        user.value = decryptData(storedUser);
         formData.set('owner', user.value.id);
+
         try {
           const createResponse = await axios.post(
             `${apiBaseUrl}/api/equipments/`,
             formData,
             { withCredentials: true }
           );
-          router.push({
-            name: 'equipment-details',
-            params: { id: createResponse.data.id },
-          });
-          showNotification(
-            'Item Listing Successful',
-            `${createResponse.data.name} created successfully!`,
-            'success'
-          );
-          localStorage.removeItem('payload');
+
+          if (createResponse.status === 201) {
+            router.push({
+              name: 'equipment-details',
+              params: { id: createResponse.data.id },
+            });
+            showNotification(
+              'Item Listing Successful',
+              `${createResponse.data.name} created successfully!`,
+              'success'
+            );
+
+            // Clear saved form data
+            localStorage.removeItem('payload');
+          } else {
+            showNotification(
+              'Error Listing Item',
+              'Failed to list the item. Please try again later.',
+              'error'
+            );
+          }
         } catch (error) {
+          console.error('Error listing item:', error);
           showNotification(
             'Error Listing Item',
-            'An error occurred during item listing!',
+            'An error occurred while listing the item.',
             'error'
           );
         }
       }
 
+      // Redirect to the intended page or default to home
       const redirectPath = redirectTo.value || '/';
       redirectTo.value = '';
       router.push(redirectPath);
-      loginError.value = '';
-    } catch (error) {
-      handleLoginError(error);
-    } finally {
-      isLoading.value = false;
-    }
-  };
 
-  const handleLoginError = (error) => {
-    if (error.response?.status === 401) {
-      loginError.value = 'Incorrect email or password.';
-      showNotification('Login Failed', 'Incorrect email or password.', 'error');
+      loginError.value = '';
     } else {
-      loginError.value = 'An error occurred. Please try again later.';
+      showNotification('Login Failed', 'Unexpected response from server.', 'error');
+    }
+  } catch (error) {
+    console.error('Error occurred during login or equipment listing:', error);
+  
+    // Check if the error has a response (for API errors)
+    if (error.response) {
+      console.error('Response error:', error.response);
       showNotification(
-        'Login Error',
-        'An error occurred. Please try again later.',
+        'Login Failed',
+        `Error: ${error.response.status} - ${error.response.statusText}`,
+        'error'
+      );
+    } else if (error.request) {
+      // Handle errors with the request
+      console.error('Request error:', error.request);
+      showNotification(
+        'Login Failed',
+        'No response received from server. Please check your connection.',
+        'error'
+      );
+    } else {
+
+      // Handle other types of errors (e.g., setup errors)
+      console.error('General error:', error.message);
+      showNotification(
+        'Login Failed',
+        'An unexpected error occurred. Please try again later.',
         'error'
       );
     }
+  }finally {
+    isLoading.value = false;
+  }
+};
+
+  const refreshToken = async () => {
+    try {
+      const response = await axios.post(
+        `${apiBaseUrl}/api/accounts/token/refresh/`,
+        {}, // No payload needed, as cookies are used
+        { withCredentials: true } // Ensure cookies are sent with the request
+      );
+  
+      if (response.status === 200) {
+        console.log("Token refreshed successfully.");
+        return true; // Indicate success
+      } else {
+        console.error("Failed to refresh token.");
+        return false;
+      }
+    } catch (error) {
+      console.error("Error refreshing token:", error);
+      return false;
+    }
   };
+
+
+  axios.interceptors.response.use(
+    (response) => response, // Pass through successful responses
+    async (error) => {
+      const originalRequest = error.config;
+  
+      if (error.response && error.response.status === 401 && !originalRequest._retry) {
+        originalRequest._retry = true; // Prevent infinite retry loop
+  
+        // Attempt to refresh the token
+        const tokenRefreshed = await refreshToken();
+  
+        if (tokenRefreshed) {
+          // Retry the original request with the refreshed token
+          return axios(originalRequest);
+        } else {
+          // Redirect to login if refresh fails
+          console.warn("Redirecting to login due to token refresh failure.");
+          router.push('/login'); // Ensure router is properly imported and accessible
+          return Promise.reject(error);
+        }
+      }
+  
+      return Promise.reject(error);
+    }
+  );
+  
+  
 
   const logout = async () => {
     isLoading.value = true;
     try {
-      const csrfToken = getCSRFToken();
-      await axios.post(
+  
+      const response = await axios.post(
         `${apiBaseUrl}/api/accounts/logout/`,
         {},
         {
-          headers: { 'X-CSRFToken': csrfToken },
           withCredentials: true,
         }
       );
-      user.value = null;
-      Cookies.remove('user');
-
-      cartStore.clearCart();
-
-      showNotification('Logout Successful', 'You have been logged out.', 'success');
-      router.push('/');
+  
+      if (response.status === 200) {
+  
+        // Clear user data
+        user.value = null; // Reactive state for the user
+        Cookies.remove('user'); // Remove user cookie
+  
+        // Clear cart data
+        cartStore.clearCart();
+  
+        // Notify user of success
+        showNotification('Logout Successful', 'You have been logged out.', 'success');
+  
+        // Redirect to home page
+        router.push('/');
+      } else {
+        console.error(`Logout response not successful.`);
+      }
     } catch (error) {
+      console.error('Error during logout:');
       showNotification('Logout Error', 'An error occurred while logging out.', 'error');
-      Cookies.remove('user');
     } finally {
-      isLoading.value = false;
+      isLoading.value = false; // Stop loading spinner
     }
   };
-
-  const isAuthenticated = computed(() => !!user.value);
-
+  
+  
+ 
   const loadFormDataFromLocalStorage = () => {
     const payload = JSON.parse(localStorage.getItem('payload'));
     if (!payload) return null;
@@ -214,6 +318,7 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     getUserData,
     encryptData,
+    refreshToken,
     redirectTo,
     isAuthenticated,
   };
