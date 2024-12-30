@@ -9,7 +9,7 @@ import { useCartStore } from './cart';
 
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
-const apiEncryptKey = import.meta.env.VITE_ENCRYPTION_KEY
+const apiEncryptKey = import.meta.env.VITE_ENCRYPTION_KEY;
 
 const encryptData = (data) => {
   return CryptoJS.AES.encrypt(JSON.stringify(data), apiEncryptKey).toString();
