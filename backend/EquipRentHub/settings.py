@@ -30,6 +30,8 @@ os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = creds_path
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY')
 
+VITE_ENCRYPTION_KEY = os.getenv('VITE_ENCRYPTION_KEY')
+
 if not SECRET_KEY:
     raise ValueError("The SECRET_KEY environment variable is not set")
 
