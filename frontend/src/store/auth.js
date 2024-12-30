@@ -183,14 +183,11 @@ export const useAuthStore = defineStore('auth', () => {
       );
   
       if (response.status === 200) {
-        console.log("Token refreshed successfully.");
         return true; // Indicate success
       } else {
-        console.error("Failed to refresh token.");
         return false;
       }
     } catch (error) {
-      console.error("Error refreshing token:", error);
       return false;
     }
   };
