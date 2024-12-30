@@ -72,7 +72,7 @@
                 class="w-20 h-20 rounded-full border-4 border-gray-300 shadow-md" />
               <div>
                 <label for="profile-pic" class="block text-sm text-[#ffc107] font-semibold cursor-pointer">
-                  {{ authStore.user.image ? 'Change Picture' : 'Add Picture' }}
+                  {{ authStore.user?.image ? 'Change Picture' : 'Add Picture' }}
                 </label>
                 <input id="profile-pic" type="file" accept="image/*" class="hidden" @change="uploadProfilePicture" />
               </div>
@@ -90,20 +90,20 @@
               <!-- Full Name -->
               <p class="flex items-center text-gray-700">
                 <i class="bi bi-person-circle mr-3 text-xl text-gray-500"></i>
-                <span><strong>Full Name:</strong> {{ authStore.user.first_name }} {{ authStore.user.last_name }}</span>
+                <span><strong>Full Name:</strong> {{ authStore.user?.first_name }} {{ authStore.user?.last_name }}</span>
               </p>
 
               <!-- Email -->
               <p class="flex items-center text-gray-700">
                 <i class="bi bi-envelope mr-3 text-xl text-gray-500"></i>
-                <span><strong>Email:</strong> {{ authStore.user.email }}</span>
+                <span><strong>Email:</strong> {{ authStore.user?.email }}</span>
               </p>
 
               <!-- Phone -->
               <p class="flex items-center text-gray-700">
                 <i class="bi bi-phone mr-3 text-xl text-gray-500"></i>
                 <span>
-                  <strong>Phone:</strong> {{ authStore.user.phone_number || 'Not provided' }}
+                  <strong>Phone:</strong> {{ authStore.user?.phone_number || 'Not provided' }}
                   <button @click="phoneModalVisible = !phoneModalVisible"
                     class="ml-2  bg-[#1c1c1c] p-1 rounded text-[#ffc107]  hover:text-yellow-600">
                     Edit Phone
@@ -114,7 +114,7 @@
               <!-- Role -->
               <p class="flex items-center text-gray-700 hidden md:block">
                 <i class="bi bi-envelope mr-3 text-xl text-gray-500"></i>
-                <span><strong>Role:</strong> {{ authStore.user.role }}</span>
+                <span><strong>Role:</strong> {{ authStore.user?.role }}</span>
               </p>
 
               <!-- Role Switch -->
@@ -122,11 +122,11 @@
                 <div class="flex items-center text-gray-700 space-x-3">
                   <i class="bi bi-shield-lock text-xl text-gray-500"></i>
                   <span class="text-sm">
-                    <strong>Role:</strong> {{ authStore.user.role || 'Not assigned' }}
+                    <strong>Role:</strong> {{ authStore.user?.role || 'Not assigned' }}
                   </span>
                 </div>
                 <div class="flex items-center space-x-3">
-                  <span class="text-sm text-gray-600">Switch to {{ authStore.user.role === 'lessor' ? 'lessee' :
+                  <span class="text-sm text-gray-600">Switch to {{ authStore.user?.role === 'lessor' ? 'lessee' :
                     'lessor'
                     }}:</span>
                   <label for="role-toggle" class="inline-flex relative items-center cursor-pointer">
@@ -142,7 +142,7 @@
               <!-- Address Information -->
               <p class="flex items-center text-gray-700">
                 <i class="bi bi-building mr-3 text-xl text-gray-500"></i>
-                <span><strong>Company Name:</strong> {{ authStore.user.user_address?.company_name || 'Not provided'
+                <span><strong>Company Name:</strong> {{ authStore.user?.user_address?.company_name || 'Not provided'
                   }}</span>
               </p>
 
@@ -154,17 +154,17 @@
 
               <p class="flex items-center text-gray-700">
                 <i class="bi bi-geo-alt mr-3 text-xl text-gray-500"></i>
-                <span><strong>City:</strong> {{ authStore.user.user_address?.city || 'Not provided' }}</span>
+                <span><strong>City:</strong> {{ authStore.user?.user_address?.city || 'Not provided' }}</span>
               </p>
 
               <p class="flex items-center text-gray-700">
                 <i class="bi bi-code-slash mr-3 text-xl text-gray-500"></i>
-                <span><strong>Zip Code:</strong> {{ authStore.user.user_address?.zip_code || 'Not provided' }}</span>
+                <span><strong>Zip Code:</strong> {{ authStore.user?.user_address?.zip_code || 'Not provided' }}</span>
               </p>
 
               <p class="flex items-center text-gray-700">
                 <i class="bi bi-globe mr-3 text-xl text-gray-500"></i>
-                <span><strong>Country:</strong> {{ authStore.user.user_address?.country || 'Not provided' }}</span>
+                <span><strong>Country:</strong> {{ authStore.user?.user_address?.country || 'Not provided' }}</span>
               </p>
             </div>
 
@@ -173,7 +173,7 @@
               <button @click="addressModalVisible = !addressModalVisible"
                 class="mr-2 text-[#ffc107] bg-[#1c1c1c] rounded p-2 hover:text-yellow-600">
                 <i class="bi bi-pencil-square mr-2"></i>
-                {{ authStore.user.user_address && authStore.user.user_address.id ? 'Edit Address' : 'Add Address' }}
+                {{ authStore.user?.user_address && authStore.user?.user_address.id ? 'Edit Address' : 'Add Address' }}
               </button>
             </div>
           </div>
@@ -535,7 +535,7 @@
               <!-- Report Data -->
               <div v-else>
                 <!-- Lessor Report -->
-                <div v-if="authStore.user.role === 'lessor'"
+                <div v-if="authStore.user?.role === 'lessor'"
                   class="bg-gradient-to-br bg-[#ffc107] rounded-lg shadow-md p-6 border-l-4 border-[#1c1c1c]">
                   <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center space-x-3">
                     <i class="pi pi-chart-bar text-yellow-500 text-3xl"></i>
@@ -570,7 +570,7 @@
                 </div>
 
                 <!-- Lessee Report -->
-                <div v-else-if="authStore.user.role === 'lessee'"
+                <div v-else-if="authStore.user?.role === 'lessee'"
                   class="bg-gradient-to-br bg-[#ffc107] rounded-lg shadow-md p-6 border-l-4 border-[#1c1c1c]">
                   <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center space-x-3">
                     <i class="pi pi-chart-bar text-[#1c1c1c] text-3xl"></i>
@@ -625,7 +625,7 @@
   <!-- Modal for Editing Address -->
   <div v-if="addressModalVisible" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
     <div class="bg-white p-8 rounded-lg shadow-lg w-full sm:w-96">
-      <h2 class="text-xl font-semibold mb-4">{{ authStore.user.user_address.id ? 'Update Address' : 'Add Address' }}
+      <h2 class="text-xl font-semibold mb-4">{{ authStore.user?.user_address.id ? 'Update Address' : 'Add Address' }}
       </h2>
       <div class="mb-4">
         <label for="full_name" class="block text-sm font-medium">Full Name</label>
@@ -665,7 +665,7 @@
       <div class="flex justify-between">
         <button @click="addressModalVisible = false" class="px-4 py-2 bg-gray-300 text-white rounded-md">Cancel</button>
         <button @click="updateAddress" class="px-4 py-2 bg-[#1c1c1c] text-[#ffc107] rounded-md">
-          <i class="bi bi-pencil-square"></i> {{ authStore.user.user_address.id ? 'Save Address' : 'Add Address' }}
+          <i class="bi bi-pencil-square"></i> {{ authStore.user?.user_address.id ? 'Save Address' : 'Add Address' }}
         </button>
       </div>
     </div>
@@ -678,7 +678,7 @@
       <div class="mb-4">
         <input v-model="phoneNumber" id="phone_number" type="text"
           class="mt-1 p-2 border border-gray-300 rounded-md w-full"
-          :placeholder="authStore.user.phone_number || 'Enter phone number'" />
+          :placeholder="authStore.user?.phone_number || 'Enter phone number'" />
       </div>
       <div class="flex justify-between">
         <button @click="phoneModalVisible = false" class="px-4 py-2 bg-gray-300 text-white rounded-md">Cancel</button>
@@ -1226,7 +1226,6 @@ export default {
       user.value = authStore.user;
 
       fetchChats();
-      fetchUserEquipments();
       fetchOrders();  // Fetch orders on mount
       fetchUserReport();
     });

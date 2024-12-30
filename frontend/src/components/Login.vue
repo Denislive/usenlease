@@ -70,6 +70,9 @@ import { ref, watch, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
 import { useCartStore } from '@/store/cart';
+import useNotifications from '@/store/notification';
+const { showNotification } = useNotifications();
+
 
 const email = ref('');
 const password = ref('');
@@ -99,13 +102,7 @@ const validatePassword = () => {
 const handleLogin = async () => {
   localLoginError.value = ''; // Clear previous errors
   if (!emailError.value && !passwordError.value) {
-    try {
-      await authStore.login(email.value, password.value, cartStore.cart);
-
-    
-    } catch (error) {
-      showNotification('Login error', `${error.response?.data || error.message}!`, 'error');
-    }
+    await authStore.login(email.value, password.value, cartStore.cart);
   }
 };
 

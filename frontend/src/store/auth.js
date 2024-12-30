@@ -80,8 +80,9 @@ const getUserData = async () => {
   }
 };
 
- const login = async (email, password, cart) => {
+const login = async (email, password, cart) => {
   isLoading.value = true;
+
   try {
     const response = await axios.post(
       `${apiBaseUrl}/api/accounts/login/`,
@@ -90,29 +91,27 @@ const getUserData = async () => {
     );
 
     if (response.status === 200) {
+      const loggedInUser = response.data;
+      user.value = loggedInUser;
 
-      user.value = response.data;
-
-      // Encrypt user data before storing in cookies
-      Cookies.set('user', encryptData(response.data), {
+      // Encrypt user data and store in a secure cookie
+      Cookies.set('user', encryptData(loggedInUser), {
         sameSite: 'None',
         secure: true,
       });
 
-      // Set a timeout for 24 hours to remove the cookie
+      // Automatically remove the cookie after 24 hours
       setTimeout(() => {
         Cookies.remove('user');
         user.value = null; // Clear user data
       }, 86400000); // 24 hours in milliseconds
 
       showNotification('Login Successful', 'Welcome back!', 'success');
-      
-      user.value = decryptData(storedUser);
 
-
+      // Handle form data for equipment listing
       const formData = loadFormDataFromLocalStorage();
       if (formData) {
-        formData.set('owner', user.value.id);
+        formData.set('owner', loggedInUser.id);
 
         try {
           const createResponse = await axios.post(
@@ -120,6 +119,7 @@ const getUserData = async () => {
             formData,
             { withCredentials: true }
           );
+
           if (createResponse.status === 201) {
             router.push({
               name: 'equipment-details',
@@ -130,48 +130,55 @@ const getUserData = async () => {
               `${createResponse.data.name} created successfully!`,
               'success'
             );
+
+            // Clear saved form data
             localStorage.removeItem('payload');
           } else {
-            console.error("Item listing response not successful. Status:");
+            showNotification(
+              'Error Listing Item',
+              'Failed to list the item. Please try again later.',
+              'error'
+            );
           }
         } catch (error) {
+          console.error('Error listing item:', error);
           showNotification(
             'Error Listing Item',
-            'An error occurred during item listing!',
+            'An error occurred while listing the item.',
             'error'
           );
         }
       }
 
+      // Redirect to the intended page or default to home
       const redirectPath = redirectTo.value || '/';
       redirectTo.value = '';
       router.push(redirectPath);
+
       loginError.value = '';
     } else {
-      console.error("Login response not successful.");
+      showNotification('Login Failed', 'Unexpected response from server.', 'error');
     }
   } catch (error) {
-    console.error(`Error during login. ${error.response.data}`);
     handleLoginError(error);
   } finally {
     isLoading.value = false;
   }
 };
 
-
-  const handleLoginError = (error) => {
-    if (error.response?.status === 401) {
-      loginError.value = 'Incorrect email or password.';
-      showNotification('Login Failed', 'Incorrect email or password.', 'error');
-    } else {
-      loginError.value = 'An error occurred. Please try again later.';
-      showNotification(
-        'Login Error',
-        'An error occurred. Please try again later.',
-        'error'
-      );
-    }
-  };
+const handleLoginError = (error) => {
+  if (error.response?.status === 401) {
+    loginError.value = 'Incorrect email or password.';
+    showNotification('Login Failed', 'Incorrect email or password.', 'error');
+  } else {
+    loginError.value = 'An error occurred. Please try again later.';
+    showNotification(
+      'Login Error',
+      'An error occurred. Please try again later.',
+      'error'
+    );
+  }
+};
 
   const refreshToken = async () => {
     try {

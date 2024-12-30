@@ -33,7 +33,7 @@ export const useEquipmentsStore = defineStore('equipments', () => {
       });
       userEquipments.value = response.data;  // Assign the fetched equipment to `equipments`
     } catch (error) {
-      console.error('Error fetching user equipment:', error.response);
+      console.error(error.response.data.detail);
     }
   };
 
