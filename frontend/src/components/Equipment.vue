@@ -111,7 +111,7 @@ const renderStars = (rating) => {
           <h5 class="text-sm font-semibold">
             {{ store.truncateText(equipment.name, 20) }}
           </h5>
-          <p class="text-gray-600">{{ equipment.hourly_rate }} / Hr</p>
+          <p class="text-gray-600">{{ equipment.hourly_rate }} / Day</p>
         </div>
       </div>
     </div>

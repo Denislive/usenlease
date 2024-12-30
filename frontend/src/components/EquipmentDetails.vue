@@ -10,7 +10,7 @@
         Reviews)</span>
     </div>
 
-    <p class="price text-xl font-semibold mb-4">${{ equipment.hourly_rate }}/Hour</p>
+    <p class="price text-xl font-semibold mb-4">${{ equipment.hourly_rate }}/Day</p>
 
     <p class="description mb-4">{{ equipment.description }}</p>
     <p class="availability mb-2">
