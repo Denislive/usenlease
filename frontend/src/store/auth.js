@@ -160,23 +160,9 @@ const login = async (email, password, cart) => {
       showNotification('Login Failed', 'Unexpected response from server.', 'error');
     }
   } catch (error) {
-    handleLoginError(error);
+    console.log(`An eroor occured ${error}`)
   } finally {
     isLoading.value = false;
-  }
-};
-
-const handleLoginError = (error) => {
-  if (error.response?.status === 401) {
-    loginError.value = 'Incorrect email or password.';
-    showNotification('Login Failed', 'Incorrect email or password.', 'error');
-  } else {
-    loginError.value = 'An error occurred. Please try again later.';
-    showNotification(
-      'Login Error',
-      'An error occurred. Please try again later.',
-      'error'
-    );
   }
 };
 
