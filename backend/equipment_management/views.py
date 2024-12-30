@@ -534,6 +534,7 @@ class EquipmentViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
+
 class UserEquipmentView(APIView):
     """
     Custom API to get equipment for a specific authenticated user.
@@ -563,6 +564,46 @@ class UserEquipmentView(APIView):
         # Check if no equipment is found
         if not queryset.exists():
             return Response({'detail': 'No equipment found for the authenticated user.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Serialize the queryset and return data
+        serializer = EquipmentSerializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+class UserEditableEquipmentView(APIView):
+    """
+    Custom API to get equipment for a specific authenticated user that are not ordered (is_ordered=False),
+    and are not part of any order item.
+    """
+
+    # Specify the authentication class
+    authentication_classes = [JWTAuthenticationFromCookie]
+    permission_classes = [permissions.IsAuthenticated]  # Ensure the user is authenticated
+
+    def get(self, request, *args, **kwargs):
+        """
+        List all equipment for the logged-in user that are not ordered (is_ordered=False),
+        and are not part of any order item.
+        If no equipment is found, return a message indicating no equipment available.
+        """
+        user = request.user
+
+        # If user is authenticated (IsAuthenticated permission checks this)
+        if not user.is_authenticated:
+            return Response(
+                {'detail': 'Authentication credentials were not provided.'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        # Get all equipment owned by the user
+        queryset = Equipment.objects.filter(owner=user)
+
+        # Exclude equipment that is part of an order item
+        ordered_equipment_ids = OrderItem.objects.filter(user=user).values_list('equipment_id', flat=True)
+        queryset = queryset.exclude(id__in=ordered_equipment_ids)
+
+        # Check if no equipment is found
+        if not queryset.exists():
+            return Response({'detail': 'No available equipment found for the authenticated user.'}, status=status.HTTP_404_NOT_FOUND)
 
         # Serialize the queryset and return data
         serializer = EquipmentSerializer(queryset, many=True)

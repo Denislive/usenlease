@@ -17,6 +17,8 @@ export const useEquipmentsStore = defineStore('equipments', () => {
   const isLoading = ref(false);
   const error = ref(null);
   const userEquipments = ref([]);
+  const userEditableEquipments = ref([]);
+
 
   const truncateText = (text, length) => {
     if (text.length > length) {
@@ -32,6 +34,37 @@ const fetchUserEquipments = async () => {
       withCredentials: true,  // This ensures cookies (credentials) are sent with the request
     });
     userEquipments.value = response.data;  // Assign the fetched equipment to `equipments`
+  } catch (error) {
+    // Check if the error has a response (for API errors)
+    if (error.response) {
+     
+    } else if (error.request) {
+      // Handle errors with the request (no response received)
+      console.error('Request error:', error.request);
+      showNotification(
+        'Error Fetching Equipments',
+        'No response received from server. Please check your connection.',
+        'error'
+      );
+    } else {
+      // Handle other types of errors (e.g., setup errors)
+      console.error('General error:', error.message);
+      showNotification(
+        'Error Fetching Equipments',
+        'An unexpected error occurred. Please try again later.',
+        'error'
+      );
+    }
+  }
+};
+
+// Fetch user equipments on mount with credentials
+const fetchUserEditableEquipments = async () => {
+  try {
+    const response = await axios.get(`${api_base_url}/api/user-editable-equipment/`, {
+      withCredentials: true,  // This ensures cookies (credentials) are sent with the request
+    });
+    userEditableEquipments.value = response.data;  // Assign the fetched equipment to `equipments`
   } catch (error) {
     // Check if the error has a response (for API errors)
     if (error.response) {
@@ -136,13 +169,15 @@ const fetchUserEquipments = async () => {
   return {
     truncateText,
     userEquipments,
-    fetchUserEquipments,
+    userEditableEquipments,
     equipments,
     categories,
     selectedEquipment,
     isLoading,
     error,
     fetchEquipments,
+    fetchUserEquipments,
+    fetchUserEditableEquipments,
     fetchCategories,
     getEquipmentById,
   };

@@ -15,7 +15,8 @@ from .views import (
     OrderActionView,
     CreateCheckoutSessionView,
     SessionStatusView,
-    UserEquipmentView
+    UserEquipmentView,
+    UserEditableEquipmentView
 )
 from user_management.views import ReportViewSet, ContactViewSet, CompanyInfoView, FAQViewSet
 
@@ -45,6 +46,7 @@ urlpatterns = [
     path('orders/<str:pk>/<str:action>/', OrderActionView.as_view(), name='order-action'),
     path('root-categories/', RootCategoryListView.as_view(), name='root-category-list'),
     path('user-equipment/', UserEquipmentView.as_view(), name='user-equipment'),
+    path('user-editable-equipment/', UserEditableEquipmentView.as_view(), name='user-editable-equipment-list'),  # For listing equipment
     path('company-info/', CompanyInfoView.as_view(), name='company-info'),
 
 ]

@@ -106,7 +106,7 @@
                   <strong>Phone:</strong> {{ authStore.user?.phone_number || 'Not provided' }}
                   <button @click="phoneModalVisible = !phoneModalVisible"
                     class="ml-2  bg-[#1c1c1c] p-1 rounded text-[#ffc107]  hover:text-yellow-600">
-                    Edit Phone
+                    <i class="bi bi-pencil-square"></i> {{ authStore.user?.phone_number ? 'Edit Phone' : 'Add Phone' }}
                   </button>
                 </span>
               </p>
@@ -187,12 +187,12 @@
               <i class="pi pi-arrow-circle-left text-xl mr-2"></i> Back
             </button>
 
-            <div v-if="store.userEquipments.length > 0">
+            <div v-if="store.userEditableEquipments.length > 0">
               <div class="container mx-auto p-4">
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
 
                   <!-- Loop through the filtered equipments -->
-                  <div v-for="equipment in store.userEquipments" :key="equipment.id" @click="openEditModal(equipment)"
+                  <div v-for="equipment in store.userEditableEquipments" :key="equipment.id" @click="openEditModal(equipment)"
                     class="bg-white rounded-lg shadow-lg overflow-hidden transition-transform hover:scale-105 cursor-pointer">
                     <div class="relative">
                       <!-- Availability Badge -->
@@ -852,7 +852,7 @@ export default {
 
         // Close the modal and refresh the equipment list after successful update
         closeEditModal();
-        fetchUserEquipments(); // Refresh the equipment list
+        await store.fetchUserEquipments(); // Refresh the equipment list
       } catch (error) {
         console.error('Error updating equipment:', error);
       }
@@ -1006,7 +1006,7 @@ export default {
 
     // Fetch user equipments on mount with credentials
     const fetchUserEquipments = async () => {
-      await store.fetchUserEquipments();
+      await store.fetchUserEditableEquipments;
     };
 
     const goToDetail = (equipmentId) => {
@@ -1228,6 +1228,7 @@ export default {
       fetchChats();
       fetchOrders();  // Fetch orders on mount
       fetchUserReport();
+      await store.fetchUserEditableEquipments();
     });
 
     return {
