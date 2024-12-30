@@ -145,7 +145,7 @@ pipeline {
         stage('Authenticate and Deploying to Google Cloud') {
             steps {
                 script {
-                    echo 'Authenticating and deploying to Google Cloud...'
+                    echo 'Authenticating and deploy to Google Cloud...'
                     sh '''
                     gcloud auth activate-service-account --key-file=${GOOGLE_APPLICATION_CREDENTIALS}
 
