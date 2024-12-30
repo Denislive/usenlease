@@ -20,7 +20,7 @@ DEBUG = os.getenv('DEBUG', 'False') == 'False'
 
 ALLOWED_HOSTS = ['*']
 
-DOMAIN_URL = 'http://localhost:3000'
+DOMAIN_URL = os.getenv('DOMAIN_URL')
 LOGIN_URL = '/accounts/user/login'
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
