@@ -33,16 +33,9 @@ const fetchUserEquipments = async () => {
     });
     userEquipments.value = response.data;  // Assign the fetched equipment to `equipments`
   } catch (error) {
-    console.error('An error occurred:', error);
-
     // Check if the error has a response (for API errors)
     if (error.response) {
-      console.error('API error:', error.response);
-      showNotification(
-        'Error Fetching Equipments',
-        `Error: ${error.response.status} - ${error.response.statusText}`,
-        'error'
-      );
+     
     } else if (error.request) {
       // Handle errors with the request (no response received)
       console.error('Request error:', error.request);

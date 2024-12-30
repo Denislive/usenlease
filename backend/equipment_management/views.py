@@ -1046,26 +1046,33 @@ class OrderViewSet(viewsets.ViewSet):
         """
         Create a new order from the user's cart, including payment processing.
         """
+        print("Starting order creation process...")
         self.check_permissions(request)
 
         data = request.data
         data['user'] = request.user.id
+        print(f"User ID: {request.user.id}")
 
         try:
             # Fetch the user's cart
             cart = Cart.objects.get(user=request.user)
+            print(f"Cart found for user {request.user.id}")
         except Cart.DoesNotExist:
+            print("No cart found for the user")
             return Response({"error": "No cart found for the user"}, status=status.HTTP_404_NOT_FOUND)
 
         # Get cart items
         cart_items = cart.cart_items.all()
+        print(f"Cart items retrieved: {len(cart_items)} items")
 
         if not cart_items.exists():
+            print("Cart is empty, cannot create an order")
             return Response({"error": "Cart is empty, cannot create an order"}, status=status.HTTP_400_BAD_REQUEST)
 
         # Calculate order total price and total order items
         order_total_price = sum(item.quantity * item.item.hourly_rate for item in cart_items)
         total_order_items = sum(item.quantity for item in cart_items)
+        print(f"Order total price: {order_total_price}, Total items: {total_order_items}")
 
         data['order_total_price'] = order_total_price
         data['total_order_items'] = total_order_items
@@ -1073,25 +1080,52 @@ class OrderViewSet(viewsets.ViewSet):
         # Serialize and save the order
         order_serializer = OrderSerializer(data=data)
         if order_serializer.is_valid():
-            # Save the order and create order items
             order = order_serializer.save(user=request.user)
+            print(f"Order created: ID {order.id}")
 
             for cart_item in cart_items:
+                equipment = cart_item.item
+                ordered_quantity = cart_item.quantity
+
+                print(f"Processing cart item: {equipment.name}, Requested quantity: {ordered_quantity}, Available: {equipment.available_quantity}")
+
+                # Check available quantity
+                if equipment.available_quantity < ordered_quantity:
+                    print(f"Error: Not enough {equipment.name} available")
+                    return Response({
+                        "error": f"Not enough items available for {equipment.name}. "
+                                f"Requested: {ordered_quantity}, Available: {equipment.available_quantity}"
+                    }, status=status.HTTP_400_BAD_REQUEST)
+
+                # Reduce available quantity
+                equipment.available_quantity -= ordered_quantity
+                print(f"Updated available quantity for {equipment.name}: {equipment.available_quantity}")
+
+                # Mark as unavailable if no quantity left
+                if equipment.available_quantity == 0:
+                    equipment.is_available = False
+                    print(f"{equipment.name} is now marked as unavailable")
+
+                equipment.save()
+
+                # Create order item
                 OrderItem.objects.create(
                     order=order,
-                    item=cart_item.item,
-                    quantity=cart_item.quantity,
+                    item=equipment,
+                    quantity=ordered_quantity,
                     start_date=cart_item.start_date,
                     end_date=cart_item.end_date
                 )
+                print(f"Order item created for {equipment.name}, Quantity: {ordered_quantity}")
 
             # Clear the cart after creating the order
             cart_items.delete()
+            print("Cart cleared after order creation")
 
             # Payment logic (Stripe integration)
             try:
-                # Convert the total price to cents (Stripe requires amount in cents)
                 amount_in_cents = int(order_total_price * 100)
+                print(f"Creating Stripe PaymentIntent for {amount_in_cents} cents")
 
                 # Create a PaymentIntent with Stripe
                 intent = stripe.PaymentIntent.create(
@@ -1102,8 +1136,9 @@ class OrderViewSet(viewsets.ViewSet):
 
                 # Update the order with the payment token
                 order.payment_token = intent.id
-                order.payment_status = 'pending'  # Initially set to pending before payment confirmation
+                order.payment_status = 'pending'
                 order.save()
+                print(f"Stripe PaymentIntent created: {intent.id}")
 
                 # Return the client secret for the frontend to process the payment
                 return Response({
@@ -1112,9 +1147,13 @@ class OrderViewSet(viewsets.ViewSet):
                 }, status=status.HTTP_201_CREATED)
 
             except stripe.error.StripeError as e:
+                print(f"Stripe error: {e.user_message}")
                 return Response({"error": f"Payment processing failed: {e.user_message}"}, status=status.HTTP_400_BAD_REQUEST)
 
+        print("Order serializer errors:", order_serializer.errors)
         return Response(order_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 
 
 class OrderItemViewSet(viewsets.ViewSet):
