@@ -7,7 +7,6 @@ import CryptoJS from 'crypto-js'; // Import CryptoJS
 import useNotifications from '@/store/notification';
 import { useCartStore } from './cart';
 
-
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 const apiEncryptKey = import.meta.env.VITE_ENCRYPTION_KEY
 
@@ -16,8 +15,14 @@ const encryptData = (data) => {
 };
 
 const decryptData = (data) => {
-  const bytes = CryptoJS.AES.decrypt(data, apiEncryptKey);
-  return JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+  try {
+    const bytes = CryptoJS.AES.decrypt(data, apiEncryptKey);
+    const decryptedData = bytes.toString(CryptoJS.enc.Utf8);
+    return decryptedData ? JSON.parse(decryptedData) : null;
+  } catch (error) {
+    console.error('Error decrypting data:', error);
+    return null; // Return null if decryption fails
+  }
 };
 
 export const useAuthStore = defineStore('auth', () => {
@@ -35,129 +40,125 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isAuthenticated = computed(() => !!user.value);
 
-
-
+  // Decrypt stored user data if available
   onMounted(() => {
-    if (storedUser ) {
-      user.value = decryptData(storedUser ); // Decrypt the stored user data
+    if (storedUser) {
+      user.value = decryptData(storedUser); // Decrypt the stored user data
     }
   });
 
-
-const getUserData = async () => {
-  try {
-    const response = await axios.get(
-      `${apiBaseUrl}/api/accounts/users/${user?.id}/`,
-      { withCredentials: true }
-    );
-    
-    if (response.status === 200) {
-      user.value = {
-        ...response.data,
-        user_address: response.data.user_address || {
-          full_name: '',
-          street_address: '',
-          street_address2: '',
-          city: '',
-          state: '',
-          zip_code: '',
-          country: ''
-        }
-      };
-      // Encrypt the user data and store it in cookies
-      Cookies.set('user', encryptData(user.value), {
-        sameSite: 'None',
-        secure: true,
-
-      });
-
-    } else {
-      console.error(`Request completed but not successful.`);
-    }
-  } catch (error) {
-    console.error("Error fetching user data:");
-    // Handle error
-  }
-};
-
- const login = async (email, password, cart) => {
-  isLoading.value = true;
-  try {
-    const response = await axios.post(
-      `${apiBaseUrl}/api/accounts/login/`,
-      { email, password, cart },
-      { withCredentials: true }
-    );
-
-    if (response.status === 200) {
-
-      user.value = response.data;
-
-      // Encrypt user data before storing in cookies
-      Cookies.set('user', encryptData(response.data), {
-        sameSite: 'None',
-        secure: true,
-      });
-
-      // Set a timeout for 24 hours to remove the cookie
-      setTimeout(() => {
-        Cookies.remove('user');
-        user.value = null; // Clear user data
-      }, 86400000); // 24 hours in milliseconds
-
-      showNotification('Login Successful', 'Welcome back!', 'success');
+  const getUserData = async () => {
+    try {
+      const response = await axios.get(
+        `${apiBaseUrl}/api/accounts/users/${user?.id}/`,
+        { withCredentials: true }
+      );
       
-      user.value = decryptData(storedUser);
-
-
-      const formData = loadFormDataFromLocalStorage();
-      if (formData) {
-        formData.set('owner', user.value.id);
-
-        try {
-          const createResponse = await axios.post(
-            `${apiBaseUrl}/api/equipments/`,
-            formData,
-            { withCredentials: true }
-          );
-          if (createResponse.status === 201) {
-            router.push({
-              name: 'equipment-details',
-              params: { id: createResponse.data.id },
-            });
-            showNotification(
-              'Item Listing Successful',
-              `${createResponse.data.name} created successfully!`,
-              'success'
-            );
-            localStorage.removeItem('payload');
-          } else {
-            console.error("Item listing response not successful. Status:");
+      if (response.status === 200) {
+        user.value = {
+          ...response.data,
+          user_address: response.data.user_address || {
+            full_name: '',
+            street_address: '',
+            street_address2: '',
+            city: '',
+            state: '',
+            zip_code: '',
+            country: ''
           }
-        } catch (error) {
-          showNotification(
-            'Error Listing Item',
-            'An error occurred during item listing!',
-            'error'
-          );
-        }
+        };
+        // Encrypt the user data and store it in cookies
+        Cookies.set('user', encryptData(user.value), {
+          sameSite: 'None',
+          secure: true,
+        });
+      } else {
+        console.error(`Request completed but not successful.`);
       }
-
-      const redirectPath = redirectTo.value || '/';
-      redirectTo.value = '';
-      router.push(redirectPath);
-      loginError.value = '';
-    } else {
-      console.error("Login response not successful.");
+    } catch (error) {
+      console.error("Error fetching user data:");
+      // Handle error
     }
-  } catch (error) {
-    console.error("Error during login.");
-    handleLoginError(error);
-  } finally {
-    isLoading.value = false;
-  }
-};
+  };
 
+  const login = async (email, password, cart) => {
+    isLoading.value = true;
+    try {
+      const response = await axios.post(
+        `${apiBaseUrl}/api/accounts/login/`,
+        { email, password, cart },
+        { withCredentials: true }
+      );
+
+      if (response.status === 200) {
+        user.value = response.data;
+
+        // Encrypt user data before storing in cookies
+        Cookies.set('user', encryptData(response.data), {
+          sameSite: 'None',
+          secure: true,
+        });
+
+        // Set a timeout for 24 hours to remove the cookie
+        setTimeout(() => {
+          Cookies.remove('user');
+          user.value = null; // Clear user data
+        }, 86400000); // 24 hours in milliseconds
+
+        showNotification('Login Successful', 'Welcome back!', 'success');
+
+        // Check if storedUser exists before attempting decryption
+        if (storedUser) {
+          user.value = decryptData(storedUser);
+        }
+
+        const formData = loadFormDataFromLocalStorage();
+        if (formData) {
+          formData.set('owner', user.value.id);
+
+          try {
+            const createResponse = await axios.post(
+              `${apiBaseUrl}/api/equipments/`,
+              formData,
+              { withCredentials: true }
+            );
+            if (createResponse.status === 201) {
+              router.push({
+                name: 'equipment-details',
+                params: { id: createResponse.data.id },
+              });
+              showNotification(
+                'Item Listing Successful',
+                `${createResponse.data.name} created successfully!`,
+                'success'
+              );
+              localStorage.removeItem('payload');
+            } else {
+              console.error("Item listing response not successful. Status:");
+            }
+          } catch (error) {
+            showNotification(
+              'Error Listing Item',
+              'An error occurred during item listing!',
+              'error'
+            );
+          }
+        }
+
+        const redirectPath = redirectTo.value || '/';
+        redirectTo.value = '';
+        router.push(redirectPath);
+        loginError.value = '';
+      } else {
+        console.error("Login response not successful.");
+      }
+    } catch (error) {
+      console.error(`Error during login. ${error}`);
+      handleLoginError(error);
+    } finally {
+      isLoading.value = false;
+    }
+  };
 
   const handleLoginError = (error) => {
     if (error.response?.status === 401) {
@@ -194,7 +195,6 @@ const getUserData = async () => {
     }
   };
 
-
   axios.interceptors.response.use(
     (response) => response, // Pass through successful responses
     async (error) => {
@@ -221,22 +221,16 @@ const getUserData = async () => {
     }
   );
   
-  
-
   const logout = async () => {
     isLoading.value = true;
     try {
-  
       const response = await axios.post(
         `${apiBaseUrl}/api/accounts/logout/`,
         {},
-        {
-          withCredentials: true,
-        }
+        { withCredentials: true }
       );
   
       if (response.status === 200) {
-  
         // Clear user data
         user.value = null; // Reactive state for the user
         Cookies.remove('user'); // Remove user cookie
@@ -259,9 +253,7 @@ const getUserData = async () => {
       isLoading.value = false; // Stop loading spinner
     }
   };
-  
-  
- 
+
   const loadFormDataFromLocalStorage = () => {
     const payload = JSON.parse(localStorage.getItem('payload'));
     if (!payload) return null;

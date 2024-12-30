@@ -86,6 +86,15 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: LoginView,
+      beforeEnter: (to, from, next) => {
+        const authStore = useAuthStore();
+        if (authStore.isAuthenticated) {
+          // If user is already authenticated, redirect to home or another page
+          next({ name: 'home' });
+        } else {
+          next();
+        }
+      },
     },
     {
       path: '/signup',
