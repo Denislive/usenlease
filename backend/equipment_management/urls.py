@@ -15,8 +15,9 @@ from .views import (
     OrderActionView,
     CreateCheckoutSessionView,
     SessionStatusView,
+    UserEquipmentView
 )
-from user_management.views import ReportViewSet, ContactViewSet, CompanyInfoView
+from user_management.views import ReportViewSet, ContactViewSet, CompanyInfoView, FAQViewSet
 
 # Create a router and register the viewsets
 router = DefaultRouter()
@@ -33,11 +34,17 @@ router.register('contact', ContactViewSet, basename='contact')
 router.register('orders', OrderViewSet, basename='order')
 router.register('order-items', OrderItemViewSet, basename='order-item')
 
+router.register(r'faqs', FAQViewSet)
+
+
+
 urlpatterns = [
     path('', include(router.urls)),  # Include all the registered routes
     path('create-checkout-session/', CreateCheckoutSessionView.as_view(), name='create_checkout_session'),
     path('session-status/', SessionStatusView.as_view(), name='session_status'),
     path('orders/<str:pk>/<str:action>/', OrderActionView.as_view(), name='order-action'),
     path('root-categories/', RootCategoryListView.as_view(), name='root-category-list'),
+    path('user-equipment/', UserEquipmentView.as_view(), name='user-equipment'),
     path('company-info/', CompanyInfoView.as_view(), name='company-info'),
+
 ]

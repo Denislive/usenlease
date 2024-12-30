@@ -1,3 +1,8 @@
+<script setup>
+import { useCompanyInfoStore } from '@/store/company';
+const company = useCompanyInfoStore();
+
+</script>
 <template>
 <section class="about bg-gradient-to-r from-[#1c1c1c] to-[#ff6f00] py-16 text-white relative overflow-hidden">
   <!-- Background Decorative Elements -->
@@ -13,8 +18,7 @@
 
     <!-- Mission Statement -->
     <p class="text-lg sm:text-xl mb-12 max-w-3xl mx-auto leading-relaxed animate__animated animate__fadeIn animate__delay-2s">
-      At <span class="font-bold text-[#ffc107]">UseNLease</span>, we are dedicated to providing high-quality equipment for all your needs. Whether you're working on a construction project, landscaping, or just need the right tool for a weekend project, we have a wide range of reliable and well-maintained equipment at your fingertips. Our mission is to make equipment rental easy, affordable, and accessible for everyone.
-    </p>
+      At <span class="font-bold text-[#ffc107]">UseNLease</span>, {{ company.companyInfo?.about }}</p>
 
     <!-- Values Section with Icons -->
     <div class="flex flex-col md:flex-row justify-center items-center space-y-8 md:space-y-0 md:space-x-8">
@@ -54,9 +58,9 @@
 
     <!-- Call to Action -->
     <div class="mt-12">
-      <a href="#contact" class="bg-[#ffc107] text-[#1c1c1c] py-3 px-8 rounded-full text-lg font-semibold hover:bg-[#ff9e00] transition duration-300 transform hover:scale-110">
+      <RouterLink to="/contact" class="bg-[#ffc107] text-[#1c1c1c] py-3 px-8 rounded-full text-lg font-semibold hover:bg-[#ff9e00] transition duration-300 transform hover:scale-110">
         Contact Us Today
-      </a>
+      </RouterLink>
     </div>
   </div>
 </section>

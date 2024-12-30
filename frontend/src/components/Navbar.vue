@@ -2,17 +2,29 @@
   <div class="bg-[#1c1c1c] p-1 sticky top-0 z-50">
     <div class="w-11/12 md:w-5/6 lg:w-5/6 xl:w-4/6 mx-auto">
       <header class="text-white flex justify-between items-center">
-
-        
         <!-- Logo -->
         <RouterLink :to="{ name: 'home' }" class="flex items-center">
-          <img :src="company.companyInfo?.logo" :alt="company.companyInfo?.logo"
-            class="h-20" />
+          <img :src="company.companyInfo?.logo" :alt="company.companyInfo?.logo" class="h-20" />
         </RouterLink>
+
+        <!-- Role Switch -->
+        <div v-if="authStore.isAuthenticated"
+          class="flex items-center justify-between bg-gray-50 p-4 rounded-lg shadow-md hidden md:block">
+          <div class="flex items-center space-x-3">
+            <span class="text-sm text-gray-600">Switch to {{ authStore.user?.role ===  'lessor' ? 'lessee' : 'lessor'
+              }}:</span>
+            <label for="role-toggle" class="inline-flex relative items-center cursor-pointer">
+              <input type="checkbox" id="role-toggle" v-model="role" class="sr-only peer"
+                @change="updateUserRole" />
+              <div
+                class="w-11 h-6 bg-gray-200 rounded-full peer-checked:bg-[#ffc107] peer-checked:after:translate-x-5 after:content-[''] after:absolute after:left-0.5 after:top-0.5 after:w-5 after:h-5 after:rounded-full after:bg-white transition-all">
+              </div>
+            </label>
+          </div>
+        </div>
 
         <!-- Authenticated User Menu -->
         <div v-if="authStore.isAuthenticated" class="flex items-center space-x-4">
-
           <!-- Browse Items Button for Lessee -->
           <RouterLink :to="{ name: 'categories' }">
             <a
@@ -39,20 +51,27 @@
                 Logout
               </button>
             </div>
-
-
-
-
           </div>
+
           <!-- Lease Out Button for Lessor -->
           <RouterLink v-if="authStore.user.role === 'lessor'" :to="{ name: 'list-item' }">
-            <a href="/browse"
+            <a
               class="px-6 py-2 bg-[#ffc107] text-[#1c1c1c] hidden md:block rounded-lg shadow-lg transform transition duration-300 hover:scale-105 hover:shadow-2xl">
               Lease Out
             </a>
           </RouterLink>
+            <div v-if="authStore.isAuthenticated">
+               <!-- Equipment Icon -->
+             <div  class="relative">
+            <RouterLink  v-if="authStore.user.role === 'lessor'" to="/profile?section=my-equipments" class="flex items-center">
+              <i class="pi pi-bars text-4xl mx-4"></i>
+              <span
+                class="absolute top-[-15px] right-[-5px] bg-red-600 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center">{{ store.userEquipments.length }}</span>
+            </RouterLink>
+          </div>
+
           <!-- Cart Icon -->
-          <div class="relative">
+          <div  v-if="authStore.user.role === 'lessee'" class="relative">
             <RouterLink to="/cart" class="flex items-center">
               <i class="pi pi-shopping-cart text-4xl mx-4"></i>
               <span
@@ -60,10 +79,8 @@
                   cartStore.cart.length }}</span>
             </RouterLink>
           </div>
-
-
-
-
+            </div>
+          
         </div>
 
         <!-- Not Authenticated User Menu -->
@@ -86,7 +103,7 @@
 
           <!-- Lease Out Button for Non-Authenticated Users -->
           <RouterLink :to="{ name: 'list-item' }">
-            <a href="/browse"
+            <a
               class="px-6 py-2 bg-[#ffc107] text-[#1c1c1c] rounded-lg shadow-lg transform transition duration-300 hover:scale-105 hover:shadow-2xl">
               Lease Out
             </a>
@@ -101,11 +118,12 @@
                   cartStore.cart.length }}</span>
             </RouterLink>
           </div>
+
+      
         </div>
       </header>
     </div>
   </div>
-
 
   <!-- Sticky Navbar for Mobile -->
   <nav class="fixed bottom-0 left-0 right-0 bg-[#1c1c1c] text-white p-2 shadow-lg md:hidden z-10">
@@ -141,7 +159,6 @@
             <small>Reports</small>
           </RouterLink>
         </div>
-
       </div>
 
       <!-- Other Links -->
@@ -161,63 +178,114 @@
   </nav>
 </template>
 
+
 <script setup>
-import { ref, watchEffect, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
-import { useAuthStore } from '@/store/auth';  // Import the auth store
+import { useAuthStore } from '@/store/auth'; // Import the auth store
 import { useCartStore } from '@/store/cart'; // Adjust the path as necessary
 import axios from 'axios';
+import Cookies from 'js-cookie';
+
 import { useCompanyInfoStore } from '@/store/company';
+import useNotifications from '@/store/notification';
+import { useEquipmentsStore } from '@/store/equipments';
+
+const api_base_url = import.meta.env.VITE_API_BASE_URL;
+
 const company = useCompanyInfoStore();
 const cartStore = useCartStore();
+const store = useEquipmentsStore();
 
+const { showNotification } = useNotifications();
 
 const showDropdown = ref(false);
 const authStore = useAuthStore();
 const router = useRouter();
-
-
-
+const role = authStore.isOn;
+const user = ref({
+  user_address: {
+    full_name: '',
+    street_address: '',
+    city: '',
+    state: '',
+    zip_code: '',
+    country: '',
+  },
+});
 
 let dropdownTimeout;
 
 const showDropdownWithDelay = (show) => {
   clearTimeout(dropdownTimeout);
   if (show) {
-    // Small delay to keep the dropdown visible while moving the mouse
     dropdownTimeout = setTimeout(() => {
       showDropdown.value = true;
-    }, 50); // Adjust delay as needed
+    }, 50); // Delay for showing the dropdown
   } else {
     dropdownTimeout = setTimeout(() => {
       showDropdown.value = false;
-    }, 200); // Delay to close dropdown after mouse leaves
+    }, 200); // Delay for hiding the dropdown
   }
 };
 
+const updateUserRole = async () => {
+  try {
+    // Determine the updated role based on `isOn`
+    const updatedRole =  authStore.user?.role === 'lessee' ? 'lessor' : 'lessee'
+
+    // Update role in the backend
+    const response = await axios.put(
+      `${api_base_url}/api/accounts/users/${authStore.user.id}/`,
+      { role: updatedRole },
+      { withCredentials: true }
+    );
+
+    authStore.user.role = response.data.role;
+
+    // Encrypt user data before storing in cookies
+    Cookies.set('user', authStore.encryptData(response.data), {
+        sameSite: 'None',
+        secure: true,
+      });
 
 
+
+    // Update the user's role in the auth store
+    await authStore.getUserData();
+
+    await store.fetchUserEquipments();
+    router.push('/profile');
+
+    // Success notification
+    showNotification('success', `You are now a ${updatedRole}.`, 'success');
+  } catch (error) {
+    console.error('Error updating role:', error);
+    // Error notification
+    showNotification('error', 'Unable to switch role. Please try again.', 'error');
+  }
+};
 
 onMounted(async () => {
   if (authStore.isAuthenticated) {
-    await authStore.getUserData();
-
+    await authStore.getUserData(); // Fetch user data after login
+    user.value = authStore.user;
+    await store.fetchUserEquipments();
   }
-  await company.fetchCompanyInfo();
-
+  await company.fetchCompanyInfo(); // Load company information
 });
 
-// Handle Logout functionality
+// Handle logout functionality
 const handleLogout = async () => {
-  await authStore.logout();  // Wait for the logout method to finish
-  router.push('/'); // Redirect to login page
+  try {
+    await authStore.logout(); // Perform logout
+    router.push('/'); // Redirect to the homepage
+  } catch (error) {
+    console.error('Error during logout:', error);
+    showNotification('error', 'Error during logout. Please try again.', 'error');
+  }
 };
-
-
-
 </script>
-
-
 
 <style scoped>
 /* Optional additional styles can go here */

@@ -88,7 +88,7 @@ class EquipmentSerializer(serializers.ModelSerializer):
         model = Equipment
         fields = [
             'owner', 'id', 'category', 'tags', 'name', 'description', 'images', 'hourly_rate', 'address',
-            'available_quantity', 'is_available', "specifications", 'equipment_reviews', 'rating', 'is_trending',
+            'available_quantity', 'is_available', "specifications", 'equipment_reviews', 'rating', 'terms', 'is_trending',
             'is_featured'
         ]
         extra_kwargs = {

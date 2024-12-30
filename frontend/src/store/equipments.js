@@ -16,6 +16,29 @@ export const useEquipmentsStore = defineStore('equipments', () => {
   const selectedEquipment = ref(null);
   const isLoading = ref(false);
   const error = ref(null);
+  const userEquipments = ref([]);
+
+  const truncateText = (text, length) => {
+    if (text.length > length) {
+      return text.slice(0, length) + '...';
+    }
+    return text;
+  };
+
+   // Fetch user equipments on mount with credentials
+   const fetchUserEquipments = async () => {
+    try {
+      const response = await axios.get(`${api_base_url}/api/user-equipment/`, {
+        withCredentials: true,  // This ensures cookies (credentials) are sent with the request
+      });
+      userEquipments.value = response.data;  // Assign the fetched equipment to `equipments`
+    } catch (error) {
+      console.error('Error fetching user equipment:', error.response);
+    }
+  };
+
+ 
+
 
   // Fetch the list of equipments
   const fetchEquipments = async () => {
@@ -91,6 +114,9 @@ export const useEquipmentsStore = defineStore('equipments', () => {
 
   // Return the state variables and actions to be used in components
   return {
+    truncateText,
+    userEquipments,
+    fetchUserEquipments,
     equipments,
     categories,
     selectedEquipment,

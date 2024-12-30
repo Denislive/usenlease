@@ -9,7 +9,8 @@ from .models import (
     Message,
     Chat,
     Contact,
-    CompanyInfo
+    CompanyInfo,
+    FAQ
 )
 
 
@@ -139,3 +140,9 @@ class CreditCardSerializer(serializers.ModelSerializer):
             'paypal_email',
             'is_default'
         ]
+
+
+class FAQSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FAQ
+        fields = ['id', 'question', 'answer', 'created_at', 'updated_at']

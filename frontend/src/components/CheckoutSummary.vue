@@ -99,7 +99,7 @@ export default {
       const timeDiff = endDate - startDate; // Time difference in milliseconds
       const hours = timeDiff / (1000 * 3600); // Convert milliseconds to hours
 
-      return price * item.quantity * hours;
+      return price * item.quantity;
     };
 
     // Calculate the subtotal
@@ -117,7 +117,7 @@ export default {
         const timeDiff = endDate - startDate; // Time difference in milliseconds
         const hours = timeDiff / (1000 * 3600); // Convert milliseconds to hours
 
-        return total + price * item.quantity * hours;
+        return total + price * item.quantity;
       }, 0);
     });
 

@@ -121,6 +121,8 @@ const name = ref('');
 const email = ref('');
 const message = ref('');
 const loading = ref(false);
+const errorMessage = ref('');
+const successMessage = ref('');
 
 const api_base_url = import.meta.env.VITE_API_BASE_URL;
 // Submit handler

@@ -13,9 +13,11 @@ from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
 
+
 # Third-party imports
 import stripe
 from rest_framework.views import APIView
+from rest_framework.decorators import action
 from rest_framework import viewsets, permissions, status, generics
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
@@ -254,7 +256,6 @@ def convert_querydict_to_dict(querydict):
 
 
 class CategoryViewSet(viewsets.ViewSet):
-    authentication_classes = [JWTAuthenticationFromCookie]
 
     def list(self, request):
         """
@@ -328,7 +329,7 @@ class RootCategoryListView(generics.ListAPIView):
 
 
 class TagViewSet(viewsets.ViewSet):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [JWTAuthenticationFromCookie]
 
     def list(self, request):
         """
@@ -418,6 +419,8 @@ class EquipmentViewSet(viewsets.ModelViewSet):
 
             # Convert incoming querydict to a structured dictionary
             data = convert_querydict_to_dict(request.data)
+            print(data)
+
 
             # Group address fields into a dictionary
             address = {
@@ -428,6 +431,10 @@ class EquipmentViewSet(viewsets.ModelViewSet):
                 'country': data.pop('country', None)
             }
             data['address'] = address
+
+            terms = data.pop('terms', None)
+            if terms:
+                data['terms'] = terms
 
             # Convert tags to a list of dictionaries
             if 'tags' in data:
@@ -444,7 +451,7 @@ class EquipmentViewSet(viewsets.ModelViewSet):
             serializer.is_valid(raise_exception=True)
 
             # Save the equipment instance
-            equipment = serializer.save()
+            equipment = serializer.save(terms=terms)
 
             # Save associated specifications
             for spec in specifications_data:
@@ -484,7 +491,8 @@ class EquipmentViewSet(viewsets.ModelViewSet):
         equipment_reviews = equipment.equipment_reviews.filter(review_text__isnull=False).exclude(review_text="")
         serializer = EquipmentSerializer(equipment)
         return Response(serializer.data)
-
+    
+    
     def update(self, request, pk=None):
         """
         Update an existing equipment item.
@@ -525,6 +533,40 @@ class EquipmentViewSet(viewsets.ModelViewSet):
             return Response(serializer.data)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class UserEquipmentView(APIView):
+    """
+    Custom API to get equipment for a specific authenticated user.
+    """
+
+    # Specify the authentication class
+    authentication_classes = [JWTAuthenticationFromCookie]
+    permission_classes = [permissions.IsAuthenticated]  # Ensure the user is authenticated
+
+    def get(self, request, *args, **kwargs):
+        """
+        List all equipment for the logged-in user.
+        If no equipment is found, return a message indicating no equipment available.
+        """
+        user = request.user
+
+        # If user is authenticated (IsAuthenticated permission checks this)
+        if not user.is_authenticated:
+            return Response(
+                {'detail': 'Authentication credentials were not provided.'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        # Filter equipment based on the logged-in user
+        queryset = Equipment.objects.filter(owner=user)
+
+        # Check if no equipment is found
+        if not queryset.exists():
+            return Response({'detail': 'No equipment found for the authenticated user.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Serialize the queryset and return data
+        serializer = EquipmentSerializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class ImageViewSet(viewsets.ViewSet):

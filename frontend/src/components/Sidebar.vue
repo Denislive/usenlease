@@ -40,7 +40,7 @@ const getAdCount = (category) => {
           <p class="text-red-600">{{ error }}</p>
         </template>
         <template v-else>
-          <ul class="categories-list list-none p-0 m-0 space-y-5">
+          <ul class="categories-list list-none p-0 m-0 space-y-2">
             <li v-for="category in categories" :key="category.id" class="category-item relative mb-5 group">
               <RouterLink
                 :to="{ name: 'category-details', query: { cat: category.slug } }"
@@ -49,7 +49,7 @@ const getAdCount = (category) => {
                 <img
                   :src="category.image ? category.image : 'https://picsum.photos/100/150'"
                   :alt="category.name"
-                  class="category-icon w-12 h-12 object-cover rounded-full border-2 border-yellow-400 mr-3"
+                  class="category-icon w-8 h-8 object-cover rounded-full border-2 border-yellow-400 mr-3"
                 >
                 <div class="category-name-container">
                   <span class="category-name font-semibold">{{ category.name }}</span>

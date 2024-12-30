@@ -242,7 +242,7 @@ class CartItem(models.Model):
 
             # Calculate total based on hours and quantity
             total_hours = rental_days * 24
-            calculated_total = self.quantity * self.item.hourly_rate * total_hours
+            calculated_total = self.quantity * self.item.hourly_rate
             self.total = calculated_total  # Update the total field
 
         return self.total if self.total else 0
@@ -394,7 +394,7 @@ class OrderItem(models.Model):
         if rental_days < 0:
             rental_days = 0
         total_hours = rental_days * 24  # Convert rental days to total hours
-        return self.quantity * self.item.hourly_rate * total_hours
+        return self.quantity * self.item.hourly_rate
 
     def save(self, *args, **kwargs):
         """

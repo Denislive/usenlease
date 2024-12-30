@@ -9,7 +9,7 @@ export const useCompanyInfoStore = defineStore('companyInfo', () => {
   const loading = ref(false); // Flag to track if the data is being loaded
   const error = ref(null); // Error message (if any) when fetching the company info
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL; // API base URL from environment variables
-  const showNotification = useNotifications(); // Initialize notification service
+  const { showNotification } = useNotifications();
 
   // Actions
   const fetchCompanyInfo = async () => {

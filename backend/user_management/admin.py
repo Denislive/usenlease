@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import User, Address, CreditCard, PhysicalAddress, Chat, Message, CompanyInfo
+from .models import User, Address, CreditCard, PhysicalAddress, Chat, Message, CompanyInfo, FAQ
 from django.utils.html import format_html
 
 
@@ -86,3 +86,4 @@ admin.site.register(PhysicalAddress, PhysicalAddressAdmin)
 admin.site.register(CreditCard, CreditCardAdmin)
 admin.site.register(Chat)
 admin.site.register(Message)
+admin.site.register(FAQ)

@@ -4,7 +4,7 @@
     <div class="col-span-12 lg:col-span-3 bg-white p-4 rounded-lg  hidden lg:block shadow-md">
       <div class="flex items-center space-x-4 mb-6">
         <i class="bi bi-person text-black text-2xl"></i>
-        <span class="text-lg font-medium">Welcome, {{ authStore.user.first_name || authStore.user.email || "John Doe"
+        <span class="text-lg font-medium">Welcome, {{ authStore.user?.first_name || authStore.user?.email || "John Doe"
           }}</span>
       </div>
 
@@ -27,7 +27,7 @@
       <div class="flex items-center space-x-4 mb-6">
         <i class="bi bi-person text-black text-2xl"></i>
         <span class="text-lg font-medium">
-          Welcome, {{ authStore.user.first_name || authStore.user.email || "John Doe" }}
+          Welcome, {{ authStore.user?.first_name || authStore.user?.email || "John Doe" }}
         </span>
       </div>
       <!-- Logout Option -->
@@ -78,7 +78,7 @@
               </div>
               <div>
                 <p class="text-lg font-bold text-gray-800">
-                  Welcome, {{ authStore.user.first_name || authStore.user.email || 'John Doe' }}
+                  Welcome, {{ authStore.user?.first_name || authStore.user?.email || 'John Doe' }}
                 </p>
               </div>
             </div>
@@ -111,8 +111,14 @@
                 </span>
               </p>
 
+              <!-- Role -->
+              <p class="flex items-center text-gray-700 hidden md:block">
+                <i class="bi bi-envelope mr-3 text-xl text-gray-500"></i>
+                <span><strong>Role:</strong> {{ authStore.user.role }}</span>
+              </p>
+
               <!-- Role Switch -->
-              <div class="flex items-center justify-between bg-gray-50 p-4 rounded-lg shadow-md">
+              <div class="flex items-center justify-between bg-gray-50 p-4 rounded-lg shadow-md md:hidden">
                 <div class="flex items-center text-gray-700 space-x-3">
                   <i class="bi bi-shield-lock text-xl text-gray-500"></i>
                   <span class="text-sm">
@@ -120,9 +126,11 @@
                   </span>
                 </div>
                 <div class="flex items-center space-x-3">
-                  <span class="text-sm text-gray-600">Switch to {{ role ? 'lessor' : 'lessee' }}:</span>
+                  <span class="text-sm text-gray-600">Switch to {{ authStore.user.role === 'lessor' ? 'lessee' :
+                    'lessor'
+                    }}:</span>
                   <label for="role-toggle" class="inline-flex relative items-center cursor-pointer">
-                    <input type="checkbox" id="role-toggle" v-model="role" class="sr-only peer"
+                    <input type="checkbox" id="role-toggle" v-model="authStore.isOn" class="sr-only peer"
                       @change="updateUserRole" />
                     <div
                       class="w-11 h-6 bg-gray-200 rounded-full peer-checked:bg-[#ffc107] peer-checked:after:translate-x-5 after:content-[''] after:absolute after:left-0.5 after:top-0.5 after:w-5 after:h-5 after:rounded-full after:bg-white transition-all">
@@ -173,18 +181,18 @@
 
 
           <!-- My Equipments Section -->
-          <div v-if="activeSection === 'my-equipments'">
+          <div v-if="activeSection === 'my-equipments' && authStore.user?.role === 'lessor'">
             <button @click="closeSidebar"
               class="flex items-center text-gray-800 rounded-full p-2 transition hover:bg-gray-200">
               <i class="pi pi-arrow-circle-left text-xl mr-2"></i> Back
             </button>
 
-            <div v-if="equipments.length > 0">
+            <div v-if="store.userEquipments.length > 0">
               <div class="container mx-auto p-4">
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
 
                   <!-- Loop through the filtered equipments -->
-                  <div v-for="equipment in equipments" :key="equipment.id" @click="openEditModal(equipment)"
+                  <div v-for="equipment in store.userEquipments" :key="equipment.id" @click="openEditModal(equipment)"
                     class="bg-white rounded-lg shadow-lg overflow-hidden transition-transform hover:scale-105 cursor-pointer">
                     <div class="relative">
                       <!-- Availability Badge -->
@@ -249,7 +257,7 @@
                 <div class="mb-4 relative">
                   <label for="availableItems" class="block text-sm font-medium text-gray-700">Available Items</label>
                   <input type="number" min=1 placeholder="Available items for renting out" id="availableItems"
-                    v-model.number="editedEquipment.available_quantity"  class="w-full p-2 border rounded mt-1" />
+                    v-model.number="editedEquipment.available_quantity" class="w-full p-2 border rounded mt-1" />
                 </div>
 
                 <div class="mb-4">
@@ -296,7 +304,7 @@
 
 
 
-          <div v-if="activeSection === 'my-orders'">
+          <div v-if="activeSection === 'my-orders' && authStore.user?.role === 'lessee'">
             <button @click="closeSidebar"
               class="flex items-center text-gray-800 rounded-full p-2 transition hover:bg-gray-200">
               <i class="pi pi-arrow-circle-left text-xl mr-2"></i> Back
@@ -704,6 +712,14 @@ export default {
     const newMessage = ref(""); // Message being typed 
 
     const store = useEquipmentsStore();
+    const authStore = useAuthStore();
+    const { showNotification } = useNotifications(); // Initialize notification service
+
+
+    const categories = ref([]);
+
+    const api_base_url = import.meta.env.VITE_API_BASE_URL;
+
 
 
     const report = ref({});
@@ -736,41 +752,34 @@ export default {
     };
 
 
-    const role = ref('false');
-    const { showNotification } = useNotifications(); // Initialize notification service
-
-
-    const categories = ref([]);
-
-    const api_base_url = import.meta.env.VITE_API_BASE_URL;
 
     const updateUserRole = async () => {
       try {
-        // Send the updated role to the backend
-        const response = await axios.put(`${api_base_url}/api/accounts/users/${authStore.user.id}/`, {
-          role: role.value ? 'lessee' : 'lessor',
-        }, {
-          withCredentials: true,
-        },);
+        const updatedRole = authStore.isOn ? 'lessor' : 'lessee';
 
+        // Update role in the backend
+        const response = await axios.put(
+          `${api_base_url}/api/accounts/users/${authStore.user.id}/`,
+          { role: updatedRole },
+          { withCredentials: true }
+        );
 
-        // Update the role in the local state
-        authStore.user.role = response.data.role;
+        // Refresh user data and update the auth store
+        await authStore.getUserData();
+        authStore.user = response.data;
 
-        Cookies.set('user', JSON.stringify(authStore.user), {
-          expires: 1,
-          sameSite: 'None',
-          secure: true, // Only for development; ensure secure: true in production
-        });
+        // Fetch user report if necessary
+        if (typeof fetchUserReport === 'function') {
+          await fetchUserReport();
+        }
 
-        await fetchUserReport();
-
-
-        // Optionally show a success toast
-        showNotification('success', `You are now a ${authStore.user.role}.`, 'success');
+        // Display success notification
+        showNotification('success', `You are now a ${updatedRole}.`, 'success');
       } catch (error) {
-        // Handle error (e.g., show error toast)
-        showNotification('Error', 'Error switching role.', 'error');
+        console.error('Error updating role:', error);
+
+        // Display error notification
+        showNotification('error', 'Unable to switch role. Please try again.', 'error');
       }
     };
 
@@ -936,7 +945,6 @@ export default {
 
 
     // Initialize the auth store
-    const authStore = useAuthStore();
     const router = useRouter();
     const showModal = ref(false);
     const selectedOrder = ref(null);
@@ -995,18 +1003,10 @@ export default {
     const activeSection = ref("personal-info");
     const phoneNumber = ref("");
 
-    const equipments = ref([]); // To hold the fetched equipment data
 
     // Fetch user equipments on mount with credentials
     const fetchUserEquipments = async () => {
-      try {
-        const response = await axios.get(`${api_base_url}/api/equipments/`, {
-          withCredentials: true,  // This ensures cookies (credentials) are sent with the request
-        });
-        equipments.value = response.data;  // Assign the fetched equipment to `equipments`
-      } catch (error) {
-        console.error('Error fetching user equipment:', error);
-      }
+      await store.fetchUserEquipments();
     };
 
     const goToDetail = (equipmentId) => {
@@ -1101,14 +1101,14 @@ export default {
 
     const sections = computed(() => [
       { name: "personal-info", label: "Personal Information" },
-      { name: "my-equipments", label: "My Equipments", show: authStore.user.role === 'lessor' },
-      { name: "my-orders", label: "My Orders", show: authStore.user.role === 'lessee' },
+      { name: "my-equipments", label: "My Equipments", show: authStore.user?.role === 'lessor' },
+      { name: "my-orders", label: "My Orders", show: authStore.user?.role === 'lessee' },
       { name: "chats", label: "Chats" },
       { name: "reports", label: "Reports" },
     ]);
     const otherSections = [
-      { name: "my-equipments", label: "My Equipments" },
-      { name: "my-orders", label: "My Orders" },
+      { name: "my-equipments", label: "My Equipments", show: authStore.user?.role === 'lessor' },
+      { name: "my-orders", label: "My Orders", show: authStore.user?.role === 'lessor' },
       // { name: "settings", label: "Settings" },
       { name: "chats", label: "Chats" },
       { name: "reports", label: "Reports" },
@@ -1236,7 +1236,6 @@ export default {
       report,
       error,
       fetchUserReport,
-      role,
       updateUserRole,
       navigateToSection,
       closeSidebar,
@@ -1281,7 +1280,6 @@ export default {
       selectedStatus,
       filterOrders,
       loading,
-      equipments,
       goToDetail,
       uploadProfilePicture,
       authStore,

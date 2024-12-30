@@ -278,8 +278,9 @@ onMounted(async () => {
 
 const getUserIdFromToken = () => {
   const storedUser = Cookies.get('user');
+
   if (storedUser) {
-    const userData = JSON.parse(storedUser);
+    const userData =authStore.decryptData(storedUser);
     authStore.user.value = userData;
     return userData.id;
   }
@@ -360,7 +361,7 @@ const validateZipCode = () => {
 };
 
 const validateCountry = () => {
-  countryError.value = country.value ? 'Country is required.' : '';
+  countryError.value = !country.value ? 'Country is required.' : '';
 };
 
 const validateImages = () => {

@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from rest_framework_simplejwt.views import TokenRefreshView, TokenVerifyView
+from rest_framework_simplejwt.views import TokenVerifyView
 
 from .views import (
     UserViewSet,
@@ -15,7 +15,8 @@ from .views import (
     AllChatsViewSet,
     CheckEmailView,
     CheckPhoneNumberView,
-    PasswordResetViewSet
+    PasswordResetViewSet,
+    TokenRefreshView
 )
 
 # Initialize the router
@@ -37,7 +38,7 @@ urlpatterns = [
     # JWT Token management paths
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('token/verify/', TokenVerifyView.as_view(), name='token_verify'),
-
+    
     # User authentication paths
     path('login/', LoginView.as_view(), name='login'),
     path('logout/', CustomLogoutView.as_view(), name='logout'),

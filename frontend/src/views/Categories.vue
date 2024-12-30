@@ -1,3 +1,37 @@
+<template>
+  <Hero />
+  <Breadcrumb />
+
+  <div class="container mx-auto py-4 w-5/6 hidden md:block">
+    <div class="grid grid-cols-12 gap-4 p-1">
+      <!-- Sidebar Section -->
+      <aside class="col-span-3 bg-gray-100 rounded p-2">
+        <Filter 
+          :categories="categories" 
+          :cities="cities" 
+          :selectedCategories="selectedCategories" 
+          :selectedCities="selectedCities" 
+        />
+      </aside>
+
+      <!-- Main Content Section -->
+      <main class="col-span-9 bg-gray-100 p-1">
+        <Card :equipments="filteredEquipments" /> <!-- Pass filtered equipments -->
+      </main>
+    </div>
+  </div>
+
+  <div class="p-2 w-full text-xs md:hidden">
+    <MobileFilter 
+      :mobileCategories="categories" 
+      :mobileCities="cities" 
+      :mobileSelectedCategories="selectedCategories" 
+      :mobileSelectedCities="selectedCities" 
+    />
+    <Card :equipments="filteredEquipments" /> <!-- Pass filtered equipments -->
+  </div>
+</template>
+
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
@@ -97,32 +131,3 @@ const filteredEquipments = computed(() => {
   return filtered;
 });
 </script>
-
-<template>
-  <Hero />
-  <Breadcrumb />
-
-  <div class="container mx-auto py-4 w-5/6 hidden md:block">
-    <div class="grid grid-cols-12 gap-4 p-1">
-      <!-- Sidebar Section -->
-      <aside class="col-span-3 bg-gray-100 rounded p-2">
-        <Filter 
-          :categories="categories" 
-          :cities="cities" 
-          :selectedCategories="selectedCategories" 
-          :selectedCities="selectedCities" 
-        />
-      </aside>
-
-      <!-- Main Content Section -->
-      <main class="col-span-9 bg-gray-100 p-1">
-        <Card :equipments="filteredEquipments" /> <!-- Pass filtered equipments -->
-      </main>
-    </div>
-  </div>
-
-  <div class="p-2 w-full text-xs md:hidden">
-    <MobileFilter :categories="selectedCategories" />
-    <Card :equipments="filteredEquipments" /> <!-- Pass filtered equipments -->
-  </div>
-</template>

@@ -27,7 +27,7 @@
 
       <div class="p-4">
         <div v-show="activeTab === 'description'" class="tabs-panel">
-          <p>{{ selectedEquipment?.description || 'Loading...' }}</p>
+          <p>{{ selectedEquipment?.description  }}</p>
         </div>
         <div v-show="activeTab === 'specification'" class="tabs-panel">
           <ul>
@@ -37,7 +37,7 @@
           </ul>
         </div>
         <div v-show="activeTab === 'terms'" class="tabs-panel">
-          <p>{{ selectedEquipment?.terms || 'Loading...' }}</p>
+          <p>{{ selectedEquipment?.terms }}</p>
         </div>
         <div v-show="activeTab === 'reviews'" class="tabs-panel">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">

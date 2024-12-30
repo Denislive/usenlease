@@ -6,7 +6,7 @@
         <!-- Post Ad Button (CTA Component) -->
         <div class="col-span-1">
           <RouterLink
-            class="flex flex-col items-center justify-center h-48 bg-[#1c1c1c] text-white rounded-lg shadow-lg hover:text-[#ffc107] transition duration-300"
+            class="flex flex-col items-center justify-center h-28 bg-[#1c1c1c] text-white rounded-lg shadow-lg hover:text-[#ffc107] transition duration-300"
             to="/list-item">
             <i class="pi pi-plus text-3xl mb-2"></i>
             <span class="main-text text-sm font-semibold text-center">equipment</span>
@@ -18,8 +18,8 @@
           <div class="bg-white rounded-lg shadow-lg overflow-hidden">
             <RouterLink :to="{ name: 'category-details', query: { cat: category.slug } }">
               <img :src="category.image ? `${category.image}` || placeholderImage
-                : alt = `${category.name}`" class="w-full h-32 object-cover" />
-              <div class="p-4 text-center">
+                : alt = `${category.name}`" class="w-full h-12 object-cover" />
+              <div class="p-1 text-center">
                 <h5 class="text-sm">{{ category.name }}</h5>
               </div>
             </RouterLink>

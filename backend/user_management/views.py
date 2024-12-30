@@ -1,6 +1,8 @@
 # Standard library imports
 import random
 import smtplib
+import requests
+
 from datetime import date, datetime, timedelta
 from email.mime.text import MIMEText
 
@@ -54,6 +56,7 @@ from .models import (
     Chat,
     OTP,
     CompanyInfo,
+    FAQ
 )
 from .serializers import (
     UserSerializer,
@@ -65,6 +68,7 @@ from .serializers import (
     OTPSerializer,
     CompanyInfoSerializer,
     ChatSerializer,
+    FAQSerializer
 )
 
 # Imports from related apps
@@ -76,6 +80,9 @@ from equipment_management.models import (
     OrderItem,
     Review,
 )
+
+from .utils import send_custom_email
+
 
 
 class CompanyInfoView(APIView):
@@ -95,12 +102,14 @@ class CompanyInfoView(APIView):
 class JWTAuthenticationFromCookie(JWTAuthentication):
     """
     Custom JWT Authentication class that retrieves the access and refresh tokens
-    from cookies and handles token validation and refreshing.
+    from cookies and handles token validation.
     """
 
     def authenticate(self, request):
+        print("Starting authentication process.")
+
+        # Retrieve tokens from cookies
         access_token = request.COOKIES.get('token')  # Access token cookie
-        refresh_token = request.COOKIES.get('refresh')  # Refresh token cookie
 
         # If no access token is present, return None (unauthenticated)
         if not access_token:
@@ -110,33 +119,11 @@ class JWTAuthenticationFromCookie(JWTAuthentication):
             # Try to validate the access token
             validated_token = self.get_validated_token(access_token)
             return self.get_user(validated_token), validated_token
-        except InvalidToken:
-            # If the access token is expired or invalid, attempt to refresh using the refresh token
-            if refresh_token:
-                try:
-                    # Attempt to get a new access token using the refresh token
-                    refresh = RefreshToken(refresh_token)
-                    new_access_token = str(refresh.access_token)
+        except InvalidToken as e:
+            raise AuthenticationFailed('Invalid or expired access token.')
 
-                    # Set the new access token in the cookies
-                    response = self.get_user_response(request)
-                    response.set_cookie('token', new_access_token, httponly=True, secure=True)
+        return None
 
-                    # Validate the new access token
-                    validated_token = self.get_validated_token(new_access_token)
-                    return self.get_user(validated_token), validated_token
-                except TokenError:
-                    raise AuthenticationFailed(_('Token is invalid or expired.'))
-
-            # If no refresh token is available, raise an authentication error
-            raise AuthenticationFailed(_('Token is expired and no refresh token is provided.'))
-
-    def get_user_response(self, request):
-        """
-        Helper method to return the response object where the new access token can be set.
-        """
-        from rest_framework.response import Response
-        return Response()
 
 
 
@@ -178,23 +165,11 @@ class PasswordResetViewSet(viewsets.ViewSet):
         )
 
         try:
-            # Send the email
-            msg = MIMEText(message_body)
-            msg['Subject'] = subject
-            msg['From'] = f"Use N Lease <{settings.EMAIL_HOST_USER}>"
-            msg['To'] = user.email
-
-            server = smtplib.SMTP(settings.EMAIL_HOST, settings.EMAIL_PORT)
-            server.starttls()
-            server.login(settings.EMAIL_HOST_USER, settings.EMAIL_HOST_PASSWORD)
-            server.send_message(msg)
-            server.quit()
-
+            # Send the email using the custom utility function
+            send_custom_email(subject, 'emails/password_reset_email.html', {'user': user, 'reset_url': reset_url}, [user.email])
             return Response({"message": "Password reset email sent successfully!"}, status=status.HTTP_200_OK)
-
         except Exception as e:
-            return Response({"error": "Failed to send password reset email", "details": str(e)},
-                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"error": "Failed to send password reset email", "details": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @action(detail=False, methods=['post'], url_path='confirm/(?P<uidb64>[^/.]+)/(?P<token>[^/.]+)')
     def reset_password(self, request, uidb64, token):
@@ -220,17 +195,26 @@ class PasswordResetViewSet(viewsets.ViewSet):
 
             # Check if the new password matches the current password
             if user.check_password(new_password):
-                return Response({"error": "Previous Passwords cannot be reused. Enter a new password!"}, 
-                                status=status.HTTP_400_BAD_REQUEST)
+                return Response({"error": "Previous Passwords cannot be reused. Enter a new password!"}, status=status.HTTP_400_BAD_REQUEST)
 
             # Update password
             user.set_password(new_password)
             user.save()
+
+            # Send email for successful password reset
+            subject = "Password Reset Successfully"
+            template_name = 'emails/successful_password_reset.html'
+            context = {
+                'user': user
+            }
+            recipient_list = [user.email]
+
+            send_custom_email(subject, template_name, context, recipient_list)
+
             return Response({"message": "Password reset successfully!"}, status=status.HTTP_200_OK)
 
         except (User.DoesNotExist, ValueError):
             return Response({"error": "Invalid UID."}, status=status.HTTP_400_BAD_REQUEST)
-
 
 
 
@@ -290,9 +274,16 @@ class ReportViewSet(viewsets.ViewSet):
     A ViewSet that generates reports for lessor and lessee users.
     """
     authentication_classes = [JWTAuthenticationFromCookie]
+    permission_classes = [IsAuthenticated]
 
     def list(self, request):
-        user = request.user
+        if request.user.is_anonymous:
+            user = None
+        else:
+            user = request.user
+
+            
+
         report_data = {}
 
         if user.role == 'lessor':
@@ -480,6 +471,7 @@ class AllChatsViewSet(viewsets.ViewSet):
         return Response(serializer.data)
 
 
+# send otp emails
 class OTPViewSet(viewsets.ViewSet):
     """
     A ViewSet for handling OTP generation and verification.
@@ -507,32 +499,20 @@ class OTPViewSet(viewsets.ViewSet):
         otp_instance.save()
 
         subject = "Email Verification"
-        message_body = (
-            f"Hello {user.email},\n\n"
-            f"Thank you for signing up with us! To activate your account, please use the following OTP code:\n\n"
-            f"{otp_code}\n\n"
-            f"If you did not request this OTP, please ignore this message.\n\n"
-            f"Thank you for choosing our service!\n\n"
-            f"Best regards,\n"
-            f"The Use And Lease Team"
-        )
+        template_name = 'emails/otp_email.html'
+        context = {
+            'user': user,
+            'otp_code': otp_code
+        }
+
+        recipient_list = [user.email]
 
         try:
-            msg = MIMEText(message_body)
-            msg['Subject'] = subject
-            msg['From'] = f"Use N Lease <{settings.EMAIL_HOST_USER}>"
-            msg['To'] = user.email
-
-            server = smtplib.SMTP(settings.EMAIL_HOST, settings.EMAIL_PORT)
-            server.starttls()
-            server.login(settings.EMAIL_HOST_USER, settings.EMAIL_HOST_PASSWORD)
-            server.send_message(msg)
-            server.quit()
-
+            send_custom_email(subject, template_name, context, recipient_list)
             return Response({"message": "OTP sent successfully!"}, status=status.HTTP_200_OK)
-
         except Exception as e:
             return Response({"error": "Failed to send OTP", "details": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
     @action(detail=False, methods=['post'])
     def verify_otp(self, request):
@@ -562,8 +542,17 @@ class OTPViewSet(viewsets.ViewSet):
                 user.save()
                 otp_instance.expire()
 
-                return Response({"message": "OTP verified successfully!"}, status=status.HTTP_200_OK)
+                # Send email for successful verification
+                subject = "Account Activated"
+                template_name = 'emails/successful_verification.html'
+                context = {
+                    'user': user
+                }
+                recipient_list = [user.email]
 
+                send_custom_email(subject, template_name, context, recipient_list)
+
+                return Response({"message": "OTP verified successfully!"}, status=status.HTTP_200_OK)
             else:
                 return Response({"error": "Invalid OTP."}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -571,12 +560,14 @@ class OTPViewSet(viewsets.ViewSet):
             return Response({"error": "OTP not found."}, status=status.HTTP_404_NOT_FOUND)
 
 
+
+
 class LoginView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
         """
-        Handles the login request, authenticates the user, generates JWT tokens, 
+        Handles the login request, authenticates the user, generates JWT tokens,
         and syncs the user's cart with the database.
         """
         email = request.data.get("email")
@@ -599,14 +590,14 @@ class LoginView(APIView):
             # Prepare the response
             response = Response(response_data, status=status.HTTP_200_OK)
 
-            # Set tokens in cookies
+            # Set tokens in cookies with appropriate expiration times
             response.set_cookie(
                 key="token",
                 value=str(refresh.access_token),
                 httponly=True,
                 secure=True,
                 samesite='None',
-                path="/"
+                path="/",
             )
             response.set_cookie(
                 key="refresh",
@@ -614,8 +605,24 @@ class LoginView(APIView):
                 httponly=True,
                 secure=True,
                 samesite='None',
-                path="/"
+                path="/",
             )
+
+            # Get user's location and device details
+            ip_address = request.META.get('REMOTE_ADDR')
+            location = self.get_location(ip_address)
+            device = request.META.get('HTTP_USER_AGENT')
+
+            # Send login notification email
+            subject = "Login Notification"
+            template_name = 'emails/login_notification.html'
+            context = {
+                'user': user,
+                'location': location,
+                'device': device
+            }
+            recipient_list = [user.email]
+            send_custom_email(subject, template_name, context, recipient_list)
 
             # Sync cart
             cart_data = request.data.get("cart", [])
@@ -631,6 +638,16 @@ class LoginView(APIView):
             return response
 
         return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
+
+    def get_location(self, ip_address):
+        try:
+            response = requests.get(f"https://ipinfo.io/{ip_address}/json")
+            location_data = response.json()
+            return f"{location_data['city']}, {location_data['region']}, {location_data['country']}"
+        except Exception:
+            return "Unknown Location"
+
+
 
     def sync_cart_with_db(self, user, cart_data):
         """
@@ -1071,4 +1088,59 @@ class CreditCardViewSet(viewsets.ViewSet):
 
         credit_card = get_object_or_404(CreditCard, pk=pk, user=request.user)
         credit_card.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+
+class FAQViewSet(viewsets.ModelViewSet):
+    """
+    A ViewSet for viewing and editing FAQ instances.
+    Provides list, create, retrieve, update, and delete actions.
+    """
+    queryset = FAQ.objects.all()
+    serializer_class = FAQSerializer
+
+    def list(self, request, *args, **kwargs):
+        """
+        List all FAQs.
+        """
+        queryset = FAQ.objects.all()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    def create(self, request, *args, **kwargs):
+        """
+        Create a new FAQ.
+        """
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Retrieve a specific FAQ.
+        """
+        faq = self.get_object()
+        serializer = self.get_serializer(faq)
+        return Response(serializer.data)
+
+    def update(self, request, *args, **kwargs):
+        """
+        Update an existing FAQ.
+        """
+        faq = self.get_object()
+        serializer = self.get_serializer(faq, data=request.data, partial=False)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def destroy(self, request, *args, **kwargs):
+        """
+        Delete an FAQ.
+        """
+        faq = self.get_object()
+        faq.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

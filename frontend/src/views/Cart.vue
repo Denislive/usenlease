@@ -198,7 +198,7 @@ export default {
         const hours = timeDiff / (1000 * 3600); // Convert milliseconds to hours
 
         // Return the total calculated based on price, quantity, and hours
-        return total + price * item.quantity * hours;
+        return total + price * item.quantity;
       }, 0);
     });
 

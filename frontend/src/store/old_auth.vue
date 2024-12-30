@@ -1,0 +1,220 @@
+import { defineStore } from 'pinia';
+import { ref, computed, onMounted } from 'vue';
+import axios from 'axios';
+import { useRouter } from 'vue-router';
+import Cookies from 'js-cookie';
+import CryptoJS from 'crypto-js'; // Import CryptoJS
+import useNotifications from '@/store/notification';
+import { useCartStore } from './cart';
+
+const getCSRFToken = () => {
+  const name = 'csrftoken';
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  return parts.length === 2 ? parts.pop().split(';').shift() : null;
+};
+
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+
+const encryptData = (data) => {
+  return CryptoJS.AES.encrypt(JSON.stringify(data), 'your-secret-key').toString();
+};
+
+const decryptData = (data) => {
+  const bytes = CryptoJS.AES.decrypt(data, 'your-secret-key');
+  return JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+};
+
+export const useAuthStore = defineStore('auth', () => {
+  const cartStore = useCartStore();
+
+  const user = ref(null);
+  const isOn = ref(user?.role === 'lessor'); // Initialize based on user's current role
+  const redirectTo = ref('');
+  const loginError = ref('');
+  const isLoading = ref(false);
+  const router = useRouter();
+  const { showNotification } = useNotifications();
+  const storedUser  = Cookies.get('user');
+
+
+  onMounted(() => {
+    if (storedUser ) {
+      user.value = decryptData(storedUser ); // Decrypt the stored user data
+    }
+  });
+
+  // Fetch user data from API
+  const getUserData = async () => {
+    try {
+      const response = await axios.get(
+        `${apiBaseUrl}/api/accounts/users/${user.id}/`,
+        { withCredentials: true }
+      );
+      user.value = {
+        ...response.data,
+        user_address: response.data.user_address || {
+          full_name: '',
+          street_address: '',
+          street_address2: '',
+          city: '',
+          state: '',
+          zip_code: '',
+          country: ''
+        }
+      };
+    } catch (error) {
+      // Handle error
+    }
+  };
+
+  const login = async (email, password, cart) => {
+    isLoading.value = true;
+    try {
+      const response = await axios.post(
+        `${apiBaseUrl}/api/accounts/login/`,
+        { email, password, cart },
+        { withCredentials: true }
+      );
+
+      user.value = response.data;
+
+
+      // Encrypt user data before storing in cookies
+      Cookies.set('user', encryptData(user.value), {
+        expires: 15 / (24 * 60), // 15 minutes
+        sameSite: 'None',
+        secure: true,
+      });
+
+      // Set a timeout for 24 hours to remove the cookie
+      setTimeout(() => {
+        Cookies.remove('user');
+        user.value = null; // Clear user data
+      }, 86400000); // 24 hours in milliseconds
+
+      showNotification('Login Successful', 'Welcome back!', 'success');
+
+      const formData = loadFormDataFromLocalStorage();
+      if (formData) {
+        user.value = decryptData(storedUser);
+        formData.set('owner', user.value.id);
+        try {
+          const createResponse = await axios.post(
+            `${apiBaseUrl}/api/equipments/`,
+            formData,
+            { withCredentials: true }
+          );
+          router.push({
+            name: 'equipment-details',
+            params: { id: createResponse.data.id },
+          });
+          showNotification(
+            'Item Listing Successful',
+            `${createResponse.data.name} created successfully!`,
+            'success'
+          );
+          localStorage.removeItem('payload');
+        } catch (error) {
+          showNotification(
+            'Error Listing Item',
+            'An error occurred during item listing!',
+            'error'
+          );
+        }
+      }
+
+      const redirectPath = redirectTo.value || '/';
+      redirectTo.value = '';
+      router.push(redirectPath);
+      loginError.value = '';
+    } catch (error) {
+      handleLoginError(error);
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  const handleLoginError = (error) => {
+    if (error.response?.status === 401) {
+      loginError.value = 'Incorrect email or password.';
+      showNotification('Login Failed', 'Incorrect email or password.', 'error');
+    } else {
+      loginError.value = 'An error occurred. Please try again later.';
+      showNotification(
+        'Login Error',
+        'An error occurred. Please try again later.',
+        'error'
+      );
+    }
+  };
+
+  const logout = async () => {
+    isLoading.value = true;
+    try {
+      const csrfToken = getCSRFToken();
+      await axios.post(
+        `${apiBaseUrl}/api/accounts/logout/`,
+        {},
+        {
+          headers: { 'X-CSRFToken': csrfToken },
+          withCredentials: true,
+        }
+      );
+      user.value = null;
+      Cookies.remove('user');
+
+      cartStore.clearCart();
+
+      showNotification('Logout Successful', 'You have been logged out.', 'success');
+      router.push('/');
+    } catch (error) {
+      showNotification('Logout Error', 'An error occurred while logging out.', 'error');
+      Cookies.remove('user');
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  const isAuthenticated = computed(() => !!user.value);
+
+  const loadFormDataFromLocalStorage = () => {
+    const payload = JSON.parse(localStorage.getItem('payload'));
+    if (!payload) return null;
+
+    const formData = new FormData();
+    Object.entries(payload).forEach(([key, value]) => {
+      if (value.base64) {
+        const { base64, name, type } = value;
+        const file = base64ToFile(base64, name, type);
+        formData.append(key, file);
+      } else {
+        formData.append(key, value);
+      }
+    });
+    return formData;
+  };
+
+  const base64ToFile = (base64, fileName, mimeType) => {
+    const byteString = atob(base64.split(',')[1]);
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+      ia[i] = byteString.charCodeAt(i);
+    }
+    return new File([ab], fileName, { type: mimeType });
+  };
+
+  return {
+    isOn,
+    user,
+    loginError,
+    isLoading,
+    login,
+    logout,
+    getUserData,
+    encryptData,
+    redirectTo,
+    isAuthenticated,
+  };
+});
