@@ -25,17 +25,44 @@ export const useEquipmentsStore = defineStore('equipments', () => {
     return text;
   };
 
-   // Fetch user equipments on mount with credentials
-   const fetchUserEquipments = async () => {
-    try {
-      const response = await axios.get(`${api_base_url}/api/user-equipment/`, {
-        withCredentials: true,  // This ensures cookies (credentials) are sent with the request
-      });
-      userEquipments.value = response.data;  // Assign the fetched equipment to `equipments`
-    } catch (error) {
-      console.error(error.response.data.detail);
+// Fetch user equipments on mount with credentials
+const fetchUserEquipments = async () => {
+  try {
+    const response = await axios.get(`${api_base_url}/api/user-equipment/`, {
+      withCredentials: true,  // This ensures cookies (credentials) are sent with the request
+    });
+    userEquipments.value = response.data;  // Assign the fetched equipment to `equipments`
+  } catch (error) {
+    console.error('An error occurred:', error);
+
+    // Check if the error has a response (for API errors)
+    if (error.response) {
+      console.error('API error:', error.response);
+      showNotification(
+        'Error Fetching Equipments',
+        `Error: ${error.response.status} - ${error.response.statusText}`,
+        'error'
+      );
+    } else if (error.request) {
+      // Handle errors with the request (no response received)
+      console.error('Request error:', error.request);
+      showNotification(
+        'Error Fetching Equipments',
+        'No response received from server. Please check your connection.',
+        'error'
+      );
+    } else {
+      // Handle other types of errors (e.g., setup errors)
+      console.error('General error:', error.message);
+      showNotification(
+        'Error Fetching Equipments',
+        'An unexpected error occurred. Please try again later.',
+        'error'
+      );
     }
-  };
+  }
+};
+
 
  
 

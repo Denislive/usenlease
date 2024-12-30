@@ -562,7 +562,8 @@ class UserEquipmentView(APIView):
 
         # Check if no equipment is found
         if not queryset.exists():
-            return
+            return Response({'detail': 'No equipment found for the authenticated user.'}, status=status.HTTP_404_NOT_FOUND)
+
         # Serialize the queryset and return data
         serializer = EquipmentSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)

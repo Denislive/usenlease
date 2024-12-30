@@ -160,8 +160,35 @@ const login = async (email, password, cart) => {
       showNotification('Login Failed', 'Unexpected response from server.', 'error');
     }
   } catch (error) {
-    console.log(`An eroor occured ${error}`)
-  } finally {
+    console.error('Error occurred during login or equipment listing:', error);
+  
+    // Check if the error has a response (for API errors)
+    if (error.response) {
+      console.error('Response error:', error.response);
+      showNotification(
+        'Login Failed',
+        `Error: ${error.response.status} - ${error.response.statusText}`,
+        'error'
+      );
+    } else if (error.request) {
+      // Handle errors with the request
+      console.error('Request error:', error.request);
+      showNotification(
+        'Login Failed',
+        'No response received from server. Please check your connection.',
+        'error'
+      );
+    } else {
+
+      // Handle other types of errors (e.g., setup errors)
+      console.error('General error:', error.message);
+      showNotification(
+        'Login Failed',
+        'An unexpected error occurred. Please try again later.',
+        'error'
+      );
+    }
+  }finally {
     isLoading.value = false;
   }
 };
