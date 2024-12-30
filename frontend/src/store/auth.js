@@ -91,11 +91,11 @@ const login = async (email, password, cart) => {
     );
 
     if (response.status === 200) {
-      const loggedInUser = response.data;
-      user.value = loggedInUser;
+
+      user.value = response.data;
 
       // Encrypt user data and store in a secure cookie
-      Cookies.set('user', encryptData(loggedInUser), {
+      Cookies.set('user', encryptData(user.value), {
         sameSite: 'None',
         secure: true,
       });
@@ -111,7 +111,7 @@ const login = async (email, password, cart) => {
       // Handle form data for equipment listing
       const formData = loadFormDataFromLocalStorage();
       if (formData) {
-        formData.set('owner', loggedInUser.id);
+        formData.set('owner', user.value.id);
 
         try {
           const createResponse = await axios.post(
