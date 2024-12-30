@@ -148,7 +148,7 @@
 
               <p class="flex items-center text-gray-700">
                 <i class="bi bi-building mr-3 text-xl text-gray-500"></i>
-                <span><strong>Address:</strong> {{ authStore.user.user_address?.street_address || 'No address provided'
+                <span><strong>Address:</strong> {{ authStore.user?.user_address?.street_address || 'No address provided'
                   }}</span>
               </p>
 
@@ -759,7 +759,7 @@ export default {
 
         // Update role in the backend
         const response = await axios.put(
-          `${api_base_url}/api/accounts/users/${authStore.user.id}/`,
+          `${api_base_url}/api/accounts/users/${authStore.user?.id}/`,
           { role: updatedRole },
           { withCredentials: true }
         );
@@ -865,7 +865,7 @@ export default {
         const response = await axios.get(`${api_base_url}/api/accounts/chats/`, { withCredentials: true });
 
         chats.value = response.data.map((chat) => {
-          const otherParticipant = chat.participants.find((participant) => participant.id !== authStore.user.id);
+          const otherParticipant = chat.participants.find((participant) => participant.id !== authStore.user?.id);
 
           return {
             id: chat.id,
@@ -892,7 +892,7 @@ export default {
         messages[chatId] = response.data.messages.map((msg) => ({
           id: msg.id,
           text: msg.content,
-          sentBy: msg.sender === authStore.user.id ? 'me' : 'them',
+          sentBy: msg.sender === authStore.user?.id ? 'me' : 'them',
           sent_at: msg.sent_at,
           sender: msg.sender
         }));
@@ -937,7 +937,7 @@ export default {
     // Get the receiver's ID for a given chat
     const getReceiverId = (chatId) => {
       const chat = chats.value.find((c) => c.id === chatId);
-      const receiver = chat.participants[0] !== authStore.user.id ? chat.participants[0].id : chat.participants[1].id;
+      const receiver = chat.participants[0] !== authStore.user?.id ? chat.participants[0].id : chat.participants[1].id;
 
       return receiver;
     };
@@ -1135,7 +1135,7 @@ export default {
       formData.append('image', file);
 
       try {
-        const response = await axios.put(`${api_base_url}/api/accounts/users/${authStore.user.id}/`, formData, {
+        const response = await axios.put(`${api_base_url}/api/accounts/users/${authStore.user?.id}/`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
@@ -1156,7 +1156,7 @@ export default {
       try {
         const updatedUserData = { phone_number: phoneNumber.value };
         const response = await axios.put(
-          `${api_base_url}/api/accounts/users/${authStore.user.id}/`,
+          `${api_base_url}/api/accounts/users/${authStore.user?.id}/`,
           updatedUserData,
           { withCredentials: true }
         );
