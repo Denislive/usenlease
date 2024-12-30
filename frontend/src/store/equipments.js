@@ -27,7 +27,7 @@ export const useEquipmentsStore = defineStore('equipments', () => {
     return text;
   };
 
-// Fetch user equipments on mount with credentials
+// Fetch user equipments
 const fetchUserEquipments = async () => {
   try {
     const response = await axios.get(`${api_base_url}/api/user-equipment/`, {

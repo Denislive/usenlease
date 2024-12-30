@@ -280,7 +280,7 @@ const getUserIdFromToken = () => {
   const storedUser = Cookies.get('user');
 
   if (storedUser) {
-    const userData =authStore.decryptData(storedUser);
+    const userData = authStore.decryptData(storedUser);
     authStore.user.value = userData;
     return userData.id;
   }
