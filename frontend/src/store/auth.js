@@ -151,7 +151,7 @@ const getUserData = async () => {
       console.error("Login response not successful.");
     }
   } catch (error) {
-    console.error("Error during login.");
+    console.error(`Error during login. ${error.response.data}`);
     handleLoginError(error);
   } finally {
     isLoading.value = false;
