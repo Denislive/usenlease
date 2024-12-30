@@ -598,7 +598,7 @@ class UserEditableEquipmentView(APIView):
         queryset = Equipment.objects.filter(owner=user)
 
         # Exclude equipment that is part of an order item
-        ordered_equipment_ids = OrderItem.objects.filter(user=user).values_list('equipment_id', flat=True)
+        ordered_equipment_ids = OrderItem.objects.all().values_list('item_id', flat=True)
         queryset = queryset.exclude(id__in=ordered_equipment_ids)
 
         # Check if no equipment is found
