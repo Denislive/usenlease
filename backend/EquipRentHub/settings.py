@@ -9,10 +9,10 @@ import base64
 load_dotenv()
 
 # Base directory setup
-BASE_DIR = Path(_file_).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Application domain
-DOMAIN_URL= os.getenv('DOMAIN_URL')
+DOMAIN_URL = os.getenv('DOMAIN_URL')
 
 # Google Cloud Storage Bucket Name
 GS_BUCKET_NAME = os.getenv('GS_BUCKET_NAME')  # e.g., 'my-app-media'
@@ -36,9 +36,6 @@ if not SECRET_KEY:
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG')
 
-
-
-
 ALLOWED_HOSTS = [
     'usenlease-2f8583d212bc.herokuapp.com',
     'usenlease.com',
@@ -46,7 +43,6 @@ ALLOWED_HOSTS = [
 ]
 
 RECIPIENT_LIST = os.getenv('RECIPIENT_LIST')
-
 
 # Login URL
 LOGIN_URL = '/accounts/user/login'
@@ -126,14 +122,11 @@ CSRF_TRUSTED_ORIGINS = [
     'https://usenlease-ba2103147f4b.herokuapp.com',
     'https://usenlease.com',
     'https://usenlease-2f8583d212bc.herokuapp.com',
-
 ]
 CORS_ALLOWED_ORIGINS = [
     'https://usenlease-ba2103147f4b.herokuapp.com',
     'https://usenlease.com',
     'https://usenlease-2f8583d212bc.herokuapp.com',
-
-
 ]
 CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL_ORIGINS', 'True') == 'True'
 
