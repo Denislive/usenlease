@@ -287,6 +287,7 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     getUserData,
     encryptData,
+    decryptData,
     refreshToken,
     redirectTo,
     isAuthenticated,
