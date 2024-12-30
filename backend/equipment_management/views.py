@@ -569,10 +569,11 @@ class UserEquipmentView(APIView):
         serializer = EquipmentSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
+
 class UserEditableEquipmentView(APIView):
     """
-    Custom API to get equipment for a specific authenticated user that are not ordered (is_ordered=False),
-    and are not part of any order item.
+    API to get the IDs of equipment for a specific authenticated user
+    that are not ordered (is_ordered=False) and are not part of any order item.
     """
 
     # Specify the authentication class
@@ -581,13 +582,12 @@ class UserEditableEquipmentView(APIView):
 
     def get(self, request, *args, **kwargs):
         """
-        List all equipment for the logged-in user that are not ordered (is_ordered=False),
-        and are not part of any order item.
-        If no equipment is found, return a message indicating no equipment available.
+        Return the IDs of all equipment for the logged-in user
+        that are not ordered and are not part of any order item.
         """
         user = request.user
 
-        # If user is authenticated (IsAuthenticated permission checks this)
+        # If user is not authenticated
         if not user.is_authenticated:
             return Response(
                 {'detail': 'Authentication credentials were not provided.'},
@@ -601,13 +601,17 @@ class UserEditableEquipmentView(APIView):
         ordered_equipment_ids = OrderItem.objects.all().values_list('item_id', flat=True)
         queryset = queryset.exclude(id__in=ordered_equipment_ids)
 
+        # Extract the IDs from the filtered queryset (ensure it's flat)
+        equipment_ids = list(queryset.values_list('id', flat=True))
+
         # Check if no equipment is found
-        if not queryset.exists():
+        if not equipment_ids:
             return Response({'detail': 'No available equipment found for the authenticated user.'}, status=status.HTTP_404_NOT_FOUND)
 
-        # Serialize the queryset and return data
-        serializer = EquipmentSerializer(queryset, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        # Return the IDs as a list
+        return Response(equipment_ids, status=status.HTTP_200_OK)
+
+
 
 
 class ImageViewSet(viewsets.ViewSet):

@@ -17,7 +17,7 @@ export const useEquipmentsStore = defineStore('equipments', () => {
   const isLoading = ref(false);
   const error = ref(null);
   const userEquipments = ref([]);
-  const userEditableEquipments = ref([]);
+  const userEditableEquipmentsIds = ref([]);
 
 
   const truncateText = (text, length) => {
@@ -64,7 +64,9 @@ const fetchUserEditableEquipments = async () => {
     const response = await axios.get(`${api_base_url}/api/user-editable-equipment/`, {
       withCredentials: true,  // This ensures cookies (credentials) are sent with the request
     });
-    userEditableEquipments.value = response.data;  // Assign the fetched equipment to `equipments`
+    userEditableEquipmentsIds.value = response.data;  // Assign the fetched equipment to `equipments`
+    console.log(userEditableEquipmentsIds.value);
+    
   } catch (error) {
     // Check if the error has a response (for API errors)
     if (error.response) {
@@ -169,7 +171,7 @@ const fetchUserEditableEquipments = async () => {
   return {
     truncateText,
     userEquipments,
-    userEditableEquipments,
+    userEditableEquipmentsIds,
     equipments,
     categories,
     selectedEquipment,
