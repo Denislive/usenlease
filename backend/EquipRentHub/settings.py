@@ -21,7 +21,7 @@ DEBUG = ENVIRONMENT == 'development'
 # Application domain
 DOMAIN_URL = os.getenv('DOMAIN_URL')
 
-if  DEBUG:
+if not DEBUG:
     # Google Cloud Storage Bucket Name
     GS_BUCKET_NAME = os.getenv('GS_BUCKET_NAME')  # e.g., 'my-app-media'
 
@@ -52,8 +52,11 @@ RECIPIENT_LIST = os.getenv('RECIPIENT_LIST')
 # Login URL
 LOGIN_URL = '/accounts/user/login'
 
-# Email Backend
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+if DEBUG:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
 # Custom User Model
 AUTH_USER_MODEL = 'user_management.User'

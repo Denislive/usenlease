@@ -19,6 +19,7 @@ media/
 # Virtual Environment
 env/
 EQUIP_HUB/
+backend/credentials/
 myvenv/
 ENV/
 venv/
