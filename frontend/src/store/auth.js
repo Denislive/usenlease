@@ -49,6 +49,22 @@ export const useAuthStore = defineStore('auth', () => {
     }
   });
 
+  const isPrivateMode = () => {
+    try {
+        localStorage.setItem('test', 'test');
+        localStorage.removeItem('test');
+        return false;
+    } catch (e) {
+        return true;
+    }
+};
+
+if (isPrivateMode()) {
+    alert('Private mode detected! Local storage is unavailable.');
+    // Provide alternative logic here
+}
+
+
   const getUserData = async () => {
     try {
       const response = await axios.get(
@@ -320,6 +336,7 @@ export const useAuthStore = defineStore('auth', () => {
   };
 
   return {
+    isPrivateMode,
     updateUserRole,
     isOn,
     user,
