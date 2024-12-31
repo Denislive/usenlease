@@ -137,8 +137,6 @@ CSRF_COOKIE_SAMESITE = 'None'
 
 # CORS and CSRF
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000').split(',')
-CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:3000').split(',')
 
 CORS_ALLOW_ALL_ORIGINS = True
 
