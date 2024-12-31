@@ -11,38 +11,41 @@ load_dotenv()
 # Base directory setup
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+
+# Environment: 'development' or 'production'
+ENVIRONMENT = os.getenv('DJANGO_ENV', 'development')
+
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = ENVIRONMENT == 'development'
+
 # Application domain
 DOMAIN_URL = os.getenv('DOMAIN_URL')
 
-# Google Cloud Storage Bucket Name
-GS_BUCKET_NAME = os.getenv('GS_BUCKET_NAME')  # e.g., 'my-app-media'
+if  DEBUG:
+    # Google Cloud Storage Bucket Name
+    GS_BUCKET_NAME = os.getenv('GS_BUCKET_NAME')  # e.g., 'my-app-media'
 
-# Decode the base64 encoded credentials and write to a temporary file
-creds_path = os.path.join(BASE_DIR, 'credentials', 'google-credentials.json')
-creds_content = os.getenv('GOOGLE_APPLICATION_CREDENTIALS_CONTENT')
-if creds_content:
-    os.makedirs(os.path.dirname(creds_path), exist_ok=True)
-    with open(creds_path, 'wb') as f:
-        f.write(base64.b64decode(creds_content))
+    # Decode the base64 encoded credentials and write to a temporary file
+    creds_path = os.path.join(BASE_DIR, 'credentials', 'google-credentials.json')
+    creds_content = os.getenv('GOOGLE_APPLICATION_CREDENTIALS_CONTENT')
+    if creds_content:
+        os.makedirs(os.path.dirname(creds_path), exist_ok=True)
+        with open(creds_path, 'wb') as f:
+            f.write(base64.b64decode(creds_content))
 
-os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = creds_path
+    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = creds_path
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY')
 
-VITE_ENCRYPTION_KEY = os.getenv('VITE_ENCRYPTION_KEY')
-
 if not SECRET_KEY:
     raise ValueError("The SECRET_KEY environment variable is not set")
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG')
 
-ALLOWED_HOSTS = [
-    'usenlease-2f8583d212bc.herokuapp.com',
-    'usenlease.com',
-    '*'
-]
+if  DEBUG:
+    ALLOWED_HOSTS = ['*']
+else:
+    ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS')
 
 RECIPIENT_LIST = os.getenv('RECIPIENT_LIST')
 
@@ -116,21 +119,25 @@ SECURE_SSL_REDIRECT = False
 CSRF_COOKIE_NAME = os.getenv('CSRF_COOKIE_NAME', 'csrftoken')
 CSRF_COOKIE_HTTPONLY = os.getenv('CSRF_COOKIE_HTTPONLY', 'False') == 'True'
 
-CORS_ALLOW_CREDENTIALS = os.getenv('CORS_ALLOW_CREDENTIALS', 'True') == 'True'
-CORS_ALLOW_HEADERS = os.getenv('CORS_ALLOW_HEADERS', 'content-type,authorization,X-CSRFToken').split(',')
+# Security Settings
+if ENVIRONMENT == 'production':
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+else:
+    SECURE_SSL_REDIRECT = False
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
 
-# Explicitly set CSRF_TRUSTED_ORIGINS and CORS_ALLOWED_ORIGINS
-CSRF_TRUSTED_ORIGINS = [
-    'https://usenlease-ba2103147f4b.herokuapp.com',
-    'https://usenlease.com',
-    'https://usenlease-2f8583d212bc.herokuapp.com',
-]
-CORS_ALLOWED_ORIGINS = [
-    'https://usenlease-ba2103147f4b.herokuapp.com',
-    'https://usenlease.com',
-    'https://usenlease-2f8583d212bc.herokuapp.com',
-]
-CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL_ORIGINS', 'True') == 'True'
+SESSION_COOKIE_SAMESITE = 'None'
+CSRF_COOKIE_SAMESITE = 'None'
+
+# CORS and CSRF
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000').split(',')
+CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:3000').split(',')
+
+
 
 # Middleware Configuration
 MIDDLEWARE = [
@@ -216,10 +223,31 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# Media files (uploads) – use Google Cloud Storage for media
-DEFAULT_FILE_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
-GS_DEFAULT_ACL = 'publicRead'  # Adjust based on your needs
-MEDIA_URL = f"https://storage.googleapis.com/{GS_BUCKET_NAME}/"
+if not DEBUG:
+    # Media files (uploads) – use Google Cloud Storage for media
+    DEFAULT_FILE_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
+    GS_DEFAULT_ACL = 'publicRead'  # Adjust based on your needs
+    MEDIA_URL = f"https://storage.googleapis.com/{GS_BUCKET_NAME}/"
+else:
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = BASE_DIR / 'media/'
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# Debugging and logging
+if DEBUG:
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'handlers': {
+            'console': {
+                'class': 'logging.StreamHandler',
+            },
+        },
+        'root': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+    }
