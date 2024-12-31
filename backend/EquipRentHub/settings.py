@@ -137,10 +137,17 @@ CSRF_COOKIE_SAMESITE = 'None'
 
 # CORS and CSRF
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000').split(',')
-CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:3000').split(',')
+# Explicitly set CSRF_TRUSTED_ORIGINS and CORS_ALLOWED_ORIGINS
+CSRF_TRUSTED_ORIGINS = [
+    'https://usenlease.com',
+    'https://usenlease-v1-51c743b06fa1.herokuapp.com',
 
+]
+CORS_ALLOWED_ORIGINS = [
+    'https://usenlease.com',
+    'https://usenlease-v1-51c743b06fa1.herokuapp.com'
 
+]
 
 # Middleware Configuration
 MIDDLEWARE = [
