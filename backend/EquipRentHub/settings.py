@@ -13,12 +13,6 @@ load_dotenv()
 # Base directory setup
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Environment: 'development' or 'production'
-ENVIRONMENT = os.getenv('DJANGO_ENV', 'development')
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = ENVIRONMENT == 'development'
-
 # Application domain
 DOMAIN_URL= os.getenv('DOMAIN_URL')
 
@@ -41,11 +35,15 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 if not SECRET_KEY:
     raise ValueError("The SECRET_KEY environment variable is not set")
 
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = os.getenv('DEBUG')
 
-if  DEBUG:
-    ALLOWED_HOSTS = ['*']
-else:
-    ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS')
+
+
+
+ALLOWED_HOSTS = [
+    'usenlease-2f8583d212bc.herokuapp.com',
+]
 
 RECIPIENT_LIST = os.getenv('RECIPIENT_LIST')
 
@@ -53,11 +51,8 @@ RECIPIENT_LIST = os.getenv('RECIPIENT_LIST')
 # Login URL
 LOGIN_URL = '/accounts/user/login'
 
-if DEBUG:
-    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-
-else:
-    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# Email Backend
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 # Custom User Model
 AUTH_USER_MODEL = 'user_management.User'
@@ -113,6 +108,11 @@ EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')  # Store password securel
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS')
 
 # Security Settings
+CSRF_COOKIE_SECURE = os.getenv('CSRF_COOKIE_SECURE', 'True') == 'True'
+SECURE_SSL_REDIRECT = False
+CSRF_COOKIE_NAME = os.getenv('CSRF_COOKIE_NAME', 'csrftoken')
+CSRF_COOKIE_HTTPONLY = os.getenv('CSRF_COOKIE_HTTPONLY', 'False') == 'True'
+
 CORS_ALLOW_CREDENTIALS = os.getenv('CORS_ALLOW_CREDENTIALS', 'True') == 'True'
 
 # Explicitly set CSRF_TRUSTED_ORIGINS and CORS_ALLOWED_ORIGINS
@@ -126,19 +126,6 @@ CORS_ALLOWED_ORIGINS = [
     'https://usenlease-v1-51c743b06fa1.herokuapp.com'
 
 ]
-
-# Security Settings
-if ENVIRONMENT == 'production':
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    CSRF_COOKIE_HTTPONLY = True
-else:
-    SESSION_COOKIE_SECURE = False
-    CSRF_COOKIE_SECURE = False
-    CSRF_COOKIE_HTTPONLY = False
-
-SESSION_COOKIE_SAMESITE = 'None'
-CSRF_COOKIE_SAMESITE = 'None'
 # CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL_ORIGINS', 'True') == 'True'
 
 # Middleware Configuration
@@ -224,14 +211,10 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-if  DEBUG:
-    MEDIA_URL = '/media/'
-    MEDIA_ROOT = BASE_DIR / 'media/'
-else:
-    # Media files (uploads) – use Google Cloud Storage for media
-    DEFAULT_FILE_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
-    GS_DEFAULT_ACL = 'publicRead'  # Adjust based on your needs
-    MEDIA_URL = f"https://storage.googleapis.com/{GS_BUCKET_NAME}/"
-    
+# Media files (uploads) – use Google Cloud Storage for media
+DEFAULT_FILE_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
+GS_DEFAULT_ACL = 'publicRead'  # Adjust based on your needs
+MEDIA_URL = f"https://storage.googleapis.com/{GS_BUCKET_NAME}/"
+
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
