@@ -4,6 +4,8 @@ from datetime import timedelta
 import os
 import dj_database_url
 import base64
+import psycopg2
+
 
 # Load environment variables from .env
 load_dotenv()
@@ -11,29 +13,21 @@ load_dotenv()
 # Base directory setup
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-# Environment: 'development' or 'production'
-ENVIRONMENT = os.getenv('DJANGO_ENV', 'development')
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = ENVIRONMENT == 'development'
-
 # Application domain
-DOMAIN_URL = os.getenv('DOMAIN_URL')
+DOMAIN_URL= os.getenv('DOMAIN_URL')
 
-if not DEBUG:
-    # Google Cloud Storage Bucket Name
-    GS_BUCKET_NAME = os.getenv('GS_BUCKET_NAME')  # e.g., 'my-app-media'
+# Google Cloud Storage Bucket Name
+GS_BUCKET_NAME = os.getenv('GS_BUCKET_NAME')  # e.g., 'my-app-media'
 
-    # Decode the base64 encoded credentials and write to a temporary file
-    creds_path = os.path.join(BASE_DIR, 'credentials', 'google-credentials.json')
-    creds_content = os.getenv('GOOGLE_APPLICATION_CREDENTIALS_CONTENT')
-    if creds_content:
-        os.makedirs(os.path.dirname(creds_path), exist_ok=True)
-        with open(creds_path, 'wb') as f:
-            f.write(base64.b64decode(creds_content))
+# Decode the base64 encoded credentials and write to a temporary file
+creds_path = os.path.join(BASE_DIR, 'credentials', 'google-credentials.json')
+creds_content = os.getenv('GOOGLE_APPLICATION_CREDENTIALS_CONTENT')
+if creds_content:
+    os.makedirs(os.path.dirname(creds_path), exist_ok=True)
+    with open(creds_path, 'wb') as f:
+        f.write(base64.b64decode(creds_content))
 
-    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = creds_path
+os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = creds_path
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY')
@@ -41,22 +35,25 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 if not SECRET_KEY:
     raise ValueError("The SECRET_KEY environment variable is not set")
 
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = os.getenv('DEBUG')
 
-if  DEBUG:
-    ALLOWED_HOSTS = ['*']
-else:
-    ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS')
+
+
+
+ALLOWED_HOSTS = [
+    'usenlease-2f8583d212bc.herokuapp.com',
+    '*'
+]
 
 RECIPIENT_LIST = os.getenv('RECIPIENT_LIST')
+
 
 # Login URL
 LOGIN_URL = '/accounts/user/login'
 
-if DEBUG:
-    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-
-else:
-    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# Email Backend
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 # Custom User Model
 AUTH_USER_MODEL = 'user_management.User'
@@ -100,7 +97,6 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
-    'AUTH_HEADER_TYPES': ('Bearer',),
     "AUTH_COOKIE": "token",
     "AUTH_COOKIE_REFRESH": "refresh",
 }
@@ -113,32 +109,25 @@ EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')  # Store password securel
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS')
 
 # Security Settings
-SESSION_COOKIE_SAMESITE = os.getenv('SESSION_COOKIE_SAMESITE', 'None')
-CSRF_COOKIE_SAMESITE = os.getenv('CSRF_COOKIE_SAMESITE', 'None')
-SESSION_COOKIE_SECURE = os.getenv('SESSION_COOKIE_SECURE', 'True') == 'True'
 CSRF_COOKIE_SECURE = os.getenv('CSRF_COOKIE_SECURE', 'True') == 'True'
 SECURE_SSL_REDIRECT = False
-
 CSRF_COOKIE_NAME = os.getenv('CSRF_COOKIE_NAME', 'csrftoken')
 CSRF_COOKIE_HTTPONLY = os.getenv('CSRF_COOKIE_HTTPONLY', 'False') == 'True'
 
-# Security Settings
-if ENVIRONMENT == 'production':
-    SECURE_SSL_REDIRECT = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-else:
-    SECURE_SSL_REDIRECT = False
-    SESSION_COOKIE_SECURE = False
-    CSRF_COOKIE_SECURE = False
+CORS_ALLOW_CREDENTIALS = os.getenv('CORS_ALLOW_CREDENTIALS', 'True') == 'True'
 
-SESSION_COOKIE_SAMESITE = 'None'
-CSRF_COOKIE_SAMESITE = 'None'
+# Explicitly set CSRF_TRUSTED_ORIGINS and CORS_ALLOWED_ORIGINS
+CSRF_TRUSTED_ORIGINS = [
+    'https://usenlease.com',
+    'https://usenlease-v1-51c743b06fa1.herokuapp.com',
 
-# CORS and CSRF
-CORS_ALLOW_CREDENTIALS = True
+]
+CORS_ALLOWED_ORIGINS = [
+    'https://usenlease.com',
+    'https://usenlease-v1-51c743b06fa1.herokuapp.com'
 
-CORS_ALLOW_ALL_ORIGINS = True
+]
+# CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL_ORIGINS', 'True') == 'True'
 
 # Middleware Configuration
 MIDDLEWARE = [
@@ -185,7 +174,6 @@ try:
     }
     print(f"DATABASES={DATABASES}")  # Debug print
 
-    import psycopg2
     connection = psycopg2.connect(
         dbname=DATABASES['default']['NAME'],
         user=DATABASES['default']['USER'],
@@ -224,31 +212,10 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-if not DEBUG:
-    # Media files (uploads) – use Google Cloud Storage for media
-    DEFAULT_FILE_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
-    GS_DEFAULT_ACL = 'publicRead'  # Adjust based on your needs
-    MEDIA_URL = f"https://storage.googleapis.com/{GS_BUCKET_NAME}/"
-else:
-    MEDIA_URL = '/media/'
-    MEDIA_ROOT = BASE_DIR / 'media/'
+# Media files (uploads) – use Google Cloud Storage for media
+DEFAULT_FILE_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
+GS_DEFAULT_ACL = 'publicRead'  # Adjust based on your needs
+MEDIA_URL = f"https://storage.googleapis.com/{GS_BUCKET_NAME}/"
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-
-# Debugging and logging
-if DEBUG:
-    LOGGING = {
-        'version': 1,
-        'disable_existing_loggers': False,
-        'handlers': {
-            'console': {
-                'class': 'logging.StreamHandler',
-            },
-        },
-        'root': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-        },
-    }
