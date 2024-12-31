@@ -176,7 +176,7 @@
 
               <!-- Role Switch -->
               <div
-                class="flex items-center justify-between bg-gray-50 p-4 rounded-lg shadow-md md:hidden"
+                class="flex items-center justify-between bg-gray-50 p-4 rounded-lg shadow-md"
               >
                 <div class="flex items-center text-gray-700 space-x-3">
                   <i class="bi bi-shield-lock text-xl text-gray-500"></i>
@@ -201,7 +201,7 @@
                       id="role-toggle"
                       v-model="authStore.isOn"
                       class="sr-only peer"
-                      @change="updateUserRole"
+                      @change="authStore.updateUserRole()"
                     />
                     <div
                       class="w-11 h-6 bg-gray-200 rounded-full peer-checked:bg-[#ffc107] peer-checked:after:translate-x-5 after:content-[''] after:absolute after:left-0.5 after:top-0.5 after:w-5 after:h-5 after:rounded-full after:bg-white transition-all"
@@ -1158,40 +1158,7 @@ export default {
       }
     };
 
-    const updateUserRole = async () => {
-      try {
-        const updatedRole = authStore.isOn ? "lessor" : "lessee";
-
-        // Update role in the backend
-        const response = await axios.put(
-          `${api_base_url}/api/accounts/users/${authStore.user?.id}/`,
-          { role: updatedRole },
-          { withCredentials: true }
-        );
-
-        // Refresh user data and update the auth store
-        await authStore.getUserData();
-        authStore.user = response.data;
-
-        // Fetch user report if necessary
-        if (typeof fetchUserReport === "function") {
-          await fetchUserReport();
-        }
-
-        // Display success notification
-        showNotification("success", `You are now a ${updatedRole}.`, "success");
-      } catch (error) {
-        console.error("Error updating role:", error);
-
-        // Display error notification
-        showNotification(
-          "error",
-          "Unable to switch role. Please try again.",
-          "error"
-        );
-      }
-    };
-
+    
     // Handle Logout functionality
     const handleLogout = async () => {
       await authStore.logout(); // Wait for the logout method to finish
@@ -1659,7 +1626,6 @@ export default {
       report,
       error,
       fetchUserReport,
-      updateUserRole,
       navigateToSection,
       closeSidebar,
       showSidebar,

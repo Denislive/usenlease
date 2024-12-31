@@ -6,6 +6,7 @@ import Cookies from 'js-cookie';
 import CryptoJS from 'crypto-js'; // Import CryptoJS
 import useNotifications from '@/store/notification';
 import { useCartStore } from './cart';
+import { useEquipmentsStore } from '@/store/equipments';
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 const apiEncryptKey = import.meta.env.VITE_ENCRYPTION_KEY
@@ -33,6 +34,8 @@ export const useAuthStore = defineStore('auth', () => {
   const loginError = ref('');
   const isLoading = ref(false);
   const router = useRouter();
+  const store = useEquipmentsStore();
+
   const { showNotification } = useNotifications();
 
   const storedUser  = Cookies.get('user');
@@ -77,6 +80,44 @@ export const useAuthStore = defineStore('auth', () => {
     } catch (error) {
       console.error("Error fetching user data:");
       // Handle error
+    }
+  };
+
+
+  const updateUserRole = async () => {
+    try {
+      // Determine the updated role based on `isOn`
+      const updatedRole =  user?.role === 'lessee' ? 'lessor' : 'lessee'
+  
+      // Update role in the backend
+      const response = await axios.put(
+        `${apiBaseUrl}/api/accounts/users/${user?.value.id}/`,
+        { role: updatedRole },
+        { withCredentials: true }
+      );
+  
+      user.role = response.data.role;
+  
+      // Encrypt user data before storing in cookies
+      Cookies.set('user', encryptData(response.data), {
+          sameSite: 'None',
+          secure: true,
+        });
+
+      
+      await getUserData();
+      
+  
+  
+      await store.fetchUserEquipments();
+      router.push('/profile');
+  
+      // Success notification
+      showNotification('success', `You are now a ${updatedRole}.`, 'success');
+    } catch (error) {
+      console.error('Error updating role:', error);
+      // Error notification
+      showNotification('error', 'Unable to switch role. Please try again.', 'error');
     }
   };
 
@@ -279,6 +320,7 @@ export const useAuthStore = defineStore('auth', () => {
   };
 
   return {
+    updateUserRole,
     isOn,
     user,
     loginError,

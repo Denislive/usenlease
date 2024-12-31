@@ -14,15 +14,15 @@
             <span class="text-sm text-gray-600">Switch to {{ authStore.user?.role ===  'lessor' ? 'lessee' : 'lessor'
               }}:</span>
             <label for="role-toggle" class="inline-flex relative items-center cursor-pointer">
-              <input type="checkbox" id="role-toggle" v-model="role" class="sr-only peer"
-                @change="updateUserRole" />
+              <input type="checkbox" id="role-toggle" v-model="authStore.isOn" class="sr-only peer"
+                @change="authStore.updateUserRole()" />
               <div
                 class="w-11 h-6 bg-gray-200 rounded-full peer-checked:bg-[#ffc107] peer-checked:after:translate-x-5 after:content-[''] after:absolute after:left-0.5 after:top-0.5 after:w-5 after:h-5 after:rounded-full after:bg-white transition-all">
               </div>
             </label>
           </div>
         </div>
-
+        
         <!-- Authenticated User Menu -->
         <div v-if="authStore.isAuthenticated" class="flex items-center space-x-4">
           <!-- Browse Items Button for Lessee -->
@@ -202,7 +202,6 @@ const { showNotification } = useNotifications();
 const showDropdown = ref(false);
 const authStore = useAuthStore();
 const router = useRouter();
-const role = authStore.isOn;
 const user = ref({
   user_address: {
     full_name: '',
@@ -229,42 +228,7 @@ const showDropdownWithDelay = (show) => {
   }
 };
 
-const updateUserRole = async () => {
-  try {
-    // Determine the updated role based on `isOn`
-    const updatedRole =  authStore.user?.role === 'lessee' ? 'lessor' : 'lessee'
 
-    // Update role in the backend
-    const response = await axios.put(
-      `${api_base_url}/api/accounts/users/${authStore.user.id}/`,
-      { role: updatedRole },
-      { withCredentials: true }
-    );
-
-    authStore.user.role = response.data.role;
-
-    // Encrypt user data before storing in cookies
-    Cookies.set('user', authStore.encryptData(response.data), {
-        sameSite: 'None',
-        secure: true,
-      });
-
-
-
-    // Update the user's role in the auth store
-    await authStore.getUserData();
-
-    await store.fetchUserEquipments();
-    router.push('/profile');
-
-    // Success notification
-    showNotification('success', `You are now a ${updatedRole}.`, 'success');
-  } catch (error) {
-    console.error('Error updating role:', error);
-    // Error notification
-    showNotification('error', 'Unable to switch role. Please try again.', 'error');
-  }
-};
 
 onMounted(async () => {
   if (authStore.isAuthenticated) {
