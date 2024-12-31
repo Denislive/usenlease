@@ -20,7 +20,6 @@ const decryptData = (data) => {
     const decryptedData = bytes.toString(CryptoJS.enc.Utf8);
     return decryptedData ? JSON.parse(decryptedData) : null;
   } catch (error) {
-    console.error('Error decrypting data:', error);
     return null; // Return null if decryption fails
   }
 };
@@ -105,12 +104,13 @@ export const useAuthStore = defineStore('auth', () => {
           user.value = null; // Clear user data
         }, 86400000); // 24 hours in milliseconds
 
-        showNotification('Login Successful', 'Welcome back!', 'success');
-
         // Check if storedUser exists before attempting decryption
         if (storedUser) {
           user.value = decryptData(storedUser);
         }
+
+        showNotification('Login Successful', 'Welcome back!', 'success');
+
 
         const formData = loadFormDataFromLocalStorage();
         if (formData) {
