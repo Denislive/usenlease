@@ -204,12 +204,12 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import { useAuthStore } from '@/store/auth';
 import useNotifications from '@/store/notification';
+import { openDB, saveFormData } from '@/db/db'; // Import the IndexedDB utility
 
 const authStore = useAuthStore();
 const { showNotification } = useNotifications();
 
 const api_base_url = import.meta.env.VITE_API_BASE_URL;
-
 
 const itemName = ref('');
 const hourlyRate = ref(null);
@@ -226,8 +226,6 @@ const country = ref('');
 const availableItems = ref(null);
 const images = ref([]);
 const imagePreviews = ref([]);
-
-
 
 const specifications = ref([{ key: '', value: '' }]);  // Initially, one specification
 
@@ -277,10 +275,10 @@ onMounted(async () => {
 });
 
 const getUserIdFromToken = () => {
-  const storedUser = Cookies.get('user');
+  const storedUser  = Cookies.get('user');
 
-  if (storedUser) {
-    const userData = authStore.decryptData(storedUser);
+  if (storedUser ) {
+    const userData = authStore.decryptData(storedUser );
     authStore.user.value = userData;
     return userData.id;
   }
@@ -296,85 +294,84 @@ const validateItemName = () => {
 };
 
 const validateHourlyRate = () => {
-  hourlyRateError.value = hourlyRate.value === null || hourlyRate.value <= 0
-    ? 'Hourly rate must be greater than 0.'
-    : '';
-};
-
-const validateCategory = () => {
-  categoryError.value = !selectedCategory.value === null
-    ? 'Please select a valid category.'
-    : '';
-};
-
-
-const validateTags = () => {
-  tagsError.value = !tags.value
-    ? 'Tags are required.'
-    : tags.value.length < 3
-      ? 'Tags must be at least 3 characters long.'
+    hourlyRateError.value = hourlyRate.value === null || hourlyRate.value <= 0
+      ? 'Hourly rate must be greater than 0.'
       : '';
-};
-
-const validateDescription = () => {
-  descriptionError.value = !description.value
-    ? 'Description is required.'
-    : description.value.length < 10
-      ? 'Description must be at least 10 characters long.'
+  };
+  
+  const validateCategory = () => {
+    categoryError.value = !selectedCategory.value === null
+      ? 'Please select a valid category.'
       : '';
-};
-
-const validateTerms = () => {
-  termsError.value = !terms.value
-    ? 'Terms are required.'
-    : terms.value.length < 10
-      ? 'Terms must be at least 10 characters long.'
+  };
+  
+  
+  const validateTags = () => {
+    tagsError.value = !tags.value
+      ? 'Tags are required.'
+      : tags.value.length < 3
+        ? 'Tags must be at least 3 characters long.'
+        : '';
+  };
+  
+  const validateDescription = () => {
+    descriptionError.value = !description.value
+      ? 'Description is required.'
+      : description.value.length < 10
+        ? 'Description must be at least 10 characters long.'
+        : '';
+  };
+  
+  const validateTerms = () => {
+    termsError.value = !terms.value
+      ? 'Terms are required.'
+      : terms.value.length < 10
+        ? 'Terms must be at least 10 characters long.'
+        : '';
+  };
+  
+  const validateAvailableItems = () => {
+    availableItemsError.value = availableItems.value <= 0
+      ? 'Please enter a valid number of available items.'
       : '';
-};
-
-const validateAvailableItems = () => {
-  availableItemsError.value = availableItems.value <= 0
-    ? 'Please enter a valid number of available items.'
-    : '';
-};
-
-const validateStreetAddress = () => {
-  streetAddressError.value = !streetAddress.value
-    ? 'Street address is required.'
-    : '';
-};
-
-const validateCity = () => {
-  cityError.value = !city.value ? 'City is required.' : '';
-};
-
-const validateState = () => {
-  stateError.value = !state.value ? 'State is required.' : '';
-};
-
-const validateZipCode = () => {
-  zipCodeError.value = !zipCode.value
-    ? 'Zip code is required.'
-    : !/^\d{5}$/.test(zipCode.value)
-      ? 'Please enter a valid zip code (5 digits).'
+  };
+  
+  const validateStreetAddress = () => {
+    streetAddressError.value = !streetAddress.value
+      ? 'Street address is required.'
       : '';
-};
-
-const validateCountry = () => {
-  countryError.value = !country.value ? 'Country is required.' : '';
-};
-
-const validateImages = () => {
-  imageError.value = images.value.length === 0
-    ? 'Please upload at least one image.'
-    : images.value.length > 4
-      ? 'You can only upload a maximum of four images.'
-      : '';
-};
+  };
+  
+  const validateCity = () => {
+    cityError.value = !city.value ? 'City is required.' : '';
+  };
+  
+  const validateState = () => {
+    stateError.value = !state.value ? 'State is required.' : '';
+  };
+  
+  const validateZipCode = () => {
+    zipCodeError.value = !zipCode.value
+      ? 'Zip code is required.'
+      : !/^\d{5}$/.test(zipCode.value)
+        ? 'Please enter a valid zip code (5 digits).'
+        : '';
+  };
+  
+  const validateCountry = () => {
+    countryError.value = !country.value ? 'Country is required.' : '';
+  };
+  
+  const validateImages = () => {
+    imageError.value = images.value.length === 0
+      ? 'Please upload at least one image.'
+      : images.value.length > 4
+        ? 'You can only upload a maximum of four images.'
+        : '';
+  };
+  
 
 const isFormInvalid = computed(() => {
-
-
   return (
     itemNameError.value ||
     hourlyRateError.value ||
@@ -444,7 +441,6 @@ const handleSubmit = async () => {
     imageError.value;
 
   if (hasErrors) {
-
     console.log('Form has validation errors, cannot submit.');
     return; // Exit early if there are errors
   }
@@ -460,7 +456,6 @@ const handleSubmit = async () => {
   formData.append('category', selectedCategory.value.id);
   formData.append('available_quantity', availableItems.value);
   formData.append('terms', terms.value);
-  // Assuming other fields are already appended to formData
   formData.append('specifications', JSON.stringify(specifications.value));
   formData.append('street_address', streetAddress.value);
   formData.append('city', city.value);
@@ -477,7 +472,6 @@ const handleSubmit = async () => {
 
   if (userId) {
     try {
-
       const response = await axios.post(`${api_base_url}/api/equipments/`, formData, {
         withCredentials: true
       });
@@ -494,9 +488,8 @@ const handleSubmit = async () => {
     }
   } else {
     router.push('/login');
-    await saveFormDataToLocalStorage(formData);
+    await saveFormDataToIndexedDB(formData);
   }
-
 };
 
 const resetFormFields = () => {
@@ -526,7 +519,7 @@ const handleError = (error) => {
   }
 };
 
-async function saveFormDataToLocalStorage(formData) {
+async function saveFormDataToIndexedDB(formData) {
   const payload = {};
 
   for (const [key, value] of formData.entries()) {
@@ -534,11 +527,17 @@ async function saveFormDataToLocalStorage(formData) {
       const base64String = await fileToBase64(value);
       payload[key] = { base64: base64String, name: value.name, type: value.type };
     } else {
-      payload[key] = value;
+      payload[key ] = value;
     }
   }
 
-  localStorage.setItem('payload', JSON.stringify(payload));
+  try {
+    await openDB();
+    await saveFormData(payload);
+  } catch (error) {
+    console.error(error);
+    showNotification('Error Saving Data', error, 'error');
+  }
 }
 
 function fileToBase64(file) {
@@ -550,7 +549,6 @@ function fileToBase64(file) {
   });
 }
 </script>
-
 
 
 

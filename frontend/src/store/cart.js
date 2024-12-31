@@ -6,6 +6,59 @@ import useNotifications from '@/store/notification.js'; // Import the notificati
 import { useRoute } from 'vue-router';
 import Cookies from 'js-cookie';
 
+const openIndexedDB = () => {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open('CartDB', 1);
+
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains('cart')) {
+                db.createObjectStore('cart', { keyPath: 'id', autoIncrement: true });
+            }
+        };
+
+        request.onsuccess = (event) => resolve(event.target.result);
+        request.onerror = (event) => reject(event.target.error);
+    });
+};
+
+const getIndexedDBData = async () => {
+    const db = await openIndexedDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction('cart', 'readonly');
+        const store = transaction.objectStore('cart');
+        const request = store.getAll();
+
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = (event) => reject(event.target.error);
+    });
+};
+
+const saveIndexedDBData = async (data) => {
+    const db = await openIndexedDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction('cart', 'readwrite');
+        const store = transaction.objectStore('cart');
+        store.clear(); // Clear existing data
+        data.forEach(item => store.add(item));
+
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = (event) => reject(event.target.error);
+    });
+};
+
+const clearIndexedDBData = async () => {
+    const db = await openIndexedDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction('cart', 'readwrite');
+        const store = transaction.objectStore('cart');
+        const request = store.clear();
+
+        request.onsuccess = () => resolve();
+        request.onerror = (event) => reject(event.target.error);
+    });
+};
+
 export const useCartStore = defineStore('cart', () => {
     const api_base_url = import.meta.env.VITE_API_BASE_URL;
 
@@ -30,9 +83,10 @@ export const useCartStore = defineStore('cart', () => {
                 showNotification('Error', 'Could not load your cart items.', 'error'); // Show error notification
             }
         } else {
-            const savedCart = localStorage.getItem('cart');
-            if (savedCart) {
-                cart.value = JSON.parse(savedCart);
+            try {
+                cart.value = await getIndexedDBData();
+            } catch {
+                cart.value = [];
             }
         }
     };
@@ -46,11 +100,11 @@ export const useCartStore = defineStore('cart', () => {
     };
 
     // Remove item from the cart
-    const removeItem = (itemId) => {
+    const removeItem = async (itemId) => {
         const index = cart.value.findIndex(item => item.id === itemId);
         if (index !== -1) {
             cart.value.splice(index, 1); // Remove the item at the found index
-            localStorage.setItem('cart', JSON.stringify(cart.value));
+            await saveIndexedDBData(cart.value);
         } else {
             notifyItemNotFound();
         }
@@ -87,14 +141,14 @@ export const useCartStore = defineStore('cart', () => {
         showNotification('Quantity Updated', successMessage, 'success');
 
         if (!isAuthenticated) {
-            localStorage.setItem('cart', JSON.stringify(cart.value));
+            await saveIndexedDBData(cart.value);
         }
     };
 
     // Clear the cart
-    const clearCart = () => {
+    const clearCart = async () => {
         cart.value = [];
-        localStorage.removeItem('cart');
+        await clearIndexedDBData();
     };
 
     const currentCategory = computed(() => route.params.cat || ''); // Retrieve category from URL
