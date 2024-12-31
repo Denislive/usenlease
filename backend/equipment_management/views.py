@@ -397,8 +397,10 @@ class EquipmentViewSet(viewsets.ModelViewSet):
     ViewSet for handling Equipment objects.
     Provides list, create, retrieve, and update actions.
     """
+    
     queryset = Equipment.objects.all()
     serializer_class = EquipmentSerializer
+    authentication_classes = [JWTAuthenticationFromCookie]
 
     def list(self, request):
         """

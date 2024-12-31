@@ -47,7 +47,6 @@ export const useAuthStore = defineStore('auth', () => {
     }
   });
 
-  // Get user logged in user data
   const getUserData = async () => {
     try {
       const response = await axios.get(

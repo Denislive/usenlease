@@ -108,8 +108,11 @@ class EquipmentSerializer(serializers.ModelSerializer):
         # Access the request from the context
         request = self.context.get('request')
 
-        # Retrieve the logged-in user from the request user
-        user = request.user  # Assuming 'user' is part of the request context
+        user = request.user  # Retrieve the logged-in user from the request
+
+        if user.is_anonymous:
+            raise PermissionDenied("You must be authenticated")
+
 
         # Check the role of the user
         if user.role == 'lessee':  # Replace 'lessee' with the actual role name if different
