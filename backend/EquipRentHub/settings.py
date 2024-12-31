@@ -43,6 +43,7 @@ DEBUG = os.getenv('DEBUG')
 
 ALLOWED_HOSTS = [
     'usenlease-2f8583d212bc.herokuapp.com',
+    '*'
 ]
 
 RECIPIENT_LIST = os.getenv('RECIPIENT_LIST')
