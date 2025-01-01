@@ -91,18 +91,6 @@ export const useCartStore = defineStore('cart', () => {
         }
     };
 
-    // Add a request interceptor to include the CSRF token
-apiClient.interceptors.request.use((config) => {
-    const csrfToken = Cookies.get('csrftoken'); // Get the CSRF token from cookies
-    if (csrfToken) {
-        config.headers['X-CSRFToken'] = csrfToken; // Set the CSRF token header
-    }
-    return config;
-}, (error) => {
-    return Promise.reject(error);
-});
-
-
     // Watch the authentication state to load cart data accordingly
     watch(() => authStore.isAuthenticated, loadCart, { immediate: true });
 
