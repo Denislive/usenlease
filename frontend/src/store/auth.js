@@ -28,6 +28,15 @@ const decryptData = (data) => {
   }
 };
 
+function getCSRFToken() {
+  const csrfCookie = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('csrftoken='));
+  return csrfCookie ? csrfCookie.split('=')[1] : null;
+}
+
+axios.defaults.headers.common['X-CSRFToken'] = getCSRFToken();
+
 export const useAuthStore = defineStore('auth', () => {
   const cartStore = useCartStore();
   const store = useEquipmentsStore();
@@ -411,6 +420,7 @@ export const useAuthStore = defineStore('auth', () => {
     user,
     loginError,
     isLoading,
+    getCSRFToken,
     login,
     logout,
     base64ToFile,

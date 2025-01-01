@@ -4,6 +4,8 @@ from datetime import timedelta
 import os
 import dj_database_url
 import base64
+import psycopg2
+
 
 # Load environment variables from .env
 load_dotenv()
@@ -12,7 +14,7 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Application domain
-DOMAIN_URL = os.getenv('DOMAIN_URL')
+DOMAIN_URL= os.getenv('DOMAIN_URL')
 
 # Google Cloud Storage Bucket Name
 GS_BUCKET_NAME = os.getenv('GS_BUCKET_NAME')  # e.g., 'my-app-media'
@@ -36,13 +38,15 @@ if not SECRET_KEY:
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG')
 
+
+
+
 ALLOWED_HOSTS = [
-    'usenlease-2f8583d212bc.herokuapp.com',
-    'usenlease.com',
-    'localhost'
+    'usenlease-2f8583d212bc.herokuapp.com'
 ]
 
 RECIPIENT_LIST = os.getenv('RECIPIENT_LIST')
+
 
 # Login URL
 LOGIN_URL = '/accounts/user/login'
@@ -92,7 +96,6 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
-    'AUTH_HEADER_TYPES': ('Bearer',),
     "AUTH_COOKIE": "token",
     "AUTH_COOKIE_REFRESH": "refresh",
 }
@@ -105,27 +108,34 @@ EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')  # Store password securel
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS')
 
 # Security Settings
-SESSION_COOKIE_SAMESITE = os.getenv('SESSION_COOKIE_SAMESITE', 'None')
-CSRF_COOKIE_SAMESITE = os.getenv('CSRF_COOKIE_SAMESITE', 'None')
-SESSION_COOKIE_SECURE = os.getenv('SESSION_COOKIE_SECURE', 'True') == 'True'
-CSRF_COOKIE_SECURE = os.getenv('CSRF_COOKIE_SECURE', 'True') == 'True'
-SECURE_SSL_REDIRECT = False
+CSRF_COOKIE_NAME = 'csrftoken'
 
-CSRF_COOKIE_NAME = os.getenv('CSRF_COOKIE_NAME', 'csrftoken')
-CSRF_COOKIE_HTTPONLY = os.getenv('CSRF_COOKIE_HTTPONLY', 'False') == 'True'
 
-CORS_ALLOW_CREDENTIALS = os.getenv('CORS_ALLOW_CREDENTIALS', 'True') == 'True'
-CORS_ALLOW_HEADERS = os.getenv('CORS_ALLOW_HEADERS', 'content-type,authorization,X-CSRFToken').split(',')
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
+
+CSRF_COOKIE_HTTPONLY = True
+SESSION_COOKIE_HTTPONLY = True
+
+CORS_ALLOW_CREDENTIALS = True
+
+SESSION_COOKIE_SAMESITE = 'None'
+CSRF_COOKIE_SAMESITE = 'None'
+
+
 
 # Explicitly set CSRF_TRUSTED_ORIGINS and CORS_ALLOWED_ORIGINS
 CSRF_TRUSTED_ORIGINS = [
-    'https://usenlease-v1-51c743b06fa1.herokuapp.com/',
-    'http://localhost:3000'
+    'https://usenlease.com',
+    'https://usenlease-v1-51c743b06fa1.herokuapp.com',
+
 ]
 CORS_ALLOWED_ORIGINS = [
-    'https://usenlease-v1-51c743b06fa1.herokuapp.com/',
-    'http://localhost:3000'
+    'https://usenlease.com',
+    'https://usenlease-v1-51c743b06fa1.herokuapp.com'
+
 ]
+# CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL_ORIGINS', 'True') == 'True'
 
 # Middleware Configuration
 MIDDLEWARE = [
@@ -172,7 +182,6 @@ try:
     }
     print(f"DATABASES={DATABASES}")  # Debug print
 
-    import psycopg2
     connection = psycopg2.connect(
         dbname=DATABASES['default']['NAME'],
         user=DATABASES['default']['USER'],
@@ -211,14 +220,10 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-if not DEBUG:
-    # Media files (uploads) – use Google Cloud Storage for media
-    DEFAULT_FILE_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
-    GS_DEFAULT_ACL = 'publicRead'  # Adjust based on your needs
-    MEDIA_URL = f"https://storage.googleapis.com/{GS_BUCKET_NAME}/"
-else:
-    MEDIA_URL = '/media/'
-    MEDIA_ROOT = BASE_DIR / 'media/'
+# Media files (uploads) – use Google Cloud Storage for media
+DEFAULT_FILE_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
+GS_DEFAULT_ACL = 'publicRead'  # Adjust based on your needs
+MEDIA_URL = f"https://storage.googleapis.com/{GS_BUCKET_NAME}/"
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
