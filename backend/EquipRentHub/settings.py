@@ -42,8 +42,7 @@ DEBUG = os.getenv('DEBUG')
 
 
 ALLOWED_HOSTS = [
-    'usenlease-2f8583d212bc.herokuapp.com',
-    '*'
+    'usenlease-2f8583d212bc.herokuapp.com'
 ]
 
 RECIPIENT_LIST = os.getenv('RECIPIENT_LIST')
@@ -109,12 +108,21 @@ EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')  # Store password securel
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS')
 
 # Security Settings
-CSRF_COOKIE_SECURE = os.getenv('CSRF_COOKIE_SECURE', 'True') == 'True'
-SECURE_SSL_REDIRECT = False
-CSRF_COOKIE_NAME = os.getenv('CSRF_COOKIE_NAME', 'csrftoken')
-CSRF_COOKIE_HTTPONLY = os.getenv('CSRF_COOKIE_HTTPONLY', 'False') == 'True'
+CSRF_COOKIE_NAME = 'csrftoken'
 
-CORS_ALLOW_CREDENTIALS = os.getenv('CORS_ALLOW_CREDENTIALS', 'True') == 'True'
+
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
+
+CSRF_COOKIE_HTTPONLY = True
+SESSION_COOKIE_HTTPONLY = True
+
+CORS_ALLOW_CREDENTIALS = True
+
+SESSION_COOKIE_SAMESITE = 'None'
+CSRF_COOKIE_SAMESITE = 'None'
+
+
 
 # Explicitly set CSRF_TRUSTED_ORIGINS and CORS_ALLOWED_ORIGINS
 CSRF_TRUSTED_ORIGINS = [
