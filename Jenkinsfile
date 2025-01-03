@@ -81,7 +81,7 @@ pipeline {
                 }
             }
         }
-        stage('Deploy to Heroku') {
+        stage('Deploying to Heroku') {
             parallel {
                 stage('Backend Deployment') {
                     steps {
