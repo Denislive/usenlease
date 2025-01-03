@@ -22,8 +22,11 @@ FROM python:3.11-slim-bullseye AS backend_builder
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 
+# Debug: Run apt-get update before installation to check for issues
+RUN apt-get update
+
 # Update apt-get sources and install system dependencies
-RUN apt-get update && \
+RUN apt-get update --fix-missing && \
     apt-get install -y gnupg2 build-essential libpq-dev curl && \
     rm -rf /var/lib/apt/lists/*
 
@@ -65,7 +68,7 @@ ARG SECRET_KEY
 ENV SECRET_KEY=${SECRET_KEY}
 
 # Update apt-get sources and install necessary utilities
-RUN apt-get update && \
+RUN apt-get update --fix-missing && \
     apt-get install -y gnupg2 build-essential curl && \
     rm -rf /var/lib/apt/lists/*
 
