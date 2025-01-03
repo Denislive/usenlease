@@ -64,8 +64,6 @@ export const useCartStore = defineStore('cart', () => {
 
     const cart = ref([]); // Array to hold cart items
     const authStore = useAuthStore();
-    axios.defaults.headers.common['X-CSRFToken'] = authStore.getCSRFToken();
-
     const route = useRoute();
     const { showNotification } = useNotifications(); // Initialize notification service
 
@@ -78,7 +76,7 @@ export const useCartStore = defineStore('cart', () => {
         if (authStore.isAuthenticated) {
             try {
                 const response = await axios.get(`${api_base_url}/api/cart-items/`, {
-                    withCredentials: true,  
+                    withCredentials: true,
                 });
                 cart.value = response.data;
             } catch (error) {

@@ -42,7 +42,7 @@ export const useAuthStore = defineStore('auth', () => {
   const store = useEquipmentsStore();
 
   const user = ref(null);
-  const isOn = ref(false); // Initialize based on user's current role
+  const isOn = ref(user?.role === 'lessor'); // Initialize based on user's current role
   const redirectTo = ref('');
   const loginError = ref('');
   const isLoading = ref(false);
@@ -57,7 +57,6 @@ export const useAuthStore = defineStore('auth', () => {
     if (storedUser ) {
       user.value = decryptData(storedUser ); // Decrypt the stored user data
       isOn.value = user.value?.role === 'lessor'; // Update isOn based on user role
-      console.log('User  data decrypted and loaded:', user.value);
     }
   });
 
@@ -86,11 +85,10 @@ export const useAuthStore = defineStore('auth', () => {
           sameSite: 'None',
           secure: true,
         });
-        console.log('User  data fetched and stored in cookies:', user.value);
+        
 
         // Load any form data from IndexedDB
         const formDataArray = await loadFormData();
-        console.log('Form data loaded from IndexedDB:', formDataArray);
 
         if (formDataArray.length > 0) {
           for (const data of formDataArray) {
@@ -106,7 +104,6 @@ export const useAuthStore = defineStore('auth', () => {
                   `${createResponse.data.name} created successfully!`,
                   'success'
                 );
-                console.log('Equipment created successfully:', createResponse.data);
               }
             } catch (error) {
               console.error('Error listing item from IndexedDB:', error);
@@ -125,7 +122,8 @@ export const useAuthStore = defineStore('auth', () => {
 
     try {
 
-      const updatedRole = user?.role === 'lessee' ? 'lessor' : 'lessee';
+      const updatedRole = user?.value.role === 'lessee' ? 'lessor' : 'lessee';
+
 
       const response = await axios.put(
 
@@ -172,7 +170,6 @@ export const useAuthStore = defineStore('auth', () => {
 
   const login = async (email, password, cart) => {
     isLoading.value = true;
-    console.log('Attempting to log in with email:', email);
   
     try {
       const response = await axios.post(
@@ -181,7 +178,6 @@ export const useAuthStore = defineStore('auth', () => {
         { withCredentials: true }
       );
   
-      console.log('Login response received:', response);
   
       if (response.status === 200) {
         user.value = response.data;
@@ -196,20 +192,16 @@ export const useAuthStore = defineStore('auth', () => {
         setTimeout(() => {
           Cookies.remove('user');
           user.value = null; // Clear user data
-          console.log('User  data cleared after timeout.');
         }, 86400000); // 24 hours in milliseconds
   
         showNotification('Login Successful', 'Welcome back!', 'success');
-        console.log('User  logged in successfully:', user.value);
   
         // Load form data from IndexedDB and set owner
         const formDataArray = await loadFormData();
-        console.log('Form data loaded from IndexedDB:', formDataArray);
   
         if (formDataArray.length > 0) {
           for (const data of formDataArray) {
             data.owner = user.value.id; // Set the owner to the logged-in user
-            console.log('Preparing to create equipment with data:', data);
   
             // Convert base64 image to Blob if it exists
             if (data.images && data.images.base64) {
@@ -241,7 +233,6 @@ export const useAuthStore = defineStore('auth', () => {
                     `${createResponse.data.name} created successfully!`,
                     'success'
                   );
-                  console.log('Equipment created successfully:', createResponse.data);
                   await clearFormData();
                 }
               } catch (error) {
@@ -409,7 +400,6 @@ export const useAuthStore = defineStore('auth', () => {
   const saveFormDataToIndexedDB = async (formData) => {
     try {
       await saveFormData(formData); // Save form data to IndexedDB
-      console.log('Form data saved to IndexedDB:', formData);
     } catch (error) {
       console.error('Error saving form data to IndexedDB:', error);
     }
