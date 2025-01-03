@@ -67,6 +67,7 @@ ENV SECRET_KEY=${SECRET_KEY}
 
 # Install necessary utilities and Node.js
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    gnupg2 \
     build-essential \
     curl \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
@@ -82,7 +83,8 @@ COPY --from=frontend_builder /frontend_app /app/frontend
 WORKDIR /app/backend
 
 # Ensure the staticfiles and media directories exist
-RUN mkdir -p /app/backend/staticfiles /app/backend/media
+RUN apt-get update && apt-get install -y coreutils \
+    && mkdir -p /app/backend/staticfiles /app/backend/media
 
 # Install `supervisord`
 RUN apt-get update && apt-get install -y supervisor
