@@ -269,7 +269,20 @@
             </div>
 
             <div v-else>
-              <p>No equipment found.</p>
+              <div class="empty-list-container text-center py-16">
+                <i class="pi pi-exclamation-circle text-9xl text-gray-500"></i>
+                <p class="text-xl text-gray-500 mt-4 mb-4">
+                  Oops! You have not listed any Equipment!
+                </p>
+
+                <!-- Lease Out Button for Non-Authenticated Users -->
+                <RouterLink :to="{ name: 'list-item' }">
+                  <a
+                    class="lease-out-button px-6 py-2 bg-[#ffc107] text-[#1c1c1c] rounded-lg shadow-lg transform transition duration-300 hover:scale-105 hover:shadow-2xl">
+                    Add Item
+                  </a>
+                </RouterLink>
+              </div>
             </div>
           </div>
 
@@ -370,54 +383,77 @@
 
               <!-- Orders Table -->
               <div v-if="!loading" class="overflow-hidden rounded-lg shadow-lg bg-white">
-                <div class="overflow-x-auto">
-                  <!-- Make the table horizontally scrollable on small devices -->
-                  <table class="table-auto w-full border-collapse">
-                    <thead>
-                      <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
-                        <th class="py-3 px-6 text-left">Order ID</th>
-                        <th class="py-3 px-6 text-center">Status</th>
-                        <th class="py-3 px-6 text-center">Total Items</th>
-                        <th class="py-3 px-6 text-center">Total Price</th>
-                        <th class="py-3 px-6 text-center">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody class="text-gray-600 text-sm font-light">
-                      <tr v-for="order in filteredOrders" :key="order.id"
-                        class="border-b border-gray-200 hover:bg-gray-100">
-                        <td class="py-3 px-6 text-left">{{ order.id }}</td>
-                        <td class="py-3 px-6 text-center">
-                          <span :class="{
-                            'px-3 py-1 rounded-full text-white': true,
-                            'bg-yellow-500': order.status === 'pending',
-                            'bg-green-500': order.status === 'approved',
-                            'bg-blue-500': order.status === 'rented',
-                            'bg-red-500': order.status === 'rejected',
-                            'bg-red-500': order.status === 'canceled',
-                            'bg-gray-500': order.status === 'completed',
-                          }">
-                            {{ order.status }}
-                          </span>
-                        </td>
-                        <td class="py-3 px-6 text-center">
-                          {{ order.total_order_items }}
-                        </td>
-                        <td class="py-3 px-6 text-center">
-                          ${{ order.order_total_price }}
-                        </td>
-                        <td class="py-3 px-6 text-center">
-                          <button @click="openModal(order)"
-                            class="px-4 py-2 bg-blue-500 text-white rounded-md shadow-sm hover:bg-blue-600">
-                            Manage
-                          </button>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
+                <div v-if="filteredOrders.length > 0">
+
+                  <div class="overflow-x-auto">
+                    <!-- Make the table horizontally scrollable on small devices -->
+                    <table class="table-auto w-full border-collapse">
+                      <thead>
+                        <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                          <th class="py-3 px-6 text-left">Order ID</th>
+                          <th class="py-3 px-6 text-center">Status</th>
+                          <th class="py-3 px-6 text-center">Total Items</th>
+                          <th class="py-3 px-6 text-center">Total Price</th>
+                          <th class="py-3 px-6 text-center">Actions</th>
+                        </tr>
+                      </thead>
+
+                      <tbody class="text-gray-600 text-sm font-light">
+                        <tr v-for="order in filteredOrders" :key="order.id"
+                          class="border-b border-gray-200 hover:bg-gray-100">
+                          <td class="py-3 px-6 text-left">{{ order.id }}</td>
+                          <td class="py-3 px-6 text-center">
+                            <span :class="{
+                              'px-3 py-1 rounded-full text-white': true,
+                              'bg-yellow-500': order.status === 'pending',
+                              'bg-green-500': order.status === 'approved',
+                              'bg-blue-500': order.status === 'rented',
+                              'bg-red-500': order.status === 'rejected',
+                              'bg-red-500': order.status === 'canceled',
+                              'bg-gray-500': order.status === 'completed',
+                            }">
+                              {{ order.status }}
+                            </span>
+                          </td>
+                          <td class="py-3 px-6 text-center">
+                            {{ order.total_order_items }}
+                          </td>
+                          <td class="py-3 px-6 text-center">
+                            ${{ order.order_total_price }}
+                          </td>
+                          <td class="py-3 px-6 text-center">
+                            <button @click="openModal(order)"
+                              class="px-4 py-2 bg-blue-500 text-white rounded-md shadow-sm hover:bg-blue-600">
+                              Manage
+                            </button>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                </div>
+                <div v-else>
+                  <div class="empty-list-container text-center py-4">
+
+                    <i class="pi pi-exclamation-circle text-9xl text-gray-500"></i>
+
+                    <p class="text-xl text-gray-500 mt-4 mb-4">Oops! You don't have any orders!</p>
+
+                    <RouterLink :to="{ name: 'categories' }">
+
+                      <a
+                        class="lease-out-button px-6 py-2 bg-[#ffc107] text-[#1c1 c1c] rounded-lg shadow-lg transform transition duration-300 hover:scale-105 hover:shadow-2xl">
+
+                        Find Equipment
+
+                      </a>
+
+                    </RouterLink>
+
+                  </div>
                 </div>
               </div>
-
-              <div v-else class="text-center">Loading orders...</div>
             </div>
 
             <!-- Modal -->
@@ -600,7 +636,7 @@
                       <span>Total Equipments</span>
                       <span class="font-bold">{{
                         report.total_equipments
-                        }}</span>
+                      }}</span>
                     </li>
                     <li
                       class="flex items-center justify-between bg-white p-4 rounded-md shadow-sm transition duration-300 transform hover:scale-105">
@@ -643,7 +679,7 @@
                       <span>Total Rented Items</span>
                       <span class="font-bold">{{
                         report.total_rented_items
-                        }}</span>
+                      }}</span>
                     </li>
                     <li
                       class="flex items-center justify-between bg-white p-4 rounded-md shadow-sm transition duration-300 transform hover:scale-105">
@@ -657,7 +693,7 @@
                       <span>Average Rating Given</span>
                       <span class="font-bold">{{
                         report.average_rating_given
-                        }}</span>
+                      }}</span>
                     </li>
                   </ul>
                 </div>
