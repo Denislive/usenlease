@@ -8,8 +8,8 @@ pipeline {
         POSTGRES_USER = credentials('postgres-user')
         POSTGRES_PASSWORD = credentials('postgres-password')
         POSTGRES_DB = 'usenlease_db'
-        HEROKU_API_KEY = credentials('heroku-api-key')
-        HEROKU_APP_NAME = 'usenlease-combined'
+        HEROKU_API_KEY = credentials('heroku-backend-api-key')
+        HEROKU_APP_NAME = 'usenlease-test'
     }
     stages {
         stage('Setup') {
