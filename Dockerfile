@@ -1,5 +1,5 @@
 # Stage 1: Build Stage for Frontend
-FROM node:16-alpine AS frontend_builder
+FROM node:20-alpine AS frontend_builder
 
 # Set the working directory for the frontend application
 WORKDIR /frontend_app
@@ -67,9 +67,8 @@ ENV SECRET_KEY=${SECRET_KEY}
 
 # Install Node.js and npm
 RUN apt-get update && apt-get install -y curl \
-    && curl -sL https://deb.nodesource.com/setup_16.x | bash - \
-    && apt-get install -y nodejs \
-    && npm install -g npm
+    && curl -sL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs
 
 # Copy the virtual environment and the backend application code from the builder stage
 COPY --from=backend_builder /backend_app /app
