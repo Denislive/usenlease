@@ -22,13 +22,10 @@ FROM python:3.11-slim-bullseye AS backend_builder
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 
-# Install system dependencies
-RUN apt-get update --fix-missing && apt-get install -y --no-install-recommends \
-    gnupg2 \
-    build-essential \
-    libpq-dev \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+# Update apt-get sources and install system dependencies
+RUN apt-get update && \
+    apt-get install -y gnupg2 build-essential libpq-dev curl && \
+    rm -rf /var/lib/apt/lists/*
 
 # Create a working directory for the backend
 WORKDIR /backend_app
@@ -67,12 +64,10 @@ ARG SECRET_KEY
 # Set environment variable for SECRET_KEY
 ENV SECRET_KEY=${SECRET_KEY}
 
-# Install necessary utilities
-RUN apt-get update --fix-missing && apt-get install -y --no-install-recommends \
-    gnupg2 \
-    build-essential \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+# Update apt-get sources and install necessary utilities
+RUN apt-get update && \
+    apt-get install -y gnupg2 build-essential curl && \
+    rm -rf /var/lib/apt/lists/*
 
 # Add Node.js official PPA and install Node.js
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
