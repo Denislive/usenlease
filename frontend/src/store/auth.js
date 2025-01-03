@@ -9,6 +9,8 @@ import { useEquipmentsStore } from "@/store/equipments";
 
 import { useCartStore } from './cart';
 import { openDB, saveFormData, loadFormData, clearFormData } from '@/db/db'; // Import IndexedDB functions
+import Profile from '@/components/Profile.vue';
+import autoprefixer from 'autoprefixer';
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 const apiEncryptKey = import.meta.env.VITE_ENCRYPTION_KEY;
@@ -49,6 +51,16 @@ export const useAuthStore = defineStore('auth', () => {
   const router = useRouter();
   const { showNotification } = useNotifications();
   const storedUser  = Cookies.get('user');
+
+  const activeSection = ref('personal-info');
+
+    // Computed property for active section based on user role
+
+    const roleSection = computed(() => {
+
+      return user?.value.role !== 'lessor' ? 'my-orders' : 'my-equipments';
+
+    });
 
   const isAuthenticated = computed(() => !!user.value);
 
@@ -118,6 +130,29 @@ export const useAuthStore = defineStore('auth', () => {
     }
   };
 
+    // Function to navigate to a section
+    const navigateToRoleSection = (sectionName) => {
+
+      console.log("navigating to role", sectionName);
+      console.log("role section value", roleSection.value);
+      
+      activeSection.value = roleSection.value;
+      
+      
+      // Scroll to the section
+      const sectionElement = document.getElementById(sectionName);
+      if (sectionElement) {
+        sectionElement.scrollIntoView({ behavior: "smooth" });
+      }
+
+      // Hide sidebar on small devices
+      if (window.innerWidth < 1024) {
+        showSidebar.value = false;
+      }
+
+    };
+
+
   const updateUserRole = async () => {
 
     try {
@@ -150,10 +185,13 @@ export const useAuthStore = defineStore('auth', () => {
 
       await getUserData();
 
-      await store.fetchUserEquipments();
 
       router.push('/profile');
 
+      navigateToRoleSection(roleSection.value);
+
+
+      await store.fetchUserEquipments();
 
       showNotification('success', `You are now a ${updatedRole}.`, 'success');
 
@@ -338,6 +376,10 @@ export const useAuthStore = defineStore('auth', () => {
     }
   };
 
+    
+   
+
+
   axios.interceptors.response.use(
     (response) => response, // Pass through successful responses
     async (error) => {
@@ -405,12 +447,15 @@ export const useAuthStore = defineStore('auth', () => {
     }
   };
 
+ 
+
   return {
     isOn,
     user,
     loginError,
     isLoading,
     getCSRFToken,
+    activeSection,
     login,
     logout,
     base64ToFile,
@@ -420,6 +465,7 @@ export const useAuthStore = defineStore('auth', () => {
     redirectTo,
     isAuthenticated,
     updateUserRole,
+    navigateToRoleSection,
     saveFormDataToIndexedDB, // Expose the function to save form data
   };
 });
