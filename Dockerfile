@@ -57,7 +57,7 @@ FROM python:3.11-slim-bullseye
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
-ENV PATH="/app/venv/bin:$PATH"
+ENV PATH="/app/venv/bin:/usr/local/bin:/usr/local/lib/node_modules:/usr/bin:/usr/local/sbin:/usr/sbin"
 
 # Add build argument for SECRET_KEY
 ARG SECRET_KEY
