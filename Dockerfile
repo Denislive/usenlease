@@ -22,12 +22,15 @@ FROM python:3.11-slim-bullseye AS backend_builder
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 
-# Debug: Run apt-get update before installation to check for issues
-RUN apt-get update
+# Install dependencies
+RUN apt-get update && apt-get install -y gnupg2 curl coreutils
 
-# Update apt-get sources and install system dependencies
+# Add the correct GPG key to resolve repository signing issues
+RUN curl -fsSL https://ftp-master.debian.org/keys/archive-key-11.asc | tee /etc/apt/trusted.gpg.d/debian.asc
+
+# Update apt-get sources and install necessary utilities
 RUN apt-get update --fix-missing && \
-    apt-get install -y gnupg2 build-essential libpq-dev curl && \
+    apt-get install -y build-essential && \
     rm -rf /var/lib/apt/lists/*
 
 # Create a working directory for the backend
@@ -67,9 +70,15 @@ ARG SECRET_KEY
 # Set environment variable for SECRET_KEY
 ENV SECRET_KEY=${SECRET_KEY}
 
+# Install necessary utilities
+RUN apt-get update && apt-get install -y gnupg2 curl coreutils
+
+# Add the correct GPG key to resolve repository signing issues
+RUN curl -fsSL https://ftp-master.debian.org/keys/archive-key-11.asc | tee /etc/apt/trusted.gpg.d/debian.asc
+
 # Update apt-get sources and install necessary utilities
 RUN apt-get update --fix-missing && \
-    apt-get install -y gnupg2 build-essential curl && \
+    apt-get install -y build-essential && \
     rm -rf /var/lib/apt/lists/*
 
 # Add Node.js official PPA and install Node.js
