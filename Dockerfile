@@ -65,10 +65,11 @@ ARG SECRET_KEY
 # Set environment variable for SECRET_KEY
 ENV SECRET_KEY=${SECRET_KEY}
 
-# Install Node.js and npm
-RUN apt-get update && apt-get install -y curl \
-    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get install -y nodejs
+# Install Node.js and npm in a multi-stage build
+COPY --from=node:20-alpine /usr/local/bin/node /usr/local/bin/
+COPY --from=node:20-alpine /usr/local/lib/node_modules /usr/local/lib/node_modules
+COPY --from=node:20-alpine /usr/local/bin/npm /usr/local/bin/
+COPY --from=node:20-alpine /usr/local/bin/npx /usr/local/bin/
 
 # Copy the virtual environment and the backend application code from the builder stage
 COPY --from=backend_builder /backend_app /app
