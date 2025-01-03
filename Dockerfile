@@ -65,12 +65,15 @@ ARG SECRET_KEY
 # Set environment variable for SECRET_KEY
 ENV SECRET_KEY=${SECRET_KEY}
 
-# Install necessary utilities and Node.js
+# Install necessary utilities
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gnupg2 \
     build-essential \
     curl \
-    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && rm -rf /var/lib/apt/lists/*
+
+# Add Node.js official PPA and install Node.js
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs
 
 # Copy the virtual environment and the backend application code from the builder stage
@@ -83,8 +86,7 @@ COPY --from=frontend_builder /frontend_app /app/frontend
 WORKDIR /app/backend
 
 # Ensure the staticfiles and media directories exist
-RUN apt-get update && apt-get install -y coreutils \
-    && mkdir -p /app/backend/staticfiles /app/backend/media
+RUN mkdir -p /app/backend/staticfiles /app/backend/media
 
 # Install `supervisord`
 RUN apt-get update && apt-get install -y supervisor
