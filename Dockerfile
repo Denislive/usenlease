@@ -50,7 +50,7 @@ ENV STATIC_ROOT=/backend_app/backend/staticfiles
 ENV MEDIA_ROOT=/backend_app/backend/media
 
 # Collect static files during the build stage
-RUN /backend_app/venv/bin/python /backend_app/backend/manage.py collectstatic --noinput
+RUN SECRET_KEY=${SECRET_KEY} /backend_app/venv/bin/python /backend_app/backend/manage.py collectstatic --noinput
 
 # Stage 3: Production Image
 FROM python:3.11-slim-bullseye

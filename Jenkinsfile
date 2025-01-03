@@ -1,18 +1,15 @@
 pipeline {
     agent any
     environment {
-        FRONTEND_IMAGE = 'ngumonelson123/frontend-image'
-        BACKEND_IMAGE = 'ngumonelson123/backend-image'
+        IMAGE = 'ngumonelson123/combined-image'
         GOOGLE_CLOUD_PROJECT = 'burnished-ether-439413-s1'
         GOOGLE_CLOUD_ZONE = 'us-central1-a'
         GOOGLE_APPLICATION_CREDENTIALS = credentials('google-cloud-service-account-json')
         POSTGRES_USER = credentials('postgres-user')
         POSTGRES_PASSWORD = credentials('postgres-password')
         POSTGRES_DB = 'usenlease_db'
-        HEROKU_BACKEND_API_KEY = credentials('heroku-backend-api-key')
-        HEROKU_FRONTEND_API_KEY = credentials('heroku-frontend-api-key')
-        HEROKU_BACKEND_APP_NAME = 'usenlease'
-        HEROKU_FRONTEND_APP_NAME = 'usenlease-v1'
+        HEROKU_API_KEY = credentials('heroku-api-key')
+        HEROKU_APP_NAME = 'usenlease-combined'
     }
     stages {
         stage('Setup') {
@@ -22,8 +19,7 @@ pipeline {
                 echo "GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}" > .env
                 echo "GOOGLE_CLOUD_ZONE=${GOOGLE_CLOUD_ZONE}" >> .env
                 echo "GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}" >> .env
-                echo "FRONTEND_IMAGE=${FRONTEND_IMAGE}" >> .env
-                echo "BACKEND_IMAGE=${BACKEND_IMAGE}" >> .env
+                echo "IMAGE=${IMAGE}" >> .env
                 echo "POSTGRES_USER=${POSTGRES_USER}" >> .env
                 echo "POSTGRES_PASSWORD=${POSTGRES_PASSWORD}" >> .env
                 echo "POSTGRES_DB=${POSTGRES_DB}" >> .env
@@ -47,70 +43,33 @@ pipeline {
                 git url: 'https://github.com/Denislive/usenlease.git'
             }
         }
-        stage('Build and Push Docker Images') {
-            parallel {
-                stage('Push Frontend Image') {
-                    steps {
-                        script {
-                            echo 'Pushing frontend Docker image to Docker Hub...'
-                            withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                                sh '''
-                                docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
-                                docker build -t ${FRONTEND_IMAGE}:v1.1.0 ./frontend
-                                docker push ${FRONTEND_IMAGE}:v1.1.0
-                                '''
-                            }
-                        }
-                    }
-                }
-                stage('Push Backend Image') {
-                    steps {
-                        script {
-                            echo 'Pushing backend Docker image to Docker Hub...'
-                            withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                                withEnv(["SECRET_KEY=django-insecure-^5zv2&aef@n*hi0icmu7lji6bqf0r&d@!x)%*gq-e^w)2e^kl!"]) {
-                                    sh '''
-                                    docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
-                                    docker build --build-arg SECRET_KEY=${SECRET_KEY} -t ${BACKEND_IMAGE}:v1.1.0 -f Dockerfile .
-                                    docker push ${BACKEND_IMAGE}:v1.1.0
-                                    '''
-                                }
-                            }
+        stage('Build and Push Docker Image') {
+            steps {
+                script {
+                    echo 'Building and pushing Docker image to Docker Hub...'
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        withEnv(["SECRET_KEY=django-insecure-^5zv2&aef@n*hi0icmu7lji6bqf0r&d@!x)%*gq-e^w)2e^kl!"]) {
+                            sh '''
+                            docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
+                            docker build --build-arg SECRET_KEY=${SECRET_KEY} -t ${IMAGE}:v1.1.0 -f Dockerfile .
+                            docker push ${IMAGE}:v1.1.0
+                            '''
                         }
                     }
                 }
             }
         }
         stage('Deploy to Heroku') {
-            parallel {
-                stage('Backend Deployment') {
-                    steps {
-                        script {
-                            echo 'Deploying backend to Heroku...'
-                            withEnv(["HEROKU_API_KEY=${HEROKU_BACKEND_API_KEY}", "HEROKU_APP_NAME=${HEROKU_BACKEND_APP_NAME}"]) {
-                                sh '''
-                                echo "$HEROKU_API_KEY" | docker login --username=_ --password-stdin registry.heroku.com
-                                docker tag ${BACKEND_IMAGE}:v1.1.0 registry.heroku.com/$HEROKU_APP_NAME/web
-                                docker push registry.heroku.com/$HEROKU_APP_NAME/web
-                                heroku container:release web --app $HEROKU_APP_NAME
-                                '''
-                            }
-                        }
-                    }
-                }
-                stage('Frontend Deployment') {
-                    steps {
-                        script {
-                            echo 'Deploying frontend to Heroku...'
-                            withEnv(["HEROKU_API_KEY=${HEROKU_FRONTEND_API_KEY}", "HEROKU_APP_NAME=${HEROKU_FRONTEND_APP_NAME}"]) {
-                                sh '''
-                                echo "$HEROKU_API_KEY" | docker login --username=_ --password-stdin registry.heroku.com
-                                docker tag ${FRONTEND_IMAGE}:v1.1.0 registry.heroku.com/$HEROKU_APP_NAME/web
-                                docker push registry.heroku.com/$HEROKU_APP_NAME/web
-                                heroku container:release web --app $HEROKU_APP_NAME
-                                '''
-                            }
-                        }
+            steps {
+                script {
+                    echo 'Deploying to Heroku...'
+                    withEnv(["HEROKU_API_KEY=${HEROKU_API_KEY}", "HEROKU_APP_NAME=${HEROKU_APP_NAME}"]) {
+                        sh '''
+                        echo "$HEROKU_API_KEY" | docker login --username=_ --password-stdin registry.heroku.com
+                        docker tag ${IMAGE}:v1.1.0 registry.heroku.com/$HEROKU_APP_NAME/web
+                        docker push registry.heroku.com/$HEROKU_APP_NAME/web
+                        heroku container:release web --app $HEROKU_APP_NAME
+                        '''
                     }
                 }
             }
@@ -130,8 +89,7 @@ pipeline {
                         apt-get install -y docker.io
                         systemctl start docker
                         docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
-                        docker pull ${BACKEND_IMAGE}:v1.1.0
-                        docker pull ${FRONTEND_IMAGE}:v1.1.0
+                        docker pull ${IMAGE}:v1.1.0
                         docker-compose up -d'
                     '''
                 }
