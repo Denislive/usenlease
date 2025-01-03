@@ -223,7 +223,7 @@
               <div class="container mx-auto p-4">
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                   <!-- Loop through the filtered equipments -->
-                  <div v-for="equipment in store.userEquipments" :key="equipment.id" @click="openEditModal(equipment)"
+                  <div v-for="equipment in store.userEquipments" :key="equipment.id" @click="goToDetail(equipment.id)"
                     class="bg-white rounded-lg shadow-lg overflow-hidden transition-transform hover:scale-105 cursor-pointer">
                     <div class="relative">
                       <!-- Availability Badge -->
