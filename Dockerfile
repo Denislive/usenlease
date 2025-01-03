@@ -22,8 +22,8 @@ FROM python:3.11-slim-bullseye AS backend_builder
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 
-# Install dependencies
-RUN apt-get update && apt-get install -y gnupg2 curl coreutils
+# Install dependencies and utilities
+RUN apt-get update && apt-get install -y gnupg2 curl coreutils ca-certificates
 
 # Add the correct GPG key to resolve repository signing issues
 RUN curl -fsSL https://ftp-master.debian.org/keys/archive-key-11.asc | tee /etc/apt/trusted.gpg.d/debian.asc
@@ -71,7 +71,7 @@ ARG SECRET_KEY
 ENV SECRET_KEY=${SECRET_KEY}
 
 # Install necessary utilities
-RUN apt-get update && apt-get install -y gnupg2 curl coreutils
+RUN apt-get update && apt-get install -y gnupg2 curl coreutils ca-certificates
 
 # Add the correct GPG key to resolve repository signing issues
 RUN curl -fsSL https://ftp-master.debian.org/keys/archive-key-11.asc | tee /etc/apt/trusted.gpg.d/debian.asc
