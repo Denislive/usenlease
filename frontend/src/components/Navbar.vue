@@ -22,7 +22,7 @@
             </label>
           </div>
         </div>
-        
+
         <!-- Authenticated User Menu -->
         <div v-if="authStore.isAuthenticated" class="flex items-center space-x-4">
           <!-- Browse Items Button for Lessee -->
@@ -32,6 +32,32 @@
               Browse Items
             </a>
           </RouterLink>
+
+          <!-- Lease Out Button for Lessor -->
+          <RouterLink v-if="authStore.user.role === 'lessor'" :to="{ name: 'list-item' }">
+            <a
+              class="px-6 py-2 bg-[#ffc107] text-[#1c1c1c] hidden md:block rounded-lg shadow-lg transform transition duration-300 hover:scale-105 hover:shadow-2xl">
+              Lease Out
+            </a>
+          </RouterLink>
+          
+          <!-- Equipment Icon -->
+          <div v-if="authStore.user.role === 'lessor'" class="relative">
+            <RouterLink to="/profile?section=my-equipments" class="flex items-center">
+              <i class="pi pi-bars text-4xl mx-4"></i>
+              <span
+                class="absolute top-[-15px] right-[-5px] bg-red-600 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center">{{ store.userEquipments.length }}</span>
+            </RouterLink>
+          </div>
+
+          <!-- Cart Icon -->
+          <div v-if="authStore.user.role === 'lessee'" class="relative">
+            <RouterLink to="/cart" class="flex items-center">
+              <i class="pi pi-shopping-cart text-4xl mx-4"></i>
+              <span
+                class="absolute top-[-15px] right-[-5px] bg-red-600 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center">{{ cartStore.cart.length }}</span>
+            </RouterLink>
+          </div>
 
           <!-- Profile Icon with Dropdown for Profile & Logout -->
           <div class="relative hidden lg:block" @mouseenter="showDropdownWithDelay(true)"
@@ -52,35 +78,6 @@
               </button>
             </div>
           </div>
-
-          <!-- Lease Out Button for Lessor -->
-          <RouterLink v-if="authStore.user.role === 'lessor'" :to="{ name: 'list-item' }">
-            <a
-              class="px-6 py-2 bg-[#ffc107] text-[#1c1c1c] hidden md:block rounded-lg shadow-lg transform transition duration-300 hover:scale-105 hover:shadow-2xl">
-              Lease Out
-            </a>
-          </RouterLink>
-            <div v-if="authStore.isAuthenticated">
-               <!-- Equipment Icon -->
-             <div  class="relative">
-            <RouterLink  v-if="authStore.user.role === 'lessor'" to="/profile?section=my-equipments" class="flex items-center">
-              <i class="pi pi-bars text-4xl mx-4"></i>
-              <span
-                class="absolute top-[-15px] right-[-5px] bg-red-600 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center">{{ store.userEquipments.length }}</span>
-            </RouterLink>
-          </div>
-
-          <!-- Cart Icon -->
-          <div  v-if="authStore.user.role === 'lessee'" class="relative">
-            <RouterLink to="/cart" class="flex items-center">
-              <i class="pi pi-shopping-cart text-4xl mx-4"></i>
-              <span
-                class="absolute top-[-15px] right-[-5px] bg-red-600 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center">{{
-                  cartStore.cart.length }}</span>
-            </RouterLink>
-          </div>
-            </div>
-          
         </div>
 
         <!-- Not Authenticated User Menu -->
@@ -114,12 +111,9 @@
             <RouterLink to="/cart" class="flex items-center">
               <i class="pi pi-shopping-cart text-4xl mx-4"></i>
               <span
-                class="absolute top-[-15px] right-[-5px] bg-red-600 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center">{{
-                  cartStore.cart.length }}</span>
+                class="absolute top-[-15px] right-[-5px] bg-red-600 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center">{{ cartStore.cart.length }}</span>
             </RouterLink>
           </div>
-
-      
         </div>
       </header>
     </div>
@@ -177,6 +171,7 @@
     </div>
   </nav>
 </template>
+
 
 
 <script setup>
