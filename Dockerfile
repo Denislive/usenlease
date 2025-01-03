@@ -57,13 +57,19 @@ FROM python:3.11-slim-bullseye
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
-ENV PATH="/app/venv/bin:$PATH"
+ENV PATH="/app/venv/bin:$PATH:/usr/local/bin:/usr/local/lib/node_modules"
 
 # Add build argument for SECRET_KEY
 ARG SECRET_KEY
 
 # Set environment variable for SECRET_KEY
 ENV SECRET_KEY=${SECRET_KEY}
+
+# Install Node.js and npm
+RUN apt-get update && apt-get install -y curl \
+    && curl -sL https://deb.nodesource.com/setup_16.x | bash - \
+    && apt-get install -y nodejs \
+    && npm install -g npm
 
 # Copy the virtual environment and the backend application code from the builder stage
 COPY --from=backend_builder /backend_app /app
