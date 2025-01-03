@@ -55,6 +55,12 @@ RUN SECRET_KEY=${SECRET_KEY} /backend_app/venv/bin/python /backend_app/backend/m
 # Stage 3: Production Image
 FROM python:3.11-slim-bullseye
 
+# Install Node.js and npm
+RUN apt-get update && apt-get install -y curl && \
+    curl -fsSL https://deb.nodesource.com/setup_16.x | bash - && \
+    apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
+
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 ENV PATH="/app/venv/bin:$PATH"
