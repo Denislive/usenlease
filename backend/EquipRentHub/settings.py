@@ -80,7 +80,6 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
-    # tinymce editor
     'tinymce',
 
     'whitenoise.runserver_nostatic',
