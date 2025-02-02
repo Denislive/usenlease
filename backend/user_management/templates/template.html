@@ -1,0 +1,15 @@
+<!-- template.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signed URLs</title>
+</head>
+<body>
+    <h1>Signed URLs</h1>
+    {% for url in signed_urls %}
+        <img src="{{ url }}" alt="Image">
+    {% endfor %}
+</body>
+</html>

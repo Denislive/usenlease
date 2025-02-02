@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  usenlease-frontend:
+    image: ngumonelson123/frontend-image:v1.1.0
+    container_name: usenlease-frontend
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    depends_on:
+      - usenlease-backend
+    networks:
+      - app-net
+    env_file:
+      - .env
+
+  usenlease-backend:
+    image: ngumonelson123/backend-image:v1.1.0
+    container_name: usenlease-backend
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    depends_on:
+      usenlease-db:
+        condition: service_healthy
+    networks:
+      - app-net
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    command: >
+      bash -c "python manage.py wait_for_db &&
+               python manage.py migrate &&
+               python manage.py collectstatic --noinput &&
+               gunicorn EquipRentHub.wsgi:application --bind 0.0.0.0:8000 --workers=3"
+    volumes:
+      - ./backend/staticfiles:/app/backend/staticfiles
+      - ./backend/media:/app/backend/media
+
+  usenlease-db:
+    image: postgres:latest
+    container_name: usenlease-db
+    env_file:
+      - .env
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - app-net
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  nginx:
+    image: nginx:latest
+    container_name: usenlease-nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - usenlease-frontend
+      - usenlease-backend:
+          condition: service_completed_successfully
+    volumes:
+      - ./backend/staticfiles:/usr/share/nginx/html/static
+      - ./backend/media:/usr/share/nginx/html/media
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    networks:
+      - app-net
+
+networks:
+  app-net:
+    driver: bridge
+
+volumes:
+  postgres-data:
+    driver: local
