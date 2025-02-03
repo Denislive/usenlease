@@ -6,10 +6,10 @@
   <!-- Hero Content -->
   <div class="container mx-auto text-center relative z-10">
     <h1 class="text-4xl sm:text-5xl font-bold leading-tight mb-6 animate__animated animate__fadeIn animate__delay-1s">
-      Rent the Best Equipment for Your Needs
+     Rent or Lease Anything You Need.
     </h1>
     <p class="text-lg sm:text-xl mb-8 animate__animated animate__fadeIn animate__delay-2s">
-      Find top-quality equipment for any project. Fast delivery and great customer support.
+      Find the perfect item for any occasion. We connect renters and lessors for a seamless experience.
     </p>
     
     <!-- Location Button -->

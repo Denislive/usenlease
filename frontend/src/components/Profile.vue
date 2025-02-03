@@ -617,7 +617,7 @@
 
               <!-- Equipment Image -->
               <div class="p-4 bg-gray-50 flex justify-center">
-                <img :src="chats.find((chat) => chat.id === activeChat)?.equipment_image || 'default-placeholder.jpg'"
+                <img :src="chats.find((chat) => chat.id === activeChat)?.equipment.images[0] || 'default-placeholder.jpg'"
                   alt="Equipment" class="w-full max-w-sm h-auto object-cover rounded-lg shadow-md" />
               </div>
 

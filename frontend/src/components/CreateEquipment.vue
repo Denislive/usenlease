@@ -341,7 +341,7 @@ const validateHourlyRate = () => {
 };
 
 const validateCategory = () => {
-  categoryError.value = !selectedCategory.value === null
+  categoryError.value = selectedCategory.value === null
     ? 'Please select a valid category.'
     : '';
 };

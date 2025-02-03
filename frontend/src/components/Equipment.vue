@@ -12,7 +12,7 @@ const search = useStore();
 
 const searchQuery = computed(() => search.getters.getSearchQuery);
 
-const itemsPerPage = 20; // Items per page
+const itemsPerPage = 30; // Items per page
 const currentPage = ref(1); // Current page number
 
 onMounted(async () => {
@@ -79,7 +79,7 @@ const renderStars = (rating) => {
 
 <template>
   <div class="container mx-auto p-2">
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
       <div v-for="equipment in paginatedEquipments" :key="equipment.id" @click="() => { goToDetail(equipment.id) }"
         class="bg-white rounded-lg shadow-lg overflow-hidden transition-transform hover:scale-105 cursor-pointer">
         <div class="relative">

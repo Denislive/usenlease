@@ -166,7 +166,6 @@ const sendMessageAndReset = async () => {
 
   const createChat = async (equipmentOwner, equipmentDetails) => {
     const authStore = useAuthStore();
-    const api_base_url = "http://127.0.0.1:8000";
   
     if (authStore.isAuthenticated) {
       try {

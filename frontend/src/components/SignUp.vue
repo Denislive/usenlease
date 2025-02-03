@@ -228,6 +228,10 @@ import { useRouter } from 'vue-router';
 import Cookies from 'js-cookie';
 import axios from 'axios';
 import { useCompanyInfoStore } from '@/store/company';
+import useNotifications from '@/store/notification';
+
+const { showNotification } = useNotifications();
+
 const companyInfoStore = useCompanyInfoStore();
 
 
@@ -482,8 +486,8 @@ const handleSignup = async () => {
         const formData = new FormData();
         formData.append('first_name', firstName.value);
         formData.append('last_name', lastName.value);
-        formData.append('company_name', companyName.value || null);
-        formData.append('username', null); // Assuming username is not provided
+        formData.append('company_name', companyName.value || '');
+        formData.append('username', ''); // Assuming username is not provided
         formData.append('role', role.value);
         formData.append('phone_number', phone.value);
         formData.append('email', email.value);
@@ -510,18 +514,31 @@ const handleSignup = async () => {
             router.push('/verify');
 
             successMessage.value = 'Signup successful!';
-
-            // Usage example
             setEmailCookie(userData.email);
+            showNotification('Success', 'Signup successful! Redirecting...', 'success');
 
             errorMessage.value = '';
         } else {
             const errorData = await response.json();
-            errorMessage.value = errorData.message || 'Signup failed!';
+
+            // Extract the error message properly
+            let errorMsg = 'Signup failed!';
+            if (errorData.message) {
+                errorMsg = errorData.message;
+            } else if (errorData.detail) {
+                errorMsg = errorData.detail;
+            } else if (typeof errorData === 'object') {
+                // Handle field-specific errors
+                errorMsg = Object.values(errorData).flat().join(' ');
+            }
+
+            showNotification('Error', errorMsg, 'error');
+            errorMessage.value = errorMsg;
             successMessage.value = '';
         }
     } catch (error) {
-        errorMessage.value = 'An error occurred during signup!';
+        handleCreateError(error);
+        errorMessage.value = 'An unexpected error occurred!';
         successMessage.value = '';
     }
 };

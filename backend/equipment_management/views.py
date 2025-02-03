@@ -868,7 +868,7 @@ class CartViewSet(viewsets.ModelViewSet):
 
         # Check if the user has the 'lessor' role
         if user.role == 'lessor':  # Replace 'lessor' with the actual role name if different
-            raise PermissionDenied("You are a lessor!")
+            raise PermissionDenied("Switch to Lesee!")
 
         # Get or create a cart for the user
         cart, created = Cart.objects.get_or_create(user=user)

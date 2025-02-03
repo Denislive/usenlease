@@ -97,7 +97,7 @@
 
       <!-- Footer Bottom Section -->
       <div class="border-t border-gray-700 mt-8 pt-4 text-center text-sm text-[#ccc]">
-        <p>&copy; 2024 {{ companyInfoStore.companyInfo?.name }}. All rights reserved.</p>
+        <p>&copy; 2025 {{ companyInfoStore.companyInfo?.name }}. All rights reserved.</p>
       </div>
     </div>
   </footer>
