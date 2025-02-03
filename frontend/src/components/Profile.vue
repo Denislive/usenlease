@@ -209,7 +209,7 @@
             </div>
           </div>
 
-          <!-- My Equipments Section -->
+          <!-- My Items Section -->
           <div v-if="
             authStore.activeSection === 'my-equipments' &&
             authStore.user?.role === 'lessor'
@@ -539,7 +539,7 @@
           </div>
 
           <!-- <div v-if="activeSection === 'settings'">
-            <h1>My equipments updated</h1>
+            <h1>My Items updated</h1>
 
           </div> -->
 
@@ -1246,7 +1246,7 @@ export default {
       { name: "personal-info", label: "Personal Information" },
       {
         name: "my-equipments",
-        label: "My Equipments",
+        label: "My Items",
         show: authStore.user?.role === "lessor",
       },
       {
@@ -1260,7 +1260,7 @@ export default {
     const otherSections = [
       {
         name: "my-equipments",
-        label: "My Equipments",
+        label: "My Items",
         show: authStore.user?.role === "lessor",
       },
       {

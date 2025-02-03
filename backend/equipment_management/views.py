@@ -893,7 +893,7 @@ class CartViewSet(viewsets.ModelViewSet):
 
         # Check if the user has the 'lessor' role
         if user.role == 'lessor':  # Replace 'lessor' with the actual role name if different
-            raise PermissionDenied("You are a lessor!")
+            raise PermissionDenied("Switch to Lessee!")
 
         # Ensure a cart exists for the user before updating
         cart = self.get_object()
@@ -939,7 +939,7 @@ class CartItemViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         """
         Create a new cart item for the logged-in user. If the user is a 'lessor',
-        raise a permission error. Ensure no date overlaps and enough stock is available.
+        raise a permission error. Ensure enough stock is available, even if dates overlap.
         """
         user = request.user
 
@@ -957,21 +957,7 @@ class CartItemViewSet(viewsets.ModelViewSet):
         new_start_date = datetime.strptime(item_data.get("start_date"), "%Y-%m-%d").date()
         new_end_date = datetime.strptime(item_data.get("end_date"), "%Y-%m-%d").date()
 
-        # Check for overlapping items in the cart
-        overlapping_items = CartItem.objects.filter(
-            cart=user_cart,
-            item_id=item_id
-        ).filter(
-            start_date__lt=new_end_date,
-            end_date__gt=new_start_date
-        )
-
-        if overlapping_items.exists():
-            return Response(
-                {"error": "This equipment is already booked for the selected dates."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
+        # Skip overlapping items check, we just need to ensure stock availability
         # Check if the available stock is sufficient
         equipment = Equipment.objects.get(id=item_id)
         if equipment.available_quantity < item_quantity:
@@ -1006,6 +992,7 @@ class CartItemViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
 
     def update(self, request, *args, **kwargs):
         """
