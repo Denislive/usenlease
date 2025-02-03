@@ -231,7 +231,7 @@ const itemName = ref('');
 const hourlyRate = ref(null);
 const selectedCategory = ref("");
 const tagsInput = ref(""); // Input field value
-const tags = ref([]); // Array of individual tagsconst description = ref('');
+const tags = ref([]);
 const terms = ref('');
 const streetAddress = ref('');
 const city = ref('');
