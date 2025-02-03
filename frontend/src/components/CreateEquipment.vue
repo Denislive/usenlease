@@ -14,15 +14,18 @@
         <!-- Category -->
         <div class="mb-4 relative">
           <label for="category" class="block text-sm font-medium text-gray-700">Category</label>
-          <select id="category" v-model="selectedCategory" @input="validateCategory" required :class="[
+          <select id="category" v-model="selectedCategory" @change="validateCategory" required :class="[
             'mt-1 block w-full border rounded-md p-2 focus:outline-none',
             categoryError ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-[#1c1c1c]'
           ]">
-            <option :value="selectedCategory" disabled>Select a category</option>
-            <option v-for="cat in categories" :key="cat.id" :value="cat">{{ cat.name }}</option>
+            <option value="" disabled selected>Select a category</option>
+            <option v-for="(cat, index) in categories" :key="index" :value="cat.name">
+              {{ cat.name }}
+            </option>
           </select>
           <p v-if="categoryError" class="text-red-500 text-sm mt-1">{{ categoryError }}</p>
         </div>
+
 
         <!-- Hourly Rate -->
         <div class="mb-4 relative">
@@ -36,23 +39,15 @@
         <!-- Tags with Preview -->
         <div class="mb-4 relative">
           <label for="tags" class="block text-sm font-medium text-gray-700">Tags</label>
-          <input
-            type="text"
-            id="tags"
-            v-model="tagsInput"
-            placeholder="Add mutiple tags by hitting enter to add another"
-            @keydown.enter.prevent="addTags"
-            class="mt-1 block w-full border rounded-md p-2 focus:outline-none border-gray-300 focus:border-[#1c1c1c]"
-          />
+          <input type="text" id="tags" v-model="tagsInput"
+            placeholder="Add mutiple tags by hitting enter to add another" @keydown.enter.prevent="addTags"
+            class="mt-1 block w-full border rounded-md p-2 focus:outline-none border-gray-300 focus:border-[#1c1c1c]" />
           <p v-if="tagsError" class="absolute text-red-500 text-sm mt-1">{{ tagsError }}</p>
 
           <!-- Tag Previews -->
           <div v-if="tags.length" class="flex flex-wrap gap-2 mt-3">
-            <div
-              v-for="(tag, index) in tags"
-              :key="index"
-              class="flex items-center bg-[#1c1c1c] text-white rounded-md px-3 py-1 text-sm shadow-md cursor-pointer"
-            >
+            <div v-for="(tag, index) in tags" :key="index"
+              class="flex items-center bg-[#1c1c1c] text-white rounded-md px-3 py-1 text-sm shadow-md cursor-pointer">
               {{ tag }}
               <button @click="removeTag(index)" class="ml-2 text-white hover:text-red-400 focus:outline-none">
                 ×
@@ -234,7 +229,7 @@ const api_base_url = import.meta.env.VITE_API_BASE_URL;
 
 const itemName = ref('');
 const hourlyRate = ref(null);
-const selectedCategory = ref(null);
+const selectedCategory = ref("");
 const tagsInput = ref(""); // Input field value
 const tags = ref([]); // Array of individual tagsconst description = ref('');
 const terms = ref('');
@@ -249,23 +244,23 @@ const images = ref([]);
 const imagePreviews = ref([]);
 
 const addTags = () => {
-      const tag = tagsInput.value.trim(); // Trim any surrounding spaces
-      validateTags();
+  const tag = tagsInput.value.trim(); // Trim any surrounding spaces
+  validateTags();
 
 
-      if (tag) {
-        tags.value.push(tag); // Add the tag to the tags array
-        tagsInput.value = ""; // Clear input after adding
-        tagsError.value = null; // Clear error
-      } else {
-        tagsError.value = "Please enter a valid tag."; // Error if tag is empty
-      }
-    };
+  if (tag) {
+    tags.value.push(tag); // Add the tag to the tags array
+    tagsInput.value = ""; // Clear input after adding
+    tagsError.value = null; // Clear error
+  } else {
+    tagsError.value = "Please enter a valid tag."; // Error if tag is empty
+  }
+};
 
 
-    const removeTag = (index) => {
-      tags.value.splice(index, 1); // Remove tag by index
-    };
+const removeTag = (index) => {
+  tags.value.splice(index, 1); // Remove tag by index
+};
 
 
 const specifications = ref([{ key: '', value: '' }]);  // Initially, one specification
@@ -341,7 +336,7 @@ const validateHourlyRate = () => {
 };
 
 const validateCategory = () => {
-  categoryError.value = selectedCategory.value === null
+  categoryError.value = !selectedCategory.value
     ? 'Please select a valid category.'
     : '';
 };
@@ -349,8 +344,8 @@ const validateCategory = () => {
 
 const validateTags = () => {
   tagsError.value = tagsInput.value.length < 3
-      ? 'Tags must be at least 3 characters long.'
-      : '';
+    ? 'Tags must be at least 3 characters long.'
+    : '';
 };
 
 const validateDescription = () => {
