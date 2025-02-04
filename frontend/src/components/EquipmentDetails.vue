@@ -1,27 +1,22 @@
 <template>
   <div v-if="loading" class="loading">Loading equipment details...</div>
   <div v-else-if="error" class="error">{{ error }}</div>
-  <div v-else-if="equipment && Object.keys(equipment).length" class="cell medium-4 large-4 p-12 border rounded-lg shadow-lg bg-gray-100">
-    
+  <div v-else-if="equipment && Object.keys(equipment).length"
+    class="cell medium-4 large-4 p-12 border rounded-lg shadow-lg bg-gray-100">
 
-     <!-- Additional notification about partial availability -->
-     <div v-if="partialAvailabilityMessage" class="availability-notification bg-green-200 text-green-800 p-2 rounded mb-2">
+
+    <!-- Additional notification about partial availability -->
+    <div v-if="!equipment.is_available && partialAvailabilityMessage"
+      class="availability-notification bg-green-200 text-green-800 p-2 rounded mb-2">
       {{ partialAvailabilityMessage }}
     </div>
-
-
-    <!-- Notification about availability dates -->
-    <div v-if="!equipment.is_available" class="availability-notification bg-blue-200 text-blue-800 p-2 rounded mb-2">
-      Available after: {{ nextAvailableDate }}
-    </div>
-
-   
 
     <h1 class="product-name text-2xl font-bold mb-2">{{ equipment.name }}</h1>
 
     <div class="rating-reviews mb-2">
       <span class="rating text-yellow-500">{{ renderStars(equipment.rating) }}</span>
-      <span class="reviews text-gray-600"> ({{ equipment.equipment_reviews ? equipment.equipment_reviews.length : 0 }} Reviews)</span>
+      <span class="reviews text-gray-600"> ({{ equipment.equipment_reviews ? equipment.equipment_reviews.length : 0 }}
+        Reviews)</span>
     </div>
 
     <p class="price text-xl font-semibold mb-4">${{ equipment.hourly_rate }}/Day</p>
@@ -29,8 +24,9 @@
     <p class="description mb-4">{{ equipment.description }}</p>
     <p class="availability mb-2">
       <strong>Status:</strong>
-      <span :class="equipment.is_available ? 'text-green-600' : 'text-red-600'">
-        {{ equipment.is_available ? `${equipment.available_quantity } Available` : `Booked until ${nextAvailableDate}` }}
+      <span :class="equipment.is_available ? 'text-green-600' : 'text-blue-600'">
+        {{ equipment.is_available ? `${equipment.available_quantity} Available` : `Available after ${nextAvailableDate}`
+        }}
       </span>
     </p>
 
@@ -44,36 +40,44 @@
       <div class="mt-2">
         <h3 class="text-md font-semibold">Tags:</h3>
         <div class="flex flex-wrap gap-2">
-          <span v-for="tag in equipment.tags" :key="tag.name" class="bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm font-medium">
+          <span v-for="tag in equipment.tags" :key="tag.name"
+            class="bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm font-medium">
             {{ tag.name }}
           </span>
         </div>
       </div>
     </div>
 
-    <div class="booking-form">
+    <div class="booking-form" v-if="authStore.user?.role !== 'lessor'">
       <form @submit.prevent="submitBooking">
         <label for="start-date" class="block mb-1">Start Date:</label>
-        <input type="date" id="start-date" v-model="startDate" :min="today" :disabled="isFullyBooked" required class="mb-4 p-2 border rounded w-full" :class="{ 'disabled-date': isDateBooked(startDate), 'partially-booked-date': isPartiallyBooked(startDate) }" />
+        <input type="date" id="start-date" v-model="startDate" :min="today" :disabled="isFullyBooked" required
+          class="mb-4 p-2 border rounded w-full"
+          :class="{ 'disabled-date': isDateBooked(startDate), 'partially-booked-date': isPartiallyBooked(startDate) }" />
         <p v-if="dateError" class="error-message">{{ dateError }}</p>
 
         <label for="end-date" class="block mb-1">End Date:</label>
-        <input type="date" id="end-date" v-model="endDate" :min="startDate" :disabled="isFullyBooked" required class="mb-4 p-2 border rounded w-full" :class="{ 'disabled-date': isDateBooked(endDate), 'partially-booked-date': isPartiallyBooked(endDate) }" />
+        <input type="date" id="end-date" v-model="endDate" :min="startDate" :disabled="isFullyBooked" required
+          class="mb-4 p-2 border rounded w-full"
+          :class="{ 'disabled-date': isDateBooked(endDate), 'partially-booked-date': isPartiallyBooked(endDate) }" />
         <p v-if="dateError" class="error-message">{{ dateError }}</p>
 
         <label for="quantity" class="block mb-1">Number of Equipments:</label>
-        <input type="number" id="quantity" v-model="quantity" min="1" :max="equipment.available_quantity" @input="validateQuantity" required class="mb-4 p-2 border rounded w-full" />
+        <input type="number" id="quantity" v-model="quantity" min="1" :max="equipment.available_quantity"
+          @input="validateQuantity" required class="mb-4 p-2 border rounded w-full" />
         <p v-if="quantityError" class="error-message">{{ quantityError }}</p>
 
-        <button type="submit" class="button add-to-cart bg-[#ffc107] text-black py-2 px-4 rounded hover:bg-yellow-400 transition" :disabled="isFullyBooked">
+        <button type="submit"
+          class="button add-to-cart bg-[#ffc107] text-black py-2 px-4 rounded hover:bg-yellow-400 transition"
+          :disabled="isFullyBooked">
           Add to Cart
         </button>
-
-        <RouterLink v-if="authStore.isAuthenticated && props.equipment.owner !== authStore.user.id" :to="{ path: '/profile', query: { section: 'chats' } }" @click="createChat" class="text-black py-2 px-4 rounded">
-          Talk to Owner
-        </RouterLink>
       </form>
     </div>
+    <RouterLink v-if="authStore.isAuthenticated && props.equipment.owner !== authStore.user.id"
+      :to="{ path: '/profile', query: { section: 'chats' } }" @click="createChat" class="text-black py-2 px-4 rounded">
+      Talk to Owner
+    </RouterLink>
   </div>
 </template>
 
@@ -174,10 +178,7 @@ const submitBooking = async () => {
   };
 
   // Check if selected dates are fully booked
-  if (isDateRangePartiallyBooked(startDate.value, endDate.value, quantity.value)) {
-    showNotification('Unavailable Item', `The selected dates are currently booked. Please choose different dates.`, 'error');
-    return;
-  }
+ 
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -307,7 +308,7 @@ const partialAvailabilityMessage = computed(() => {
     }
   }
 
-  return availablePeriods.length > 0 ? `Available for rent on: ${availablePeriods.join(', ')}` : '';
+  return availablePeriods.length > 0 ? `Available between: ${availablePeriods.join(', ')}` : '';
 });
 </script>
 
