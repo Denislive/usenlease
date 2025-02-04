@@ -418,7 +418,7 @@
                       <td class="py-3 px-6 text-center">
                         <div class="flex justify-center flex-wrap">
                           <div v-for="item in order.order_items" :key="item.id" class="mr-2 mb-2">
-                            <img v-if="item.item.images" :src="item.item.images[0].image_url" :alt="item.item.images[0].name"
+                            <img v-if="item.item.images" :src="item.item.images[0]" alt="Item Image"
                               class="w-16 h-16 rounded-full object-cover" />
                             <span v-else>
                               <p class="text-sm text-gray-500">No image available</p>
@@ -580,7 +580,7 @@
               class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
               <div class="bg-white rounded-lg shadow-lg p-6 w-96">
                 <h2 class="text-lg font-bold text-gray-800 mb-4">Review Your Message</h2>
-                <img :src="chatStore.chatState.equipmentImage" alt="Equipment"
+                <img :src="api_base_url + chatStore.chatState.equipmentImage" :alt="chatStore.chatState.equipmentImage"
                   class="w-full h-40 object-cover rounded-lg mb-4" />
 
                 <!-- Editable Message -->
@@ -617,8 +617,8 @@
 
               <!-- Equipment Image -->
               <div class="p-4 bg-gray-50 flex justify-center">
-                <img :src="chats.find((chat) => chat.id === activeChat)?.equipment_image || 'default-placeholder.jpg'"
-                  alt="Equipment" class="w-full max-w-sm h-auto object-cover rounded-lg shadow-md" />
+                <img :src="chatStore.equipment_image || 'default-placeholder.jpg'"
+                  :alt="chatStore.equipmentImage" class="w-full max-w-sm h-auto object-cover rounded-lg shadow-md" />
               </div>
 
               <!-- Chat Content -->
@@ -1089,7 +1089,7 @@ export default {
       showTerminateConfirm.value = false;
     };
 
-  
+   
 
     const confirmDelete = (order) => {
       orderToDelete.value = order;
