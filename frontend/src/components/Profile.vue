@@ -418,7 +418,7 @@
                       <td class="py-3 px-6 text-center">
                         <div class="flex justify-center flex-wrap">
                           <div v-for="item in order.order_items" :key="item.id" class="mr-2 mb-2">
-                            <img v-if="item.item_details.images" :src="item.item_details.images[0].image_url" :alt="item.item_details.images[0].name"
+                            <img v-if="item.item.images" :src="item.item.images[0].image_url" :alt="item.item.images[0].name"
                               class="w-16 h-16 rounded-full object-cover" />
                             <span v-else>
                               <p class="text-sm text-gray-500">No image available</p>
