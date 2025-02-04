@@ -187,7 +187,7 @@ const sendMessageAndReset = async () => {
         const initialMessage = ref(`Hello, I am interested in renting the ${equipmentDetails.name}. Could you please provide more details?`);
         chatState.value = {
           chatId,
-          equipmentImage: equipmentDetails.image, // Add equipment image
+          equipmentImage: equipmentDetails.images[0].image_url, // Add equipment image
           initialMessage,
           equipmentOwner,
           equipmentDetails,
