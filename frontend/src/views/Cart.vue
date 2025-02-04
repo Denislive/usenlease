@@ -193,7 +193,7 @@ export default {
         showNotification('Invalid Quantity', `Please enter a valid quantity (max ${item.item_details ? item.item_details.available_quantity : item.item.available_quantity}).`, 'error');
       }
     };
-
+    // Debounce the quantity input handler to prevent multiple API calls
     const debouncedHandleQuantityInput = debounce(handleQuantityInput, 700);
 
     const calculateItemTotal = (item) => {
