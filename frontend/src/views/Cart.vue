@@ -30,7 +30,7 @@
                   <img :src="`${getItemImage(item)}`" alt="" class="w-20 h-20 object-cover" />
                 </td>
                 <td class="py-2 px-4 border-b">
-                  <a href="#" class="text-blue-600 hover:underline">{{ getItemName(item) }}</a>
+                  <p @click="goToDetail(getItemId(item))" class="text-blue-600 hover:underline">{{ getItemName(item) }}</p>
                 </td>
                 <td class="py-2 px-4 border-b">${{ getItemPrice(item) }}</td>
                 <td class="py-2 px-4 border-b">
@@ -96,6 +96,7 @@ import { useCartStore } from '@/store/cart';
 import { useAuthStore } from '@/store/auth';
 import axios from 'axios';
 import useNotifications from '@/store/notification.js'; // Import the notification service
+import { useRouter } from 'vue-router';
 const { showNotification } = useNotifications(); // Initialize notification service
 
 function debounce(func, wait) {
@@ -110,6 +111,8 @@ export default {
   setup() {
     const cartStore = useCartStore();
     const authStore = useAuthStore();
+    const router = useRouter();
+
 
     const api_base_url = import.meta.env.VITE_API_BASE_URL;
 
@@ -191,7 +194,7 @@ export default {
       }
     };
 
-    const debouncedHandleQuantityInput = debounce(handleQuantityInput, 500);
+    const debouncedHandleQuantityInput = debounce(handleQuantityInput, 700);
 
     const calculateItemTotal = (item) => {
       const price = authStore.isAuthenticated && item.item_details
@@ -252,6 +255,22 @@ export default {
           : 0;
     };
 
+    const getItemId = (item) => {
+      return authStore.isAuthenticated && item.item_details
+        ? item.item_details.id
+        : item.item
+          ? item.item.id
+          : 0;
+    };
+
+    const goToDetail = (equipmentId) => {
+  if (equipmentId) {
+    router.push({ name: 'equipment-details', params: { id: equipmentId } });
+  } else {
+    showNotification('Item Error', 'Equipment ID is missing!', 'error');
+  }
+};
+
     return {
       api_base_url,
       cartItems: computed(() => cartStore.cart),
@@ -260,6 +279,8 @@ export default {
       adjustQuantity,
       calculateItemTotal,
       calculateLeaseDuration,
+      getItemId,
+      goToDetail,
       getItemImage,
       getItemName,
       getItemPrice,
