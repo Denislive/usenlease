@@ -868,7 +868,7 @@ class CartViewSet(viewsets.ModelViewSet):
 
         # Check if the user has the 'lessor' role
         if user.role == 'lessor':  # Replace 'lessor' with the actual role name if different
-            raise PermissionDenied("Switch to Lesee!")
+            raise PermissionDenied("You are a lessor!")
 
         # Get or create a cart for the user
         cart, created = Cart.objects.get_or_create(user=user)
@@ -893,7 +893,7 @@ class CartViewSet(viewsets.ModelViewSet):
 
         # Check if the user has the 'lessor' role
         if user.role == 'lessor':  # Replace 'lessor' with the actual role name if different
-            raise PermissionDenied("Switch to Lessee!")
+            raise PermissionDenied("You are a lessor!")
 
         # Ensure a cart exists for the user before updating
         cart = self.get_object()
@@ -935,34 +935,41 @@ class CartItemViewSet(viewsets.ModelViewSet):
         """
         user_cart, _ = Cart.objects.get_or_create(user=self.request.user)
         return CartItem.objects.filter(cart=user_cart)
-
+    
     def create(self, request, *args, **kwargs):
         """
-        Create a new cart item for the logged-in user. If the user is a 'lessor',
-        raise a permission error. Ensure enough stock is available, even if dates overlap.
+        Create a new cart item for the logged-in user. Ensure the user is not leasing their own equipment.
         """
         user = request.user
 
         # Check if the user is a 'lessor'
         if user.role == 'lessor':
-            raise PermissionDenied("You are a lessor!")
+            raise PermissionDenied("Lessors cannot add items to the cart!")
 
         user_cart, _ = Cart.objects.get_or_create(user=user)
         
         item_data = request.data
         item_id = item_data.get("item")  # Get the item ID
         item_quantity = item_data.get("quantity", 1)
-        
-        # Normalize the start_date and end_date to only compare the date (ignore time)
+
+        # Ensure valid dates
         new_start_date = datetime.strptime(item_data.get("start_date"), "%Y-%m-%d").date()
         new_end_date = datetime.strptime(item_data.get("end_date"), "%Y-%m-%d").date()
 
-        # Skip overlapping items check, we just need to ensure stock availability
-        # Check if the available stock is sufficient
-        equipment = Equipment.objects.get(id=item_id)
+        # Get the equipment
+        try:
+            equipment = Equipment.objects.get(id=item_id)
+        except Equipment.DoesNotExist:
+            return Response({"error": "Equipment not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Prevent the owner from leasing their own equipment
+        if equipment.owner == user:
+            raise PermissionDenied("You cannot rent your own Item!")
+
+        # Check stock availability
         if equipment.available_quantity < item_quantity:
             return Response(
-                {"error": f"Only {equipment.available_quantity} units are available for this equipment."},
+                {"error": f"Only {equipment.available_quantity} units are available."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -973,25 +980,25 @@ class CartItemViewSet(viewsets.ModelViewSet):
             existing_start_date = existing_cart_item.start_date
             existing_end_date = existing_cart_item.end_date
 
-            # If dates differ, reset quantity and update dates
             if existing_start_date != new_start_date or existing_end_date != new_end_date:
                 existing_cart_item.quantity = item_quantity
                 existing_cart_item.start_date = new_start_date
                 existing_cart_item.end_date = new_end_date
             else:
-                # If dates are the same, just increment quantity
                 existing_cart_item.quantity += item_quantity
 
             existing_cart_item.save()
             serializer = self.get_serializer(existing_cart_item)
             return Response(serializer.data, status=status.HTTP_200_OK)
 
-        # If the item does not exist in the cart, create a new cart item
-        item_data['cart'] = user_cart.id  # Associate the cart item with the user's cart
+        # Create a new cart item
+        item_data['cart'] = user_cart.id  
         serializer = self.get_serializer(data=item_data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    
 
 
     def update(self, request, *args, **kwargs):

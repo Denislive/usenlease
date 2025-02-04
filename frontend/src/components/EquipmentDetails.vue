@@ -48,7 +48,7 @@
       </div>
     </div>
 
-    <div class="booking-form" v-if="authStore.user?.role !== 'lessor'">
+    <div class="booking-form" v-if="authStore.user?.role !== 'lessor' && equipment.owner !== authStore.user?.id">
       <form @submit.prevent="submitBooking">
         <label for="start-date" class="block mb-1">Start Date:</label>
         <input type="date" id="start-date" v-model="startDate" :min="today" :disabled="isFullyBooked" required
