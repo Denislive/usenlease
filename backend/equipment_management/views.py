@@ -48,6 +48,7 @@ stripe.api_key = settings.STRIPE_SECRET_KEY
 # Other constants
 DOMAIN = settings.DOMAIN_URL
 
+from decimal import Decimal
 
 class CreateCheckoutSessionView(APIView):
     """
@@ -70,7 +71,7 @@ class CreateCheckoutSessionView(APIView):
 
             # Prepare order data
             cart_items = cart.cart_items.all()
-            order_total_price = cart.get_cart_total
+            order_total_price = Decimal(cart.get_cart_total)  # Convert to Decimal
             total_order_items = cart.get_cart_items
 
             # Create the order
@@ -108,8 +109,11 @@ class CreateCheckoutSessionView(APIView):
                     end_date=cart_item.end_date,
                 )
 
-            # Convert price to cents
-            amount_in_cents = int(order_total_price * 100)
+            # Calculate service fee (6% of the order total price)
+            service_fee = order_total_price * Decimal('0.06')
+
+            # Convert price to cents (including service fee)
+            amount_in_cents = int((order_total_price + service_fee) * Decimal('100'))
 
             items_list = [
                 {
@@ -169,6 +173,7 @@ class CreateCheckoutSessionView(APIView):
             return Response({"error": e.detail}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({"error": f"An unexpected error occurred. {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 
 class SessionStatusView(APIView):
@@ -1099,6 +1104,7 @@ class OrderActionView(APIView):
             )
 
 
+
 class OrderViewSet(viewsets.ViewSet):
     """
     A viewset for listing, creating, retrieving, updating, and deleting orders.
@@ -1139,10 +1145,16 @@ class OrderViewSet(viewsets.ViewSet):
             return Response({"error": "Cart is empty, cannot create an order"}, status=status.HTTP_400_BAD_REQUEST)
 
         # Calculate order total price and total order items
-        order_total_price = sum(item.quantity * item.item.hourly_rate for item in cart_items)
+        order_total_price = Decimal(sum(item.quantity * item.item.hourly_rate for item in cart_items))
         total_order_items = sum(item.quantity for item in cart_items)
 
-        data['order_total_price'] = order_total_price
+        # Calculate service fee (6% of the order total price)
+        service_fee = order_total_price * Decimal('0.06')
+
+        # Add the service fee to the order total price
+        order_total_price_with_fee = order_total_price + service_fee
+
+        data['order_total_price'] = order_total_price_with_fee  # Use the new total price with fee
         data['total_order_items'] = total_order_items
 
         # Serialize and save the order
@@ -1166,7 +1178,7 @@ class OrderViewSet(viewsets.ViewSet):
             # Payment logic (Stripe integration)
             try:
                 # Convert the total price to cents (Stripe requires amount in cents)
-                amount_in_cents = int(order_total_price * 100)
+                amount_in_cents = int(order_total_price_with_fee * Decimal('100'))  # Use the new total price with fee
 
                 # Create a PaymentIntent with Stripe
                 intent = stripe.PaymentIntent.create(
@@ -1190,8 +1202,6 @@ class OrderViewSet(viewsets.ViewSet):
                 return Response({"error": f"Payment processing failed: {e.user_message}"}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(order_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
 
 
 class OrderItemViewSet(viewsets.ViewSet):

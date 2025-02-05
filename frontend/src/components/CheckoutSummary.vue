@@ -40,6 +40,12 @@
             </td>
           </tr>
           <tr class="bg-gray-100 font-semibold">
+            <th class="py-3 px-6 text-left">Service Fee (6%)</th>
+            <td colspan="2" class="py-3 px-6 text-right">
+              <strong>${{ serviceFee.toFixed(2) }}</strong>
+            </td>
+          </tr>
+          <tr class="bg-gray-100 font-semibold">
             <th class="py-3 px-6 text-left">Shipping</th>
             <td colspan="2" class="py-3 px-6 text-right">
               <strong>${{ shippingCost.toFixed(2) }}</strong>
@@ -48,7 +54,7 @@
           <tr class="bg-gray-100 border-t border-gray-300 font-bold">
             <th class="py-3 px-6 text-left">Order Total</th>
             <td colspan="2" class="py-3 px-6 text-right">
-              <strong>${{ (subtotal + shippingCost).toFixed(2) }}</strong>
+              <strong>${{ (subtotal + serviceFee + shippingCost).toFixed(2) }}</strong>
             </td>
           </tr>
         </tfoot>
@@ -93,12 +99,6 @@ export default {
         ? item.item.hourly_rate
         : 0; // Fallback price
 
-      // Calculate the time difference between start_date and end_date in hours
-      const startDate = new Date(item.start_date);
-      const endDate = new Date(item.end_date);
-      const timeDiff = endDate - startDate; // Time difference in milliseconds
-      const hours = timeDiff / (1000 * 3600); // Convert milliseconds to hours
-
       return price * item.quantity;
     };
 
@@ -111,14 +111,13 @@ export default {
           ? item.item.hourly_rate
           : 0; // Fallback price
 
-        // Calculate the time difference between start_date and end_date in hours
-        const startDate = new Date(item.start_date);
-        const endDate = new Date(item.end_date);
-        const timeDiff = endDate - startDate; // Time difference in milliseconds
-        const hours = timeDiff / (1000 * 3600); // Convert milliseconds to hours
-
         return total + price * item.quantity;
       }, 0);
+    });
+
+    // Calculate 6% service fee
+    const serviceFee = computed(() => {
+      return subtotal.value * 0.06; // 6% of subtotal
     });
 
     // Get item details dynamically based on authentication status
@@ -143,6 +142,7 @@ export default {
       api_base_url,
       cartItems: computed(() => cartStore.cart),
       subtotal,
+      serviceFee,
       shippingCost,
       calculateItemTotal,
       getItemImage,
@@ -151,6 +151,7 @@ export default {
   },
 };
 </script>
+
 
 <style scoped>
 /* Add any additional styles here */

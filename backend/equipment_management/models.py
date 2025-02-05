@@ -9,7 +9,7 @@ from django.core.validators import FileExtensionValidator, MinValueValidator
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.db.models import Avg
-
+from decimal import Decimal
 from user_management.models import Address
 
 
@@ -348,7 +348,9 @@ class Order(models.Model):
         """
         order_items = self.order_items.all()
         total = sum([item.get_order_item_total for item in order_items])
-        return total
+        service_fee = total * Decimal('0.06')
+
+        return total + service_fee
 
     @property
     def get_order_items(self):

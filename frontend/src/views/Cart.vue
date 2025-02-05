@@ -15,7 +15,9 @@
                 <th class="py-2 px-4 border-b text-left">Product</th>
                 <th class="py-2 px-4 border-b text-left">Price</th>
                 <th class="py-2 px-4 border-b text-left">Quantity</th>
-                <th class="py-2 px-4 border-b text-left">Lease Duration (Days)</th> <!-- New column -->
+                <th class="py-2 px-4 border-b text-left">Lease Duration (Days)</th>
+                <th class="py-2 px-4 border-b text-left">Start Date</th>
+                <th class="py-2 px-4 border-b text-left">End Date</th>
                 <th class="py-2 px-4 border-b text-left">Total</th>
               </tr>
             </thead>
@@ -44,11 +46,11 @@
                     </button>
                   </div>
                 </td>
-
-                <!-- Lease Duration Column -->
                 <td class="py-2 px-4 border-b">
                   <span>{{ calculateLeaseDuration(item) }} days</span>
                 </td>
+                <td class="py-2 px-4 border-b">{{ item.start_date }}</td>
+                <td class="py-2 px-4 border-b">{{ item.end_date }}</td>
                 <td class="py-2 px-4 border-b">${{ calculateItemTotal(item) }}</td>
               </tr>
             </tbody>
@@ -71,12 +73,16 @@
               <p class="font-semibold">${{ subtotal }}</p>
             </div>
             <div class="flex justify-between">
+              <p>Service Fee</p>
+              <p class="font-semibold">${{ serviceFee.toFixed(2) }}</p>
+            </div>
+            <div class="flex justify-between">
               <p>Shipping</p>
               <p class="font-semibold">Flat Rate: $0.00</p>
             </div>
             <div class="flex justify-between mt-2">
               <p>Total</p>
-              <p class="font-semibold">${{ (subtotal + 0).toFixed(2) }}</p>
+              <p class="font-semibold">${{ (subtotal + serviceFee).toFixed(2) }}</p>
             </div>
           </div>
           <div class="text-right m-4">
@@ -89,6 +95,7 @@
     <!-- Shopping Cart Area End -->
   </div>
 </template>
+
 
 <script>
 import { computed, onMounted } from 'vue';
@@ -193,7 +200,7 @@ export default {
         showNotification('Invalid Quantity', `Please enter a valid quantity (max ${item.item_details ? item.item_details.available_quantity : item.item.available_quantity}).`, 'error');
       }
     };
-    // Debounce the quantity input handler to prevent multiple API calls  
+
     const debouncedHandleQuantityInput = debounce(handleQuantityInput, 700);
 
     const calculateItemTotal = (item) => {
@@ -228,6 +235,10 @@ export default {
         return total + price * item.quantity;
       }, 0);
     });
+
+    const serviceFee = computed(() => {
+      return subtotal.value * 0.06
+    })
 
     const getItemImage = (item) => {
       if (authStore.isAuthenticated && item.item_details && item.item_details.images && item.item_details.images.length > 0) {
@@ -273,6 +284,7 @@ export default {
 
     return {
       api_base_url,
+      serviceFee,
       cartItems: computed(() => cartStore.cart),
       subtotal,
       removeFromCart,
