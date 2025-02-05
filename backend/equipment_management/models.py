@@ -348,7 +348,7 @@ class Order(models.Model):
         """
         order_items = self.order_items.all()
         total = sum([item.get_order_item_total for item in order_items])
-        service_fee = total * Decimal('0.06')
+        service_fee = total * Decimal('0.06')  # Added service fee
 
         return total + service_fee
 
