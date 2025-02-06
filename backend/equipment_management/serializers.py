@@ -83,14 +83,15 @@ class EquipmentSerializer(serializers.ModelSerializer):
     specifications = SpecificationSerializer(many=True, required=False)
     equipment_reviews = ReviewSerializer(many=True, read_only=True)
     rating = serializers.SerializerMethodField()
-    booked_dates = serializers.SerializerMethodField()
+    booked_dates_data = serializers.SerializerMethodField()
+    total_booked = serializers.SerializerMethodField()
 
     class Meta:
         model = Equipment
         fields = [
             'owner', 'id', 'category', 'tags', 'name', 'description', 'images', 'hourly_rate', 'address',
             'available_quantity', 'is_available', "specifications", 'equipment_reviews', 'rating', 'terms', 'is_trending',
-            'is_featured', 'booked_dates'
+            'is_featured', 'booked_dates_data', 'total_booked'
         ]
         extra_kwargs = {
             'slug': {'write_only': True},  # Slug is write-only and not exposed
@@ -108,6 +109,20 @@ class EquipmentSerializer(serializers.ModelSerializer):
     def get_booked_dates(self, obj):
         booked_dates = OrderItem.objects.filter(item=obj).values("start_date", "end_date")
         return list(booked_dates)
+    
+    def get_total_booked(self, obj):
+        # Aggregate the total quantity booked for the equipment
+        total_booked = OrderItem.objects.filter(item=obj).aggregate(total=Sum('quantity'))['total'] or 0
+        return total_booked
+
+    def get_booked_dates_data(self, obj):
+        # Fetch the booking dates for this equipment
+        order_items = OrderItem.objects.filter(item=obj)
+        booked_dates_data = [
+            {'quantity': order_item.quantity, 'start_date': order_item.start_date, 'end_date': order_item.end_date}
+            for order_item in order_items
+        ]
+        return booked_dates_data
 
     def create(self, validated_data):
         # Access the request from the context

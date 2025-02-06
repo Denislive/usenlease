@@ -19,6 +19,8 @@ export const useEquipmentsStore = defineStore('equipments', () => {
   const userEquipments = ref([]);
   const userEditableEquipmentsIds = ref([]);
 
+  const totalBooked = ref(0);
+  const bookedDates = ref(null);
 
   const truncateText = (text, length) => {
     if (text.length > length) {
@@ -91,31 +93,42 @@ const fetchUserEditableEquipments = async () => {
   }
 };
 
+const fetchEquipments = async () => {
+  if (equipments.value.length > 0) return; // Avoid refetching if already loaded
+  isLoading.value = true; // Set loading state to true
+  error.value = null; // Reset any previous error
 
- 
+  try {
+    // API request to fetch equipments with booked dates and total booked
+    const response = await axios.get(`${api_base_url}/api/equipments/`, {
+      withCredentials: true,  // Ensure credentials are sent with the request
+    });
+
+    // Log the raw response data for inspection
+    console.log('Raw response data:', response.data);
+
+    // Process the data and map it to include totalBooked and bookedDates
+    equipments.value = response.data.map((equipment) => {
+      const mappedEquipment = {
+        ...equipment,
+      };
+      
+      // Log each equipment object after mapping
+      console.log('Mapped equipment:', mappedEquipment);
+      
+      return mappedEquipment;
+    });
+
+  } catch (err) {
+    error.value = 'Failed to fetch items.'; 
+    showNotification('Items error', `Error fetching items: ${err.response?.data || err.message}!`, 'error');
+    console.error('Error fetching items:', err);
+  } finally {
+    isLoading.value = false;
+  }
+};
 
 
-  // Fetch the list of equipments
-  const fetchEquipments = async () => {
-    if (equipments.value.length > 0) return; // Avoid refetching if already loaded
-    isLoading.value = true; // Set loading state to true
-    error.value = null; // Reset any previous error
-
-    try {
-      // API request to fetch equipments
-      const response = await axios.get(`${api_base_url}/api/equipments/`, {
-      });
-      equipments.value = response.data; // Store the fetched equipments
-    } catch (err) {
-      // Handle error if the request fails
-      error.value = 'Failed to fetch items.'; 
-      showNotification('Items error', `Error fetching items: ${err.response?.data || err.message}!`, 'error');
-
-    } finally {
-      // Set loading to false once the request is done (either success or failure)
-      isLoading.value = false;
-    }
-  };
 
   // Fetch the list of categories
   const fetchCategories = async () => {

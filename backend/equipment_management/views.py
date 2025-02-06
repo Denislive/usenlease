@@ -432,6 +432,7 @@ class EquipmentViewSet(viewsets.ModelViewSet):
         queryset = Equipment.objects.all()
         serializer = EquipmentSerializer(queryset, many=True)
         return Response(serializer.data)
+    
     def create(self, request, *args, **kwargs):
         """
         Create a new equipment item.

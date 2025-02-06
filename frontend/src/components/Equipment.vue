@@ -12,7 +12,7 @@ const search = useStore();
 
 const searchQuery = computed(() => search.getters.getSearchQuery);
 
-const itemsPerPage = 30; // Items per page
+const itemsPerPage = 20; // Items per page
 const currentPage = ref(1); // Current page number
 
 onMounted(async () => {
@@ -79,65 +79,87 @@ const renderStars = (rating) => {
 
 <template>
   <div class="container mx-auto p-2">
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-      <div v-for="equipment in paginatedEquipments" :key="equipment.id" @click="() => { goToDetail(equipment.id) }"
-        class="bg-white rounded-lg shadow-lg overflow-hidden transition-transform hover:scale-105 cursor-pointer">
-        <div class="relative">
-          <span :class="{
-            'bg-green-500': equipment.is_available,
-            'bg-red-500': !equipment.is_available
-          }" class="absolute top-0 left-0 text-white text-xs font-bold px-2 py-1 rounded flex items-center">
-            <i :class="{
-              'pi pi-check-circle': equipment.is_available,
-              'pi pi-times-circle': !equipment.is_available
-            }" class="mr-1"></i>
-            <div v-if="equipment.is_available" class="mr-1">
-              {{ equipment.available_quantity }}
-            </div>
-            {{ equipment.is_available ? 'Available' : 'Unavailable' }}
+    <!-- Equipment List Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 auto-rows-auto">
+      <div 
+        v-for="equipment in paginatedEquipments" 
+        :key="equipment.id" 
+        @click="goToDetail(equipment.id)"
+        class="bg-white rounded-lg shadow-lg overflow-hidden transition-transform hover:scale-105 cursor-pointer flex flex-col">
+        
+        <!-- Equipment Status -->
+        <div class="relative p-1">
+          <span v-if="equipment.is_available" 
+            class="absolute top-2 left-2 text-white text-xs font-semibold px-3 py-1 rounded-full flex items-center"
+            :class="equipment.is_available ? 'bg-green-500' : 'bg-red-500'">
+            <i class="pi pi-check-circle mr-1"></i>
+            {{ equipment.available_quantity }} Available
           </span>
-
-          <img v-if="equipment.images.length > 0" :src="`${equipment.images[0].image_url}`"
-            :alt="equipment.images[0].image_url" class="w-full h-48 object-cover" />
-          <img v-else src="https://via.placeholder.com/350" alt="Placeholder Image" class="w-full h-48 object-cover" />
-
-          <span class="rating text-yellow-500">{{ renderStars(equipment.rating) }}</span>
-          <span class="reviews text-gray-600">
-            ({{ equipment.equipment_reviews ? equipment.equipment_reviews.length : 0 }} Reviews)
-          </span>
+          <span v-else class="text-red-500 text-xs font-semibold">Temporarily Unavailable</span>
         </div>
 
-        <div class="p-1">
-          <h5 class="text-sm font-semibold">
+        <!-- Availability Dates -->
+        <div v-if="equipment.booked_dates_data?.length" class="text-xs text-blue-600 px-2" :class="equipment.is_available ? 'mt-6' : 'mt-0'">
+          <ul class="pl-0">
+            <li v-for="(date, index) in equipment.booked_dates_data" :key="index" class="">
+              <span>{{ date.quantity }} available between: </span>
+              <span class="text-black">{{ date.start_date }} - {{ date.end_date }}</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Equipment Image -->
+        <img 
+          :src="equipment.images.length ? equipment.images[0].image_url : 'https://via.placeholder.com/350'" 
+          :alt="equipment.images.length ? equipment.name : 'Placeholder Image'" 
+          class="w-full h-48 object-cover rounded-t-lg mt-4 flex-grow" 
+        />
+
+        <!-- Equipment Information -->
+        <div class="p-4 border-t flex flex-col">
+          <h5 class="text-sm font-semibold mb-1 text-gray-900">
             {{ store.truncateText(equipment.name, 20) }}
           </h5>
-          <p class="text-gray-600">{{ equipment.hourly_rate }} / Day</p>
+          <p class="text-gray-600 mb-2">{{ equipment.hourly_rate }} / Day</p>
+
+          <!-- Rating and Reviews -->
+          <div class="flex items-center mb-2">
+            <span class="rating text-yellow-500 mr-1">{{ renderStars(equipment.rating) }}</span>
+            <span class="reviews text-gray-600 text-xs">
+              ({{ equipment.equipment_reviews?.length || 0 }} Reviews)
+            </span>
+          </div>
         </div>
       </div>
     </div>
 
-    <div class="empty-list-container text-center py-16" v-if="filteredEquipments.length === 0">
+    <!-- Empty List Message -->
+    <div v-if="filteredEquipments.length === 0" class="text-center py-16">
       <i class="pi pi-exclamation-circle text-9xl text-gray-500"></i>
-      <p class="text-xl text-gray-500 mt-4">Oops! No items in here!</p>
+      <p class="text-xl text-gray-500 mt-4">Oops! No items here!</p>
       <p class="text-xl text-gray-500 mt-4">Try adding a new item by hitting the lease button.</p>
     </div>
 
-    <!-- Pagination -->
-    <div class="pagination flex justify-center mt-4" v-if="totalPages > 1">
-      <button :disabled="currentPage === 1" @click="goToPage(currentPage - 1)"
-        class="px-4 py-2 mx-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50">
+    <!-- Pagination Controls -->
+    <div v-if="totalPages > 1" class="pagination flex justify-center mt-6">
+      <button 
+        :disabled="currentPage === 1" 
+        @click="goToPage(currentPage - 1)"
+        class="px-4 py-2 mx-1 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50">
         Previous
       </button>
 
-      <button v-for="page in totalPages" :key="page" @click="goToPage(page)" :class="{
-        'bg-[#1c1c1c] text-white': page === currentPage,
-        'bg-[#ffc107] hover:bg-gray-300': page !== currentPage
-      }" class="px-4 py-2 mx-1 rounded">
+      <button 
+        v-for="page in totalPages" :key="page" @click="goToPage(page)"
+        class="px-4 py-2 mx-1 rounded-lg"
+        :class="page === currentPage ? 'bg-black text-white' : 'bg-yellow-500 hover:bg-gray-300'">
         {{ page }}
       </button>
 
-      <button :disabled="currentPage === totalPages" @click="goToPage(currentPage + 1)"
-        class="px-4 py-2 mx-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50">
+      <button 
+        :disabled="currentPage === totalPages" 
+        @click="goToPage(currentPage + 1)"
+        class="px-4 py-2 mx-1 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50">
         Next
       </button>
     </div>
