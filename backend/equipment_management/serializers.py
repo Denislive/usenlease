@@ -5,7 +5,7 @@ from user_management.models import Address, User
 from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import PermissionDenied
 import json
-
+from django.db.models import Sum
 
 class SubcategorySerializer(serializers.ModelSerializer):
     ad_count = serializers.SerializerMethodField()
@@ -196,9 +196,29 @@ class CartItemSerializer(serializers.ModelSerializer):
 
 class OrderItemSerializer(serializers.ModelSerializer):
     item = EquipmentSerializer()
+    booked_dates = serializers.SerializerMethodField()
+    total_booked = serializers.SerializerMethodField()
+
     class Meta:
         model = OrderItem
-        fields = ['id', 'ordered', 'item', 'order', 'quantity', 'start_date', 'end_date']
+        fields = ['id', 'ordered', 'item', 'order', 'quantity', 'start_date', 'end_date', 'booked_dates', 'total_booked']
+
+    def get_booked_dates(self, obj):
+        """
+        Retrieve a list of booked dates for the specific order item.
+        """
+        return {
+            "start_date": obj.start_date,
+            "end_date": obj.end_date,
+            "quantity": obj.quantity
+        }
+
+    def get_total_booked(self, obj):
+        """
+        Retrieve the total number of items booked for the related equipment.
+        """
+        total = OrderItem.objects.filter(item=obj.item).aggregate(total=Sum('quantity'))['total']
+        return total or 0
 
 
 class OrderSerializer(serializers.ModelSerializer):

@@ -44,6 +44,7 @@ urlpatterns = [
     path('create-checkout-session/', CreateCheckoutSessionView.as_view(), name='create_checkout_session'),
     path('session-status/', SessionStatusView.as_view(), name='session_status'),
     path('orders/<str:pk>/<str:action>/', OrderActionView.as_view(), name='order-action'),
+    path('order-items/<str:pk>/total-booked/', OrderItemViewSet.as_view({'get': 'list_booked_items'})),
     path('root-categories/', RootCategoryListView.as_view(), name='root-category-list'),
     path('user-equipment/', UserEquipmentView.as_view(), name='user-equipment'),
     path('user-editable-equipment/', UserEditableEquipmentView.as_view(), name='user-editable-equipment-list'),  # For listing equipment

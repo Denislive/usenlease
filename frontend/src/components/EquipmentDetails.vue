@@ -1,94 +1,168 @@
 <template>
-  <div v-if="loading" class="loading">Loading equipment details...</div>
-  <div v-else-if="error" class="error">{{ error }}</div>
-  <div v-else-if="equipment && Object.keys(equipment).length"
-    class="cell medium-4 large-4 p-12 border rounded-lg shadow-lg bg-gray-100">
-
-
-    <!-- Additional notification about partial availability -->
-    <div v-if="!equipment.is_available && partialAvailabilityMessage"
-      class="availability-notification bg-green-200 text-green-800 p-2 rounded mb-2">
-      {{ partialAvailabilityMessage }}
+  <div v-if="loading" class="loading text-center p-4">Loading equipment details...</div>
+  <div v-else-if="error" class="error text-red-500 text-center p-4">{{ error }}</div>
+  <div v-else-if="equipment && Object.keys(equipment).length" class="p-6 border rounded-lg shadow-lg bg-white">
+    
+    <!-- Product Name -->
+    <h1 class="product-name text-3xl font-bold mb-4 border-b pb-2">{{ equipment.name }}</h1>
+    
+    <!-- Rating and Reviews -->
+    <div class="rating-reviews flex items-center mb-4">
+      <span class="rating text-yellow-500 mr-2">{{ renderStars(equipment.rating) }}</span>
+      <span class="reviews text-gray-600">({{ equipment.equipment_reviews ? equipment.equipment_reviews.length : 0 }} Reviews)</span>
     </div>
-
-    <h1 class="product-name text-2xl font-bold mb-2">{{ equipment.name }}</h1>
-
-    <div class="rating-reviews mb-2">
-      <span class="rating text-yellow-500">{{ renderStars(equipment.rating) }}</span>
-      <span class="reviews text-gray-600"> ({{ equipment.equipment_reviews ? equipment.equipment_reviews.length : 0 }}
-        Reviews)</span>
-    </div>
-
-    <p class="price text-xl font-semibold mb-4">${{ equipment.hourly_rate }}/Day</p>
-
-    <p class="description mb-4">{{ equipment.description }}</p>
-    <p class="availability mb-2">
-      <strong>Status:</strong>
-      <span :class="equipment.is_available ? 'text-green-600' : 'text-blue-600'">
-        {{ equipment.is_available ? `${equipment.available_quantity} Available` : `Available after ${nextAvailableDate}`
-        }}
-      </span>
+    
+    <!-- Price -->
+    <p class="price text-2xl font-semibold mb-4">${{ equipment.hourly_rate }}/Day</p>
+    
+    <!-- Description -->
+    <p class="description mb-4">
+      <strong>Description:</strong> {{ equipment.description }}
     </p>
 
+    <!-- Availability Section -->
+    <div class="availability-notification bg-gray-100 p-4 rounded-lg border mb-4">
+      <h3 class="text-lg font-semibold mb-2">Booking Availability</h3>
+      <div v-if="items_data && items_data.length > 0">
+        <div v-for="(booking, index) in items_data" :key="index" class="booking-item flex items-center justify-between p-2 bg-white shadow-md rounded-md mb-2">
+          <p class="text-gray-700">
+            <span class="font-semibold">{{ equipment.available_quantity + booking.quantity }} Available</span> 
+            between: <span class="text-blue-600">{{ formatDate(booking.start_date) }}</span> 
+            - <span class="text-red-500">{{ formatDate(booking.end_date) }}</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- Overall Availability Status -->
+      <p class="availability mt-2 text-lg">
+        <strong>Status:</strong>
+        <span :class="equipment.is_available ? 'text-green-600 font-bold' : 'text-blue-600 font-bold'">
+          {{ equipment.is_available ? `${equipment.available_quantity} Available` : `${totalBooked} Available After ${formatDate(nextAvailableDate)}` }}
+        </span>
+      </p>
+    </div>
+
+    <!-- Location -->
     <div class="address mb-4">
-      <h2 class="text-lg font-semibold">Location:</h2>
+      <h2 class="text-xl font-semibold mb-2 border-b pb-2">Location:</h2>
       <p>{{ equipment.address?.street_address }}</p>
       <p v-if="equipment.address?.street_address2">{{ equipment.address.street_address2 }}</p>
       <p>{{ equipment.address?.city }}, {{ equipment.address?.state }} {{ equipment.address?.zip_code }}</p>
       <p>{{ equipment.address?.country }}</p>
-
-      <div class="mt-2">
-        <h3 class="text-md font-semibold">Tags:</h3>
-        <div class="flex flex-wrap gap-2">
-          <span v-for="tag in equipment.tags" :key="tag.name"
-            class="bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm font-medium">
-            {{ tag.name }}
-          </span>
-        </div>
-      </div>
     </div>
 
-    <div class="booking-form" v-if="authStore.user?.role !== 'lessor' && equipment.owner !== authStore.user?.id">
+    <!-- Tags -->
+    <div class="tags mb-4 border-b pb-2">
+      <h3 class="text-lg font-semibold mb-2">Tags:</h3>
+      <div class="flex flex-wrap gap-2" v-if="equipment.tags">
+        <span v-for="tag in equipment.tags" :key="tag.name" class="bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm font-medium">
+          {{ tag.name }}
+        </span>
+      </div>
+    </div>
+    
+    <!-- Booking Form -->
+    <div class="booking-form p-4 border rounded-lg shadow-md bg-gray-50" v-if="authStore.user?.role !== 'lessor' && equipment.owner !== authStore.user?.id">
       <form @submit.prevent="submitBooking">
-        <label for="start-date" class="block mb-1">Start Date:</label>
-        <input type="date" id="start-date" v-model="startDate" :min="today" :disabled="isFullyBooked" required
-          class="mb-4 p-2 border rounded w-full"
-          :class="{ 'disabled-date': isDateBooked(startDate), 'partially-booked-date': isPartiallyBooked(startDate) }" />
-        <p v-if="dateError" class="error-message">{{ dateError }}</p>
+        <div class="mb-4">
+          <label for="start-date" class="block text-sm font-medium">Start Date:</label>
+          <input type="date" id="start-date" v-model="startDate" :min="today" :disabled="isFullyBooked" required
+            class="date-input w-full"
+            :class="{ 'disabled-date': isDateBooked(startDate), 'partially-booked-date': isPartiallyBooked(startDate) }" />
+          <p v-if="dateError" class="error-message">{{ dateError }}</p>
+        </div>
 
-        <label for="end-date" class="block mb-1">End Date:</label>
-        <input type="date" id="end-date" v-model="endDate" :min="startDate" :disabled="isFullyBooked" required
-          class="mb-4 p-2 border rounded w-full"
-          :class="{ 'disabled-date': isDateBooked(endDate), 'partially-booked-date': isPartiallyBooked(endDate) }" />
-        <p v-if="dateError" class="error-message">{{ dateError }}</p>
+        <div class="mb-4">
+          <label for="end-date" class="block text-sm font-medium">End Date:</label>
+          <input type="date" id="end-date" v-model="endDate" :min="startDate" :disabled="isFullyBooked" required
+            class="date-input w-full"
+            :class="{ 'disabled-date': isDateBooked(endDate), 'partially-booked-date': isPartiallyBooked(endDate) }" />
+          <p v-if="dateError" class="error-message">{{ dateError }}</p>
+        </div>
 
-        <label for="quantity" class="block mb-1">Number of Equipments:</label>
-        <input type="number" id="quantity" v-model="quantity" min="1" :max="equipment.available_quantity"
-          @input="validateQuantity" required class="mb-4 p-2 border rounded w-full" />
-        <p v-if="quantityError" class="error-message">{{ quantityError }}</p>
+        <div class="mb-4">
+          <label for="quantity" class="block text-sm font-medium">Number of Equipments:</label>
+          <input type="number" id="quantity" v-model="quantity" min="1" :disabled="isFullyBooked" :max="equipment.available_quantity"
+            @input="validateQuantity" required class="p-2 border rounded w-full" />
+          <p v-if="quantityError" class="error-message">{{ quantityError }}</p>
+        </div>
 
-        <button type="submit"
-          class="button add-to-cart bg-[#ffc107] text-black py-2 px-4 rounded hover:bg-yellow-400 transition"
-          :disabled="isFullyBooked">
+        <button type="submit"  class="button add-to-cart bg-yellow-500 text-black py-2 px-4 rounded hover:bg-yellow-400 transition" :disabled="isFullyBooked">
           Add to Cart
         </button>
       </form>
     </div>
+    
+    <!-- Talk to Owner -->
     <RouterLink v-if="authStore.isAuthenticated && props.equipment.owner !== authStore.user.id"
-      :to="{ path: '/profile', query: { section: 'chats' } }" @click="createChat" class="text-black py-2 px-4 rounded">
+      :to="{ path: '/profile', query: { section: 'chats' } }" @click="createChat" class="block mt-4 text-center text-blue-500 font-medium">
       Talk to Owner
     </RouterLink>
   </div>
 </template>
 
+
+<style>
+/* Date Input Styling */
+.date-input {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  transition: 0.2s ease-in-out;
+}
+
+.date-input:focus {
+  border-color: #ffcc00;
+  box-shadow: 0 0 5px rgba(255, 204, 0, 0.5);
+}
+
+.disabled-date {
+  pointer-events: none;
+  opacity: 0.5;
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.partially-booked-date {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.error-message {
+  color: red;
+  font-size: 0.875rem;
+  margin-top: .5rem;
+  margin-bottom: 1rem;
+}
+
+.booking-item {
+  background-color: #f3f4f6;
+  padding: 8px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.add-to-cart {
+  width: 100%;
+  text-align: center;
+  font-weight: bold;
+}
+</style>
+
+
 <script setup>
 // filepath: /home/techbro/Desktop/usenlease/frontend/src/components/EquipmentDetails.vue
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/store/auth';
 import { useCartStore } from '@/store/cart';
 import useNotifications from '@/store/notification';
 import axios from 'axios';
 import { useChatStore } from '@/store/chat';
+import { useRoute } from 'vue-router';  // Import useRoute to access route parameters
+
+const route = useRoute();  // Get the current route object
 
 const authStore = useAuthStore();
 const chatStore = useChatStore();
@@ -118,18 +192,49 @@ const endDate = ref('');
 const quantity = ref(1);
 const dateError = ref('');
 const quantityError = ref('');
+const totalBooked = ref(0);  // New ref to store total booked items
+
+const items_data = ref(null);
 
 const today = new Date().toISOString().split('T')[0];
 
 const isFullyBooked = computed(() => props.equipment.available_quantity === 0);
+
+const equipmentId = route.params.id;
 
 const createChat = async () => {
   const recepient = props.equipment.owner;
   const chat = await chatStore.createChat(recepient, props.equipment);
 };
 
+const formatDate = (date) => {
+  if (!date) return "Unavailable";
+  const options = { year: "numeric", month: "short", day: "numeric" };
+  return new Date(date).toLocaleDateString(undefined, options);
+};
+
+const fetchTotalBookedItems = async () => {
+  try {
+    const response = await axios.get(`${api_base_url}/api/order-items/${equipmentId}/total-booked/`, {
+      withCredentials: true,
+    });
+    totalBooked.value = response.data.total_booked;
+    console.log("Booked Dates with quantity:", response.data.booked_dates);
+    console.log("total booked", totalBooked.value);
+    
+    items_data.value = response.data.booked_dates;
+  } catch (error) {
+    showNotification('Failed to fetch booked items', `Error: ${error.response?.data.error || error.response?.data.detail ||  error}`, 'error');
+  }
+};
+
+// Fetch total booked items when the component is mounted
+onMounted(() => {
+  fetchTotalBookedItems();
+});
+
 const isDateRangePartiallyBooked = (start, end, quantity) => {
-  let totalBooked = 0;
+  let totalBookedCount = totalBooked.value;
 
   for (let i = 0; i < props.equipment.booked_dates.length; i++) {
     const bookedStart = new Date(props.equipment.booked_dates[i].start_date);
@@ -143,12 +248,12 @@ const isDateRangePartiallyBooked = (start, end, quantity) => {
       (rangeEnd >= bookedStart && rangeEnd <= bookedEnd) ||
       (rangeStart <= bookedStart && rangeEnd >= bookedEnd)
     ) {
-      totalBooked++;
+      totalBookedCount++;
     }
   }
 
   // Check if the remaining quantity after booking is sufficient
-  return totalBooked + quantity > props.equipment.available_quantity;
+  return totalBookedCount + quantity > props.equipment.available_quantity;
 };
 
 const validateQuantity = () => {
@@ -178,7 +283,6 @@ const submitBooking = async () => {
   };
 
   // Check if selected dates are fully booked
- 
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -292,6 +396,27 @@ const nextAvailableDate = computed(() => {
   return new Date(lastBookedDate.setDate(lastBookedDate.getDate() + 1)).toISOString().split('T')[0];
 });
 
+const availableForPartialBooking = computed(() => {
+  // Calculate the partially available quantity by checking the booked ranges
+  let totalBookedCount = totalBooked.value;
+  let totalAvailableForPartial = props.equipment.available_quantity;
+
+  props.equipment.booked_dates.forEach((range) => {
+    const bookedStart = new Date(range.start_date);
+    const bookedEnd = new Date(range.end_date);
+
+    // Check if the equipment is partially booked within a given range
+    const now = new Date();
+    if (bookedStart <= now && bookedEnd >= now) {
+      totalBookedCount++;
+    }
+  });
+
+  totalAvailableForPartial -= totalBookedCount;
+
+  return totalAvailableForPartial > 0 ? totalAvailableForPartial : 0;
+});
+
 const partialAvailabilityMessage = computed(() => {
   const now = new Date();
   const availablePeriods = [];
@@ -311,21 +436,3 @@ const partialAvailabilityMessage = computed(() => {
   return availablePeriods.length > 0 ? `Available between: ${availablePeriods.join(', ')}` : '';
 });
 </script>
-
-<style>
-.disabled-date {
-  pointer-events: none;
-  opacity: 0.6;
-}
-
-.partially-booked-date {
-  opacity: 0.6;
-}
-
-.error-message {
-  color: red;
-  font-size: 0.875rem;
-  margin-top: -0.5rem;
-  margin-bottom: 1rem;
-}
-</style>

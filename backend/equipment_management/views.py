@@ -2,8 +2,10 @@
 import json
 from datetime import datetime
 
+
 # Django imports
 from django.conf import settings
+from django.db.models import Sum
 from django.db import transaction
 from django.http import JsonResponse, QueryDict
 from django.shortcuts import get_object_or_404
@@ -1210,12 +1212,12 @@ class OrderItemViewSet(viewsets.ViewSet):
     Only authenticated users can access and modify their order items.
     """
     authentication_classes = [JWTAuthenticationFromCookie]
+    permission_classes = [permissions.IsAuthenticated]
 
     def list(self, request):
         """
         List all order items.
         """
-        self.permission_classes = [permissions.IsAuthenticated]
         self.check_permissions(request)  # Ensure permission check is applied
 
         queryset = OrderItem.objects.all()
@@ -1226,7 +1228,6 @@ class OrderItemViewSet(viewsets.ViewSet):
         """
         Create a new order item.
         """
-        self.permission_classes = [permissions.IsAuthenticated]
         self.check_permissions(request)  # Ensure permission check is applied
 
         serializer = OrderItemSerializer(data=request.data)
@@ -1239,7 +1240,6 @@ class OrderItemViewSet(viewsets.ViewSet):
         """
         Retrieve a specific order item by its ID.
         """
-        self.permission_classes = [permissions.IsAuthenticated]
         self.check_permissions(request)  # Ensure permission check is applied
 
         try:
@@ -1254,7 +1254,6 @@ class OrderItemViewSet(viewsets.ViewSet):
         """
         Update an existing order item.
         """
-        self.permission_classes = [permissions.IsAuthenticated]
         self.check_permissions(request)  # Ensure permission check is applied
 
         try:
@@ -1272,7 +1271,6 @@ class OrderItemViewSet(viewsets.ViewSet):
         """
         Delete an order item.
         """
-        self.permission_classes = [permissions.IsAuthenticated]
         self.check_permissions(request)  # Ensure permission check is applied
 
         try:
@@ -1282,3 +1280,50 @@ class OrderItemViewSet(viewsets.ViewSet):
 
         order_item.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+    def list_booked_items(self, request, pk):
+        """
+        Retrieve the booked items along with their quantities and dates for a specific item.
+        Also, return the total number of items booked.
+        """
+        self.check_permissions(request)  # Ensure permission check is applied
+
+        try:
+            # Fetch order items for the given item ID (pk)
+            order_items = OrderItem.objects.filter(item_id=pk)
+            
+            if not order_items.exists():
+                return Response({"error": "No bookings found for this item"}, status=status.HTTP_404_NOT_FOUND)
+
+            # Compute the total number of booked items for the specific item
+            total_booked_quantity = order_items.aggregate(total=Sum('quantity'))['total'] or 0
+
+            # Dictionary to store grouped bookings by (start_date, end_date)
+            grouped_bookings = {}
+
+            for order_item in order_items:
+                date_range_key = (order_item.start_date, order_item.end_date)
+                
+                if date_range_key in grouped_bookings:
+                    # If the date range already exists, add the quantity
+                    grouped_bookings[date_range_key]["quantity"] += order_item.quantity
+                else:
+                    # Otherwise, create a new entry
+                    grouped_bookings[date_range_key] = {
+                        "quantity": order_item.quantity,
+                        "start_date": order_item.start_date,
+                        "end_date": order_item.end_date,
+                    }
+
+            # Convert dictionary values to a list for response
+            booked_items_data = list(grouped_bookings.values())
+
+            # Return both the list of booked items and the total quantity
+            return Response({
+                "total_booked": total_booked_quantity,  # Total items booked for this specific item
+                "booked_dates": booked_items_data      # Booked items with their start and end dates
+            }, status=status.HTTP_200_OK)
+
+        except OrderItem.DoesNotExist:
+            return Response({"error": "Item not found"}, status=status.HTTP_404_NOT_FOUND)
