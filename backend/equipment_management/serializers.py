@@ -6,6 +6,8 @@ from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import PermissionDenied
 import json
 from django.db.models import Sum
+from collections import defaultdict
+
 
 class SubcategorySerializer(serializers.ModelSerializer):
     ad_count = serializers.SerializerMethodField()
@@ -115,14 +117,26 @@ class EquipmentSerializer(serializers.ModelSerializer):
         total_booked = OrderItem.objects.filter(item=obj).aggregate(total=Sum('quantity'))['total'] or 0
         return total_booked
 
+
     def get_booked_dates_data(self, obj):
         # Fetch the booking dates for this equipment
         order_items = OrderItem.objects.filter(item=obj)
+        
+        # Dictionary to aggregate quantities by (start_date, end_date)
+        grouped_bookings = defaultdict(int)
+
+        for order_item in order_items:
+            date_range_key = (order_item.start_date, order_item.end_date)
+            grouped_bookings[date_range_key] += order_item.quantity  # Sum up the quantities
+
+        # Convert the dictionary to a list of dictionaries
         booked_dates_data = [
-            {'quantity': order_item.quantity, 'start_date': order_item.start_date, 'end_date': order_item.end_date}
-            for order_item in order_items
+            {'quantity': quantity, 'start_date': start, 'end_date': end}
+            for (start, end), quantity in grouped_bookings.items()
         ]
+
         return booked_dates_data
+
 
     def create(self, validated_data):
         # Access the request from the context

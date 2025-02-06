@@ -102,7 +102,7 @@ const renderStars = (rating) => {
         <div v-if="equipment.booked_dates_data?.length" class="text-xs text-blue-600 px-2" :class="equipment.is_available ? 'mt-6' : 'mt-0'">
           <ul class="pl-0">
             <li v-for="(date, index) in equipment.booked_dates_data" :key="index" class="">
-              <span>{{ date.quantity }} available between: </span>
+              <span>{{ equipment.available_quantity + date.quantity }} available between: </span>
               <span class="text-black">{{ date.start_date }} - {{ date.end_date }}</span>
             </li>
           </ul>
@@ -120,7 +120,7 @@ const renderStars = (rating) => {
           <h5 class="text-sm font-semibold mb-1 text-gray-900">
             {{ store.truncateText(equipment.name, 20) }}
           </h5>
-          <p class="text-gray-600 mb-2">{{ equipment.hourly_rate }} / Day</p>
+          <p class="text-gray-600 mb-2">${{ equipment.hourly_rate }} / Day</p>
 
           <!-- Rating and Reviews -->
           <div class="flex items-center mb-2">
