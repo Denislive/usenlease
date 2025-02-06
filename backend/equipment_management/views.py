@@ -1287,7 +1287,6 @@ class OrderItemViewSet(viewsets.ViewSet):
         Retrieve the booked items along with their quantities and dates for a specific item.
         Also, return the total number of items booked.
         """
-        self.check_permissions(request)  # Ensure permission check is applied
 
         try:
             # Fetch order items for the given item ID (pk)
