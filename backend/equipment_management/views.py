@@ -1293,9 +1293,7 @@ class OrderItemViewSet(viewsets.ViewSet):
             # Fetch order items for the given item ID (pk)
             order_items = OrderItem.objects.filter(item_id=pk)
             
-            if not order_items.exists():
-                return Response({"error": "No bookings found for this item"}, status=status.HTTP_404_NOT_FOUND)
-
+            
             # Compute the total number of booked items for the specific item
             total_booked_quantity = order_items.aggregate(total=Sum('quantity'))['total'] or 0
 

@@ -112,7 +112,7 @@ class MessageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Message
-        fields = ['id', 'sender', 'receiver', 'content', 'sent_at', 'is_deleted', 'seen', 'chat']
+        fields = ['id', 'sender', 'receiver', 'content', 'sent_at', 'is_deleted', 'seen', 'chat', 'image_url']
 
 
 class ChatSerializer(serializers.ModelSerializer):

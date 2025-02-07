@@ -355,26 +355,23 @@ class ChatViewSet(viewsets.ModelViewSet):
         self.check_permissions(self.request)
         return Chat.objects.filter(participants=self.request.user)
 
-    def perform_create(self, serializer):
+    def create(self, request, *args, **kwargs):
         """
-        Create a new chat with the logged-in user and specified participants,
-        or prevent creating duplicate chats.
+        Create a new chat if it does not exist, otherwise return the existing one.
         """
-        sender = self.request.user
-        participants_ids = self.request.data.get('participants', [])
+        sender = request.user
+        participants_ids = request.data.get('participants', [])
 
         # Ensure the logged-in user is included in the participants list
-        participants = [sender.id]
-        if participants_ids:
-            participants.extend(participants_ids)
+        participants = [sender.id] + participants_ids
 
         # Prevent chat creation if the logged-in user is the only participant
         if len(participants) < 2:
-            raise ValidationError("You must include at least one other participant.")
+            return Response({"error": "You must include at least one other participant."}, status=status.HTTP_400_BAD_REQUEST)
 
         # Check if the sender is trying to contact themselves
         if sender.id in participants_ids:
-            raise ValidationError("You cannot contact yourself.")
+            return Response({"error": "You cannot contact yourself."}, status=status.HTTP_400_BAD_REQUEST)
 
         # Check if a chat with these participants already exists
         existing_chats = Chat.objects.filter(participants=sender)
@@ -382,11 +379,17 @@ class ChatViewSet(viewsets.ModelViewSet):
             existing_chats = existing_chats.filter(participants=participant_id)
 
         if existing_chats.exists():
-            raise ValidationError("Chat already exists!")
+            existing_chat = existing_chats.first()
+            serializer = self.get_serializer(existing_chat)
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
         # Save the chat with the combined participants if no existing chat is found
         participants_users = User.objects.filter(id__in=participants_ids)
-        serializer.save(participants=[sender] + list(participants_users))
+        chat = Chat.objects.create()
+        chat.participants.set([sender] + list(participants_users))
+        serializer = self.get_serializer(chat)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
 
 
 class MessageViewSet(viewsets.ModelViewSet):
@@ -431,29 +434,24 @@ class MessageViewSet(viewsets.ModelViewSet):
             raise ValueError("Receiver not found.")
 
         # Check if a chat already exists between the sender and receiver
-        chat = Chat.objects.filter(participants=sender).filter(participants=receiver).distinct()
+        chat = Chat.objects.filter(participants=sender).filter(participants=receiver).distinct().first()
         
-        if not chat.exists():
-            # Create a new chat
+        if not chat:
+            # Create a new chat if none exists
             chat = Chat.objects.create()
             chat.participants.set([sender, receiver])
-        else:
-            chat = chat.first()
 
-        # Save the message associated with the chat
-        serializer.save(sender=sender, receiver=receiver, chat=chat)
+        server = settings.DOMAIN_URL
 
-    def delete_message(self, request, pk=None):
-        """
-        Soft delete a message (mark as deleted instead of removing it from the database).
-        """
-        try:
-            message = Message.objects.get(id=pk, sender=self.request.user)
-            message.is_deleted = True
-            message.save()
-            return Response({"message": "Message deleted"}, status=status.HTTP_204_NO_CONTENT)
-        except Message.DoesNotExist:
-            return Response({"error": "Message not found"}, status=status.HTTP_404_NOT_FOUND)
+        # Get the image URL from the request data
+        url = self.request.data.get("item_image_url", None)
+
+        image_url = f"{server}{url}" if url else None
+
+
+        # Save the message along with the image URL
+        serializer.save(sender=sender, receiver=receiver, chat=chat, image_url=image_url)
+
 
 
 class AllChatsViewSet(viewsets.ViewSet):
@@ -1198,22 +1196,3 @@ class FAQViewSet(viewsets.ModelViewSet):
         faq = self.get_object()
         faq.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-    
-    # views.py
-from django.shortcuts import render
-from .utils import list_files, generate_signed_url
-
-def my_view(request):
-    bucket_name = 'usenlease-media'
-    folders = ['category_images/', 'company_logos/', 'equipment_images/', 'identity_documents/', 'proof_of_address/', 'user_images/']
-    
-    signed_urls = []
-    for folder in folders:
-        file_names = list_files(bucket_name, folder)
-        signed_urls.extend([generate_signed_url(bucket_name, file_name) for file_name in file_names])
-    
-    context = {
-        'signed_urls': signed_urls,
-    }
-    return render(request, 'template.html', context)
-

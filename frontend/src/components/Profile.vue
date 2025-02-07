@@ -418,7 +418,7 @@
                       <td class="py-3 px-6 text-center">
                         <div class="flex justify-center flex-wrap">
                           <div v-for="item in order.order_items" :key="item.id" class="mr-2 mb-2">
-                            <img v-if="item.item.images" :src="item.item.images[0].image_url" :alt="item.item.name"
+                            <img v-if="item.item.images" :src="item.item.images[0]" alt="Item Image"
                               class="w-16 h-16 rounded-full object-cover" />
                             <span v-else>
                               <p class="text-sm text-gray-500">No image available</p>
@@ -615,24 +615,27 @@
                 </span>
               </div>
 
-              <!-- Equipment Image -->
-              <div class="p-4 bg-gray-50 flex justify-center">
-                <img :src="chatStore.equipment_image || 'default-placeholder.jpg'"
-                  :alt="chatStore.equipmentImage" class="w-full max-w-sm h-auto object-cover rounded-lg shadow-md" />
-              </div>
+
 
               <!-- Chat Content -->
               <div class="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 h-60 md:h-80 lg:h-auto">
                 <div v-for="message in messages[activeChat]" :key="message.id"
                   :class="message.sentBy === 'me' ? 'justify-end' : 'justify-start'" class="flex">
+
                   <div class="flex flex-col">
+                    <!-- Image -->
+                    <img v-if="message.image_url" :src="message.image_url" alt="Image"
+                      class="mt-2 max-w-xs rounded-md shadow-md" />
+
                     <!-- Message -->
                     <p :class="{
                       'bg-[#ffe58a] text-gray-800': message.sentBy === 'me',
                       'bg-gray-200 text-gray-700': message.sentBy !== 'me',
-                    }" class="inline-block px-4 py-2 rounded-xl shadow-md max-w-xs">
+                    }" class="inline-block px-4 py-2 rounded-sm shadow-md max-w-xs">
                       {{ message.text }}
                     </p>
+
+
                     <!-- Timestamp -->
                     <h6 class="text-xs text-gray-500 text-right mt-1">
                       {{ formatDate(message.sent_at) }}
@@ -691,7 +694,7 @@
                       <span>Total Equipments</span>
                       <span class="font-bold">{{
                         report.total_equipments
-                      }}</span>
+                        }}</span>
                     </li>
                     <li
                       class="flex items-center justify-between bg-white p-4 rounded-md shadow-sm transition duration-300 transform hover:scale-105">
@@ -734,7 +737,7 @@
                       <span>Total Rented Items</span>
                       <span class="font-bold">{{
                         report.total_rented_items
-                      }}</span>
+                        }}</span>
                     </li>
                     <li
                       class="flex items-center justify-between bg-white p-4 rounded-md shadow-sm transition duration-300 transform hover:scale-105">
@@ -748,7 +751,7 @@
                       <span>Average Rating Given</span>
                       <span class="font-bold">{{
                         report.average_rating_given
-                      }}</span>
+                        }}</span>
                     </li>
                   </ul>
                 </div>
@@ -1020,8 +1023,11 @@ export default {
           sentBy: msg.sender === authStore.user?.id ? "me" : "them",
           sent_at: msg.sent_at,
           sender: msg.sender,
+          image_url: msg.image_url,
         }));
         activeChat.value = chatId;
+        console.log("Fetched Messages:", messages[chatId]);
+
       } catch (error) {
         console.error("Error fetching messages:", error);
       }
@@ -1089,7 +1095,7 @@ export default {
       showTerminateConfirm.value = false;
     };
 
-   
+
 
     const confirmDelete = (order) => {
       orderToDelete.value = order;
@@ -1175,7 +1181,7 @@ export default {
         console.log(orders.value);
         filteredOrders.value = response.data; // Initial population
       } catch (error) {
-        console.error("Error fetching orders:", error);
+        console.error("Error fetching orders:", error.response.data);
       } finally {
         loading.value = false;
       }
