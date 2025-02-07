@@ -16,6 +16,7 @@ pip install --no-cache-dir --break-system-packages -r /app/backend/requirements.
 
 # Run database migrations
 echo "Running database migrations..."
+python /app/backend/manage.py makemigrations --noinput || { echo "Makemigrations failed"; exit 1; }
 python /app/backend/manage.py migrate --noinput || { echo "Migration failed"; exit 1; }
 
 # Collect static files
