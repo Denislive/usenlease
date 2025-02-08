@@ -4,31 +4,32 @@
       <header class="text-white flex justify-between items-center">
         <!-- Logo -->
         <RouterLink :to="{ name: 'home' }" class="flex items-center">
-          <img :src="company.companyInfo?.logo" :alt="company.companyInfo?.logo" class="h-20" />
+          <img :src="company.companyInfo?.logo" :alt="company.companyInfo?.logo" class="h-18" />
         </RouterLink>
 
         <!-- Role Switch -->
         <div v-if="authStore.isAuthenticated"
-          class="flex items-center justify-between bg-gray-50 p-4 rounded-lg shadow-md hidden md:block">
+          class="flex items-center justify-between bg-[#121212] border border-gray-700 p-4 rounded-lg shadow-md hidden md:block">
           <div class="flex items-center space-x-3">
-            <span class="text-sm text-gray-600">Switch to {{ authStore.user?.role ===  'lessor' ? 'lessee' : 'lessor'
+            <span class="text-sm text-gray-300">Switch to {{ authStore.user?.role === 'lessor' ? 'lessee' : 'lessor'
               }}:</span>
             <label for="role-toggle" class="inline-flex relative items-center cursor-pointer">
               <input type="checkbox" id="role-toggle" v-model="authStore.isOn" class="sr-only peer"
                 @change="authStore.updateUserRole()" />
               <div
-                class="w-11 h-6 bg-gray-200 rounded-full peer-checked:bg-[#ffc107] peer-checked:after:translate-x-5 after:content-[''] after:absolute after:left-0.5 after:top-0.5 after:w-5 after:h-5 after:rounded-full after:bg-white transition-all">
+                class="w-11 h-6 bg-gray-700 border border-gray-500 rounded-full peer-checked:bg-[#ffc107] peer-checked:after:translate-x-5 after:content-[''] after:absolute after:left-0.5 after:top-0.5 after:w-5 after:h-5 after:rounded-full after:bg-gray-300 after:shadow-lg transition-all">
               </div>
             </label>
           </div>
         </div>
+
 
         <!-- Authenticated User Menu -->
         <div v-if="authStore.isAuthenticated" class="flex items-center space-x-4">
           <!-- Browse Items Button for Lessee -->
           <RouterLink :to="{ name: 'categories' }">
             <a
-              class="px-6 py-2 bg-gradient-to-r from-[#ff6f00] to-[#ffc107] text-white font-semibold rounded-lg shadow-lg transform transition duration-300 hover:scale-105 hover:shadow-2xl">
+              class="px-4 py-2 bg-gradient-to-r from-[#ff6f00] to-[#ffc107] text-white font-semibold rounded-lg shadow-lg transform transition duration-300 hover:scale-105 hover:shadow-2xl">
               Browse Items
             </a>
           </RouterLink>
@@ -36,28 +37,34 @@
           <!-- Lease Out Button for Lessor -->
           <RouterLink v-if="authStore.user.role === 'lessor'" :to="{ name: 'list-item' }">
             <a
-              class="px-6 py-2 bg-[#ffc107] text-[#1c1c1c] hidden md:block rounded-lg shadow-lg transform transition duration-300 hover:scale-105 hover:shadow-2xl">
+              class="px-4 py-2 bg-[#ffc107] text-[#1c1c1c] hidden md:block rounded-lg shadow-lg transform transition duration-300 hover:scale-105 hover:shadow-2xl">
               Lease Out
             </a>
           </RouterLink>
-          
+
           <!-- Equipment Icon -->
           <div v-if="authStore.user.role === 'lessor'" class="relative">
-            <RouterLink to="/profile?section=my-equipments" class="flex items-center">
-              <i class="pi pi-bars text-4xl mx-4"></i>
+            <RouterLink to="/profile?section=my-equipments" class="flex items-center relative">
+              <i class="pi pi-bars text-3xl mx-2"></i>
               <span
-                class="absolute top-[-15px] right-[-5px] bg-red-600 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center">{{ store.userEquipments.length }}</span>
+                class="absolute -top-1 -right-0 bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                {{ store.userEquipments.length }}
+              </span>
             </RouterLink>
           </div>
 
+
           <!-- Cart Icon -->
           <div v-if="authStore.user.role === 'lessee'" class="relative">
-            <RouterLink to="/cart" class="flex items-center">
-              <i class="pi pi-shopping-cart text-4xl mx-4"></i>
+            <RouterLink to="/cart" class="flex items-center relative">
+              <i class="pi pi-shopping-cart text-4xl mx-2"></i>
               <span
-                class="absolute top-[-15px] right-[-5px] bg-red-600 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center">{{ cartStore.cart.length }}</span>
+                class="absolute -top-1 -right-2 bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                {{ cartStore.cart.length }}
+              </span>
             </RouterLink>
           </div>
+
 
           <!-- Profile Icon with Dropdown for Profile & Logout -->
           <div class="relative hidden lg:block" @mouseenter="showDropdownWithDelay(true)"
@@ -108,12 +115,15 @@
 
           <!-- Cart Icon -->
           <div class="relative">
-            <RouterLink to="/cart" class="flex items-center">
-              <i class="pi pi-shopping-cart text-4xl mx-4"></i>
+            <RouterLink to="/cart" class="flex items-center relative">
+              <i class="pi pi-shopping-cart text-4xl mx-2"></i>
               <span
-                class="absolute top-[-15px] right-[-5px] bg-red-600 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center">{{ cartStore.cart.length }}</span>
+                class="absolute -top-1 -right-2 bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                {{ cartStore.cart.length }}
+              </span>
             </RouterLink>
           </div>
+
         </div>
       </header>
     </div>
