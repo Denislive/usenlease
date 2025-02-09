@@ -1196,3 +1196,21 @@ class FAQViewSet(viewsets.ModelViewSet):
         faq = self.get_object()
         faq.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+     # views.py
+from django.shortcuts import render
+from .utils import list_files, generate_signed_url
+
+def my_view(request):
+    bucket_name = 'usenlease-media'
+    folders = ['category_images/', 'company_logos/', 'equipment_images/', 'identity_documents/', 'proof_of_address/', 'user_images/']
+    
+    signed_urls = []
+    for folder in folders:
+        file_names = list_files(bucket_name, folder)
+        signed_urls.extend([generate_signed_url(bucket_name, file_name) for file_name in file_names])
+    
+    context = {
+        'signed_urls': signed_urls,
+    }
+    return render(request, 'template.html', context)
+
