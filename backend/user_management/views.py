@@ -419,15 +419,21 @@ class MessageViewSet(viewsets.ModelViewSet):
                 is_deleted=False
             ).order_by("sent_at")
 
-        # Generate signed URLs for image attachments
+        # Generate signed URLs only for images that require it
         bucket_name = "usenlease-media"
         for message in messages:
             if message.image_url:
-                # Extract the actual file path from "/media/equipment_images/car.jpg" → "equipment_images/car.jpg"
-                file_name = message.image_url.replace("/media/", "")
-                message.signed_image_url = generate_signed_url(bucket_name, file_name)
+                image_path = self._extract_relative_path(message.image_url)
+
+                if image_path:
+                    # Generate signed URL only if needed
+                    message.signed_image_url = generate_signed_url(bucket_name, image_path)
+                else:
+                    # If the image_url is already a signed GCS URL, just use it
+                    message.signed_image_url = message.image_url  
 
         return messages
+
 
     @transaction.atomic
     def perform_create(self, serializer):
@@ -438,31 +444,35 @@ class MessageViewSet(viewsets.ModelViewSet):
         receiver_id = self.request.data.get("receiver")
 
         if not receiver_id:
-            raise ValueError("Receiver ID is required to send a message.")
-        
+            return Response({"error": "Receiver ID is required to send a message."}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
             receiver = User.objects.get(id=receiver_id)
         except User.DoesNotExist:
-            raise ValueError("Receiver not found.")
+            return Response({"error": "Receiver not found."}, status=status.HTTP_404_NOT_FOUND)
 
         # Check if a chat already exists between the sender and receiver
         chat = Chat.objects.filter(participants=sender).filter(participants=receiver).distinct().first()
-        
+
         if not chat:
-            # Create a new chat if none exists
             chat = Chat.objects.create()
-            chat.participants.set([sender, receiver])
+            chat.participants.add(sender, receiver)
 
-        # Get the image URL from the request data
-        url = self.request.data.get("item_image_url", None)
+        # Process image URL
+        url = self.request.data.get("item_image_url", "").strip()
+        image_path = self._extract_relative_path(url)
 
-        # Convert "/media/equipment_images/car.jpg" → "equipment_images/car.jpg"
-        image_path = url.replace("/media/", "") if url else None
-        image_url = generate_signed_url("usenlease-media", image_path) if image_path else None
+        if image_path:
+            # Generate signed URL only if necessary
+            image_url = generate_signed_url("usenlease-media", image_path)
+        else:
+            # If already a signed GCS URL, use it as-is
+            image_url = url  
 
-        # Save the message with the signed image URL
+        # Save the message with the correct image URL
         serializer.save(sender=sender, receiver=receiver, chat=chat, image_url=image_url)
-        
+
+
 
 class AllChatsViewSet(viewsets.ViewSet):
     """
