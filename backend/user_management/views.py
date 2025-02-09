@@ -2,6 +2,8 @@
 import random
 import smtplib
 import requests
+from urllib.parse import urlparse
+
 
 from datetime import date, datetime, timedelta
 from email.mime.text import MIMEText
@@ -84,7 +86,7 @@ from equipment_management.models import (
 )
 
 
-from .utils import list_files, generate_signed_url, send_custom_email, _extract_relative_path
+from .utils import list_files, generate_signed_url, send_custom_email
 
 
 
@@ -402,6 +404,24 @@ class MessageViewSet(viewsets.ModelViewSet):
     serializer_class = MessageSerializer
     authentication_classes = [JWTAuthenticationFromCookie]
     permission_classes = [IsAuthenticated]
+
+
+    def _extract_relative_path(url):
+        """
+        Extracts the correct relative path from a given URL.
+        Ensures no duplicate base URLs when generating signed URLs.
+        """
+        if not url:
+            return None
+
+        parsed_url = urlparse(url)
+
+        # If URL already has a valid domain (like Google Cloud Storage), return None to prevent duplication
+        if parsed_url.netloc and "storage.googleapis.com" in parsed_url.netloc:
+            return None  # No need to modify this, it is already a signed GCS URL
+
+        # If URL is relative (like "/media/equipment_images/car.jpg"), extract the correct path
+        return parsed_url.path.lstrip("/media/")
 
     def get_queryset(self):
         """

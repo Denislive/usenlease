@@ -4,24 +4,6 @@ from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from google.cloud import storage
 from datetime import timedelta
-from urllib.parse import urlparse
-
-def _extract_relative_path(url):
-    """
-    Extracts the correct relative path from a given URL.
-    Ensures no duplicate base URLs when generating signed URLs.
-    """
-    if not url:
-        return None
-
-    parsed_url = urlparse(url)
-
-    # If URL already has a valid domain (like Google Cloud Storage), return None to prevent duplication
-    if parsed_url.netloc and "storage.googleapis.com" in parsed_url.netloc:
-        return None  # No need to modify this, it is already a signed GCS URL
-
-    # If URL is relative (like "/media/equipment_images/car.jpg"), extract the correct path
-    return parsed_url.path.lstrip("/media/")
 
 
 def send_custom_email(subject, template_name, context, recipient_list):
