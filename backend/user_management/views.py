@@ -8,6 +8,7 @@ from email.mime.text import MIMEText
 from django.utils.timezone import now
 
 # Django imports
+from django.shortcuts import render
 from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.hashers import make_password
@@ -83,7 +84,6 @@ from equipment_management.models import (
 )
 
 
-from django.shortcuts import render
 from .utils import list_files, generate_signed_url, send_custom_email
 
 
@@ -405,19 +405,29 @@ class MessageViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """
-        Retrieve messages for a specific chat or for the logged-in user.
+        Retrieve messages for a specific chat or for the logged-in user, and generate signed URLs for images.
         """
         self.check_permissions(self.request)
         chat_id = self.request.query_params.get("chat_id")
-        
+        user = self.request.user
+
         if chat_id:
-            return Message.objects.filter(chat_id=chat_id, is_deleted=False).order_by("sent_at")
-        
-        # Messages where the user is either sender or receiver
-        return Message.objects.filter(
-            Q(sender=self.request.user) | Q(receiver=self.request.user),
-            is_deleted=False
-        ).order_by("sent_at")
+            messages = Message.objects.filter(chat_id=chat_id, is_deleted=False).order_by("sent_at")
+        else:
+            messages = Message.objects.filter(
+                Q(sender=user) | Q(receiver=user),
+                is_deleted=False
+            ).order_by("sent_at")
+
+        # Generate signed URLs for image attachments
+        bucket_name = "usenlease-media"
+        for message in messages:
+            if message.image_url:
+                # Extract the actual file path from "/media/equipment_images/car.jpg" → "equipment_images/car.jpg"
+                file_name = message.image_url.replace("/media/", "")
+                message.signed_image_url = generate_signed_url(bucket_name, file_name)
+
+        return messages
 
     @transaction.atomic
     def perform_create(self, serializer):
@@ -443,18 +453,16 @@ class MessageViewSet(viewsets.ModelViewSet):
             chat = Chat.objects.create()
             chat.participants.set([sender, receiver])
 
-        server = settings.DOMAIN_URL
-
         # Get the image URL from the request data
         url = self.request.data.get("item_image_url", None)
 
-        image_url = f"{server}{url}" if url else None
+        # Convert "/media/equipment_images/car.jpg" → "equipment_images/car.jpg"
+        image_path = url.replace("/media/", "") if url else None
+        image_url = generate_signed_url("usenlease-media", image_path) if image_path else None
 
-
-        # Save the message along with the image URL
+        # Save the message with the signed image URL
         serializer.save(sender=sender, receiver=receiver, chat=chat, image_url=image_url)
-
-
+        
 
 class AllChatsViewSet(viewsets.ViewSet):
     """
