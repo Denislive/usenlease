@@ -396,6 +396,7 @@ class ChatViewSet(viewsets.ModelViewSet):
 
 
 
+
 class MessageViewSet(viewsets.ModelViewSet):
     """
     A ViewSet for handling messages in a chat.
@@ -405,8 +406,7 @@ class MessageViewSet(viewsets.ModelViewSet):
     authentication_classes = [JWTAuthenticationFromCookie]
     permission_classes = [IsAuthenticated]
 
-
-    def _extract_relative_path(url):
+    def _extract_relative_path(self, url):  # ✅ Add 'self' to make it an instance method
         """
         Extracts the correct relative path from a given URL.
         Ensures no duplicate base URLs when generating signed URLs.
@@ -427,7 +427,7 @@ class MessageViewSet(viewsets.ModelViewSet):
         """
         Retrieve messages for a specific chat or for the logged-in user, and generate signed URLs for images.
         """
-        self.check_permissions(self.request)
+        self.check_permissions(self.request)  # Ensure the user has permission
         chat_id = self.request.query_params.get("chat_id")
         user = self.request.user
 
@@ -443,7 +443,7 @@ class MessageViewSet(viewsets.ModelViewSet):
         bucket_name = "usenlease-media"
         for message in messages:
             if message.image_url:
-                image_path = self._extract_relative_path(message.image_url)
+                image_path = self._extract_relative_path(message.image_url)  # ✅ Now works correctly
 
                 if image_path:
                     # Generate signed URL only if needed
@@ -453,7 +453,6 @@ class MessageViewSet(viewsets.ModelViewSet):
                     message.signed_image_url = message.image_url  
 
         return messages
-
 
     @transaction.atomic
     def perform_create(self, serializer):
@@ -480,7 +479,7 @@ class MessageViewSet(viewsets.ModelViewSet):
 
         # Process image URL
         url = self.request.data.get("item_image_url", "").strip()
-        image_path = self._extract_relative_path(url)
+        image_path = self._extract_relative_path(url)  # Now works correctly
 
         if image_path:
             # Generate signed URL only if necessary
@@ -491,7 +490,6 @@ class MessageViewSet(viewsets.ModelViewSet):
 
         # Save the message with the correct image URL
         serializer.save(sender=sender, receiver=receiver, chat=chat, image_url=image_url)
-
 
 
 class AllChatsViewSet(viewsets.ViewSet):
