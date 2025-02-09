@@ -82,7 +82,9 @@ from equipment_management.models import (
     Review,
 )
 
-from .utils import send_custom_email
+
+from django.shortcuts import render
+from .utils import list_files, generate_signed_url, send_custom_email
 
 
 
@@ -1197,8 +1199,8 @@ class FAQViewSet(viewsets.ModelViewSet):
         faq.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-from django.shortcuts import render
-from .utils import list_files, generate_signed_url
+
+
 
 def my_view(request):
     bucket_name = 'usenlease-media'

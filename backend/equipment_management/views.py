@@ -22,7 +22,7 @@ from rest_framework.views import APIView
 from rest_framework.decorators import action
 from rest_framework import viewsets, permissions, status, generics
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -424,6 +424,16 @@ class EquipmentViewSet(viewsets.ModelViewSet):
     queryset = Equipment.objects.all()
     serializer_class = EquipmentSerializer
     authentication_classes = [JWTAuthenticationFromCookie]
+
+
+    def get_permissions(self):
+        """
+        Override permissions to allow unauthenticated access to list and retrieve,
+        but require authentication for create, update, and delete.
+        """
+        if self.action in ["list", "retrieve"]:
+            return [AllowAny()]  # No authentication required for viewing equipment
+        return [IsAuthenticated()]  # Authentication required for create, update, delete
 
     def list(self, request):
         """

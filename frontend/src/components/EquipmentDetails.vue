@@ -266,9 +266,7 @@ const formatDate = (date) => {
 
 const fetchTotalBookedItems = async () => {
   try {
-    const response = await axios.get(`${api_base_url}/api/order-items/${equipmentId}/total-booked/`, {
-      withCredentials: true,
-    });
+    const response = await axios.get(`${api_base_url}/api/order-items/${equipmentId}/total-booked/`);
     totalBooked.value = response.data.total_booked;
     console.log("Booked Dates with quantity:", response.data.booked_dates);
     console.log("total booked", totalBooked.value);
