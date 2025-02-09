@@ -102,7 +102,7 @@ const renderStars = (rating) => {
         <div v-if="equipment.booked_dates_data?.length" class="text-xs text-blue-600 px-2" :class="equipment.is_available ? 'mt-6' : 'mt-0'">
           <ul class="pl-0">
             <li v-for="(date, index) in equipment.booked_dates_data" :key="index" class="">
-              <span>{{ equipment.available_quantity + date.quantity }} available between: </span>
+              <span>{{equipment.is_available ? (equipment.total_booked + equipment.available_quantity) - date.quantity : date.quantity}} available between: </span>
               <span class="text-black">{{ date.start_date }} - {{ date.end_date }}</span>
             </li>
           </ul>

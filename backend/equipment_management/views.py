@@ -806,34 +806,54 @@ class ReviewViewSet(viewsets.ViewSet):
 
     def create(self, request):
         """
-        Create a new review. Requires authenticated user and adds user info.
+        Create a new review. The equipment being reviewed must be in a completed order of the user.
         """
-        # Add the user to the request data before validation
+        user = request.user
         data = request.data.copy()
-        data['user'] = request.user.id  # or request.user.pk, depending on your setup
+        equipment_id = data.get("equipment")  # Ensure "equipment" is passed in request data
+
+        if not equipment_id:
+            return Response(
+                {"error": "Equipment ID is required to leave a review."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Check if the user has a completed order containing the specified equipment
+        has_completed_order = OrderItem.objects.filter(
+            order__user=user, order__status="completed", item_id=equipment_id
+        ).exists()
+
+        if not has_completed_order:
+            return Response(
+                {"error": "You can only leave a review for equipment you have ordered and completed."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Attach the user ID to request data before validation
+        data["user"] = user.id  
 
         serializer = ReviewSerializer(data=data)
         if serializer.is_valid():
-            serializer.save(user=request.user)  # Pass the user to the save method
+            serializer.save(user=user)  
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def retrieve(self, request, pk=None):
         """
-        Retrieve a specific review by primary key. Requires authenticated user.
+        Retrieve a specific review by primary key.
         """
         self.permission_classes = [permissions.IsAuthenticated]
-        self.check_permissions(request)  # Ensure permission check is applied
+        self.check_permissions(request)
         review = Review.objects.get(pk=pk)
         serializer = ReviewSerializer(review)
         return Response(serializer.data)
 
     def update(self, request, pk=None):
         """
-        Update an existing review by primary key. Requires authenticated user.
+        Update an existing review.
         """
         self.permission_classes = [permissions.IsAuthenticated]
-        self.check_permissions(request)  # Ensure permission check is applied
+        self.check_permissions(request)
         review = Review.objects.get(pk=pk)
         serializer = ReviewSerializer(review, data=request.data)
         if serializer.is_valid():
@@ -843,13 +863,14 @@ class ReviewViewSet(viewsets.ViewSet):
 
     def destroy(self, request, pk=None):
         """
-        Delete a review by primary key. Requires authenticated user.
+        Delete a review.
         """
         self.permission_classes = [permissions.IsAuthenticated]
-        self.check_permissions(request)  # Ensure permission check is applied
+        self.check_permissions(request)
         review = Review.objects.get(pk=pk)
         review.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 
 class CartViewSet(viewsets.ModelViewSet):
@@ -1292,7 +1313,6 @@ class OrderItemViewSet(viewsets.ViewSet):
         try:
             # Fetch order items for the given item ID (pk)
             order_items = OrderItem.objects.filter(item_id=pk)
-            
             
             # Compute the total number of booked items for the specific item
             total_booked_quantity = order_items.aggregate(total=Sum('quantity'))['total'] or 0

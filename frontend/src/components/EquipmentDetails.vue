@@ -2,19 +2,20 @@
   <div v-if="loading" class="loading text-center p-4">Loading equipment details...</div>
   <div v-else-if="error" class="error text-red-500 text-center p-4">{{ error }}</div>
   <div v-else-if="equipment && Object.keys(equipment).length" class="p-6 border rounded-lg shadow-lg bg-white">
-    
+
     <!-- Product Name -->
     <h1 class="product-name text-3xl font-bold mb-4 border-b pb-2">{{ equipment.name }}</h1>
-    
+
     <!-- Rating and Reviews -->
     <div class="rating-reviews flex items-center mb-4">
       <span class="rating text-yellow-500 mr-2">{{ renderStars(equipment.rating) }}</span>
-      <span class="reviews text-gray-600">({{ equipment.equipment_reviews ? equipment.equipment_reviews.length : 0 }} Reviews)</span>
+      <span class="reviews text-gray-600">({{ equipment.equipment_reviews ? equipment.equipment_reviews.length : 0 }}
+        Reviews)</span>
     </div>
-    
+
     <!-- Price -->
     <p class="price text-2xl font-semibold mb-4">${{ equipment.hourly_rate }}/Day</p>
-    
+
     <!-- Description -->
     <p class="description mb-4">
       <strong>Description:</strong> {{ equipment.description }}
@@ -24,22 +25,38 @@
     <div class="availability-notification bg-gray-100 p-4 rounded-lg border mb-4">
       <h3 class="text-lg font-semibold mb-2">Booking Availability</h3>
       <div v-if="items_data && items_data.length > 0">
-        <div v-for="(booking, index) in items_data" :key="index" class="booking-item flex items-center justify-between p-2 bg-white shadow-md rounded-md mb-2">
+        <div v-for="(booking, index) in items_data" :key="index"
+          class="booking-item flex items-center justify-between p-2 bg-white shadow-md rounded-md mb-2">
           <p class="text-gray-700">
-            <span class="font-semibold">{{ equipment.available_quantity + booking.quantity }} Available</span> 
-            between: <span class="text-blue-600">{{ formatDate(booking.start_date) }}</span> 
+            <span class="font-semibold">{{ equipment.is_available ? (totalBooked + equipment.available_quantity) -
+              booking.quantity : totalBooked - booking.quantity }} Available</span>
+            between: <span class="text-blue-600">{{ formatDate(booking.start_date) }}</span>
             - <span class="text-red-500">{{ formatDate(booking.end_date) }}</span>
           </p>
         </div>
+        <p class="text-blue-500">{{ `${totalBooked + equipment.available_quantity} Available from
+          ${formatDate(nextAvailableDate)}` }}</p>
+      </div>
+      <div v-else class="text-red-600 mt-6">
+        <p>Temporarily Unavailable</p>
+
       </div>
 
-      <!-- Overall Availability Status -->
-      <p class="availability mt-2 text-lg">
-        <strong>Status:</strong>
-        <span :class="equipment.is_available ? 'text-green-600 font-bold' : 'text-blue-600 font-bold'">
-          {{ equipment.is_available ? `${equipment.available_quantity} Available` : `${totalBooked} Available After ${formatDate(nextAvailableDate)}` }}
+      <p class="availability mt-2 text-lg flex items-center">
+        <span v-if="equipment.is_available" class="relative  text-green px-6 py-3 
+           rounded-2xl font-bold shadow-xl border-2 border-gold-premium 
+           transition-all duration-500 ease-in-out 
+           flex items-center space-x-3 animate-availability premium-glass">
+          <span class="flex items-center space-x-2">
+            <span class="text-green-600 font-extrabold text-xl">
+              {{ equipment.available_quantity }} Available Now
+            </span>
+            <i class="pi pi-verified premium-verified-icon"></i>
+          </span>
         </span>
       </p>
+
+
     </div>
 
     <!-- Location -->
@@ -55,14 +72,16 @@
     <div class="tags mb-4 border-b pb-2">
       <h3 class="text-lg font-semibold mb-2">Tags:</h3>
       <div class="flex flex-wrap gap-2" v-if="equipment.tags">
-        <span v-for="tag in equipment.tags" :key="tag.name" class="bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm font-medium">
+        <span v-for="tag in equipment.tags" :key="tag.name"
+          class="bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm font-medium">
           {{ tag.name }}
         </span>
       </div>
     </div>
-    
+
     <!-- Booking Form -->
-    <div class="booking-form p-4 border rounded-lg shadow-md bg-gray-50" v-if="authStore.user?.role !== 'lessor' && equipment.owner !== authStore.user?.id">
+    <div class="booking-form p-4 border rounded-lg shadow-md bg-gray-50"
+      v-if="authStore.user?.role !== 'lessor' && equipment.owner !== authStore.user?.id && !equipment.is_available">
       <form @submit.prevent="submitBooking">
         <div class="mb-4">
           <label for="start-date" class="block text-sm font-medium">Start Date:</label>
@@ -82,20 +101,23 @@
 
         <div class="mb-4">
           <label for="quantity" class="block text-sm font-medium">Number of Equipments:</label>
-          <input type="number" id="quantity" v-model="quantity" min="1" :disabled="isFullyBooked" :max="equipment.available_quantity"
-            @input="validateQuantity" required class="p-2 border rounded w-full" />
+          <input type="number" id="quantity" v-model="quantity" min="1" :disabled="isFullyBooked"
+            :max="equipment.available_quantity" @input="validateQuantity" required class="p-2 border rounded w-full" />
           <p v-if="quantityError" class="error-message">{{ quantityError }}</p>
         </div>
 
-        <button type="submit"  class="button add-to-cart bg-yellow-500 text-black py-2 px-4 rounded hover:bg-yellow-400 transition" :disabled="isFullyBooked">
+        <button type="submit"
+          class="button add-to-cart bg-yellow-500 text-black py-2 px-4 rounded hover:bg-yellow-400 transition"
+          :disabled="isFullyBooked">
           Add to Cart
         </button>
       </form>
     </div>
-    
+
     <!-- Talk to Owner -->
     <RouterLink v-if="authStore.isAuthenticated && props.equipment.owner !== authStore.user.id"
-      :to="{ path: '/profile', query: { section: 'chats' } }" @click="createChat" class="block mt-4 text-center text-blue-500 font-medium">
+      :to="{ path: '/profile', query: { section: 'chats' } }" @click="createChat"
+      class="block mt-4 text-center text-blue-500 font-medium">
       Talk to Owner
     </RouterLink>
   </div>
@@ -103,6 +125,35 @@
 
 
 <style>
+
+
+
+/* 🌟 Glowing Gold Borders */
+.border-gold-premium {
+  border: 2px solid green;
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.1);
+}
+
+
+.animate-availability {
+  animation: goldPulse 1s infinite alternate ease-in-out;
+}
+
+/* 🏆 Premium Gold Button */
+.btn-noir-gold {
+  background: linear-gradient(90deg, #FFD700, #E6C200);
+  color: #0D0D0D;
+  font-weight: bold;
+  padding: 12px 24px;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(255, 215, 0, 0.1);
+}
+.btn-noir-gold:hover {
+  background: linear-gradient(90deg, #E6C200, #FFD700);
+  box-shadow: 0 6px 24px rgba(255, 215, 0, 0.7);
+}
+
+
 /* Date Input Styling */
 .date-input {
   padding: 10px;
@@ -221,10 +272,10 @@ const fetchTotalBookedItems = async () => {
     totalBooked.value = response.data.total_booked;
     console.log("Booked Dates with quantity:", response.data.booked_dates);
     console.log("total booked", totalBooked.value);
-    
+
     items_data.value = response.data.booked_dates;
   } catch (error) {
-    showNotification('Failed to fetch booked items', `Error: ${error.response?.data.error || error.response?.data.detail ||  error}`, 'error');
+    showNotification('Failed to fetch booked items', `Error: ${error.response?.data.error || error.response?.data.detail || error}`, 'error');
   }
 };
 
