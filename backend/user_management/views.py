@@ -2,15 +2,12 @@
 import random
 import smtplib
 import requests
-from urllib.parse import urlparse
-
 
 from datetime import date, datetime, timedelta
 from email.mime.text import MIMEText
 from django.utils.timezone import now
 
 # Django imports
-from django.shortcuts import render
 from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.hashers import make_password
@@ -86,6 +83,7 @@ from equipment_management.models import (
 )
 
 
+from django.shortcuts import render
 from .utils import list_files, generate_signed_url, send_custom_email
 
 
@@ -396,7 +394,6 @@ class ChatViewSet(viewsets.ModelViewSet):
 
 
 
-
 class MessageViewSet(viewsets.ModelViewSet):
     """
     A ViewSet for handling messages in a chat.
@@ -406,28 +403,11 @@ class MessageViewSet(viewsets.ModelViewSet):
     authentication_classes = [JWTAuthenticationFromCookie]
     permission_classes = [IsAuthenticated]
 
-    def _extract_relative_path(self, url):  # ✅ Add 'self' to make it an instance method
-        """
-        Extracts the correct relative path from a given URL.
-        Ensures no duplicate base URLs when generating signed URLs.
-        """
-        if not url:
-            return None
-
-        parsed_url = urlparse(url)
-
-        # If URL already has a valid domain (like Google Cloud Storage), return None to prevent duplication
-        if parsed_url.netloc and "storage.googleapis.com" in parsed_url.netloc:
-            return None  # No need to modify this, it is already a signed GCS URL
-
-        # If URL is relative (like "/media/equipment_images/car.jpg"), extract the correct path
-        return parsed_url.path.lstrip("/media/")
-
     def get_queryset(self):
         """
         Retrieve messages for a specific chat or for the logged-in user, and generate signed URLs for images.
         """
-        self.check_permissions(self.request)  # Ensure the user has permission
+        self.check_permissions(self.request)
         chat_id = self.request.query_params.get("chat_id")
         user = self.request.user
 
@@ -439,18 +419,12 @@ class MessageViewSet(viewsets.ModelViewSet):
                 is_deleted=False
             ).order_by("sent_at")
 
-        # Generate signed URLs only for images that require it
+        # Generate signed URLs for image attachments
         bucket_name = "usenlease-media"
         for message in messages:
             if message.image_url:
-                image_path = self._extract_relative_path(message.image_url)  # ✅ Now works correctly
-
-                if image_path:
-                    # Generate signed URL only if needed
-                    message.signed_image_url = generate_signed_url(bucket_name, image_path)
-                else:
-                    # If the image_url is already a signed GCS URL, just use it
-                    message.signed_image_url = message.image_url  
+                image_path = message.image_url.lstrip("/media/")  # More robust handling
+                message.signed_image_url = generate_signed_url(bucket_name, image_path)
 
         return messages
 
@@ -472,24 +446,20 @@ class MessageViewSet(viewsets.ModelViewSet):
 
         # Check if a chat already exists between the sender and receiver
         chat = Chat.objects.filter(participants=sender).filter(participants=receiver).distinct().first()
-
+        
         if not chat:
+            # Create a new chat if none exists
             chat = Chat.objects.create()
-            chat.participants.add(sender, receiver)
+            chat.participants.add(sender, receiver)  # Use `.add()` instead of `.set()`
 
         # Process image URL
         url = self.request.data.get("item_image_url", "").strip()
-        image_path = self._extract_relative_path(url)  # Now works correctly
+        image_path = url.lstrip("/media/") if url else None  # Handle possible empty values
+        image_url = generate_signed_url("usenlease-media", image_path) if image_path else None
 
-        if image_path:
-            # Generate signed URL only if necessary
-            image_url = generate_signed_url("usenlease-media", image_path)
-        else:
-            # If already a signed GCS URL, use it as-is
-            image_url = url  
-
-        # Save the message with the correct image URL
+        # Save the message with the signed image URL
         serializer.save(sender=sender, receiver=receiver, chat=chat, image_url=image_url)
+
 
 
 class AllChatsViewSet(viewsets.ViewSet):
