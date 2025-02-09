@@ -37,10 +37,7 @@
         <p class="text-blue-500">{{ `${totalBooked + equipment.available_quantity} Available from
           ${formatDate(nextAvailableDate)}` }}</p>
       </div>
-      <div v-else class="text-red-600 mt-6">
-        <p>Temporarily Unavailable</p>
-
-      </div>
+      
 
       <p class="availability mt-2 text-lg flex items-center">
         <span v-if="equipment.is_available" class="relative  text-green px-6 py-3 
@@ -81,7 +78,7 @@
 
     <!-- Booking Form -->
     <div class="booking-form p-4 border rounded-lg shadow-md bg-gray-50"
-      v-if="authStore.user?.role !== 'lessor' && equipment.owner !== authStore.user?.id && !equipment.is_available">
+      v-if="authStore.user?.role !== 'lessor' && equipment.owner !== authStore.user?.id && equipment.is_available">
       <form @submit.prevent="submitBooking">
         <div class="mb-4">
           <label for="start-date" class="block text-sm font-medium">Start Date:</label>
@@ -266,7 +263,8 @@ const formatDate = (date) => {
 
 const fetchTotalBookedItems = async () => {
   try {
-    const response = await axios.get(`${api_base_url}/api/order-items/${equipmentId}/total-booked/`);
+    const response = await axios.get(`${api_base_url}/api/order-items/${equipmentId}/total-booked/`,
+      { withCredentials: true });
     totalBooked.value = response.data.total_booked;
     console.log("Booked Dates with quantity:", response.data.booked_dates);
     console.log("total booked", totalBooked.value);
