@@ -1196,7 +1196,7 @@ class FAQViewSet(viewsets.ModelViewSet):
         faq = self.get_object()
         faq.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-     # views.py
+
 from django.shortcuts import render
 from .utils import list_files, generate_signed_url
 
