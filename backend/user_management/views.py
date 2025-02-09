@@ -84,7 +84,7 @@ from equipment_management.models import (
 )
 
 
-from .utils import list_files, generate_signed_url, send_custom_email
+from .utils import list_files, generate_signed_url, send_custom_email, _extract_relative_path
 
 
 
