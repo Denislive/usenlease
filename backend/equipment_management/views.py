@@ -1244,7 +1244,12 @@ class OrderItemViewSet(viewsets.ViewSet):
     Only authenticated users can access and modify their order items.
     """
     authentication_classes = [JWTAuthenticationFromCookie]
-    permission_classes = [permissions.IsAuthenticated]
+
+    def get_permissions(self):
+        """Override permissions for specific methods."""
+        if self.action == "list_booked_items":
+            return [permissions.AllowAny()]  # No authentication required
+        return [permissions.IsAuthenticated()]  # Authentication required for all other methods
 
     def list(self, request):
         """
@@ -1319,8 +1324,6 @@ class OrderItemViewSet(viewsets.ViewSet):
         Retrieve the booked items along with their quantities and dates for a specific item.
         Also, return the total number of items booked.
         """
-        self.authentication_classes = []  # Disable authentication for this method
-        self.permission_classes = [AllowAny]  # Allow anyone to access this endpoint
 
         try:
             # Fetch order items for the given item ID (pk)
