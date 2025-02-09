@@ -27,7 +27,7 @@
 
       <div class="p-4">
         <div v-show="activeTab === 'description'" class="tabs-panel">
-          <p>{{ selectedEquipment?.description  }}</p>
+          <p>{{ selectedEquipment?.description }}</p>
         </div>
         <div v-show="activeTab === 'specification'" class="tabs-panel">
           <ul>
@@ -124,10 +124,25 @@ export default {
     const equipmentsStore = useEquipmentsStore();
     const selectedEquipment = computed(() => equipmentsStore.selectedEquipment);
 
-    onMounted(() => {
-      equipmentsStore.fetchEquipments();
-      const equipmentId = route.params.id;
-      equipmentsStore.getEquipmentById(equipmentId);
+    // Fetch equipment data on mount
+    onMounted(async () => {
+      try {
+        await equipmentsStore.fetchEquipments();
+        const equipmentId = route.params.id;
+
+        if (!equipmentId) {
+          throw new Error('Invalid equipment ID.');
+        }
+
+        const equipment = equipmentsStore.getEquipmentById(equipmentId);
+
+        if (!equipment) {
+          throw new Error('Equipment not found.');
+        }
+      } catch (error) {
+        console.error('Error loading equipment:', error);
+        showNotification('Error', 'Failed to load equipment details. Please try again.', 'error');
+      }
     });
 
     const submitReview = async () => {
@@ -136,43 +151,65 @@ export default {
         return;
       }
 
+      if (!selectedEquipment.value || !selectedEquipment.value.id) {
+        showNotification('Error', 'Equipment data is unavailable. Please try again later.', 'error');
+        return;
+      }
+
+      const reviewData = {
+        rating: newReview.value.rating,
+        review_text: newReview.value.text.trim(),
+        equipment: selectedEquipment.value.id,
+      };
+
       try {
-        // Prepare the review data payload
-        const reviewData = {
-          rating: newReview.value.rating,
-          review_text: newReview.value.text,
-          equipment: selectedEquipment.value.id, // Assuming `selectedEquipment` has the `id`
-        };
-
-        // Check for null or empty fields
-        if (!reviewData.rating || !reviewData.equipment) {
-          showNotification(
-            'Review Error',
-            'Please complete all fields before submitting your review!',
-            'error'
-          );
-          return;
-        }
-
-        // Send a POST request to submit the review
         const response = await axios.post(`${api_base_url}/api/reviews/`, reviewData, {
-          withCredentials: true, // Send cookies for authentication if needed
+          withCredentials: true,
+          timeout: 10000, // 10-second timeout
         });
 
-        // Check if the review has text; only push reviews with text
-        if (response.data.review_text && response.data.review_text.trim()) {
-          selectedEquipment.value.equipment_reviews.push(response.data);
+        console.log('Server response:', response.data); // Debugging log
+
+        // Ensure `equipment_reviews` is an array before updating
+        if (!Array.isArray(selectedEquipment.value.equipment_reviews)) {
+          selectedEquipment.value.equipment_reviews = [];
         }
 
-        // Reset the review form
+        // Check if response contains the review details
+        if (response.data && (response.data.id || response.data.review_text)) {
+          selectedEquipment.value.equipment_reviews.push(response.data);
+          showNotification('Success', 'Thank you for reviewing the item!', 'success');
+        } else {
+          showNotification('Success', 'Thank you for rating the item!', 'success');
+        }
+
+        // Reset review form
         newReview.value.rating = null;
         newReview.value.text = '';
+
       } catch (error) {
         console.error('Error submitting review:', error);
-        showNotification('Review Error', 'An error occurred while submitting your review.', 'error');
+
+        if (error.code === 'ECONNABORTED') {
+          showNotification('Timeout Error', 'The request timed out. Please check your connection and try again.', 'error');
+        } else if (error.response) {
+          const { status, data } = error.response;
+
+          if (status === 403 && data?.error) {
+            showNotification('Permission Denied', data.error, 'error');
+          } else if (status >= 500) {
+            showNotification('Server Error', 'The server encountered an issue. Please try again later.', 'error');
+          } else {
+            showNotification('Review Error', data?.message || 'An error occurred while submitting your review.', 'error');
+          }
+        } else {
+          showNotification('Unexpected Error', 'Something went wrong. Please try again later.', 'error');
+        }
       }
     };
 
+
+    // Safe date formatting
     const formatDate = (date) => {
       try {
         return format(new Date(date), 'PPPpp');
@@ -192,5 +229,3 @@ export default {
   },
 };
 </script>
-
-
