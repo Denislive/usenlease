@@ -115,7 +115,7 @@ EMAIL_HOST = os.getenv('EMAIL_HOST')
 EMAIL_PORT = os.getenv('EMAIL_PORT')
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')  # Store password securely
-EMAIL_USE_TLS = os.getenv('EMAIL_USE_SSL')
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS')
 
 # Security Settings
 CORS_ALLOW_CREDENTIALS = True
