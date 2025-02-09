@@ -2,6 +2,7 @@
 import random
 import smtplib
 import requests
+import urllib.parse
 
 from datetime import date, datetime, timedelta
 from email.mime.text import MIMEText
@@ -403,6 +404,23 @@ class MessageViewSet(viewsets.ModelViewSet):
     authentication_classes = [JWTAuthenticationFromCookie]
     permission_classes = [IsAuthenticated]
 
+    def _extract_relative_path(self, url):
+        """
+        Extracts the correct relative path from a given URL.
+        Ensures no duplicate base URLs when generating signed URLs.
+        """
+        if not url:
+            return None
+
+        parsed_url = urlparse(url)
+
+        # If URL already has a valid domain (like Google Cloud Storage), return None to prevent duplication
+        if parsed_url.netloc and "storage.googleapis.com" in parsed_url.netloc:
+            return None  # No need to modify this, it is already a signed GCS URL
+
+        # Ensure only `/media/` prefix is removed correctly
+        return parsed_url.path.removeprefix("/media/")
+
     def get_queryset(self):
         """
         Retrieve messages for a specific chat or for the logged-in user, and generate signed URLs for images.
@@ -423,8 +441,11 @@ class MessageViewSet(viewsets.ModelViewSet):
         bucket_name = "usenlease-media"
         for message in messages:
             if message.image_url:
-                image_path = message.image_url.lstrip("/media/")  # More robust handling
-                message.signed_image_url = generate_signed_url(bucket_name, image_path)
+                image_path = self._extract_relative_path(message.image_url)
+                if image_path:
+                    message.signed_image_url = generate_signed_url(bucket_name, image_path)
+                else:
+                    message.signed_image_url = message.image_url  # Keep original URL if already signed
 
         return messages
 
@@ -454,11 +475,14 @@ class MessageViewSet(viewsets.ModelViewSet):
 
         # Process image URL
         url = self.request.data.get("item_image_url", "").strip()
-        image_path = url.lstrip("/media/") if url else None  # Handle possible empty values
-        image_url = generate_signed_url("usenlease-media", image_path) if image_path else None
+        image_path = self._extract_relative_path(url)
+
+        # Generate signed URL only if necessary
+        image_url = generate_signed_url("usenlease-media", image_path) if image_path else url
 
         # Save the message with the signed image URL
         serializer.save(sender=sender, receiver=receiver, chat=chat, image_url=image_url)
+
 
 
 
