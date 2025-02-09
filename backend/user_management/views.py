@@ -475,14 +475,16 @@ class MessageViewSet(viewsets.ModelViewSet):
 
         # Process image URL
         url = self.request.data.get("item_image_url", "").strip()
+        print(f"Image URL: {url}")
         image_path = self._extract_relative_path(url)
+        print(f"Image Path: {image_path}")
 
         # Generate signed URL only if necessary
         image_url = generate_signed_url("usenlease-media", image_path) if image_path else url
+        print(f"Signed Image URL: {image_url}")
 
         # Save the message with the signed image URL
         serializer.save(sender=sender, receiver=receiver, chat=chat, image_url=image_url)
-
 
 
 
