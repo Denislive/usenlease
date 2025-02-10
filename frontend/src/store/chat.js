@@ -124,6 +124,8 @@ const clearChatState = () => {
 
 const sendMessageAndReset = async () => {
   try {
+    // Ensure the equipment image URL is included
+    const equipmentImageUrl = chatState.value.equipmentImage; // Get the equipment image URL from state
 
     // Make the API request to send the message
     await axios.post(
@@ -132,12 +134,12 @@ const sendMessageAndReset = async () => {
         content: chatState.value.initialMessage, // Use the updated message
         chat: chatState.value.chatId,
         receiver: chatState.value.equipmentOwner,
+        item_image_url: equipmentImageUrl, // Include the equipment image URL
       },
       {
         withCredentials: true,
       }
     );
-
 
     // Show success notification
     showNotification(
@@ -149,7 +151,6 @@ const sendMessageAndReset = async () => {
     // Clear chatState after sending
     fetchChats(); // Refresh chats after sending
     clearChatState(); // Reset chatState to null
-
 
   } catch (error) {
     console.error("Error sending message:", error);

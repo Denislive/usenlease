@@ -392,6 +392,8 @@ class ChatViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(chat)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+
+
 class MessageViewSet(viewsets.ModelViewSet):
     """
     A ViewSet for handling messages in a chat.
@@ -401,11 +403,24 @@ class MessageViewSet(viewsets.ModelViewSet):
     authentication_classes = [JWTAuthenticationFromCookie]
     permission_classes = [IsAuthenticated]
 
+    def _extract_relative_path(self, url):  # ✅ Add 'self' to make it an instance method
+        """
+        Extracts the correct relative path from a given URL.
+        Ensures no duplicate base URLs when generating signed URLs.
+        """
+        if not url:
+            return None
+
+        parsed_url = urlparse(url)
+
+        # If URL is relative (like "/media/equipment_images/car.jpg"), extract the correct path
+        return parsed_url.path.lstrip("/media/")
+
     def get_queryset(self):
         """
-        Retrieve messages for a specific chat or for the logged-in user and generate signed URLs.
+        Retrieve messages for a specific chat or for the logged-in user, and generate signed URLs for images.
         """
-        self.check_permissions(self.request)
+        self.check_permissions(self.request)  # Ensure the user has permission
         chat_id = self.request.query_params.get("chat_id")
         user = self.request.user
 
@@ -417,7 +432,19 @@ class MessageViewSet(viewsets.ModelViewSet):
                 is_deleted=False
             ).order_by("sent_at")
 
-        # Generate signed URLs dynamically in the serializer (better than modifying the queryset)
+        # Generate signed URLs only for images that require it
+        bucket_name = "usenlease-media"
+        for message in messages:
+            if message.image_url:
+                image_path = self._extract_relative_path(message.image_url)  # ✅ Now works correctly
+
+                if image_path:
+                    # Generate signed URL only if needed
+                    message.signed_image_url = generate_signed_url(bucket_name, image_path)
+                else:
+                    # If the image_url is already a signed GCS URL, just use it
+                    message.signed_image_url = message.image_url  
+
         return messages
 
     @transaction.atomic
@@ -429,7 +456,7 @@ class MessageViewSet(viewsets.ModelViewSet):
         receiver_id = self.request.data.get("receiver")
 
         if not receiver_id:
-            return Response({"error": "Receiver ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Receiver ID is required to send a message."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             receiver = User.objects.get(id=receiver_id)
@@ -437,13 +464,26 @@ class MessageViewSet(viewsets.ModelViewSet):
             return Response({"error": "Receiver not found."}, status=status.HTTP_404_NOT_FOUND)
 
         # Check if a chat already exists between the sender and receiver
-        chat, created = Chat.objects.get_or_create()
-        chat.participants.add(sender, receiver)
+        chat = Chat.objects.filter(participants=sender).filter(participants=receiver).distinct().first()
 
-        # Store the original image URL (if provided)
-        image_url = self.request.data.get("item_image_url", "").strip()
+        if not chat:
+            chat = Chat.objects.create()
+            chat.participants.add(sender, receiver)
 
+        # Process image URL
+        url = self.request.data.get("item_image_url", "").strip()
+        image_path = self._extract_relative_path(url)  #  Now works correctly
+
+        if image_path:
+            # Generate signed URL only if necessary
+            image_url = generate_signed_url("usenlease-media", image_path)
+        else:
+            # If already a signed GCS URL, use it as-is
+            image_url = url  
+
+        # Save the message with the correct image URL
         serializer.save(sender=sender, receiver=receiver, chat=chat, image_url=image_url)
+
 
 class AllChatsViewSet(viewsets.ViewSet):
     """
