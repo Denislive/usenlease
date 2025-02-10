@@ -59,7 +59,7 @@ class Message(models.Model):
     sent_at = models.DateTimeField(auto_now_add=True)
     is_deleted = models.BooleanField(default=False)  # To handle deletion of messages
     seen = models.BooleanField(default=False)
-    image_url = models.CharField(max_length=1500, blank=True, null=True)  # New field to store image URL 
+    image_url = models.CharField(max_length=1500, blank=True, null=True)  # New field to store image URL 1500 chars
 
     def __str__(self):
         return f"Message from {self.sender.email} to {self.receiver.email} on {self.sent_at}"
