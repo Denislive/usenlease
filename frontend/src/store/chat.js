@@ -3,6 +3,7 @@ import { ref, reactive } from 'vue';
 import axios from 'axios';
 import { useAuthStore } from '@/store/auth';
 import useNotifications from '@/store/notification';
+import { query } from 'express';
 
 export const useChatStore = defineStore('chat', () => {
   const authStore = useAuthStore();
@@ -148,8 +149,13 @@ const sendMessageAndReset = async () => {
       "success"
     );
 
+    router.push({ path: "/profile", query: { chat: chatState.value.chatId } }); // Updates the URL
+
     // Clear chatState after sending
     fetchChats(); // Refresh chats after sending
+    if (chatState.value.chatId) {
+      openChat(Number(ref(chatState.value.chatId))); // Open the chat after sending
+    }
     clearChatState(); // Reset chatState to null
 
   } catch (error) {
