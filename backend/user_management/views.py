@@ -485,7 +485,9 @@ class MessageViewSet(viewsets.ModelViewSet):
         # Save the message with the signed image URL
         serializer.save(sender=sender, receiver=receiver, chat=chat, image_url=image_url)
 
-        
+
+
+
 class AllChatsViewSet(viewsets.ViewSet):
     """
     A ViewSet to retrieve all chats for the logged-in user.
