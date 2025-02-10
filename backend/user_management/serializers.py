@@ -13,6 +13,8 @@ from .models import (
     FAQ
 )
 
+from .utils import generate_signed_url
+
 
 class ContactSerializer(serializers.ModelSerializer):
     class Meta:
@@ -109,10 +111,17 @@ class MessageSerializer(serializers.ModelSerializer):
     sender = serializers.PrimaryKeyRelatedField(queryset=get_user_model().objects.all(), required=False)
     receiver = serializers.PrimaryKeyRelatedField(queryset=get_user_model().objects.all())
     chat = serializers.PrimaryKeyRelatedField(queryset=Chat.objects.all(), required=False)  # Allow chat to be optional
+    signed_image_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Message
-        fields = ['id', 'sender', 'receiver', 'content', 'sent_at', 'is_deleted', 'seen', 'chat', 'image_url']
+        fields = ['id', 'sender', 'receiver', 'content', 'sent_at', 'is_deleted', 'seen', 'chat', 'image_url', 'signed_image_url']
+
+    def get_signed_image_url(self, obj):
+        """Generates a signed URL for the image if it exists."""
+        if obj.image_url:
+            return generate_signed_url("usenlease-media", obj.image_url)
+        return None
 
 
 class ChatSerializer(serializers.ModelSerializer):
