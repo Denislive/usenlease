@@ -849,7 +849,7 @@
 </template>
 
 <script>
-import { ref, onMounted, reactive, computed } from "vue";
+import { ref, onMounted, reactive, computed, watch} from "vue";
 import axios from "axios";
 import { useAuthStore } from "@/store/auth";
 import useNotifications from "@/store/notification.js"; // Import the notification service
@@ -1055,12 +1055,27 @@ export default {
       }
     };
 
+
+    watch(
+      () => route.query.chat,
+      (newChatId) => {
+        if (newChatId) {
+          openChat(Number(newChatId));
+        } else {
+          activeChat.value = null;
+        }
+      }
+    );
+
+
+
     // Open a chat and fetch its messages
     const openChat = (chatId) => {
-      if (!messages[chatId]) {
+      if (!messages.value[chatId]) {
         fetchMessages(chatId);
       } else {
         activeChat.value = chatId;
+        router.push({ path: "/profile", query: { chat: chatId } }); // Update URL
       }
     };
 
@@ -1384,6 +1399,10 @@ export default {
       user.value = authStore.user;
 
       fetchChats();
+      if (route.query.chat) {
+        openChat(Number(route.query.chat));
+      }
+
       fetchOrders(); // Fetch orders on mount
       fetchUserReport();
       await store.fetchUserEditableEquipments();
