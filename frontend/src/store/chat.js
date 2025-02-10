@@ -3,10 +3,13 @@ import { ref, reactive } from 'vue';
 import axios from 'axios';
 import { useAuthStore } from '@/store/auth';
 import useNotifications from '@/store/notification';
+import { useRouter } from 'vue-router';
 
 export const useChatStore = defineStore('chat', () => {
   const authStore = useAuthStore();
   const { showNotification } = useNotifications();
+
+  const router = useRouter();
 
   // State
   const chats = ref([]); // List of all chats
