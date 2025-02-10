@@ -580,10 +580,10 @@
               class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
               <div class="bg-white rounded-lg shadow-lg p-6 w-96">
                 <h2 class="text-lg font-bold text-gray-800 mb-4">Review Your Message</h2>
-                <img :src="chatStore.chatState.equipmentImage" :alt="Item image"
+                <img :src="chatStore.chatState.equipmentImage" alt="Item image"
                   class="w-full h-40 object-cover rounded-lg mb-4" />
 
-                <!-- Editable Message -->
+                <!-- Editable Message input -->
                 <textarea v-model="chatStore.chatState.initialMessage"
                   class="w-full px-4 py-2 border border-gray-300 rounded-lg mb-4" rows="4"
                   placeholder="Edit your message here">{{ chatStore.chatState.initialMessage }}</textarea>
