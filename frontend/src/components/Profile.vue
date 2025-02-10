@@ -580,7 +580,7 @@
               class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
               <div class="bg-white rounded-lg shadow-lg p-6 w-96">
                 <h2 class="text-lg font-bold text-gray-800 mb-4">Review Your Message</h2>
-                <img :src="chatStore.chatState.equipmentImage" :alt="chatStore.chatState.equipmentImage"
+                <img :src="chatStore.chatState.equipmentImage" :alt="Item image"
                   class="w-full h-40 object-cover rounded-lg mb-4" />
 
                 <!-- Editable Message -->
