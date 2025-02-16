@@ -50,7 +50,7 @@ const getAdCount = (category) => {
             class="flex items-center p-2 bg-white rounded-lg transition-shadow duration-300 text-gray-800 shadow hover:bg-yellow-100 hover:shadow-lg"
           >
             <img
-              :src="category.image ? category.image : 'Category image'"
+              :src="category.image ? category.image : 'https://picsum.photos/100/150'"
               :alt="category.name"
               class="category-icon w-8 h-8 object-cover rounded-full border-2 border-yellow-400 mr-3"
             >
@@ -72,7 +72,7 @@ const getAdCount = (category) => {
                 class="flex items-center p-2 bg-white rounded-lg transition-colors duration-300 text-gray-800 hover:bg-yellow-100 transform hover:translate-x-1"
               >
                 <img
-                  :src="subcategory.image ? subcategory.image : 'SubCategory image'"
+                  :src="subcategory.image ? subcategory.image : 'https://picsum.photos/100/150'"
                   :alt="subcategory.name"
                   class="subcategory-icon w-9 h-9 object-cover rounded-full border-2 border-yellow-400 mr-2"
                 >
