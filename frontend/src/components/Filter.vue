@@ -1,119 +1,129 @@
 <template>
-  <div class="hidden md:block">
-    <h1 class="text-xl font-bold mb-4">
-      <i class="pi pi-filter"></i> Filters
-    </h1>
-    <ul class="space-y-4">
-      <!-- Category Filter -->
-      <li class="product-filters-tab">
-        <a href="#" class="text-lg font-semibold hover:text-[#1c1c1c]">Category</a>
-        <ul class="ml-4 space-y-2 overflow-y-auto max-h-64">
-          <li>
-            <a href="#" class="text-xl text-gray-500" @click.prevent="clearAll('category')">Clear All</a>
-          </li>
-          <li v-for="(category, index) in displayedCategories" :key="category.id">
-            <input
-              :id="`category-checkbox${category.id}`"
-              type="checkbox"
-              class="mr-2"
-              v-model="selectedCategories[category.name]"
-            />
-            <label :for="`category-checkbox${category.id}`" class="text-xl">{{ category.name }}</label>
-          </li>
-        </ul>
-        <button v-if="categories.length > 20" @click="toggleShowMore('category')" class="text-blue-500 mt-2">
-          {{ showMoreCategories ? 'Show Less' : 'Show More' }}
-        </button>
-      </li>
+  <Hero />
+  <Breadcrumb />
 
-      <!-- Location Filter -->
-      <li class="product-filters-tab">
-        <a href="#" class="text-lg font-semibold hover:text-[#1c1c1c]">Location</a>
-        <ul class="ml-4 space-y-2 overflow-y-auto max-h-64">
-          <li>
-            <a href="#" class="text-xl text-gray-500" @click.prevent="clearAll('location')">Clear All</a>
-          </li>
-          <li v-for="(city, index) in displayedCities" :key="index">
-            <input
-              :id="`city-checkbox${index}`"
-              type="checkbox"
-              class="mr-2"
-              v-model="selectedCities[city]"
-            />
-            <label :for="`city-checkbox${city}`" class="text-xl">{{ city }}</label>
-          </li>
-        </ul>
-        <button v-if="cities.length > 20" @click="toggleShowMore('location')" class="text-blue-500 mt-2">
-          {{ showMoreCities ? 'Show Less' : 'Show More' }}
-        </button>
-      </li>
-    </ul>
+  <div class="container mx-auto py-4 w-5/6 hidden md:block">
+    <div class="grid grid-cols-12 gap-4 p-1">
+      <!-- Sidebar Section -->
+      <aside class="col-span-3 bg-gray-100 rounded p-2">
+        <Filter 
+          :categories="categories" 
+          :cities="cities" 
+          :selectedCategories="selectedCategories" 
+          :selectedCities="selectedCities" 
+        />
+      </aside>
+
+      <!-- Main Content Section -->
+      <main class="col-span-9 bg-gray-100 p-1">
+        <Card :equipments="filteredEquipments" /> <!-- Pass filtered equipments -->
+      </main>
+    </div>
+  </div>
+
+  <div class="p-2 w-full text-xs md:hidden">
+    <MobileFilter 
+      :mobileCategories="categories" 
+      :mobileCities="cities" 
+      :mobileSelectedCategories="selectedCategories" 
+      :mobileSelectedCities="selectedCities" 
+    />
+    <Card :equipments="filteredEquipments" /> <!-- Pass filtered equipments -->
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, onMounted, computed } from 'vue';
+import axios from 'axios';
+import { useStore } from 'vuex';
+import Hero from '@/components/Hero.vue';
+import Breadcrumb from '@/components/Breadcrumb.vue';
+import Filter from '@/components/Filter.vue';
+import Card from '@/components/Card.vue';
+import MobileFilter from '@/components/MobileFilter.vue';
 
-// Props
-const props = defineProps({
-  categories: {
-    type: Array,
-    required: true,
-  },
-  cities: {
-    type: Array,
-    required: true,
-  },
-  selectedCategories: {
-    type: Object,
-    required: true,
-  },
-  selectedCities: {
-    type: Object,
-    required: true,
-  },
+// State to hold equipment and category data
+const equipments = ref([]);
+const categories = ref([]);
+const cities = ref([]);
+const selectedCategories = ref({});
+const selectedCities = ref({});
+const store = useStore();
+
+// Computed property to get searchQuery from Vuex
+const searchQuery = computed(() => store.getters.getSearchQuery);
+const api_base_url = import.meta.env.VITE_API_BASE_URL;
+
+// Fetch equipment and category data
+onMounted(async () => {
+  try {
+    const equipmentResponse = await axios.get(`${api_base_url}/api/equipments/`);
+    equipments.value = equipmentResponse.data;
+
+    const categoryResponse = await axios.get(`${api_base_url}/api/categories`);
+    categories.value = categoryResponse.data;
+
+    // Initialize selected categories
+    categories.value.forEach(category => {
+      selectedCategories.value[category.name] = false;
+    });
+
+    // Extract cities from the equipment data (assuming each equipment has a city/location field)
+    const equipmentCities = equipments.value.map(equipment => equipment.address?.city).filter(city => city);
+    cities.value = [...new Set(equipmentCities)]; // Remove duplicates
+
+  } catch (error) {
+    console.error('Error fetching data:', error);
+  }
 });
 
-// State for showing more categories and cities
-const showMoreCategories = ref(false);
-const showMoreCities = ref(false);
+// Create a map from category names to their IDs
+const categoryIdMap = computed(() => {
+  const map = {};
+  categories.value.forEach(category => {
+    map[category.name] = category.id;
+  });
+  return map;
+});
 
-// Computed properties for displaying categories and cities
-const displayedCategories = computed(() =>
-  showMoreCategories.value ? props.categories : props.categories.slice(0, 20)
-);
-const displayedCities = computed(() =>
-  showMoreCities.value ? props.cities : props.cities.slice(0, 20)
-);
+// Computed property to filter equipments based on the search query and selected filters
+const filteredEquipments = computed(() => {
+  let filtered = equipments.value;
 
-// Toggle show more/less
-const toggleShowMore = (type) => {
-  if (type === 'category') {
-    showMoreCategories.value = !showMoreCategories.value;
-  } else if (type === 'location') {
-    showMoreCities.value = !showMoreCities.value;
-  }
-};
-
-// Function to clear all selected filters
-const clearAll = (filterType) => {
-  if (filterType === 'category') {
-    Object.keys(props.selectedCategories).forEach((key) => {
-      props.selectedCategories[key] = false;
-    });
-  } else if (filterType === 'location') {
-    Object.keys(props.selectedCities).forEach((key) => {
-      props.selectedCities[key] = false;
+  // Apply search query filtering first
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase();
+    return filtered.filter(equipment => {
+      return (
+        equipment.name.toLowerCase().includes(query) ||
+        equipment.description.toLowerCase().includes(query) ||
+        equipment.hourly_rate.toString().includes(query) ||
+        (equipment.address?.street_address?.toLowerCase().includes(query)) ||
+        (equipment.address?.city?.toLowerCase().includes(query)) ||
+        (equipment.address?.state?.toLowerCase().includes(query))
+      );
     });
   }
-};
+
+  // If no search query, apply category filtering
+  const selectedCategoryKeys = Object.keys(selectedCategories.value).filter(key => selectedCategories.value[key]);
+
+  if (selectedCategoryKeys.length > 0) {
+    filtered = filtered.filter(equipment => {
+      const equipmentCategoryId = equipment.category; // This is the ID
+      const selectedCategoryIds = selectedCategoryKeys.map(name => categoryIdMap.value[name]); // Map names to IDs
+      return selectedCategoryIds.includes(equipmentCategoryId);
+    });
+  }
+
+  // Apply city filtering
+  const selectedCityKeys = Object.keys(selectedCities.value).filter(key => selectedCities.value[key]);
+
+  if (selectedCityKeys.length > 0) {
+    filtered = filtered.filter(equipment => selectedCityKeys.includes(equipment.address?.city));
+  }
+
+  // Log the number of filtered equipments
+  return filtered;
+});
 </script>
-
-<style scoped>
-.overflow-y-auto {
-  overflow-y: auto;
-}
-.max-h-64 {
-  max-height: 16rem; /* Adjust as needed */
-}
-</style>

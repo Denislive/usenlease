@@ -2,9 +2,9 @@
   <div class="bg-[#1c1c1c] p-1 sticky top-0 z-50">
     <div class="w-11/12 md:w-5/6 lg:w-5/6 xl:w-4/6 mx-auto">
       <header class="text-white flex justify-between items-center">
-        <!-- company Logo -->
+        <!-- Logo -->
         <RouterLink :to="{ name: 'home' }" class="flex items-center">
-          <img :src="company.companyInfo?.logo" :alt="company.companyInfo?.logo" class="h-20" />
+          <img :src="company.companyInfo?.logo" :alt="company.companyInfo?.logo" class="h-16" />
         </RouterLink>
 
         <!-- Role Switch -->

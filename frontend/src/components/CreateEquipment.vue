@@ -1,7 +1,10 @@
 <template>
   <div class="flex items-center justify-center min-h-screen bg-gray-100 p-4">
-    <div class="bg-white shadow-md rounded-lg p-6 w-full max-w-md">
-      <h2 class="text-2xl font-bold text-center mb-6">List Item</h2>
+    <div class="bg-white shadow-md rounded-lg p-6 w-full max-w-lg">
+      <div class="flex justify-center items-center">
+        <img src="../assets/images/logo.jpeg" alt="logo" class="h-30 w-40">
+      </div>
+      <h2 class="text-2xl font-bold text-center my-6">List Item</h2>
       <form @submit.prevent="handleSubmit">
         <!-- Item Name -->
         <div class="mb-4 relative">
@@ -25,7 +28,6 @@
           </select>
           <p v-if="categoryError" class="text-red-500 text-sm mt-1">{{ categoryError }}</p>
         </div>
-
 
         <!-- Hourly Rate -->
         <div class="mb-4 relative">
@@ -231,7 +233,7 @@ const itemName = ref('');
 const hourlyRate = ref(null);
 const selectedCategory = ref("");
 const tagsInput = ref(""); // Input field value
-const tags = ref([]);
+const tags = ref([]); // Array of individual tagsconst description = ref('');
 const terms = ref('');
 const streetAddress = ref('');
 const city = ref('');
@@ -336,9 +338,7 @@ const validateHourlyRate = () => {
 };
 
 const validateCategory = () => {
-  categoryError.value = !selectedCategory.value
-    ? 'Please select a valid category.'
-    : '';
+  categoryError.value = !selectedCategory.value ? 'Please select a valid category.' : '';
 };
 
 

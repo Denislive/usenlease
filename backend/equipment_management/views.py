@@ -43,6 +43,7 @@ from .serializers import (
     OrderItemSerializer
 )
 from user_management.views import JWTAuthenticationFromCookie
+from user_management.utils import send_custom_email
 
 # Stripe API Key setup
 stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -52,13 +53,10 @@ DOMAIN = settings.DOMAIN_URL
 
 from decimal import Decimal
 
-class CreateCheckoutSessionView(APIView):
-    """
-    Handles the creation of a Stripe checkout session and order creation.
-    """
 
+class CreateCheckoutSessionView(APIView):
     authentication_classes = [JWTAuthenticationFromCookie]
-    permission_classes = [permissions.IsAuthenticated]  # Restrict access to authenticated users
+    permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
         try:
@@ -117,27 +115,11 @@ class CreateCheckoutSessionView(APIView):
             # Convert price to cents (including service fee)
             amount_in_cents = int((order_total_price + service_fee) * Decimal('100'))
 
-            items_list = [
-                {
-                    "name": item.item.name,
-                    "quantity": item.quantity,
-                    "start_date": str(item.start_date),
-                    "end_date": str(item.end_date),
-                    "hourly_rate": float(item.item.hourly_rate),
-                    "total": float(item.total),
-                }
-                for item in order.order_items.all()
-            ]
-
             stripe_price = stripe.Price.create(
                 unit_amount=amount_in_cents,
                 currency="usd",
                 product_data={
                     "name": f"Order {order.id}",
-                },
-                metadata={
-                    "order_summary": f"Order total items: {order.total_order_items} --- Order total Price: ${order.order_total_price}",
-                    "items": json.dumps(items_list),  # Serialize items as JSON string
                 },
             )
 
@@ -147,8 +129,8 @@ class CreateCheckoutSessionView(APIView):
                 billing_address_collection='required',
                 shipping_address_collection={'allowed_countries': ['US', 'CA', 'KE']},
                 line_items=[{'price': stripe_price.id, 'quantity': 1}],
-                success_url=f"{DOMAIN}/payment-successful?session_id={{CHECKOUT_SESSION_ID}}",
-                cancel_url=f"{DOMAIN}/payment-canceled",
+                success_url=f"{DOMAIN}/payment-successful?order_id={order.id}",
+                cancel_url=f"{DOMAIN}/payment-canceled?order_id={order.id}",
             )
 
             # Update order with payment details
@@ -156,8 +138,38 @@ class CreateCheckoutSessionView(APIView):
             order.payment_status = 'pending'
             order.save()
 
-            # Do not delete cart items here, as we want to retain them if payment is canceled
-            # cart_items.delete()  <-- Remove this line
+            # === Send Emails ===
+            # 1. Email to the user (Order Creation)
+            user_email_context = {
+                'user': user,
+                'order': order,
+                'cart_items': cart_items,
+                'total_price': order_total_price + service_fee,
+            }
+            send_custom_email(
+                subject="Order Confirmation - Your Rental Order",
+                template_name="emails/order_created.html",
+                context=user_email_context,
+                recipient_list=[user.email],
+            )
+
+            # 2. Notify equipment owners
+            for cart_item in cart_items:
+                owner = cart_item.item.owner
+                owner_email_context = {
+                    'owner': owner,
+                    'item': cart_item.item,
+                    'renter': user,
+                    'quantity': cart_item.quantity,
+                    'start_date': cart_item.start_date,
+                    'end_date': cart_item.end_date,
+                }
+                send_custom_email(
+                    subject=f"Equipment Rental Notification - {cart_item.item.name}",
+                    template_name="emails/equipment_rented.html",
+                    context=owner_email_context,
+                    recipient_list=[owner.email],
+                )
 
             return Response(
                 {
@@ -175,7 +187,6 @@ class CreateCheckoutSessionView(APIView):
             return Response({"error": e.detail}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({"error": f"An unexpected error occurred. {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 
 class SessionStatusView(APIView):
@@ -424,7 +435,6 @@ class EquipmentViewSet(viewsets.ModelViewSet):
     queryset = Equipment.objects.all()
     serializer_class = EquipmentSerializer
     authentication_classes = [JWTAuthenticationFromCookie]
-
 
     def get_permissions(self):
         """
@@ -1250,6 +1260,7 @@ class OrderItemViewSet(viewsets.ViewSet):
         if self.action == "list_booked_items":
             return [permissions.AllowAny()]  # No authentication required
         return [permissions.IsAuthenticated()]  # Authentication required for all other methods
+
 
     def list(self, request):
         """
