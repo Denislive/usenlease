@@ -23,9 +23,9 @@ const router = useRouter();
 const store = useEquipmentsStore();
 
 
-onMounted(async () => {
-  await store.fetchCategories();
-});
+// onMounted(async () => {
+//   await store.fetchCategories();
+// });
 
 
 const categories = store.categories.value;
