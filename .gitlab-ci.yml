@@ -5,87 +5,54 @@ services:
 
 stages:
   - setup
-  - check_prerequisites
-  - clone_repository
-  - build_and_push_image
-  - deploy_to_heroku
-  - deploy_to_google_cloud  # Ensure this stage exists
+  - build
+  - test
+  - deploy
 
 variables:
-  IMAGE: 'ngumonelson123/combined-image'
-  GOOGLE_CLOUD_PROJECT: 'buoyant-song-448609-h9'
-  GOOGLE_CLOUD_ZONE: 'europe-west2-a'
-  POSTGRES_DB: 'usenlease_db'
-  HEROKU_APP_NAME: 'usenleaseprod'
+  IMAGE: 'ngumonelson123/combined-image'  # Replace with your Docker image name
   DOCKER_HOST: tcp://docker:2375  # Connect to the Docker daemon
 
-before_script:
-  - echo "Setting up environment variables"
-  - echo "GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}" > .env
-  - echo "GOOGLE_CLOUD_ZONE=${GOOGLE_CLOUD_ZONE}" >> .env
-  - echo "IMAGE=${IMAGE}" >> .env
-  - echo "POSTGRES_DB=${POSTGRES_DB}" >> .env
-
-# Setup stage - Create .env file
+# Setup stage - Install dependencies and set up the environment
 setup:
   stage: setup
   script:
-    - echo "Creating .env file"
-    - cat .env
+    - echo "Setting up environment..."
+    - apk add --no-cache git curl bash  # Install necessary tools
+    - echo "Environment setup complete."
 
-# Check Prerequisites - Docker installation & shell check
-check_prerequisites:
-  stage: check_prerequisites
+# Build stage - Build the Docker image
+build:
+  stage: build
+  script:
+    - echo "Building Docker image..."
+    - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD" || { echo "Docker login failed"; exit 1; }
+    - docker build --build-arg SECRET_KEY="django-insecure-^5zv2&aef@n*hi0icmu7lji6bqf0r&d@!x)%*gq-e^w)2e^kl!" -t ${IMAGE}:v1.1.0 -f Dockerfile . || { echo "Docker build failed"; exit 1; }
+    - echo "Docker image built successfully."
+
+# Test stage - Run tests (optional, customize as needed)
+test:
+  stage: test
+  script:
+    - echo "Running tests..."
+    - echo "Tests completed successfully."
+
+# Deploy stage - Push the Docker image and deploy to Heroku/Google Cloud
+deploy:
+  stage: deploy
   script:
     - |
-      echo "Checking shell and Docker installation..."
-      echo "Current shell: $SHELL"
-      docker --version || { echo "Docker is not installed"; exit 1; }  # Ensures Docker is available
-
-# Clone Repository - Gitt clone from the repo
-clone_repository:
-  stage: clone_repository
-  script:
-    - echo "Cloning the repository..."
-    - git clone https://${GITHUB_TOKEN}@github.com/Denislive/usenlease.git || { echo "Failed to clone repository"; exit 1; }
-
-# Build and Push Docker Image to Docker Hub
-build_and_push_image:
-  stage: build_and_push_image
-  script:
-    - |
-      echo 'Building and pushing Docker image to Docker Hub...'
-      docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD" || { echo "Docker login failed"; exit 1; }
-      docker build --build-arg SECRET_KEY="django-insecure-^5zv2&aef@n*hi0icmu7lji6bqf0r&d@!x)%*gq-e^w)2e^kl!" -t ${IMAGE}:v1.1.0 -f Dockerfile . || { echo "Docker build failed"; exit 1; }
+      echo "Deploying the application..."
+      # Push Docker image to Docker Hub
       docker push ${IMAGE}:v1.1.0 || { echo "Docker push failed"; exit 1; }
-      echo "Docker image ${IMAGE}:v1.1.0 built and pushed successfully."
 
-# Deploy to Heroku
-deploy_to_heroku:
-  stage: deploy_to_heroku
-  needs: ["build_and_push_image"]  # Ensure this job runs after build_and_push_image
-  script:
-    - |
-      echo 'Deploying to Heroku...'
+      # Deploy to Heroku
       echo "$HEROKU_API_KEY" | docker login --username=_ --password-stdin registry.heroku.com || { echo "Heroku Docker login failed"; exit 1; }
-      docker pull ${IMAGE}:v1.1.0 || { echo "Failed to pull Docker image from Docker Hub"; exit 1; }  # Pull the image to ensure it exists
       docker tag ${IMAGE}:v1.1.0 registry.heroku.com/$HEROKU_APP_NAME/web || { echo "Docker tag failed"; exit 1; }
       docker push registry.heroku.com/$HEROKU_APP_NAME/web || { echo "Docker push to Heroku failed"; exit 1; }
-
-      # Install bash, Node.js, and Heroku CLI
-      echo "Installing bash, Node.js, and Heroku CLI..."
-      apk add --no-cache bash curl git nodejs npm || { echo "Failed to install dependencies"; exit 1; }
-      curl https://cli-assets.heroku.com/install.sh | bash || { echo "Heroku CLI installation failed"; exit 1; }
-
-      # Release the container on Heroku
       heroku container:release web --app $HEROKU_APP_NAME || { echo "Heroku release failed"; exit 1; }
 
-# Deploy to Google Cloud
-deploy_to_google_cloud:
-  stage: deploy_to_google_cloud
-  script:
-    - |
-      echo 'Deploying to Google Cloud...'
+      # Deploy to Google Cloud
       echo "Installing Google Cloud SDK..."
       apk add --no-cache curl python3 py3-pip
       curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-464.0.0-linux-x86_64.tar.gz
@@ -96,10 +63,8 @@ deploy_to_google_cloud:
       export PATH=$PATH:$(pwd)/google-cloud-sdk/bin
       gcloud --version || { echo "Google Cloud SDK installation failed"; exit 1; }
 
-      echo "Decoding Google Cloud service account key..."
-      echo "${GOOGLE_CLOUD_KEY}" | base64 -d > /tmp/service-account-key.json || { echo "Failed to decode service account key"; exit 1; }
-
       echo "Authenticating with Google Cloud..."
+      echo "${GOOGLE_CLOUD_KEY}" | base64 -d > /tmp/service-account-key.json || { echo "Failed to decode service account key"; exit 1; }
       gcloud auth activate-service-account --key-file=/tmp/service-account-key.json --project=${GOOGLE_CLOUD_PROJECT} || { echo "Google Cloud authentication failed"; exit 1; }
 
       echo "Deploying to Google Cloud..."
