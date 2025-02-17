@@ -66,23 +66,19 @@ const goToDetail = (equipmentId) => {
         >
           <div class="relative">
             <span
-              :class="{
-                'bg-green-500': equipment.is_available,
-                'bg-blue-500': !equipment.is_available
-              }"
-              class="absolute top-0 left-0 text-white text-xs font-bold px-2 py-1 rounded flex items-center"
+              v-if="equipment.is_available"
+              class="absolute top-0 left-0 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded flex items-center"
             >
-              <i
-                :class="{
-                  'pi pi-check-circle': equipment.is_available,
-                  'pi pi-info-circle': !equipment.is_available
-                }"
-                class="mr-1"
-              ></i>
-              <div v-if="equipment.is_available" class="mr-1">
-                {{ equipment.available_quantity }}
-              </div>
-              {{ equipment.is_available ? 'Available' : 'Click to Check details' }}
+              <i class="pi pi-check-circle mr-1"></i>
+              <div class="mr-1">{{ equipment.available_quantity }}</div>
+              Available
+            </span>
+            <span
+              v-else
+              class="absolute top-0 left-0 bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded flex items-center" @click="goToDetail(equipment.id)"
+            >
+              <i class="pi pi-info-circle mr-1"></i>
+              Click to check details
             </span>
 
             <img

@@ -31,17 +31,17 @@ const prevSlide = () => {
                         :style="`transform: translateX(-${currentSlide * 100}%)`">
                         <!-- Slide 1 -->
                         <div class="flex-shrink-0 w-full">
-                            <img class="w-full h-48 object-cover" src="../assets/gifs/1.gif"
+                            <img class="w-full h-72 object-cover" src="../assets/gifs/1.gif"
                                 alt="Slide 1">
                         </div>
                         <!-- Slide 2 -->
                         <div class="flex-shrink-0 w-full">
-                            <img class="w-full h-48 object-cover" src="../assets/gifs/2.gif"
+                            <img class="w-full h-72 object-cover" src="../assets/gifs/2.gif"
                                 alt="Slide 2">
                         </div>
                         <!-- Slide 3 -->
                         <div class="flex-shrink-0 w-full">
-                            <img class="w-full h-48 object-cover" src="../assets/gifs/3.gif"
+                            <img class="w-full h-72 object-cover" src="../assets/gifs/3.gif"
                                 alt="Slide 3">
                         </div>
                     </div>
