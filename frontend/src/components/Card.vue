@@ -10,7 +10,7 @@ const props = defineProps({
   },
 });
 
-
+// Function to render stars based on rating
 const renderStars = (rating) => {
   const fullStars = Math.floor(rating);
   const halfStar = rating % 1 >= 0.5 ? 1 : 0;
@@ -22,13 +22,9 @@ const renderStars = (rating) => {
 const router = useRouter();
 const store = useEquipmentsStore();
 
-
 onMounted(async () => {
-  await store.fetchCategories();
+  await store.fetchCategories(); // Ensure this is not causing re-renders
 });
-
-
-const categories = store.categories.value;
 
 const itemsPerPage = 20; // Items per page
 const currentPage = ref(1); // Current page number
@@ -50,6 +46,7 @@ const goToPage = (page) => {
   }
 };
 
+// Navigate to equipment detail page
 const goToDetail = (equipmentId) => {
   if (equipmentId) {
     router.push({ name: 'equipment-details', params: { id: equipmentId } });
@@ -68,23 +65,38 @@ const goToDetail = (equipmentId) => {
           class="bg-white rounded-lg shadow-lg overflow-hidden transition-transform hover:scale-105 cursor-pointer"
         >
           <div class="relative">
-            <span :class="{
-              'bg-green-500': equipment.is_available,
-              'bg-blue-500': !equipment.is_available
-            }" class="absolute top-0 left-0 text-white text-xs font-bold px-2 py-1 rounded flex items-center">
-              <i :class="{
-                'pi pi-check-circle': equipment.is_available,
-                'pi pi-info-circle': !equipment.is_available
-              }" class="mr-1"></i>
+            <span
+              :class="{
+                'bg-green-500': equipment.is_available,
+                'bg-blue-500': !equipment.is_available
+              }"
+              class="absolute top-0 left-0 text-white text-xs font-bold px-2 py-1 rounded flex items-center"
+            >
+              <i
+                :class="{
+                  'pi pi-check-circle': equipment.is_available,
+                  'pi pi-info-circle': !equipment.is_available
+                }"
+                class="mr-1"
+              ></i>
               <div v-if="equipment.is_available" class="mr-1">
                 {{ equipment.available_quantity }}
               </div>
               {{ equipment.is_available ? 'Available' : 'Click to Check details' }}
             </span>
 
-            <img v-if="equipment.images.length > 0" :src="equipment.images[0].image_url"
-            :alt="equipment.images.length ? equipment.name : 'Placeholder Image'"  class="w-full h-48 object-contain" />
-            <img v-else src="https://via.placeholder.com/350" alt="Placeholder Image" class="w-full h-48 object-contain" />
+            <img
+              v-if="equipment.images.length > 0"
+              :src="equipment.images[0].image_url"
+              :alt="equipment.images.length ? equipment.name : 'Placeholder Image'"
+              class="w-full h-48 object-contain"
+            />
+            <img
+              v-else
+              src="https://via.placeholder.com/350"
+              alt="Placeholder Image"
+              class="w-full h-48 object-contain"
+            />
           </div>
 
           <div class="p-4">
@@ -100,12 +112,12 @@ const goToDetail = (equipmentId) => {
             </div>
             <button 
               @click="goToDetail(equipment.id)" 
-              class="bg-[#ff6f00] rounded text-white px-4 py-2 mt-2 transition duration-300 hover:bg-[#ff9e00] transform hover:scale-110">
+              class="bg-[#ff6f00] rounded text-white px-4 py-2 mt-2 transition duration-300 hover:bg-[#ff9e00] transform hover:scale-110"
+            >
               Rent Now
             </button>
           </div>
         </div>
-        
       </div>
     </div>
 
