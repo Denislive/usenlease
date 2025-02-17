@@ -9,7 +9,7 @@ stages:
   - clone_repository
   - build_and_push_image
   - deploy_to_heroku
-  - deploy_to_google_cloud
+  - deploy_to_google_cloud  # Ensure this stage exists
 
 variables:
   IMAGE: 'ngumonelson123/combined-image'
@@ -47,7 +47,7 @@ clone_repository:
   stage: clone_repository
   script:
     - echo "Cloning the repository..."
-    - git clone https://github.com/Denislive/usenlease.git || { echo "Failed to clone repository"; exit 1; }
+    - git clone https://${GITHUB_TOKEN}@github.com/Denislive/usenlease.git || { echo "Failed to clone repository"; exit 1; }
 
 # Build and Push Docker Image to Docker Hub
 build_and_push_image:
@@ -72,9 +72,9 @@ deploy_to_heroku:
       docker tag ${IMAGE}:v1.1.0 registry.heroku.com/$HEROKU_APP_NAME/web || { echo "Docker tag failed"; exit 1; }
       docker push registry.heroku.com/$HEROKU_APP_NAME/web || { echo "Docker push to Heroku failed"; exit 1; }
 
-      # Install bash and Heroku CLI
-      echo "Installing bash and Heroku CLI..."
-      apk add --no-cache bash curl git || { echo "Failed to install dependencies"; exit 1; }
+      # Install bash, Node.js, and Heroku CLI
+      echo "Installing bash, Node.js, and Heroku CLI..."
+      apk add --no-cache bash curl git nodejs npm || { echo "Failed to install dependencies"; exit 1; }
       curl https://cli-assets.heroku.com/install.sh | bash || { echo "Heroku CLI installation failed"; exit 1; }
 
       # Release the container on Heroku
@@ -86,6 +86,23 @@ deploy_to_google_cloud:
   script:
     - |
       echo 'Deploying to Google Cloud...'
+      echo "Installing Google Cloud SDK..."
+      apk add --no-cache curl python3 py3-pip
+      curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-464.0.0-linux-x86_64.tar.gz
+      tar -xf google-cloud-cli-464.0.0-linux-x86_64.tar.gz
+      ./google-cloud-sdk/install.sh --quiet --usage-reporting=false --command-completion=false --path-update=true
+
+      # Add Google Cloud SDK to PATH
+      export PATH=$PATH:$(pwd)/google-cloud-sdk/bin
+      gcloud --version || { echo "Google Cloud SDK installation failed"; exit 1; }
+
+      echo "Decoding Google Cloud service account key..."
+      echo "${GOOGLE_CLOUD_KEY}" | base64 -d > /tmp/service-account-key.json || { echo "Failed to decode service account key"; exit 1; }
+
+      echo "Authenticating with Google Cloud..."
+      gcloud auth activate-service-account --key-file=/tmp/service-account-key.json --project=${GOOGLE_CLOUD_PROJECT} || { echo "Google Cloud authentication failed"; exit 1; }
+
+      echo "Deploying to Google Cloud..."
       INSTANCE_NAME="usenlease-instance"
       INSTANCE_EXISTS=$(gcloud compute instances list --filter="name=${INSTANCE_NAME}" --format="value(name)" --project=${GOOGLE_CLOUD_PROJECT})
 
@@ -93,7 +110,6 @@ deploy_to_google_cloud:
           echo "Instance ${INSTANCE_NAME} already exists. Skipping creation..."
       else
           echo "Instance ${INSTANCE_NAME} does not exist. Creating it..."
-          gcloud auth activate-service-account --key-file="${GOOGLE_CLOUD_KEY}" || { echo "Google Cloud authentication failed"; exit 1; }
           gcloud compute instances create ${INSTANCE_NAME} \
               --project=${GOOGLE_CLOUD_PROJECT} \
               --zone=${GOOGLE_CLOUD_ZONE} \
