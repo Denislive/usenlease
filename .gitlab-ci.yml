@@ -58,16 +58,26 @@ build_and_push_image:
       docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD" || { echo "Docker login failed"; exit 1; }
       docker build --build-arg SECRET_KEY="django-insecure-^5zv2&aef@n*hi0icmu7lji6bqf0r&d@!x)%*gq-e^w)2e^kl!" -t ${IMAGE}:v1.1.0 -f Dockerfile . || { echo "Docker build failed"; exit 1; }
       docker push ${IMAGE}:v1.1.0 || { echo "Docker push failed"; exit 1; }
+      echo "Docker image ${IMAGE}:v1.1.0 built and pushed successfully."
 
 # Deploy to Heroku
 deploy_to_heroku:
   stage: deploy_to_heroku
+  needs: ["build_and_push_image"]  # Ensure this job runs after build_and_push_image
   script:
     - |
       echo 'Deploying to Heroku...'
       echo "$HEROKU_API_KEY" | docker login --username=_ --password-stdin registry.heroku.com || { echo "Heroku Docker login failed"; exit 1; }
+      docker pull ${IMAGE}:v1.1.0 || { echo "Failed to pull Docker image from Docker Hub"; exit 1; }  # Pull the image to ensure it exists
       docker tag ${IMAGE}:v1.1.0 registry.heroku.com/$HEROKU_APP_NAME/web || { echo "Docker tag failed"; exit 1; }
       docker push registry.heroku.com/$HEROKU_APP_NAME/web || { echo "Docker push to Heroku failed"; exit 1; }
+
+      # Install bash and Heroku CLI
+      echo "Installing bash and Heroku CLI..."
+      apk add --no-cache bash curl git || { echo "Failed to install dependencies"; exit 1; }
+      curl https://cli-assets.heroku.com/install.sh | bash || { echo "Heroku CLI installation failed"; exit 1; }
+
+      # Release the container on Heroku
       heroku container:release web --app $HEROKU_APP_NAME || { echo "Heroku release failed"; exit 1; }
 
 # Deploy to Google Cloud
