@@ -42,7 +42,7 @@ check_prerequisites:
       echo "Current shell: $SHELL"
       docker --version || { echo "Docker is not installed"; exit 1; }  # Ensures Docker is available
 
-# Clone Repository - Git clone from the repo
+# Clone Repository - Gitt clone from the repo
 clone_repository:
   stage: clone_repository
   script:
