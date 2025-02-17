@@ -36,14 +36,14 @@ check_prerequisites:
     - |
       echo "Checking shell and Docker installation..."
       echo "Current shell: $SHELL"
-      docker --version || exit 1  # Ensures Docker is available
+      docker --version || { echo "Docker is not installed"; exit 1; }  # Ensures Docker is available
 
 # Clone Repository - Git clone from the repo
 clone_repository:
   stage: clone_repository
   script:
     - echo "Cloning the repository..."
-    - git clone https://github.com/Denislive/usenlease.git
+    - git clone https://github.com/Denislive/usenlease.git || { echo "Failed to clone repository"; exit 1; }
 
 # Build and Push Docker Image to Docker Hub
 build_and_push_image:
@@ -51,9 +51,9 @@ build_and_push_image:
   script:
     - |
       echo 'Building and pushing Docker image to Docker Hub...'
-      docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
-      docker build --build-arg SECRET_KEY="django-insecure-^5zv2&aef@n*hi0icmu7lji6bqf0r&d@!x)%*gq-e^w)2e^kl!" -t ${IMAGE}:v1.1.0 -f Dockerfile .
-      docker push ${IMAGE}:v1.1.0
+      docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD" || { echo "Docker login failed"; exit 1; }
+      docker build --build-arg SECRET_KEY="django-insecure-^5zv2&aef@n*hi0icmu7lji6bqf0r&d@!x)%*gq-e^w)2e^kl!" -t ${IMAGE}:v1.1.0 -f Dockerfile . || { echo "Docker build failed"; exit 1; }
+      docker push ${IMAGE}:v1.1.0 || { echo "Docker push failed"; exit 1; }
 
 # Deploy to Heroku
 deploy_to_heroku:
@@ -61,10 +61,10 @@ deploy_to_heroku:
   script:
     - |
       echo 'Deploying to Heroku...'
-      echo "$HEROKU_API_KEY" | docker login --username=_ --password-stdin registry.heroku.com
-      docker tag ${IMAGE}:v1.1.0 registry.heroku.com/$HEROKU_APP_NAME/web
-      docker push registry.heroku.com/$HEROKU_APP_NAME/web
-      heroku container:release web --app $HEROKU_APP_NAME
+      echo "$HEROKU_API_KEY" | docker login --username=_ --password-stdin registry.heroku.com || { echo "Heroku Docker login failed"; exit 1; }
+      docker tag ${IMAGE}:v1.1.0 registry.heroku.com/$HEROKU_APP_NAME/web || { echo "Docker tag failed"; exit 1; }
+      docker push registry.heroku.com/$HEROKU_APP_NAME/web || { echo "Docker push to Heroku failed"; exit 1; }
+      heroku container:release web --app $HEROKU_APP_NAME || { echo "Heroku release failed"; exit 1; }
 
 # Deploy to Google Cloud
 deploy_to_google_cloud:
@@ -79,7 +79,7 @@ deploy_to_google_cloud:
           echo "Instance ${INSTANCE_NAME} already exists. Skipping creation..."
       else
           echo "Instance ${INSTANCE_NAME} does not exist. Creating it..."
-          gcloud auth activate-service-account --key-file="${GOOGLE_CLOUD_KEY}"
+          gcloud auth activate-service-account --key-file="${GOOGLE_CLOUD_KEY}" || { echo "Google Cloud authentication failed"; exit 1; }
           gcloud compute instances create ${INSTANCE_NAME} \
               --project=${GOOGLE_CLOUD_PROJECT} \
               --zone=${GOOGLE_CLOUD_ZONE} \
@@ -90,7 +90,7 @@ deploy_to_google_cloud:
               systemctl start docker
               docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
               docker pull ${IMAGE}:v1.1.0
-              docker-compose up -d'
+              docker-compose up -d' || { echo "Google Cloud instance creation failed"; exit 1; }
       fi
 
 after_script:
