@@ -1,10 +1,14 @@
 <template>
   <div class="flex items-center justify-center md:h-screen bg-gray-100 p-4">
     <div class="bg-white shadow-md rounded-lg sm:p-2 p-8 w-full max-w-sm">
-      <h2 class="text-2xl font-bold text-center mb-6">Login</h2>
+      <div class="flex justify-center items-center">
+        <img src="../assets/images/logo.jpeg" alt="logo" class="h-30 w-40">
+      </div>
+      <h2 class="text-2xl font-bold text-center my-6">Login</h2>
 
       <!-- Display server error message if login fails -->
-      <div v-if="localLoginError" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+      <div v-if="localLoginError" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"
+        role="alert">
         <i class="pi pi-exclamation-triangle mr-2"></i>
         <span class="block sm:inline">{{ localLoginError }}</span>
       </div>
@@ -12,49 +16,33 @@
       <form @submit.prevent="handleLogin">
         <div class="mb-4 relative">
           <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
-          <input
-            type="email"
-            id="email"
-            v-model="email"
-            placeholder="user@email.com"
-            @input="validateEmail"
-            required
+          <input type="email" id="email" v-model="email" placeholder="user@email.com" @input="validateEmail" required
             :class="[
               'mt-1 block w-full border rounded-md p-2 focus:outline-none',
               emailError ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-[#1c1c1c]'
-            ]"
-          />
+            ]" />
           <p v-if="emailError" class="absolute text-red-500 text-sm mt-1">{{ emailError }}</p>
         </div>
 
         <div class="mb-6 relative">
           <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
-          <input
-            type="password"
-            id="password"
-            placeholder="password"
-            v-model="password"
-            @input="validatePassword"
-            required
-            :class="[
+          <input type="password" id="password" placeholder="password" v-model="password" @input="validatePassword"
+            required :class="[
               'mt-1 block w-full border rounded-md p-2 focus:outline-none',
               passwordError ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-[#1c1c1c]'
-            ]"
-          />
+            ]" />
           <p v-if="passwordError" class="absolute text-red-500 text-sm mt-1">{{ passwordError }}</p>
         </div>
 
-        <button
-          type="submit"
-          :class="[
-            'w-full rounded-md py-2 transition duration-200',
-            emailError || passwordError ? 'bg-red-500 text-white' : 'bg-[#1c1c1c] text-white'
-          ]"
-        >
+        <button type="submit" :class="[
+          'w-full rounded-md py-2 transition duration-200',
+          emailError || passwordError ? 'bg-red-500 text-white' : 'bg-[#1c1c1c] text-white'
+        ]">
           Login
         </button>
       </form>
-      <p class="mt-4 text-center text-sm">Forgot Password?<router-link to="/password-reset-request" class="text-[#ffc107] font-bold hover:underline"> Reset</router-link></p>
+      <p class="mt-4 text-center text-sm">Forgot Password?<router-link to="/password-reset-request"
+          class="text-[#ffc107] font-bold hover:underline"> Reset</router-link></p>
 
       <p class="mt-4 text-center text-sm font-bold">
         Don't have an account?

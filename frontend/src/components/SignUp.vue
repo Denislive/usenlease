@@ -1,15 +1,17 @@
 <template>
     <div class="flex items-center justify-center py-4 px-2 md:h-screen bg-gray-200">
         <div class="bg-white shadow-md rounded-lg m-0 p-2 w-full max-w-lg">
-            <h2 class="text-2xl font-bold text-center mb-6">Create your account</h2>
+            <div class="flex justify-center items-center">
+        <img src="../assets/images/logo.jpeg" alt="logo" class="h-30 w-40">
+      </div>
+            <h2 class="text-2xl font-bold text-center my-6">Create your account</h2>
 
             <form @submit.prevent="handleSignup">
                 <div v-if="currentStep === 1">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                         <div class="relative">
                             <label for="firstName" class="block text-sm font-medium text-gray-700">First Name</label>
-                            <input type="text" placeholder="First Name" id="firstName" v-model="firstName"
-                                @input="validateFirstName"
+                            <input type="text" placeholder="First Name" id="firstName" v-model="firstName" @input="validateFirstName"
                                 :class="['mt-1 block w-full border rounded-md p-2 focus:outline-none', errors.firstName ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-green-500']">
                             <span v-if="errors.firstName" class="absolute right-2 top-10 text-red-500">
                                 <i class="pi pi-exclamation-triangle"></i>
@@ -21,8 +23,7 @@
                         </div>
                         <div class="relative">
                             <label for="lastName" class="block text-sm font-medium text-gray-700">Last Name</label>
-                            <input type="text" placeholder="Last Name" id="lastName" v-model="lastName"
-                                @input="validateLastName"
+                            <input type="text" placeholder="Last Name" id="lastName" v-model="lastName" @input="validateLastName"
                                 :class="['mt-1 block w-full border rounded-md p-2 focus:outline-none', errors.lastName ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-green-500']">
                             <span v-if="errors.lastName" class="absolute right-2 top-10 text-red-500">
                                 <i class="pi pi-exclamation-triangle"></i>
@@ -35,8 +36,7 @@
                         <div class="relative">
                             <label for="companyName" class="block text-sm font-medium text-gray-700">Company
                                 Name</label>
-                            <input type="text" placeholder="Company Name" id="companyName" v-model="companyName"
-                                @input="validateCompanyName"
+                            <input type="text" placeholder="Company Name" id="companyName" v-model="companyName" @input="validateCompanyName"
                                 :class="['mt-1 block w-full border rounded-md p-2 focus:outline-none', errors.companyName ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-green-500']">
                             <span v-if="errors.companyName" class="absolute right-2 top-10 text-red-500">
                                 <i class="pi pi-exclamation-triangle"></i>
@@ -80,8 +80,7 @@
 
                         <div class="relative">
                             <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
-                            <input type="email" placeholder="user@email.com" id="email" v-model="email"
-                                @input="validateEmail"
+                            <input type="email" placeholder="user@email.com"id="email" v-model="email" @input="validateEmail"
                                 :class="['mt-1 block w-full border rounded-md p-2 focus:outline-none', errors.email ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-green-500']">
                             <span v-if="errors.email" class="absolute right-2 top-10 text-red-500">
                                 <i class="pi pi-exclamation-triangle"></i>
@@ -124,19 +123,18 @@
                     <div class="mb-4">
                         <label for="identityDocument" class="block text-sm font-medium text-gray-700">Identity
                             Document</label>
-                        <input type="file" id="identityDocument"
-                            class="mt-1 block w-full border border-gray-300 rounded-md p-2"
-                            @change="(e) => handleFileChange(e, 'identityDocument')" required>
+                        <input type="file" id="identityDocument" class="mt-1 block w-full border border-gray-300 rounded-md p-2"
+                            @change="(e) => handleFileChange(e, 'identityDocument')" required
+                            >
 
-                        <span v-if="errors.identityDocumentFile" class="absolute right-2 top-10 text-red-500">
+                            <span v-if="errors.identityDocumentFile" class="absolute right-2 top-10 text-red-500">
                             <i class="pi pi-exclamation-triangle"></i>
                         </span>
                         <span v-if="!errors.identityDocumentFile && identityDocumentFile"
                             class="absolute right-2 top-10 text-green-500">
                             <i class="pi pi-check"></i>
                         </span>
-                        <p v-if="errors.identityDocumentFile" class="text-red-500 text-sm">{{
-                            errors.identityDocumentFile }}</p>
+                        <p v-if="errors.identityDocumentFile" class="text-red-500 text-sm">{{ errors.identityDocumentFile }}</p>
                     </div>
                     <div class="mb-4">
                         <label for="proofOfAddress" class="block text-sm font-medium text-gray-700">Proof of
@@ -193,12 +191,11 @@
                             <p v-html="companyInfoStore.companyInfo?.terms_and_conditions || 'Item terms' "></p>
                         </div>
                         <div class="flex items-center mb-4">
-                            <input type="checkbox" id="acceptTerms" v-model="acceptedTerms" required class="mr-2">
-                            <label for="acceptTerms" class="text-xl text-gray-700">I accept the terms and
-                                conditions</label>
-                        </div>
+                        <input type="checkbox" id="acceptTerms" v-model="acceptedTerms" required class="mr-2">
+                        <label for="acceptTerms" class="text-xl text-gray-700">I accept the terms and conditions</label>
                     </div>
-
+                    </div>
+                    
                     <div class="flex justify-between">
                         <button type="button" @click="prevStep" class="bg-gray-300 text-gray-700 rounded-md py-2 px-4">
                             Back
@@ -230,9 +227,9 @@ import axios from 'axios';
 import { useCompanyInfoStore } from '@/store/company';
 import useNotifications from '@/store/notification';
 
+const companyInfoStore = useCompanyInfoStore();
 const { showNotification } = useNotifications();
 
-const companyInfoStore = useCompanyInfoStore();
 
 
 const api_base_url = import.meta.env.VITE_API_BASE_URL;
@@ -295,12 +292,12 @@ const debounce = (func, delay = 1000) => {
 };
 
 
-
+    
 
 
 const validatePhone = async () => {
     const phonePattern = /^\+?\d{1,3}[\s-]?(\(\d{1,4}\)|\d{1,4})[\s-]?\d{1,4}([\s-]?\d{1,4})+$/;
-    errors.value.phone = phone.value && phonePattern.test(phone.value)
+        errors.value.phone = phone.value && phonePattern.test(phone.value)
         ? ''
         : 'A Valid Phone Number is required';
 
@@ -360,54 +357,54 @@ const validateIdentityDocument = () => {
 
 
 const validatePassword = () => {
-    // Clear previous error message
-    errors.value.password = '';
+  // Clear previous error message
+  errors.value.password = '';
 
-    // Check for empty password
-    if (!password.value) {
-        errors.value.password = 'Password is required.';
-        return;
-    }
+  // Check for empty password
+  if (!password.value) {
+    errors.value.password = 'Password is required.';
+    return;
+  }
 
-    // Check password length
-    if (password.value.length < 12) {
-        errors.value.password = 'Password must be at least 12 characters long.';
-        return;
-    }
+  // Check password length
+  if (password.value.length < 12) {
+    errors.value.password = 'Password must be at least 12 characters long.';
+    return;
+  }
 
-    // Check for at least one lowercase letter
-    if (!/[a-z]/.test(password.value)) {
-        errors.value.password = 'Password must contain at least one lowercase letter.';
-        return;
-    }
+  // Check for at least one lowercase letter
+  if (!/[a-z]/.test(password.value)) {
+    errors.value.password = 'Password must contain at least one lowercase letter.';
+    return;
+  }
 
-    // Check for at least one uppercase letter
-    if (!/[A-Z]/.test(password.value)) {
-        errors.value.password = 'Password must contain at least one uppercase letter.';
-        return;
-    }
+  // Check for at least one uppercase letter
+  if (!/[A-Z]/.test(password.value)) {
+    errors.value.password = 'Password must contain at least one uppercase letter.';
+    return;
+  }
 
-    // Check for at least one number
-    if (!/\d/.test(password.value)) {
-        errors.value.password = 'Password must contain at least one number.';
-        return;
-    }
+  // Check for at least one number
+  if (!/\d/.test(password.value)) {
+    errors.value.password = 'Password must contain at least one number.';
+    return;
+  }
 
-    // Check for at least one special character
-    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password.value)) {
-        errors.value.password = 'Password must contain at least one special character.';
-        return;
-    }
+  // Check for at least one special character
+  if (!/[!@#$%^&*(),.?":{}|<>]/.test(password.value)) {
+    errors.value.password = 'Password must contain at least one special character.';
+    return;
+  }
 
-    // Check if the password contains common patterns
-    const commonPatterns = ['password', '1234', 'qwerty', 'letmein', 'abc123'];
-    if (commonPatterns.some(pattern => password.value.toLowerCase().includes(pattern))) {
-        errors.value.password = 'Password cannot contain common words or patterns.';
-        return;
-    }
+  // Check if the password contains common patterns
+  const commonPatterns = ['password', '1234', 'qwerty', 'letmein', 'abc123'];
+  if (commonPatterns.some(pattern => password.value.toLowerCase().includes(pattern))) {
+    errors.value.password = 'Password cannot contain common words or patterns.';
+    return;
+  }
 
-    // If all checks pass, clear any error messages
-    errors.value.password = '';
+  // If all checks pass, clear any error messages
+  errors.value.password = '';  
 };
 
 
@@ -542,6 +539,8 @@ const handleSignup = async () => {
         successMessage.value = '';
     }
 };
+
+
 </script>
 
 

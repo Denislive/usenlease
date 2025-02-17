@@ -1,129 +1,140 @@
 <template>
-  <Hero />
-  <Breadcrumb />
+  <section class="hero bg-gradient-to-r from-[#ff9e00] to-[#ffc107] py-2 relative text-white overflow-hidden">
+    <!-- Background Elements -->
+    <div class="absolute top-0 left-0 w-full h-full bg-gradient-to-t from-[#1c1c1c] to-transparent opacity-60"></div>
+  
+    <!-- Hero Content -->
+    <div class="container mx-auto text-center relative z-10">
+      <h1 class="text-4xl sm:text-5xl font-bold leading-tight mb-6 animate__animated animate__fadeIn animate__delay-1s">
+        Rent the Best Equipment for Your Needs<script setup>
+import { ref } from 'vue';
+import Cta from '@/components/Cta.vue'
 
-  <div class="container mx-auto py-4 w-5/6 hidden md:block">
-    <div class="grid grid-cols-12 gap-4 p-1">
-      <!-- Sidebar Section -->
-      <aside class="col-span-3 bg-gray-100 rounded p-2">
-        <Filter 
-          :categories="categories" 
-          :cities="cities" 
-          :selectedCategories="selectedCategories" 
-          :selectedCities="selectedCities" 
-        />
-      </aside>
+const currentSlide = ref(0);
+const slides = [1, 2, 3]; // Add as many slides as you want
 
-      <!-- Main Content Section -->
-      <main class="col-span-9 bg-gray-100 p-1">
-        <Card :equipments="filteredEquipments" /> <!-- Pass filtered equipments -->
-      </main>
+const nextSlide = () => {
+    currentSlide.value = (currentSlide.value + 1) % slides.length;
+};
+
+const prevSlide = () => {
+    currentSlide.value = (currentSlide.value - 1 + slides.length) % slides.length;
+};
+</script>
+
+<template>
+    <div class="container mx-auto p-4">
+        <div class="grid grid-cols-12 gap-4">
+            <!-- Carousel Section (8 columns) -->
+            <div class="col-span-12 relative" role="region" aria-label="Equipment Slider">
+                <div class="overflow-hidden rounded-lg">
+                    <div class="flex transition-transform duration-500 ease-in-out"
+                        :style="`transform: translateX(-${currentSlide * 100}%)`">
+                        <!-- Slide 1 -->
+                        <div class="flex-shrink-0 w-full">
+                            <img class="w-full h-48 object-cover" src="../assets/gifs/1.gif"
+                                alt="Slide 1">
+                        </div>
+                        <!-- Slide 2 -->
+                        <div class="flex-shrink-0 w-full">
+                            <img class="w-full h-48 object-cover" src="../assets/gifs/2.gif"
+                                alt="Slide 2">
+                        </div>
+                        <!-- Slide 3 -->
+                        <div class="flex-shrink-0 w-full">
+                            <img class="w-full h-48 object-cover" src="../assets/gifs/3.gif"
+                                alt="Slide 3">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation Buttons -->
+                <i @click="prevSlide"
+                    class="pi pi-arrow-circle-left absolute top-1/2 left-0 transform -translate-y-1/2 text-white p-2 rounded-full cursor-pointer bg-gray-800 hover:text-[#ffc107]"></i>
+                <i @click="nextSlide"
+                    class="pi pi-arrow-circle-right absolute top-1/2 right-0 transform -translate-y-1/2 text-white p-2 rounded-full cursor-pointer bg-gray-800 hover:text-[#ffc107]"></i>
+            </div>
+
+            <!-- Square Button Section (4 columns) -->
+            <!-- <div class="col-span-4 flex items-center justify-end h-48 mr-4"> 
+                <Cta />
+            </div> -->
+        </div>
     </div>
-  </div>
-
-  <div class="p-2 w-full text-xs md:hidden">
-    <MobileFilter 
-      :mobileCategories="categories" 
-      :mobileCities="cities" 
-      :mobileSelectedCategories="selectedCategories" 
-      :mobileSelectedCities="selectedCities" 
-    />
-    <Card :equipments="filteredEquipments" /> <!-- Pass filtered equipments -->
-  </div>
 </template>
 
-<script setup>
-import { ref, onMounted, computed } from 'vue';
-import axios from 'axios';
-import { useStore } from 'vuex';
-import Hero from '@/components/Hero.vue';
-import Breadcrumb from '@/components/Breadcrumb.vue';
-import Filter from '@/components/Filter.vue';
-import Card from '@/components/Card.vue';
-import MobileFilter from '@/components/MobileFilter.vue';
 
-// State to hold equipment and category data
-const equipments = ref([]);
-const categories = ref([]);
-const cities = ref([]);
-const selectedCategories = ref({});
-const selectedCities = ref({});
-const store = useStore();
 
-// Computed property to get searchQuery from Vuex
-const searchQuery = computed(() => store.getters.getSearchQuery);
-const api_base_url = import.meta.env.VITE_API_BASE_URL;
-
-// Fetch equipment and category data
-onMounted(async () => {
-  try {
-    const equipmentResponse = await axios.get(`${api_base_url}/api/equipments/`);
-    equipments.value = equipmentResponse.data;
-
-    const categoryResponse = await axios.get(`${api_base_url}/api/categories`);
-    categories.value = categoryResponse.data;
-
-    // Initialize selected categories
-    categories.value.forEach(category => {
-      selectedCategories.value[category.name] = false;
-    });
-
-    // Extract cities from the equipment data (assuming each equipment has a city/location field)
-    const equipmentCities = equipments.value.map(equipment => equipment.address?.city).filter(city => city);
-    cities.value = [...new Set(equipmentCities)]; // Remove duplicates
-
-  } catch (error) {
-    console.error('Error fetching data:', error);
-  }
-});
-
-// Create a map from category names to their IDs
-const categoryIdMap = computed(() => {
-  const map = {};
-  categories.value.forEach(category => {
-    map[category.name] = category.id;
+<style scoped>
+/* Optional: Add additional styles if needed */
+</style>
+      </h1>
+      <p class="text-lg text-black sm:text-xl mb-2 animate__animated animate__fadeIn animate__delay-2s">
+        Find top-quality equipment for any project. Fast delivery and great customer support.
+      </p>
+      
+      <!-- Location Button -->
+      <!-- <div class="flex justify-center mb-6">
+        <div class="flex items-center cursor-pointer relative group">
+          <button
+            class="bg-[#1c1c1c] text-dark py-3 px-8 rounded-full text-lg font-semibold hover:bg-[#ff9e00] transition duration-300 transform hover:scale-105 group-hover:animate-pulse"
+            id="locationButton"
+          >
+            All in USA
+          </button>
+          <div class="absolute top-0 left-0 w-full h-full bg-[#ff9e00] opacity-0 group-hover:opacity-20 transition-all duration-300"></div>
+        </div>
+      </div> -->
+  
+      <!-- Search Box -->
+      <div class="flex justify-center mb-2">
+        <div class="sm:w-3/4 lg:w-1/2 relative">
+          <div class="flex items-center bg-white p-3 rounded-full shadow-lg transform transition-all hover:scale-105">
+            <input
+              type="text"
+              class="flex-1 text-[#1c1c1c] border-none p-3 text-lg focus:outline-none rounded-l-full"
+              placeholder="Search for equipment..."
+              v-model="searchQuery"
+              @input="updateSearch"
+            />
+            <button class="bg-[#ff6f00] text-white rounded-r-full px-6 py-3 transition duration-300 hover:bg-[#ff9e00] transform hover:scale-110">
+              <i class="pi pi-search text-lg"></i>
+            </button>
+          </div>
+          <!-- Floating Search Icon -->
+          <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-bounce">
+            🔍
+          </div>
+        </div>
+      </div>
+  
+    </div>
+  
+    <!-- Decorative Circle Effect -->
+    <div class="absolute top-1/4 left-1/4 w-24 h-24 bg-[#ff6f00] rounded-full opacity-20 animate-pulse"></div>
+    <div class="absolute top-2/3 right-1/4 w-36 h-36 bg-[#ff6f00] rounded-full opacity-30 animate-pulse"></div>
+  </section>
+  
+  
+  
+  </template>
+  
+  <script setup>
+  import { computed } from 'vue';
+  import { useStore } from 'vuex';
+  
+  const store = useStore();
+  const searchQuery = computed({
+    get: () => store.getters.getSearchQuery,
+    set: (value) => {
+      store.dispatch('setSearchQuery', value);
+    },
   });
-  return map;
-});
-
-// Computed property to filter equipments based on the search query and selected filters
-const filteredEquipments = computed(() => {
-  let filtered = equipments.value;
-
-  // Apply search query filtering first
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase();
-    return filtered.filter(equipment => {
-      return (
-        equipment.name.toLowerCase().includes(query) ||
-        equipment.description.toLowerCase().includes(query) ||
-        equipment.hourly_rate.toString().includes(query) ||
-        (equipment.address?.street_address?.toLowerCase().includes(query)) ||
-        (equipment.address?.city?.toLowerCase().includes(query)) ||
-        (equipment.address?.state?.toLowerCase().includes(query))
-      );
-    });
-  }
-
-  // If no search query, apply category filtering
-  const selectedCategoryKeys = Object.keys(selectedCategories.value).filter(key => selectedCategories.value[key]);
-
-  if (selectedCategoryKeys.length > 0) {
-    filtered = filtered.filter(equipment => {
-      const equipmentCategoryId = equipment.category; // This is the ID
-      const selectedCategoryIds = selectedCategoryKeys.map(name => categoryIdMap.value[name]); // Map names to IDs
-      return selectedCategoryIds.includes(equipmentCategoryId);
-    });
-  }
-
-  // Apply city filtering
-  const selectedCityKeys = Object.keys(selectedCities.value).filter(key => selectedCities.value[key]);
-
-  if (selectedCityKeys.length > 0) {
-    filtered = filtered.filter(equipment => selectedCityKeys.includes(equipment.address?.city));
-  }
-
-  // Log the number of filtered equipments
-  return filtered;
-});
-</script>
+  
+  // The updateSearch function is no longer needed since we're using computed setter
+  </script>
+  
+  <style scoped>
+  /* Additional styles can go here if needed */
+  </style>
+  
