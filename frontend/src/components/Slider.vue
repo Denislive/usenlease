@@ -1,23 +1,16 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 import Cta from '@/components/Cta.vue'
 
 const currentSlide = ref(0);
 const slides = [1, 2, 3]; // Add as many slides as you want
 
-// Automatically go to the next slide every 5 seconds
-onMounted(() => {
-  setInterval(() => {
-    nextSlide();
-  }, 5000);
-});
-
 const nextSlide = () => {
-  currentSlide.value = (currentSlide.value + 1) % slides.length;
+    currentSlide.value = (currentSlide.value + 1) % slides.length;
 };
 
 const prevSlide = () => {
-  currentSlide.value = (currentSlide.value - 1 + slides.length) % slides.length;
+    currentSlide.value = (currentSlide.value - 1 + slides.length) % slides.length;
 };
 </script>
 
@@ -61,6 +54,8 @@ const prevSlide = () => {
         </div>
     </div>
 </template>
+
+
 
 <style scoped>
 /* Optional: Add additional styles if needed */

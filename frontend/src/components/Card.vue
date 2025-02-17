@@ -1,5 +1,5 @@
 <script setup>
-import { defineProps, ref, computed, onMounted } from 'vue';
+import { defineProps, ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useEquipmentsStore } from '@/store/equipments';
 
@@ -9,7 +9,6 @@ const props = defineProps({
     required: true,
   },
 });
-
 
 const renderStars = (rating) => {
   const fullStars = Math.floor(rating);
@@ -21,14 +20,6 @@ const renderStars = (rating) => {
 
 const router = useRouter();
 const store = useEquipmentsStore();
-
-
-// onMounted(async () => {
-//   await store.fetchCategories();
-// });
-
-
-const categories = store.categories.value;
 
 const itemsPerPage = 20; // Items per page
 const currentPage = ref(1); // Current page number
@@ -65,54 +56,42 @@ const goToDetail = (equipmentId) => {
         <div
           v-for="equipment in paginatedEquipments"
           :key="equipment.id"
+          @click="() => { goToDetail(equipment.id) }"
           class="bg-white rounded-lg shadow-lg overflow-hidden transition-transform hover:scale-105 cursor-pointer"
         >
           <div class="relative">
             <span :class="{
               'bg-green-500': equipment.is_available,
-              'bg-blue-500': !equipment.is_available
+              'bg-red-500': !equipment.is_available
             }" class="absolute top-0 left-0 text-white text-xs font-bold px-2 py-1 rounded flex items-center">
               <i :class="{
                 'pi pi-check-circle': equipment.is_available,
-                'pi pi-info-circle': !equipment.is_available
+                'pi pi-times-circle': !equipment.is_available
               }" class="mr-1"></i>
               <div v-if="equipment.is_available" class="mr-1">
                 {{ equipment.available_quantity }}
               </div>
-              {{ equipment.is_available ? 'Available' : 'Click to Check details' }}
+              {{ equipment.is_available ? 'Available' : 'Unavailable' }}
             </span>
 
-            <img v-if="equipment.images.length > 0" :src="equipment.images[0].image_url"
-            :alt="equipment.images.length ? equipment.name : 'Placeholder Image'"  class="w-full h-48 object-contain" />
-            <img v-else src="https://via.placeholder.com/350" alt="Placeholder Image" class="w-full h-48 object-contain" />
+            <img v-if="equipment.images.length > 0" :src="`${equipment.images[0].image_url}`"
+              :alt="equipment.images[0].image_url" class="w-full h-48 object-cover" />
+            <img v-else src="https://via.placeholder.com/350" alt="Placeholder Image" class="w-full h-48 object-cover" />
+
+            <span class="rating text-yellow-500">{{ renderStars(equipment.rating) }}</span>
+            <span class="reviews text-gray-600">
+              ({{ equipment.equipment_reviews ? equipment.equipment_reviews.length : 0 }} Reviews)
+            </span>
           </div>
 
-          <div class="p-4">
-            <h5 class="text-sm font-semibold mb-1 text-gray-900">
+          <div class="p-1">
+            <h5 class="text-sm font-semibold">
               {{ store.truncateText(equipment.name, 20) }}
             </h5>
-            <p class="text-gray-600 mb-2">{{ equipment.hourly_rate }} / Day</p>
-            <div class="flex items-center mb-2">
-              <span class="rating text-yellow-500 mr-1">{{ renderStars(equipment.rating) }}</span>
-              <span class="reviews text-gray-600 text-xs">
-                ({{ equipment.equipment_reviews ? equipment.equipment_reviews.length : 0 }})
-              </span>
-            </div>
-            <button 
-              @click="goToDetail(equipment.id)" 
-              class="bg-[#ff6f00] rounded text-white px-4 py-2 mt-2 transition duration-300 hover:bg-[#ff9e00] transform hover:scale-110">
-              Rent Now
-            </button>
+            <p class="text-gray-600">${{ equipment.hourly_rate }} / Day</p>
           </div>
         </div>
-        
       </div>
-    </div>
-
-    <div v-if="paginatedEquipments.length === 0" class="text-center py-16">
-      <i class="pi pi-exclamation-circle text-9xl text-gray-500"></i>
-      <p class="text-xl text-gray-500 mt-4">Oops!</p>
-      <p class="text-xl text-gray-500 mt-4">Try other combinations of the item name, tags or location</p>
     </div>
 
     <!-- Pagination -->
@@ -157,3 +136,4 @@ const goToDetail = (equipmentId) => {
   padding-right: 10px; /* Prevents scroll bar overlap */
 }
 </style>
+
