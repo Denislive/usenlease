@@ -30,6 +30,7 @@ const getAdCount = (category) => {
   return category.subcategories.reduce((count, sub) => count + sub.ad_count, 0); // Sum of subcategories' ad counts
 };
 </script>
+
 <template>
   <div class="sidebar-content">
     <template v-if="loading">
@@ -47,21 +48,21 @@ const getAdCount = (category) => {
         >
           <RouterLink
             :to="{ name: 'category-details', query: { cat: category.slug } }"
-            class="flex items-center p-2 bg-white rounded-lg transition-shadow duration-300 text-gray-800 shadow hover:bg-yellow-100 hover:shadow-lg"
+            class="flex items-center p-1 bg-white rounded-lg transition-shadow duration-300 text-gray-800 shadow hover:bg-yellow-100 hover:shadow-lg"
           >
             <img
               :src="category.image ? category.image : 'Category image'"
               :alt="category.name"
-              class="category-icon w-8 h-8 object-cover rounded-full border-2 border-yellow-400 mr-3"
+              class="category-icon w-8 h-6 object-cover rounded border-2 border-yellow-400 mr-2"
             >
             <div class="category-name-container">
-              <span class="category-name font-semibold">{{ category.name }}</span>
-              <span class="ad-count text-gray-500">
+              <span class="category-name font-semibold text-sm">{{ category.name }}</span>
+              <span class="ad-count text-xs text-gray-500">
                 ({{ getAdCount(category) }})
               </span>
             </div>
           </RouterLink>
-          <ul class="subcategories-list list-none pl-4 mt-2 hidden group-hover:block">
+          <ul class="subcategories-list list-none pl-4 mt-1 hidden group-hover:block">
             <li
               v-for="subcategory in category.subcategories"
               :key="subcategory.id"
@@ -69,16 +70,16 @@ const getAdCount = (category) => {
             >
               <RouterLink
                 :to="{ name: 'category-details', query: { cat: subcategory.slug } }"
-                class="flex items-center p-2 bg-white rounded-lg transition-colors duration-300 text-gray-800 hover:bg-yellow-100 transform hover:translate-x-1"
+                class="flex items-center p-1 bg-white rounded-lg transition-colors duration-300 text-gray-800 hover:bg-yellow-100 transform hover:translate-x-1"
               >
                 <img
-                  :src="subcategory.image ? subcategory.image : 'SubCategory image'"
+                  :src="subcategory.image ? subcategory.image : 'SubCategory Image'"
                   :alt="subcategory.name"
-                  class="subcategory-icon w-9 h-9 object-cover rounded-full border-2 border-yellow-400 mr-2"
+                  class="subcategory-icon w-8 h-6 object-cover rounded border-2 border-yellow-400 mr-2"
                 >
                 <div class="subcategory-name-container flex-1">
-                  <span class="subcategory-name font-medium">{{ subcategory.name }}</span>
-                  <span class="ad-count text-xs text-gray-400">({{ subcategory.ad_count }})</span>
+                  <span class="subcategory-name font-medium text-sm">{{ subcategory.name }}</span>
+                  <span class="ad-count text-xs text-gray-400"> ({{ subcategory.ad_count }})</span>
                 </div>
               </RouterLink>
             </li>
