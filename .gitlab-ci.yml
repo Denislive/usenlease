@@ -35,7 +35,7 @@ check_prerequisites:
   script:
     - echo "Checking shell and Docker installation..."
     - echo "Current shell: $SHELL"
-    - docker --version || exit 1
+    - docker --version || exit 1  # Ensures Docker is available
 
 # Clone Repository - Git clone from the repo
 clone_repository:
