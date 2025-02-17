@@ -1,6 +1,6 @@
 <template>
   <div class="bg-[#1c1c1c] p-1 sticky top-0 z-50">
-    <div class="w-11/12 md:w-5/6 lg:w-5/6 xl:w-4/6 mx-auto">
+    <div class="w-11/12 md:w-5/6 lg:w-5/6 xl:w-6/6 mx-auto">
       <header class="text-white flex justify-between items-center">
         <!-- Logo -->
         <RouterLink :to="{ name: 'home' }" class="flex items-center">
