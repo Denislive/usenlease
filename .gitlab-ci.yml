@@ -31,10 +31,11 @@ clone:
   stage: clone
   script:
     - echo "Cloning the latest code from GitHub..."
-    - rm -rf ./*  # Remove existing files in the directory
-    - rm -rf .[!.]*  # Remove hidden files in the directory
-    - git clone --branch ${GITHUB_BRANCH} https://${GITHUB_USERNAME}:${GITHUB_TOKEN}@github.com/${GITHUB_USERNAME}/${GITHUB_REPO} . || { echo "Failed to clone repository"; exit 1; }
+    - rm -rf ./* 
+    - rm -rf .[!.]*
+    - git clone --branch ${GITHUB_BRANCH} https://${GITHUB_USERNAME}:${GITHUB_TOKEN}@github.com/${GITHUB_USERNAME}/${GITHUB_REPO}.git . || { echo "Failed to clone repository"; exit 1; }
     - echo "Latest code pulled successfully."
+
 
 # Build stage - Build the Docker image
 build:
