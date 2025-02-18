@@ -17,7 +17,7 @@ variables:
   GOOGLE_CLOUD_ZONE: 'europe-west2-a'
   POSTGRES_DB: 'usenlease_db'
   HEROKU_APP_NAME: 'usenleaseprod'
-  DOCKER_HOST: tcp://docker:2375  # Connect to the Docker daemon
+  DOCKER_HOST: tcp://docker:2375
 
 before_script:
   - echo "Setting up environment variables"
