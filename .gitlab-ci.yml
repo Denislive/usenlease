@@ -42,10 +42,9 @@ check_prerequisites:
       echo "Current shell: $SHELL"
       docker --version || { echo "Docker is not installed"; exit 1; }  # Ensures Docker is available
 
-
-# Clone stage - Clone the GitHub repository using SSH
-clone:
-  stage: clone
+# Clone Repository - Git clone from the repo
+clone_repository:
+  stage: clone_repository
   before_script:
     - mkdir -p ~/.ssh
     - echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
