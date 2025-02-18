@@ -28,6 +28,10 @@ jobs:
           git remote remove gitlab || true  # Remove existing remote if it exists
           git remote add gitlab git@gitlab.com:Ngumonelson123/usenlease.git
 
+      - name: Pull from GitLab
+        run: |
+          git pull gitlab master --rebase  # Pull and rebase changes from GitLab
+
       - name: Push to GitLab
         run: |
           git push gitlab master
