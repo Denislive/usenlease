@@ -2,7 +2,7 @@ name: Sync to GitLab
 on:
   push:
     branches:
-      - master
+      - master  # Replace with your default branch name if it's not 'master'
 
 jobs:
   sync:
@@ -28,10 +28,19 @@ jobs:
           git remote remove gitlab || true  # Remove existing remote if it exists
           git remote add gitlab git@gitlab.com:Ngumonelson123/usenlease.git
 
-      - name: Pull from GitLab
+      - name: Pull and rebase from GitLab
         run: |
-          git pull gitlab master --rebase  # Pull and rebase
+          git fetch gitlab master  # Fetch the latest changes from GitLab
+          git rebase gitlab/master  # Rebase local changes on top of GitLab's master
+          # Resolve conflicts (if any)
+          if git status | grep -q "both added"; then
+            echo "Resolving conflicts..."
+            # Automatically keep local changes for conflicting files
+            git checkout --ours .
+            git add .
+            git rebase --continue
+          fi
 
       - name: Push to GitLab
         run: |
-          git push gitlab master
+          git push gitlab master --force-with-lease  # Force-push with lease
