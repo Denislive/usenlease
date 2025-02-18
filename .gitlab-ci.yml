@@ -11,10 +11,10 @@ stages:
   - deploy
 
 variables:
-  GITHUB_REPO: "git@github.com:Denislive/usenlease.git"  # Use SSH URL
+  GITHUB_REPO: "git@github.com:Denislive/usenlease.git"
   GITHUB_BRANCH: "master"
-  IMAGE: 'ngumonelson123/combined-image'  # Replace with your Docker image name
-  DOCKER_HOST: tcp://docker:2375  # Connect to the Docker daemon
+  IMAGE: 'ngumonelson123/combined-image'
+  DOCKER_HOST: tcp://docker:2375
 
 # Setup stage - Install dependencies and set up the environment
 setup:
@@ -34,7 +34,7 @@ clone:
     - ssh-keyscan github.com >> ~/.ssh/known_hosts
   script:
     - echo "Cleaning up existing directory..."
-    - find . -mindepth 1 -delete  # Deletes everything inside the directory but keeps the root
+    - find . -mindepth 1 -delete
     - git clone --branch master git@github.com:Denislive/usenlease.git .
     - echo "Repository cloned successfully."
 
