@@ -1,0 +1,17 @@
+name: Sync to GitLab
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout GitHub repository
+        uses: actions/checkout@v3
+
+      - name: Push to GitLab
+        run: |
+          git remote add gitlab https://oauth2:$GITLAB_TOKEN@gitlab.com/Ngumonelson123/usenlease.git
+          git push gitlab master
