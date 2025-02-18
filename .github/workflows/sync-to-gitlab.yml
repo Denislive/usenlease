@@ -28,19 +28,6 @@ jobs:
           git remote remove gitlab || true  # Remove existing remote if it exists
           git remote add gitlab git@gitlab.com:Ngumonelson123/usenlease.git
 
-      - name: Pull and rebase from GitLab
+      - name: Force-push to GitLab
         run: |
-          git fetch gitlab master  # Fetch the latest changes from GitLab
-          git rebase gitlab/master  # Rebase local changes on top of GitLab's master
-          # Resolve conflicts (if any)
-          if git status | grep -q "both added"; then
-            echo "Resolving conflicts..."
-            # Automatically keep local changes for conflicting files
-            git checkout --ours .
-            git add .
-            git rebase --continue
-          fi
-
-      - name: Push to GitLab
-        run: |
-          git push gitlab master --force-with-lease  # Force-push with lease
+          git push gitlab master --force
