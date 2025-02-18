@@ -11,7 +11,7 @@ stages:
   - deploy
 
 variables:
-  GITHUB_REPO: "github.com/Denislive/usenlease.git"  # Update to remove the protocol prefix
+  GITHUB_REPO: "github.com/Denislive/usenlease.git"
   GITHUB_BRANCH: "master"
   IMAGE: 'ngumonelson123/combined-image'  # Replace with your Docker image name
   DOCKER_HOST: tcp://docker:2375  # Connect to the Docker daemon
