@@ -29,8 +29,7 @@ clone:
   stage: clone
   script:
     - echo "Cloning the latest code from GitHub..."
-    - rm -rf ./*  # Remove existing files in the directory
-    - rm -rf ./.*  # Remove hidden files in the directory
+    - rm -rf .[!.]* *  # Remove existing files and hidden files, but not . and ..
     - git clone --branch ${GITHUB_BRANCH} ${GITHUB_REPO} .
     - echo "Latest code pulled successfully."
 
