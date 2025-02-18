@@ -15,6 +15,8 @@ variables:
   GITHUB_BRANCH: "master"
   IMAGE: 'ngumonelson123/combined-image'  # Replace with your Docker image name
   DOCKER_HOST: tcp://docker:2375  # Connect to the Docker daemon
+  GITHUB_TOKEN: ${GITHUB_TOKEN}  # GitHub PAT stored in GitLab CI/CD variables
+  GITLAB_TOKEN: ${GITLAB_TOKEN}  # GitLab PAT stored in GitLab CI/CD variables
 
 # Setup stage - Install dependencies and set up the environment
 setup:
@@ -31,9 +33,8 @@ clone:
     - echo "Cloning the latest code from GitHub..."
     - rm -rf ./*  # Remove existing files in the directory
     - rm -rf .[!.]*  # Remove hidden files in the directory
-    - eval $(ssh-agent -s)
-    - ssh-add ~/.ssh/id_rsa
-    - GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no" git clone --branch ${GITHUB_BRANCH} git@gitlab.com:Denislive/usenlease.git .
+    - echo "Cloning GitHub repository using GitHub Token..."
+    - git clone https://oauth2:${GITHUB_TOKEN}@${GITHUB_REPO} --branch ${GITHUB_BRANCH} .
     - echo "Latest code pulled successfully."
 
 # Build stage - Build the Docker image
