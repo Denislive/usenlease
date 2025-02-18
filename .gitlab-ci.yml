@@ -15,7 +15,7 @@ variables:
   GITHUB_BRANCH: "master"
   IMAGE: 'ngumonelson123/combined-image'  # Replace with your Docker image name
   DOCKER_HOST: tcp://docker:2375  # Connect to the Docker daemon
-  GITHUB_USERNAME: "ngumonelson123"  # Replace with your GitHub username
+  GITHUB_USERNAME: "ngumonelson123"
   GITHUB_TOKEN: "${GITHUB_TOKEN}"  # GitHub Personal Access Token (to be set in GitLab CI/CD Variables)
 
 # Setup stage - Install dependencies and set up the environment
