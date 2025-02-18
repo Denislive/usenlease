@@ -11,9 +11,9 @@ stages:
   - deploy
 
 variables:
-  GITHUB_REPO: "https://github.com/Denislive/usenlease.git"
-  GITHUB_BRANCH: "master"
-  IMAGE: 'ngumonelson123/combined-image'
+  GITHUB_REPO: "https://github.com/Denislive/usenlease.git"  # Replace with your GitHub repo URL
+  GITHUB_BRANCH: "main"  # Replace with your GitHub branch
+  IMAGE: 'ngumonelson123/combined-image'  # Replace with your Docker image name
   DOCKER_HOST: tcp://docker:2375  # Connect to the Docker daemon
 
 # Setup stage - Install dependencies and set up the environment
@@ -29,6 +29,8 @@ clone:
   stage: clone
   script:
     - echo "Cloning the latest code from GitHub..."
+    - rm -rf ./*  # Remove existing files in the directory
+    - rm -rf ./.*  # Remove hidden files in the directory
     - git clone --branch ${GITHUB_BRANCH} ${GITHUB_REPO} .
     - echo "Latest code pulled successfully."
 
@@ -41,7 +43,7 @@ build:
     - docker build --build-arg SECRET_KEY="django-insecure-^5zv2&aef@n*hi0icmu7lji6bqf0r&d@!x)%*gq-e^w)2e^kl!" -t ${IMAGE}:v1.1.0 -f Dockerfile . || { echo "Docker build failed"; exit 1; }
     - echo "Docker image built successfully."
 
-# Test stage - Run tests
+# Test stage - Run tests (optional, customize as needed)
 test:
   stage: test
   script:
