@@ -31,7 +31,9 @@ clone:
     - echo "Cloning the latest code from GitHub..."
     - rm -rf ./*  # Remove existing files in the directory
     - rm -rf .[!.]*  # Remove hidden files in the directory
-    - git clone --branch ${GITHUB_BRANCH} https://${GITHUB_USERNAME}:${GITHUB_TOKEN}@${GITHUB_REPO} .
+    - eval $(ssh-agent -s)
+    - ssh-add ~/.ssh/id_rsa
+    - GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no" git clone --branch ${GITHUB_BRANCH} git@gitlab.com:Denislive/usenlease.git .
     - echo "Latest code pulled successfully."
 
 # Build stage - Build the Docker image
@@ -40,7 +42,9 @@ build:
   script:
     - echo "Building Docker image..."
     - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD" || { echo "Docker login failed"; exit 1; }
-    - docker build --build-arg SECRET_KEY="django-insecure-^5zv2&aef@n*hi0icmu7lji6bqf0r&d@!x)%*gq-e^w)2e^kl!" -t ${IMAGE}:v1.1.0 -f Dockerfile . || { echo "Docker build failed"; exit 1; }
+    - docker build --build-arg SECRET_KEY='django-insecure-^5zv2&aef@n*hi0icmu7lji6bqf0r&d@!x)%*gq-e^w)2e^kl!' -t ${IMAGE}:v1.1.0 -f Dockerfile . || { echo "Docker build failed"; exit 1; }
+    - echo "Listing all Docker images for verification:"
+    - docker images || { echo "Failed to list Docker images"; exit 1; }
     - echo "Docker image built successfully."
 
 # Test stage - Run tests (optional, customize as needed)
@@ -56,6 +60,14 @@ deploy:
   script:
     - |
       echo "Deploying the application..."
+      # Check if the Docker image exists locally
+      IMAGE_EXISTS=$(docker images -q ${IMAGE}:v1.1.0)
+      if [ -z "$IMAGE_EXISTS" ]; then
+        echo "Docker image does not exist locally. Build might have failed."
+        exit 1
+      fi
+      echo "Docker image exists locally. Proceeding with deployment."
+
       # Push Docker image to Docker Hub
       docker push ${IMAGE}:v1.1.0 || { echo "Docker push failed"; exit 1; }
 
