@@ -1,104 +1,105 @@
-# image: docker:latest  # Use the official Docker image
+image: docker:latest  # Use the official Docker image
 
-# services:
-#   - docker:dind  # Start Docker-in-Docker service
+services:
+  - docker:dind  # Start Docker-in-Docker service
 
-# stages:
-#   - setup
-#   - clone
-#   - build
-#   - test
-#   - deploy
+stages:
+  - setup
+  - clone
+  - build
+  - test
+  - deploy
 
-# variables:
-#   GITHUB_REPO: "https://github.com/Denislive/usenlease.git"  # Replace with your GitHub repo URL
-#   GITHUB_BRANCH: "main"  # Replace with your GitHub branch
-#   IMAGE: 'ngumonelson123/combined-image'  # Replace with your Docker image name
-#   DOCKER_HOST: tcp://docker:2375  # Connect to the Docker daemon
+variables:
+  GITHUB_REPO: "github.com/Denislive/usenlease.git"  # Update to remove the protocol prefix
+  GITHUB_BRANCH: "master"
+  IMAGE: 'ngumonelson123/combined-image'  # Replace with your Docker image name
+  DOCKER_HOST: tcp://docker:2375  # Connect to the Docker daemon
 
-# # Setup stage - Install dependencies and set up the environment
-# setup:
-#   stage: setup
-#   script:
-#     - echo "Setting up environment..."
-#     - apk add --no-cache git curl bash  # Install necessary tools
-#     - echo "Environment setup complete."
+# Setup stage - Install dependencies and set up the environment
+setup:
+  stage: setup
+  script:
+    - echo "Setting up environment..."
+    - apk add --no-cache git curl bash  # Install necessary tools
+    - echo "Environment setup complete."
 
-# # Clone stage - Clone the GitHub repository
-# clone:
-#   stage: clone
-#   script:
-#     - echo "Cloning the latest code from GitHub..."
-#     - rm -rf .[!.]* *  # Remove existing files and hidden files, but not . and ..
-#     - git clone --branch ${GITHUB_BRANCH} ${GITHUB_REPO} .
-#     - echo "Latest code pulled successfully."
+# Clone stage - Clone the GitHub repository
+clone:
+  stage: clone
+  script:
+    - echo "Cloning the latest code from GitHub..."
+    - rm -rf ./*  # Remove existing files in the directory
+    - rm -rf .[!.]*  # Remove hidden files in the directory
+    - git clone --branch ${GITHUB_BRANCH} https://${GITHUB_USERNAME}:${GITHUB_TOKEN}@${GITHUB_REPO} .
+    - echo "Latest code pulled successfully."
 
-# # Build stage - Build the Docker image
-# build:
-#   stage: build
-#   script:
-#     - echo "Building Docker image..."
-#     - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD" || { echo "Docker login failed"; exit 1; }
-#     - docker build --build-arg SECRET_KEY="django-insecure-^5zv2&aef@n*hi0icmu7lji6bqf0r&d@!x)%*gq-e^w)2e^kl!" -t ${IMAGE}:v1.1.0 -f Dockerfile . || { echo "Docker build failed"; exit 1; }
-#     - echo "Docker image built successfully."
+# Build stage - Build the Docker image
+build:
+  stage: build
+  script:
+    - echo "Building Docker image..."
+    - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD" || { echo "Docker login failed"; exit 1; }
+    - docker build --build-arg SECRET_KEY="django-insecure-^5zv2&aef@n*hi0icmu7lji6bqf0r&d@!x)%*gq-e^w)2e^kl!" -t ${IMAGE}:v1.1.0 -f Dockerfile . || { echo "Docker build failed"; exit 1; }
+    - echo "Docker image built successfully."
 
-# # Test stage - Run tests (optional, customize as needed)
-# test:
-#   stage: test
-#   script:
-#     - echo "Running tests..."
-#     - echo "Tests completed successfully."
+# Test stage - Run tests (optional, customize as needed)
+test:
+  stage: test
+  script:
+    - echo "Running tests..."
+    - echo "Tests completed successfully."
 
-# # Deploy stage - Push the Docker image and deploy to Heroku/Google Cloud
-# deploy:
-#   stage: deploy
-#   script:
-#     - |
-#       echo "Deploying the application..."
-#       # Push Docker image to Docker Hub
-#       docker push ${IMAGE}:v1.1.0 || { echo "Docker push failed"; exit 1; }
+# Deploy stage - Push the Docker image and deploy to Heroku/Google Cloud
+deploy:
+  stage: deploy
+  script:
+    - |
+      echo "Deploying the application..."
+      # Push Docker image to Docker Hub
+      docker push ${IMAGE}:v1.1.0 || { echo "Docker push failed"; exit 1; }
 
-#       # Deploy to Heroku
-#       echo "$HEROKU_API_KEY" | docker login --username=_ --password-stdin registry.heroku.com || { echo "Heroku Docker login failed"; exit 1; }
-#       docker tag ${IMAGE}:v1.1.0 registry.heroku.com/$HEROKU_APP_NAME/web || { echo "Docker tag failed"; exit 1; }
-#       docker push registry.heroku.com/$HEROKU_APP_NAME/web || { echo "Docker push to Heroku failed"; exit 1; }
-#       heroku container:release web --app $HEROKU_APP_NAME || { echo "Heroku release failed"; exit 1; }
+      # Deploy to Heroku
+      echo "$HEROKU_API_KEY" | docker login --username=_ --password-stdin registry.heroku.com || { echo "Heroku Docker login failed"; exit 1; }
+      docker tag ${IMAGE}:v1.1.0 registry.heroku.com/$HEROKU_APP_NAME/web || { echo "Docker tag failed"; exit 1; }
+      docker push registry.heroku.com/$HEROKU_APP_NAME/web || { echo "Docker push to Heroku failed"; exit 1; }
+      heroku container:release web --app $HEROKU_APP_NAME || { echo "Heroku release failed"; exit 1; }
 
-#       # Deploy to Google Cloud
-#       echo "Installing Google Cloud SDK..."
-#       apk add --no-cache curl python3 py3-pip
-#       curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-464.0.0-linux-x86_64.tar.gz
-#       tar -xf google-cloud-cli-464.0.0-linux-x86_64.tar.gz
-#       ./google-cloud-sdk/install.sh --quiet --usage-reporting=false --command-completion=false --path-update=true
+      # Deploy to Google Cloud
+      echo "Installing Google Cloud SDK..."
+      apk add --no-cache curl python3 py3-pip
+      curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-464.0.0-linux-x86_64.tar.gz
+      tar -xf google-cloud-cli-464.0.0-linux-x86_64.tar.gz
+      ./google-cloud-sdk/install.sh --quiet --usage-reporting=false --command-completion=false --path-update=true
 
-#       # Add Google Cloud SDK to PATH
-#       export PATH=$PATH:$(pwd)/google-cloud-sdk/bin
-#       gcloud --version || { echo "Google Cloud SDK installation failed"; exit 1; }
+      # Add Google Cloud SDK to PATH
+      export PATH=$PATH:$(pwd)/google-cloud-sdk/bin
+      gcloud --version || { echo "Google Cloud SDK installation failed"; exit 1; }
 
-#       echo "Authenticating with Google Cloud..."
-#       echo "${GOOGLE_CLOUD_KEY}" | base64 -d > /tmp/service-account-key.json || { echo "Failed to decode service account key"; exit 1; }
-#       gcloud auth activate-service-account --key-file=/tmp/service-account-key.json --project=${GOOGLE_CLOUD_PROJECT} || { echo "Google Cloud authentication failed"; exit 1; }
+      echo "Authenticating with Google Cloud..."
+      echo "${GOOGLE_CLOUD_KEY}" | base64 -d > /tmp/service-account-key.json || { echo "Failed to decode service account key"; exit 1; }
+      gcloud auth activate-service-account --key-file=/tmp/service-account-key.json --project=${GOOGLE_CLOUD_PROJECT} || { echo "Google Cloud authentication failed"; exit 1; }
 
-#       echo "Deploying to Google Cloud..."
-#       INSTANCE_NAME="usenlease-instance"
-#       INSTANCE_EXISTS=$(gcloud compute instances list --filter="name=${INSTANCE_NAME}" --format="value(name)" --project=${GOOGLE_CLOUD_PROJECT})
+      echo "Deploying to Google Cloud..."
+      INSTANCE_NAME="usenlease-instance"
+      INSTANCE_EXISTS=$(gcloud compute instances list --filter="name=${INSTANCE_NAME}" --format="value(name)" --project=${GOOGLE_CLOUD_PROJECT})
 
-#       if [ "$INSTANCE_EXISTS" = "$INSTANCE_NAME" ]; then
-#           echo "Instance ${INSTANCE_NAME} already exists. Skipping creation..."
-#       else
-#           echo "Instance ${INSTANCE_NAME} does not exist. Creating it..."
-#           gcloud compute instances create ${INSTANCE_NAME} \
-#               --project=${GOOGLE_CLOUD_PROJECT} \
-#               --zone=${GOOGLE_CLOUD_ZONE} \
-#               --tags=http-server,https-server \
-#               --metadata=startup-script='#!/bin/bash
-#               apt-get update
-#               apt-get install -y docker.io
-#               systemctl start docker
-#               docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
-#               docker pull ${IMAGE}:v1.1.0
-#               docker-compose up -d' || { echo "Google Cloud instance creation failed"; exit 1; }
-#       fi
+      if [ "$INSTANCE_EXISTS" = "$INSTANCE_NAME" ]; then
+          echo "Instance ${INSTANCE_NAME} already exists. Skipping creation..."
+      else
+          echo "Instance ${INSTANCE_NAME} does not exist. Creating it..."
+          gcloud compute instances create ${INSTANCE_NAME} \
+              --project=${GOOGLE_CLOUD_PROJECT} \
+              --zone=${GOOGLE_CLOUD_ZONE} \
+              --tags=http-server,https-server \
+              --metadata=startup-script='#!/bin/bash
+              apt-get update
+              apt-get install -y docker.io
+              systemctl start docker
+              docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
+              docker pull ${IMAGE}:v1.1.0
+              docker-compose up -d' || { echo "Google Cloud instance creation failed"; exit 1; }
+      fi
 
-# after_script:
-#   - echo "Pipeline completed!"
+after_script:
+  - echo "Pipeline completed!"
