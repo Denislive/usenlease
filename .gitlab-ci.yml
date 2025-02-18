@@ -5,12 +5,15 @@ services:
 
 stages:
   - setup
+  - clone
   - build
   - test
   - deploy
 
 variables:
-  IMAGE: 'ngumonelson123/combined-image'  # Replace with your Docker image name
+  GITHUB_REPO: "https://github.com/Denislive/usenlease.git"
+  GITHUB_BRANCH: "master"
+  IMAGE: 'ngumonelson123/combined-image'
   DOCKER_HOST: tcp://docker:2375  # Connect to the Docker daemon
 
 # Setup stage - Install dependencies and set up the environment
@@ -21,6 +24,14 @@ setup:
     - apk add --no-cache git curl bash  # Install necessary tools
     - echo "Environment setup complete."
 
+# Clone stage - Clone the GitHub repository
+clone:
+  stage: clone
+  script:
+    - echo "Cloning the latest code from GitHub..."
+    - git clone --branch ${GITHUB_BRANCH} ${GITHUB_REPO} .
+    - echo "Latest code pulled successfully."
+
 # Build stage - Build the Docker image
 build:
   stage: build
@@ -30,7 +41,7 @@ build:
     - docker build --build-arg SECRET_KEY="django-insecure-^5zv2&aef@n*hi0icmu7lji6bqf0r&d@!x)%*gq-e^w)2e^kl!" -t ${IMAGE}:v1.1.0 -f Dockerfile . || { echo "Docker build failed"; exit 1; }
     - echo "Docker image built successfully."
 
-# Test stage - Run tests (optional, customize as needed)
+# Test stage - Run tests
 test:
   stage: test
   script:
