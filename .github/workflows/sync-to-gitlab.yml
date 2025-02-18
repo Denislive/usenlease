@@ -30,6 +30,14 @@ jobs:
           git remote remove gitlab || true  # Remove existing remote if it exists
           git remote add gitlab git@gitlab.com:Ngumonelson123/usenlease.git
 
+      - name: Fetch latest changes from GitLab
+        run: |
+          git fetch gitlab master
+
+      - name: Rebase local changes
+        run: |
+          git rebase gitlab/master
+
       - name: Force-push to GitLab
         run: |
           git push gitlab master --force-with-lease
