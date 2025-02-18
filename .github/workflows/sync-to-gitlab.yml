@@ -30,7 +30,7 @@ jobs:
 
       - name: Pull from GitLab
         run: |
-          git pull gitlab master --rebase  # Pull and rebase changes from GitLab
+          git pull gitlab master --rebase  # Pull and rebase
 
       - name: Push to GitLab
         run: |
