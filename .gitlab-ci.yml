@@ -11,12 +11,12 @@ stages:
   - deploy
 
 variables:
-  GITHUB_REPO: "github.com/Denislive/usenlease.git"  # Update to remove the protocol prefix
+  GITHUB_REPO: "usenlease.git"  # Repository name only (without full URL)
   GITHUB_BRANCH: "master"
-  IMAGE: 'ngumonelson123/combined-image'  # Replace with your Docker image name
+  IMAGE: "ngumonelson123/combined-image"  # Replace with your Docker image name
   DOCKER_HOST: tcp://docker:2375  # Connect to the Docker daemon
   GITHUB_USERNAME: "ngumonelson123"
-  GITHUB_TOKEN: "${GITHUB_TOKEN}"  # GitHub Personal Access Token (to be set in GitLab CI/CD Variables)
+  GITHUB_TOKEN: "${GITHUB_TOKEN}"  # GitHub Personal Access Token (set in GitLab CI/CD variables)
 
 # Setup stage - Install dependencies and set up the environment
 setup:
@@ -33,7 +33,7 @@ clone:
     - echo "Cloning the latest code from GitHub..."
     - rm -rf ./*  # Remove existing files in the directory
     - rm -rf .[!.]*  # Remove hidden files in the directory
-    - git clone --branch ${GITHUB_BRANCH} https://${GITHUB_USERNAME}:${GITHUB_TOKEN}@${GITHUB_REPO} . || { echo "Failed to clone repository"; exit 1; }
+    - git clone --branch ${GITHUB_BRANCH} https://${GITHUB_USERNAME}:${GITHUB_TOKEN}@github.com/${GITHUB_USERNAME}/${GITHUB_REPO} . || { echo "Failed to clone repository"; exit 1; }
     - echo "Latest code pulled successfully."
 
 # Build stage - Build the Docker image
@@ -102,16 +102,4 @@ deploy:
           echo "Instance ${INSTANCE_NAME} does not exist. Creating it..."
           gcloud compute instances create ${INSTANCE_NAME} \
               --project=${GOOGLE_CLOUD_PROJECT} \
-              --zone=${GOOGLE_CLOUD_ZONE} \
-              --tags=http-server,https-server \
-              --metadata=startup-script='#!/bin/bash
-              apt-get update
-              apt-get install -y docker.io
-              systemctl start docker
-              docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
-              docker pull ${IMAGE}:v1.1.0
-              docker-compose up -d' || { echo "Google Cloud instance creation failed"; exit 1; }
-      fi
-
-after_script:
-  - echo "Pipeline completed!"
+              --zone=${GO
