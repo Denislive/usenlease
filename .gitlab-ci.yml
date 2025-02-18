@@ -42,19 +42,20 @@ check_prerequisites:
       echo "Current shell: $SHELL"
       docker --version || { echo "Docker is not installed"; exit 1; }  # Ensures Docker is available
 
-# Clone Repository - Git clone from the repo
-clone_repository:
-  stage: clone_repository
+
+# Clone stage - Clone the GitHub repository using SSH
+clone:
+  stage: clone
   before_script:
-    - |
-      echo "Setting up SSH..."
-      mkdir -p ~/.ssh
-      echo "${SSH_PRIVATE_KEY}" | base64 -d > ~/.ssh/id_rsa
-      chmod 600 ~/.ssh/id_rsa
-      ssh-keyscan github.com >> ~/.ssh/known_hosts
+    - mkdir -p ~/.ssh
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - ssh-keyscan github.com >> ~/.ssh/known_hosts
   script:
-    - echo "Cloning the repository..."
-    - git clone git@github.com:Denislive/usenlease.git || { echo "Failed to clone repository"; exit 1; }
+    - echo "Cleaning up existing directory..."
+    - find . -mindepth 1 -delete
+    - git clone --branch master git@github.com:Denislive/usenlease.git .
+    - echo "Repository cloned successfully."
 
 # Build and Push Docker Image to Docker Hub
 build_and_push_image:
