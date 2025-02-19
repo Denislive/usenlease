@@ -80,7 +80,6 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
-    # tinymce editor
     'tinymce',
 
     'whitenoise.runserver_nostatic',
@@ -114,7 +113,7 @@ SIMPLE_JWT = {
 EMAIL_HOST = os.getenv('EMAIL_HOST')
 EMAIL_PORT = os.getenv('EMAIL_PORT')
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')  # Store password securely
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS')
 
 # Security Settings
@@ -128,13 +127,10 @@ AUTH_COOKIE_PATH = os.getenv('AUTH_COOKIE_PATH')
 AUTH_COOKIE_HTTPONLY = os.getenv('AUTH_COOKIE_HTTPONLY')
 
 SESSION_COOKIE_SAMESITE = os.getenv('SESSION_COOKIE_SAMESITE', 'None')
-
 SESSION_COOKIE_SECURE = os.getenv('SESSION_COOKIE_SECURE', 'True') == 'True'
 CSRF_COOKIE_SECURE = os.getenv('CSRF_COOKIE_SECURE', 'True') == 'True'
-
 CSRF_COOKIE_NAME = os.getenv('CSRF_COOKIE_NAME', 'csrftoken')
 CSRF_COOKIE_HTTPONLY = os.getenv('CSRF_COOKIE_HTTPONLY', 'False') == 'True'
-
 
 # Explicitly set CSRF_TRUSTED_ORIGINS and CORS_ALLOWED_ORIGINS
 CSRF_TRUSTED_ORIGINS = [
@@ -147,9 +143,29 @@ CORS_ALLOWED_ORIGINS = [
     'https://usenlease.com',
     'https://www.usenlease.com',
 ]
-CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL_ORIGINS', 'True') == 'True'
+CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL_ORIGINS', 'False') == 'True'
 
-# Middleware Configuration
+# Cross-Origin Resource Sharing headers setup
+CORS_ALLOW_METHODS = [
+    'GET',
+    'POST',
+    'PUT',
+    'PATCH',
+    'DELETE',
+    'OPTIONS'
+]
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
@@ -232,7 +248,7 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Media files (uploads) – use Google Cloud Storage for media
 DEFAULT_FILE_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
-#GS_DEFAULT_ACL = 'publicRead'  # Adjust based on your needs
+# GS_DEFAULT_ACL = 'publicRead'  # Adjust based on your needs
 MEDIA_URL = f"https://storage.googleapis.com/{GS_BUCKET_NAME}/"
 
 # Default primary key field type
