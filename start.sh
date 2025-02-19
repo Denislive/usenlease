@@ -46,95 +46,84 @@ export PORT=${PORT:-8080}
 # Create complete Nginx config with the correct port binding
 echo "Creating complete Nginx config..."
 cat <<EOF > /etc/nginx/nginx.conf
-worker_processes  auto;
-error_log  /var/log/nginx/error.log warn;
-pid        /var/run/nginx.pid;
+worker_processes auto;
+error_log /var/log/nginx/error.log warn;
+pid /var/run/nginx.pid;
 
 events {
-    worker_connections  1024;
+    worker_connections 1024;
 }
 
 http {
-    include       /etc/nginx/mime.types;
-    default_type  application/octet-stream;
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
 
-    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
-                      '$status $body_bytes_sent "$http_referer" '
-                      '"$http_user_agent" "$http_x_forwarded_for"';
+    log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                    '$status $body_bytes_sent "$http_referer" '
+                    '"$http_user_agent" "$http_x_forwarded_for"';
 
-    access_log  /var/log/nginx/access.log  main;
+    access_log /var/log/nginx/access.log main;
 
-    sendfile        on;
-    tcp_nopush      on;
-    tcp_nodelay     on;
-    keepalive_timeout  65;
+    sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
+    keepalive_timeout 65;
     types_hash_max_size 2048;
-
     client_body_buffer_size 30M;
 
-
-    # include /etc/nginx/conf.d/*.conf;
+    include /etc/nginx/conf.d/*.conf;
 
     server {
         listen ${PORT};
-            server_name www.usenlease.com;
+        server_name www.usenlease.com;
         return 301 https://usenlease.com$request_uri;
     }
 
- # Main application server
     server {
         listen ${PORT};
         server_name usenlease.com;
 
-        # Root path for the frontend
         root /usr/share/nginx/html;
 
-        # Admin route (Backend)
         location /admin {
-            proxy_pass http://127.0.0.1:8000;  # Ensure this is handled by the backend
+            proxy_pass http://127.0.0.1:8000;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
 
-            # CORS headers
             add_header 'Access-Control-Allow-Origin' 'https://usenlease.com';
             add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
             add_header 'Access-Control-Allow-Headers' 'Origin, Content-Type, Accept, Authorization';
         }
 
-        # Frontend routes (Catch-all route for frontend)
         location / {
-            try_files $uri $uri/ /index.html;  # Fallback to index.html for frontend
+            try_files $uri $uri/ /index.html;
         }
 
-        # API routes (Backend API)
         location /api {
-            proxy_pass http://127.0.0.1:8000;  # Backend handling API routes
+            proxy_pass http://127.0.0.1:8000;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
 
-              # CORS headers
             add_header 'Access-Control-Allow-Origin' 'https://usenlease.com';
             add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
             add_header 'Access-Control-Allow-Headers' 'Origin, Content-Type, Accept, Authorization';
         }
 
-        # Static files for Django (Backend)
         location /static/ {
             alias /app/backend/staticfiles/;
         }
 
-        # Media files for Django (Backend)
         location /media/ {
             alias /app/backend/media/;
         }
 
-        error_page  500 502 503 504  /50x.html;
+        error_page 500 502 503 504 /50x.html;
         location = /50x.html {
-            root  /usr/share/nginx/html;
+            root /usr/share/nginx/html;
         }
     }
 }
