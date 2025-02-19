@@ -36,7 +36,6 @@ python /app/backend/manage.py collectstatic --noinput || {
 }
 
 # Start Gunicorn server for the Django backend
-export PORT=${PORT:-8080}
 echo "Starting Gunicorn server on port 8000..."
 cd /app/backend
 exec gunicorn EquipRentHub.wsgi:application --bind 0.0.0.0:8000 --workers=3 --timeout 240 --graceful-timeout 240 &
@@ -72,13 +71,13 @@ http {
     include /etc/nginx/conf.d/*.conf;
 
     server {
-        listen \$PORT;
+        listen ${PORT};  # Ensure this uses the dynamic PORT
         server_name www.usenlease.com;
         return 301 https://usenlease.com\$request_uri;
     }
 
     server {
-        listen \$PORT;
+        listen ${PORT};  # Ensure this uses the dynamic PORT
         server_name usenlease.com;
 
         root /usr/share/nginx/html;
