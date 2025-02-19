@@ -127,8 +127,8 @@ http {
 }
 EOF
 
-# Use envsubst to replace $PORT dynamically
-envsubst '$PORT' < /etc/nginx/nginx.template.conf > /etc/nginx/nginx.conf
+# Use envsubst to replace \$PORT dynamically
+envsubst '\$PORT' < /etc/nginx/nginx.template.conf > /etc/nginx/nginx.conf
 
 # Log the final configuration for verification
 echo "Final Nginx Config:"
