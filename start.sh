@@ -11,7 +11,7 @@ if [ ! -d "/app/backend/venv" ]; then
 fi
 source /app/backend/venv/bin/activate
 
-# Install dependencies inside the virtual environment (no echoing)
+# Install dependencies inside the virtual environment
 pip install --no-cache-dir --break-system-packages -r /app/backend/requirements.txt || {
     echo "Failed to install dependencies"
     exit 1
@@ -36,16 +36,14 @@ python /app/backend/manage.py collectstatic --noinput || {
 }
 
 # Start Gunicorn server for the Django backend
+export PORT=${PORT:-8080}
 echo "Starting Gunicorn server on port 8000..."
 cd /app/backend
-gunicorn EquipRentHub.wsgi:application --bind 0.0.0.0:8000 --workers=3 --timeout 240 --graceful-timeout 240 &
+exec gunicorn EquipRentHub.wsgi:application --bind 0.0.0.0:8000 --workers=3 --timeout 240 --graceful-timeout 240 &
 
-# Export the PORT environment variable for Nginx if not set
-export PORT=${PORT:-8080}
-
-# Create complete Nginx config with the correct port binding
-echo "Creating complete Nginx config..."
-cat <<EOF > /etc/nginx/nginx.conf
+# Ensure Nginx uses the correct port dynamically
+echo "Creating Nginx config template..."
+cat <<EOF > /etc/nginx/nginx.template.conf
 worker_processes auto;
 error_log /var/log/nginx/error.log warn;
 pid /var/run/nginx.pid;
@@ -74,13 +72,13 @@ http {
     include /etc/nginx/conf.d/*.conf;
 
     server {
-        listen ${PORT};
+        listen \$PORT;
         server_name www.usenlease.com;
         return 301 https://usenlease.com\$request_uri;
     }
 
     server {
-        listen ${PORT};
+        listen \$PORT;
         server_name usenlease.com;
 
         root /usr/share/nginx/html;
@@ -129,13 +127,13 @@ http {
 }
 EOF
 
+# Use envsubst to replace $PORT dynamically
+envsubst '$PORT' < /etc/nginx/nginx.template.conf > /etc/nginx/nginx.conf
+
 # Log the final configuration for verification
 echo "Final Nginx Config:"
 cat /etc/nginx/nginx.conf
 
-# Start Nginx with the updated config file
+# Start Nginx
 echo "Starting Nginx..."
-nginx -g 'daemon off;' || {
-    echo "Failed to start Nginx"
-    exit 1
-}
+exec nginx -g 'daemon off;'
