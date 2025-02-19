@@ -69,66 +69,72 @@ http {
     tcp_nodelay     on;
     keepalive_timeout  65;
     types_hash_max_size 2048;
+
     client_body_buffer_size 30M;
+
 
     include /etc/nginx/conf.d/*.conf;
 
-    # Redirect www to non-www domain
     server {
         listen ${PORT};
-        server_name www.usenlease.com;
+            server_name www.usenlease.com;
         return 301 https://usenlease.com$request_uri;
     }
 
-    # Main application server
+ # Main application server
     server {
         listen ${PORT};
         server_name usenlease.com;
 
+        # Root path for the frontend
         root /usr/share/nginx/html;
+
+        # Admin route (Backend)
+        location /admin {
+            proxy_pass http://127.0.0.1:8000;  # Ensure this is handled by the backend
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+
+            # CORS headers
+            add_header 'Access-Control-Allow-Origin' 'https://usenlease.com';
+            add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+            add_header 'Access-Control-Allow-Headers' 'Origin, Content-Type, Accept, Authorization';
+        }
 
         # Frontend routes (Catch-all route for frontend)
         location / {
-            try_files $uri $uri/ /index.html;
+            try_files $uri $uri/ /index.html;  # Fallback to index.html for frontend
         }
 
-        location /admin {
-            proxy_pass http://127.0.0.1:8000;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-
-            # CORS headers
-            add_header 'Access-Control-Allow-Origin' 'https://usenlease.com';
-            add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
-            add_header 'Access-Control-Allow-Headers' 'Origin, Content-Type, Accept, Authorization';
-        }
-
+        # API routes (Backend API)
         location /api {
-            proxy_pass http://127.0.0.1:8000;
+            proxy_pass http://127.0.0.1:8000;  # Backend handling API routes
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
 
-            # CORS headers
+              # CORS headers
             add_header 'Access-Control-Allow-Origin' 'https://usenlease.com';
             add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
             add_header 'Access-Control-Allow-Headers' 'Origin, Content-Type, Accept, Authorization';
         }
 
+        # Static files for Django (Backend)
         location /static/ {
             alias /app/backend/staticfiles/;
         }
 
+        # Media files for Django (Backend)
         location /media/ {
             alias /app/backend/media/;
         }
 
-        error_page 500 502 503 504 /50x.html;
+        error_page  500 502 503 504  /50x.html;
         location = /50x.html {
-            root /usr/share/nginx/html;
+            root  /usr/share/nginx/html;
         }
     }
 }
