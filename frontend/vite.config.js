@@ -23,7 +23,7 @@ export default defineConfig({
   },
   define: {
     // Hardcoding the API base URL
-    'import.meta.env.VITE_API_BASE_URL': JSON.stringify('https://usenleaseprod-4f2da7430c4d.herokuapp.com'),
+    'import.meta.env.VITE_API_BASE_URL': JSON.stringify('https://www.usenlease.com'),
     'import.meta.env.VITE_ENCRYPTION_KEY': JSON.stringify('mr1HukORlqQM1wvE/uEooNbF6cSL3WDT1aeUdRHAleY/ERuSLQo2FXu7z6TLKWIr'),
   },
 });
