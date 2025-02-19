@@ -12,16 +12,28 @@ fi
 source /app/backend/venv/bin/activate
 
 # Install dependencies inside the virtual environment (no echoing)
-pip install --no-cache-dir --break-system-packages -r /app/backend/requirements.txt || { echo "Failed to install dependencies"; exit 1; }
+pip install --no-cache-dir --break-system-packages -r /app/backend/requirements.txt || {
+    echo "Failed to install dependencies"
+    exit 1
+}
 
 # Run database migrations
 echo "Running database migrations..."
-python /app/backend/manage.py makemigrations --noinput || { echo "Makemigrations failed"; exit 1; }
-python /app/backend/manage.py migrate --noinput || { echo "Migrating failed"; exit 1; }
+python /app/backend/manage.py makemigrations --noinput || {
+    echo "Makemigrations failed"
+    exit 1
+}
+python /app/backend/manage.py migrate --noinput || {
+    echo "Migrating failed"
+    exit 1
+}
 
 # Collect static files
 echo "Collecting static files..."
-python /app/backend/manage.py collectstatic --noinput || { echo "Static files collection failed"; exit 1; }
+python /app/backend/manage.py collectstatic --noinput || {
+    echo "Static files collection failed"
+    exit 1
+}
 
 # Start Gunicorn server for the Django backend
 echo "Starting Gunicorn server on port 8000..."
@@ -77,7 +89,7 @@ http {
 
         # Frontend routes (Catch-all route for frontend)
         location / {
-            try_files $uri $uri/ /index.html;  # Ensures SPA works correctly
+            try_files $uri $uri/ /index.html;
         }
 
         location /admin {
@@ -120,7 +132,6 @@ http {
         }
     }
 }
-
 EOF
 
 # Log the final configuration for verification
@@ -129,4 +140,7 @@ cat /etc/nginx/nginx.conf
 
 # Start Nginx with the updated config file
 echo "Starting Nginx..."
-nginx -g 'daemon off;' || { echo "Failed to start Nginx"; exit 1; }
+nginx -g 'daemon off;' || {
+    echo "Failed to start Nginx"
+    exit 1
+}
