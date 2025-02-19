@@ -73,7 +73,7 @@ http {
     client_body_buffer_size 30M;
 
 
-    include /etc/nginx/conf.d/*.conf;
+    # include /etc/nginx/conf.d/*.conf;
 
     server {
         listen ${PORT};
