@@ -55,7 +55,6 @@
     <div class="absolute top-2/3 right-1/4 w-36 h-36 bg-[#ff6f00] rounded-full opacity-30 animate-pulse"></div>
   </section>
 </template>
-
 <script setup>
 import { ref, computed, watch } from 'vue';
 import { useStore } from 'vuex';
@@ -67,18 +66,34 @@ const store = useStore();
 const equipmentStore = useEquipmentsStore();
 const router = useRouter();
 
+// Search Query
 const searchQuery = computed({
-  get: () => store.getters.getSearchQuery,
+  get: () => {
+    const value = store.getters.getSearchQuery;
+    console.log('Getting search query:', value);
+    return value;
+  },
   set: (value) => {
+    console.log('Setting search query:', value);
     store.dispatch('setSearchQuery', value);
   },
 });
 
-const categories = computed(() => equipmentStore.categories);
-const equipments = computed(() => equipmentStore.equipments);
+// Categories
+const categories = computed(() => {
+  console.log('Computing categories:', equipmentStore.categories);
+  return equipmentStore.categories;
+});
+
+// Equipments
+const equipments = computed(() => {
+  console.log('Computing equipments:', equipmentStore.equipments);
+  return equipmentStore.equipments;
+});
 
 const showMoreCategories = ref(false);
 const displayedCategories = computed(() => {
+  console.log('Computing displayed categories. Show more:', showMoreCategories.value);
   if (!categories.value || categories.value.length === 0) {
     return [];
   }
@@ -88,34 +103,58 @@ const displayedCategories = computed(() => {
 const selectedCategory = ref('All');
 const dropdownWidthClass = ref('static-width');
 
+// Handle dropdown change
 const handleDropdownChange = (event) => {
+  console.log('Dropdown changed. New value:', event.target.value);
   selectedCategory.value = event.target.value;
   dropdownWidthClass.value = selectedCategory.value === 'All' ? 'static-width' : 'dynamic-width';
 };
 
+// Navigate to category details
 const goToDetail = () => {
+  console.log('Navigating to details. Selected category:', selectedCategory.value, 'Search query:', searchQuery.value);
   if (selectedCategory.value !== 'All') {
     const currentRoute = router.currentRoute.value;
-    if (currentRoute.name === 'category-details' && currentRoute.query.cat === selectedCategory.value && currentRoute.query.search === searchQuery.value) {
+    console.log('Current route:', currentRoute);
+    if (
+      currentRoute.name === 'category-details' &&
+      currentRoute.query.cat === selectedCategory.value &&
+      currentRoute.query.search === searchQuery.value
+    ) {
+      console.log('Replacing route with updated search query.');
       router.replace({ name: 'category-details', query: { cat: selectedCategory.value, search: searchQuery.value + '&' } });
     } else {
+      console.log('Pushing new route.');
       router.push({ name: 'category-details', query: { cat: selectedCategory.value, search: searchQuery.value } });
     }
   }
 };
 
+// Update search with debounce
 const updateSearch = debounce(() => {
+  console.log('Updating search with query:', searchQuery.value);
   const query = searchQuery.value.trim().toLowerCase();
   const filteredEquipments = equipments.value.filter((equipment) => {
-    const matchesCategory = selectedCategory.value === 'All' || equipment.category.toLowerCase() === selectedCategory.value.toLowerCase();
+    const matchesCategory =
+      selectedCategory.value === 'All' || equipment.category.toLowerCase() === selectedCategory.value.toLowerCase();
     const matchesQuery = equipment.name.toLowerCase().includes(query);
     return matchesCategory && matchesQuery;
   });
+  console.log('Filtered equipments:', filteredEquipments);
   store.dispatch('setFilteredEquipments', filteredEquipments);
 }, 300);
 
-watch([searchQuery, selectedCategory], updateSearch);
+// Watch searchQuery and selectedCategory
+watch(
+  [searchQuery, selectedCategory],
+  () => {
+    console.log('Watch triggered. Search query:', searchQuery.value, 'Selected category:', selectedCategory.value);
+    updateSearch();
+  },
+  { immediate: true } // Log on initialization as well
+);
 </script>
+
 
   
 <style>

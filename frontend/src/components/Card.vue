@@ -10,7 +10,9 @@ const props = defineProps({
   },
 });
 
+// Function to render stars based on rating
 const renderStars = (rating) => {
+  console.log('Rendering stars for rating:', rating);
   const fullStars = Math.floor(rating);
   const halfStar = rating % 1 >= 0.5 ? 1 : 0;
   const emptyStars = 5 - fullStars - halfStar;
@@ -21,31 +23,41 @@ const router = useRouter();
 const store = useEquipmentsStore();
 
 onMounted(async () => {
-  try {
-    await store.fetchCategories();
-  } catch (error) {
-    console.error('Error fetching categories:', error);
-  }
+  console.log('Component mounted');
+  console.log('Fetching categories from the store...');
+  await store.fetchCategories(); // Ensure this is not causing re-renders
+  console.log('Categories fetched');
 });
 
-const itemsPerPage = 20;
-const currentPage = ref(1);
+const itemsPerPage = 20; // Items per page
+const currentPage = ref(1); // Current page number
 
+// Paginated Equipments
 const paginatedEquipments = computed(() => {
+  console.log('Computing paginated equipments for page:', currentPage.value);
   const startIndex = (currentPage.value - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
+  console.log('Start index:', startIndex, 'End index:', endIndex);
   return props.equipments.slice(startIndex, endIndex);
 });
 
-const totalPages = computed(() => Math.ceil(props.equipments.length / itemsPerPage));
+// Total Pages
+const totalPages = computed(() => {
+  console.log('Computing total pages for equipments:', props.equipments.length);
+  return Math.ceil(props.equipments.length / itemsPerPage);
+});
 
+// Navigate to a specific page
 const goToPage = (page) => {
+  console.log('Navigating to page:', page);
   if (page >= 1 && page <= totalPages.value) {
     currentPage.value = page;
   }
 };
 
+// Navigate to equipment detail page
 const goToDetail = (equipmentId) => {
+  console.log('Navigating to equipment detail with ID:', equipmentId);
   if (equipmentId) {
     router.push({ name: 'equipment-details', params: { id: equipmentId } });
   }
