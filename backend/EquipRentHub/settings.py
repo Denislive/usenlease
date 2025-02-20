@@ -50,6 +50,7 @@ ALLOWED_HOSTS = [
     #'usenleaseprod-4f2da7430c4d.herokuapp.com',
     'usenlease.com',
     'www.usenlease.com'
+    '.usenlease.com',
 ]
 
 RECIPIENT_LIST = os.getenv('RECIPIENT_LIST')
@@ -134,16 +135,22 @@ CSRF_COOKIE_HTTPONLY = os.getenv('CSRF_COOKIE_HTTPONLY', 'False') == 'True'
 
 # Explicitly set CSRF_TRUSTED_ORIGINS and CORS_ALLOWED_ORIGINS
 CSRF_TRUSTED_ORIGINS = [
-    #'https://usenleaseprod-4f2da7430c4d.herokuapp.com',
     'https://usenlease.com',
     'https://www.usenlease.com',
 ]
+
 CORS_ALLOWED_ORIGINS = [
-    #'https://usenleaseprod-4f2da7430c4d.herokuapp.com',
     'https://usenlease.com',
     'https://www.usenlease.com',
 ]
-CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL_ORIGINS', 'False') == 'True'
+
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://(\w+\.)?usenlease\.com$",
+]
+
+CORS_ALLOW_CREDENTIALS = True  # If using authentication
+
+CORS_ALLOW_ALL_ORIGINS = False  # Avoid conflicts
 
 # Cross-Origin Resource Sharing headers setup
 CORS_ALLOW_METHODS = [
