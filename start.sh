@@ -97,9 +97,11 @@ http {
             proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto \$scheme;
 
-            add_header 'Access-Control-Allow-Origin' 'https://usenlease.com';
-            add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
-            add_header 'Access-Control-Allow-Headers' 'Origin, Content-Type, Accept, Authorization';
+            # Add CORS headers
+            add_header 'Access-Control-Allow-Origin' 'https://usenlease.com' always;
+            add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
+            add_header 'Access-Control-Allow-Headers' 'Origin, Content-Type, Accept, Authorization' always;
+            add_header 'Access-Control-Allow-Credentials' 'true' always;
         }
 
         # Frontend routes (Catch-all route for frontend)
@@ -115,9 +117,11 @@ http {
             proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto \$scheme;
 
-            add_header 'Access-Control-Allow-Origin' 'https://usenlease.com';
-            add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
-            add_header 'Access-Control-Allow-Headers' 'Origin, Content-Type, Accept, Authorization';
+            # Add CORS headers
+            add_header 'Access-Control-Allow-Origin' 'https://usenlease.com' always;
+            add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
+            add_header 'Access-Control-Allow-Headers' 'Origin, Content-Type, Accept, Authorization' always;
+            add_header 'Access-Control-Allow-Credentials' 'true' always;
         }
 
         # Static files for Django (Backend)
