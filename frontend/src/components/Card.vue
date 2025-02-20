@@ -10,12 +10,10 @@ const props = defineProps({
   },
 });
 
-// Function to render stars based on rating
 const renderStars = (rating) => {
   const fullStars = Math.floor(rating);
   const halfStar = rating % 1 >= 0.5 ? 1 : 0;
   const emptyStars = 5 - fullStars - halfStar;
-
   return '★'.repeat(fullStars) + (halfStar ? '☆' : '') + '☆'.repeat(emptyStars);
 };
 
@@ -23,36 +21,37 @@ const router = useRouter();
 const store = useEquipmentsStore();
 
 onMounted(async () => {
-  await store.fetchCategories(); // Ensure this is not causing re-renders
+  try {
+    await store.fetchCategories();
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+  }
 });
 
-const itemsPerPage = 20; // Items per page
-const currentPage = ref(1); // Current page number
+const itemsPerPage = 20;
+const currentPage = ref(1);
 
-// Paginated Equipments
 const paginatedEquipments = computed(() => {
   const startIndex = (currentPage.value - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   return props.equipments.slice(startIndex, endIndex);
 });
 
-// Total Pages
 const totalPages = computed(() => Math.ceil(props.equipments.length / itemsPerPage));
 
-// Navigate to a specific page
 const goToPage = (page) => {
   if (page >= 1 && page <= totalPages.value) {
     currentPage.value = page;
   }
 };
 
-// Navigate to equipment detail page
 const goToDetail = (equipmentId) => {
   if (equipmentId) {
     router.push({ name: 'equipment-details', params: { id: equipmentId } });
   }
 };
 </script>
+
 
 <template>
   <div class="container mx-auto p-4">

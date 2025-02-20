@@ -61,10 +61,12 @@ import { ref, computed, watch } from 'vue';
 import { useStore } from 'vuex';
 import { useEquipmentsStore } from '@/store/equipments';
 import { useRouter } from 'vue-router';
+import debounce from 'lodash/debounce';
 
 const store = useStore();
 const equipmentStore = useEquipmentsStore();
 const router = useRouter();
+
 const searchQuery = computed({
   get: () => store.getters.getSearchQuery,
   set: (value) => {
@@ -75,33 +77,26 @@ const searchQuery = computed({
 const categories = computed(() => equipmentStore.categories);
 const equipments = computed(() => equipmentStore.equipments);
 
-// State for showing more categories
 const showMoreCategories = ref(false);
-
-// Computed property for displaying categories
 const displayedCategories = computed(() => {
   if (!categories.value || categories.value.length === 0) {
-    return []; // Return an empty array if categories is null or empty
+    return [];
   }
   return showMoreCategories.value ? categories.value : categories.value.slice(0, 20);
 });
 
-// Selected category
 const selectedCategory = ref('All');
 const dropdownWidthClass = ref('static-width');
 
-// Handle dropdown change
 const handleDropdownChange = (event) => {
   selectedCategory.value = event.target.value;
   dropdownWidthClass.value = selectedCategory.value === 'All' ? 'static-width' : 'dynamic-width';
 };
 
-// Go to detail page based on search query and selected category
 const goToDetail = () => {
   if (selectedCategory.value !== 'All') {
     const currentRoute = router.currentRoute.value;
     if (currentRoute.name === 'category-details' && currentRoute.query.cat === selectedCategory.value && currentRoute.query.search === searchQuery.value) {
-      // If already on the same route with same query, force reload
       router.replace({ name: 'category-details', query: { cat: selectedCategory.value, search: searchQuery.value + '&' } });
     } else {
       router.push({ name: 'category-details', query: { cat: selectedCategory.value, search: searchQuery.value } });
@@ -109,9 +104,7 @@ const goToDetail = () => {
   }
 };
 
-
-// Update search query based on selected category and search input
-const updateSearch = () => {
+const updateSearch = debounce(() => {
   const query = searchQuery.value.trim().toLowerCase();
   const filteredEquipments = equipments.value.filter((equipment) => {
     const matchesCategory = selectedCategory.value === 'All' || equipment.category.toLowerCase() === selectedCategory.value.toLowerCase();
@@ -119,12 +112,12 @@ const updateSearch = () => {
     return matchesCategory && matchesQuery;
   });
   store.dispatch('setFilteredEquipments', filteredEquipments);
-};
+}, 300);
 
-// Watch search query and selected category to update search
 watch([searchQuery, selectedCategory], updateSearch);
 </script>
 
+  
 <style>
 select.static-width {
   width: 8rem; /* Static width for the disabled option */
