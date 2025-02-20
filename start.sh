@@ -19,7 +19,7 @@ echo "Running database migrations..."
 python /app/backend/manage.py makemigrations --noinput || { echo "Makemigrations failed"; exit 1; }
 python /app/backend/manage.py migrate --noinput || { echo "Migrating failed"; exit 1; }
 
-# Collect static files
+
 echo "Collecting static files..."
 python /app/backend/manage.py collectstatic --noinput || { echo "Static files collection failed"; exit 1; }
 
