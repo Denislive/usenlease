@@ -1,18 +1,16 @@
 <template>
   <section class="hero bg-gradient-to-r from-[#ff9e00] to-[#ffc107] py-2 lg:py-10 relative text-white overflow-hidden">
-    <!-- Background Elements -->
     <div class="absolute top-0 left-0 w-full h-full bg-gradient-to-t from-[#1c1c1c] to-transparent opacity-60"></div>
 
-    <!-- Hero Content -->
     <div class="container mx-auto text-center relative z-10 px-4">
-      <h1 class="text-3xl lg:text-5xl font-bold leading-tight mb-6 animate__animated animate__fadeIn animate__delay-1s">
+      <h1 class="text-3xl lg:text-5xl font-bold leading-tight mb-6">
         Rent the Best Equipment for Your Needs
       </h1>
-      <p class="text-sm text-black lg:text-xl mb-8 animate__animated animate__fadeIn animate__delay-2s">
+      <p class="text-sm text-black lg:text-xl mb-8">
         Find top-quality equipment for any project. Fast delivery and great customer support.
       </p>
 
-      <!-- Search Box with Integrated Categories Dropdown -->
+      <!-- Search Box -->
       <div class="flex justify-center">
         <div class="w-full max-w-xl bg-white p-2 search shadow-lg">
           <div class="flex items-center">
@@ -21,9 +19,9 @@
               <select
                 v-model="selectedCategory"
                 @change="goToDetail"
-                :class="['bg-transparent text-[#1c1c1c] p-3 focus:outline-none cursor-pointer border-r border-gray-200', dropdownWidthClass]"
+                :class="['bg-transparent text-[#1c1c1c] p-3 border-r border-gray-200', dropdownWidthClass]"
               >
-                <option disabled selected>All</option>
+                <option value="All">All</option>
                 <option v-for="category in displayedCategories" :key="category.id" :value="category.slug">
                   {{ category.name }}
                 </option>
@@ -38,7 +36,7 @@
               v-model="searchQuery"
             />
 
-            <!-- Go to Detail Button -->
+            <!-- Search Button -->
             <button
               @click="goToDetail"
               class="bg-[#ff6f00] text-white rounded-full px-4 py-3 transition duration-300 hover:bg-[#ff9e00] transform hover:scale-110"
@@ -49,14 +47,11 @@
         </div>
       </div>
     </div>
-
-    <!-- Decorative Circle Effect -->
-    <div class="absolute top-1/4 left-1/4 w-24 h-24 bg-[#ff6f00] rounded-full opacity-20 animate-pulse"></div>
-    <div class="absolute top-2/3 right-1/4 w-36 h-36 bg-[#ff6f00] rounded-full opacity-30 animate-pulse"></div>
   </section>
 </template>
+
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { useStore } from 'vuex';
 import { useEquipmentsStore } from '@/store/equipments';
 import { useRouter } from 'vue-router';
@@ -66,117 +61,74 @@ const store = useStore();
 const equipmentStore = useEquipmentsStore();
 const router = useRouter();
 
+// Fetch categories on mount
+onMounted(async () => {
+  console.log('Fetching categories...');
+  await store.dispatch('fetchCategories'); // Ensure Vuex store has this action
+});
+
 // Search Query
 const searchQuery = computed({
-  get: () => {
-    const value = store.getters.getSearchQuery;
-    console.log('Getting search query:', value);
-    return value;
-  },
-  set: (value) => {
-    console.log('Setting search query:', value);
-    store.dispatch('setSearchQuery', value);
-  },
+  get: () => store.getters.getSearchQuery || '',
+  set: (value) => store.dispatch('setSearchQuery', value),
 });
 
 // Categories
 const categories = computed(() => {
   console.log('Computing categories:', equipmentStore.categories);
-  return equipmentStore.categories;
-});
-
-// Equipments
-const equipments = computed(() => {
-  console.log('Computing equipments:', equipmentStore.equipments);
-  return equipmentStore.equipments;
+  return equipmentStore.categories ?? [];
 });
 
 const showMoreCategories = ref(false);
 const displayedCategories = computed(() => {
-  console.log('Computing displayed categories. Show more:', showMoreCategories.value);
-  if (!categories.value || categories.value.length === 0) {
-    return [];
-  }
+  if (!categories.value.length) return [];
   return showMoreCategories.value ? categories.value : categories.value.slice(0, 20);
 });
 
 const selectedCategory = ref('All');
-const dropdownWidthClass = ref('static-width');
+const dropdownWidthClass = computed(() => (selectedCategory.value === 'All' ? 'static-width' : 'dynamic-width'));
 
-// Handle dropdown change
-const handleDropdownChange = (event) => {
-  console.log('Dropdown changed. New value:', event.target.value);
-  selectedCategory.value = event.target.value;
-  dropdownWidthClass.value = selectedCategory.value === 'All' ? 'static-width' : 'dynamic-width';
-};
-
-// Navigate to category details
+// Handle category change
 const goToDetail = () => {
-  console.log('Navigating to details. Selected category:', selectedCategory.value, 'Search query:', searchQuery.value);
-  if (selectedCategory.value !== 'All') {
-    const currentRoute = router.currentRoute.value;
-    console.log('Current route:', currentRoute);
-    if (
-      currentRoute.name === 'category-details' &&
-      currentRoute.query.cat === selectedCategory.value &&
-      currentRoute.query.search === searchQuery.value
-    ) {
-      console.log('Replacing route with updated search query.');
-      router.replace({ name: 'category-details', query: { cat: selectedCategory.value, search: searchQuery.value + '&' } });
-    } else {
-      console.log('Pushing new route.');
-      router.push({ name: 'category-details', query: { cat: selectedCategory.value, search: searchQuery.value } });
-    }
-  }
+  console.log('Navigating to:', selectedCategory.value, 'Search:', searchQuery.value);
+  router.push({ name: 'category-details', query: { cat: selectedCategory.value, search: searchQuery.value } });
 };
 
-// Update search with debounce
+// Debounce search updates
 const updateSearch = debounce(() => {
-  console.log('Updating search with query:', searchQuery.value);
+  console.log('Updating search:', searchQuery.value);
   const query = searchQuery.value.trim().toLowerCase();
-  const filteredEquipments = equipments.value.filter((equipment) => {
-    const matchesCategory =
-      selectedCategory.value === 'All' || equipment.category.toLowerCase() === selectedCategory.value.toLowerCase();
-    const matchesQuery = equipment.name.toLowerCase().includes(query);
-    return matchesCategory && matchesQuery;
+  const filteredEquipments = equipmentStore.equipments.filter((equipment) => {
+    return (
+      (selectedCategory.value === 'All' || equipment.category.toLowerCase() === selectedCategory.value.toLowerCase()) &&
+      equipment.name.toLowerCase().includes(query)
+    );
   });
-  console.log('Filtered equipments:', filteredEquipments);
   store.dispatch('setFilteredEquipments', filteredEquipments);
 }, 300);
 
 // Watch searchQuery and selectedCategory
-watch(
-  [searchQuery, selectedCategory],
-  () => {
-    console.log('Watch triggered. Search query:', searchQuery.value, 'Selected category:', selectedCategory.value);
-    updateSearch();
-  },
-  { immediate: true } // Log on initialization as well
-);
+watch([searchQuery, selectedCategory], updateSearch, { immediate: true });
 </script>
 
-
-  
 <style>
 select.static-width {
-  width: 8rem; /* Static width for the disabled option */
+  width: 8rem;
   background-color: #fff;
   color: #1c1c1c;
   border-radius: 5px;
   margin-right: 5px;
 }
 select.dynamic-width {
-  width: auto; /* Dynamic width for other options */
+  width: auto;
 }
 
 .search {
   border-radius: 5px;
 }
 
-/* Additional styles can go here if needed */
 .hero {
   min-height: 100px;
-  /* Ensure the hero section is not squeezed */
   display: flex;
   align-items: center;
   justify-content: center;
