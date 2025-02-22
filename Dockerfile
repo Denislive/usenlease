@@ -44,8 +44,19 @@ FROM node:18-alpine AS frontend-builder
 # Set the working directory for the frontend
 WORKDIR /app/frontend
 
-# Copy frontend package files and install dependencies
-COPY frontend/package.json frontend/package-lock.json /app/frontend/
+# Copy frontend package file
+COPY frontend/package.json /app/frontend/
+
+# Remove existing package-lock.json if it exists
+RUN rm -f package-lock.json
+
+# Generate a fresh package-lock.json
+RUN npm install --package-lock-only
+
+# Copy the newly generated package-lock.json
+COPY frontend/package-lock.json /app/frontend/
+
+# Now run npm ci for clean install
 RUN npm ci  # Clean install for dependencies
 
 # Debugging: List installed packages
