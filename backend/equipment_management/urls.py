@@ -16,7 +16,7 @@ from .views import (
     CreateCheckoutSessionView,
     SessionStatusView,
     UserEquipmentView,
-    UserEditableEquipmentView
+    UserEditableEquipmentView,
 )
 from user_management.views import ReportViewSet, ContactViewSet, CompanyInfoView, FAQViewSet
 
@@ -34,10 +34,7 @@ router.register('reports', ReportViewSet, basename='report')
 router.register('contact', ContactViewSet, basename='contact')
 router.register('orders', OrderViewSet, basename='order')
 router.register('order-items', OrderItemViewSet, basename='order-item')
-
 router.register(r'faqs', FAQViewSet)
-
-
 
 urlpatterns = [
     path('', include(router.urls)),  # Include all the registered routes
@@ -47,7 +44,12 @@ urlpatterns = [
     path('order-items/<str:pk>/total-booked/', OrderItemViewSet.as_view({'get': 'list_booked_items'})),
     path('root-categories/', RootCategoryListView.as_view(), name='root-category-list'),
     path('user-equipment/', UserEquipmentView.as_view(), name='user-equipment'),
-    path('user-editable-equipment/', UserEditableEquipmentView.as_view(), name='user-editable-equipment-list'),  # For listing equipment
+    path('user-editable-equipment/', UserEditableEquipmentView.as_view(), name='user-editable-equipment-list'),
     path('company-info/', CompanyInfoView.as_view(), name='company-info'),
 
+    # Custom order actions (initiate_pickup, confirm_pickup, initiate_return, confirm_return)
+    path('orders/<str:pk>/initiate_pickup/', OrderViewSet.as_view({'post': 'initiate_pickup'}), name='initiate-pickup'),
+    path('orders/<str:pk>/confirm_pickup/', OrderViewSet.as_view({'post': 'confirm_pickup'}), name='confirm-pickup'),
+    path('orders/<str:pk>/initiate_return/', OrderViewSet.as_view({'post': 'initiate_return'}), name='initiate-return'),
+    path('orders/<str:pk>/confirm_return/', OrderViewSet.as_view({'post': 'confirm_return'}), name='confirm-return'),
 ]

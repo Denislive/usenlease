@@ -44,6 +44,16 @@ const prevSlide = () => {
                             <img class="w-full h-72 object-cover" src="../assets/gifs/3.gif"
                                 alt="Slide 3">
                         </div>
+                         <!-- Slide 4 -->
+                         <div class="flex-shrink-0 w-full">
+                            <img class="w-full h-72 object-cover" src="../assets/gifs/4.gif"
+                                alt="Slide 4">
+                        </div>
+                         <!-- Slide 5 -->
+                         <div class="flex-shrink-0 w-full">
+                            <img class="w-full h-72 object-cover" src="../assets/gifs/5.gif"
+                                alt="Slide 5">
+                        </div>
                     </div>
                 </div>
 

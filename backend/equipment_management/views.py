@@ -1147,64 +1147,42 @@ class OrderActionView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-
-
 class OrderViewSet(viewsets.ViewSet):
-    """
-    A viewset for listing, creating, retrieving, updating, and deleting orders.
-    Only authenticated users can access and modify their orders.
-    """
     authentication_classes = [JWTAuthenticationFromCookie]
+    permission_classes = [permissions.IsAuthenticated]
 
     def list(self, request):
-        """
-        List all orders for the authenticated user.
-        """
-        self.permission_classes = [permissions.IsAuthenticated]
-        self.check_permissions(request)  # Ensure permission check is applied
-
+        self.check_permissions(request)
         queryset = Order.objects.filter(user=request.user)
         serializer = OrderSerializer(queryset, many=True)
         return Response(serializer.data)
 
     def create(self, request):
-        """
-        Create a new order from the user's cart, including payment processing.
-        """
         self.check_permissions(request)
 
         data = request.data
         data['user'] = request.user.id
 
         try:
-            # Fetch the user's cart
             cart = Cart.objects.get(user=request.user)
         except Cart.DoesNotExist:
             return Response({"error": "No cart found for the user"}, status=status.HTTP_404_NOT_FOUND)
 
-        # Get cart items
         cart_items = cart.cart_items.all()
 
         if not cart_items.exists():
             return Response({"error": "Cart is empty, cannot create an order"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Calculate order total price and total order items
         order_total_price = Decimal(sum(item.quantity * item.item.hourly_rate for item in cart_items))
         total_order_items = sum(item.quantity for item in cart_items)
-
-        # Calculate service fee (6% of the order total price)
         service_fee = order_total_price * Decimal('0.06')
-
-        # Add the service fee to the order total price
         order_total_price_with_fee = order_total_price + service_fee
 
-        data['order_total_price'] = order_total_price_with_fee  # Use the new total price with fee
+        data['order_total_price'] = order_total_price_with_fee
         data['total_order_items'] = total_order_items
 
-        # Serialize and save the order
         order_serializer = OrderSerializer(data=data)
         if order_serializer.is_valid():
-            # Save the order and create order items
             order = order_serializer.save(user=request.user)
 
             for cart_item in cart_items:
@@ -1216,27 +1194,20 @@ class OrderViewSet(viewsets.ViewSet):
                     end_date=cart_item.end_date
                 )
 
-            # Clear the cart after creating the order
             cart_items.delete()
 
-            # Payment logic (Stripe integration)
             try:
-                # Convert the total price to cents (Stripe requires amount in cents)
-                amount_in_cents = int(order_total_price_with_fee * Decimal('100'))  # Use the new total price with fee
-
-                # Create a PaymentIntent with Stripe
+                amount_in_cents = int(order_total_price_with_fee * Decimal('100'))
                 intent = stripe.PaymentIntent.create(
                     amount=amount_in_cents,
                     currency='usd',
                     automatic_payment_methods={'enabled': True},
                 )
 
-                # Update the order with the payment token
                 order.payment_token = intent.id
-                order.payment_status = 'pending'  # Initially set to pending before payment confirmation
+                order.payment_status = 'pending'
                 order.save()
 
-                # Return the client secret for the frontend to process the payment
                 return Response({
                     'clientSecret': intent.client_secret,
                     'order_id': order.id,
@@ -1247,7 +1218,96 @@ class OrderViewSet(viewsets.ViewSet):
 
         return Response(order_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    def get_order(self, pk, user):
+        """Helper function to retrieve an order object with permission check"""
+        return get_object_or_404(Order, id=pk, user=user)
 
+    @action(detail=True, methods=['post'])
+    def initiate_pickup(self, request, pk=None):
+        """
+        Lessee initiates pickup by providing images and identity document.
+        """
+        order = self.get_order(pk, request.user)
+
+        if order.status != 'approved':
+            return Response({"error": "Order must be approved to initiate pickup"}, status=status.HTTP_400_BAD_REQUEST)
+
+        pickup_images = request.FILES.getlist('pickup_images')
+        identity_document_type = request.data.get('documentType')
+
+        if len(pickup_images) > 3:
+            return Response({"error": "Too many pickup images"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if identity_document_type not in ['id', 'dl', 'passport']:
+            return Response({"error": "Invalid identity document type"}, status=status.HTTP_400_BAD_REQUEST)
+
+        order_items = order.order_items.all()
+        equipment_ids = [item.item.id for item in order_items]
+
+        if not equipment_ids:
+            return Response({"error": "No equipment found for this order"}, status=status.HTTP_400_BAD_REQUEST)
+
+        for index, image in enumerate(pickup_images):
+            equipment_id = equipment_ids[index % len(equipment_ids)]
+            Image.objects.create(order=order, equipment_id=equipment_id, image=image, is_pickup=True)
+            print("Created image -", equipment_id)
+
+        order.identity_document_type = identity_document_type
+        order.status = 'pickup'
+        order.save()
+
+        return Response({"message": "Pickup initiated successfully"}, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'])
+    def confirm_pickup(self, request, pk=None):
+        """
+        Lessor confirms pickup and stores the captured ID document.
+        """
+        order = self.get_order(pk, request.user)
+
+        if order.status != 'pickup':
+            return Response({"error": "Pickup must be initiated first"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check if an image was sent
+        id_image = request.FILES.get("id_image")
+        if not id_image:
+            return Response({"error": "ID document image is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Save the image to the order
+        order.identity_document_image.save(id_image.name, id_image, save=True)
+
+        # Confirm the image is set
+        if not order.identity_document_image:
+            return Response({"error": "Failed to save ID document image"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # Update order status
+        order.status = 'rented'
+        order.save()
+
+        return Response({
+            "message": "Pickup confirmed successfully",
+            "image_url": order.identity_document_image.url
+        }, status=status.HTTP_200_OK)
+
+
+
+    @action(detail=True, methods=['post'])
+    def confirm_return(self, request, pk=None):
+        """
+        Lessor confirms return.
+        """
+        order = self.get_order(pk, request.user)
+
+        if order.status != 'returned':
+            return Response({"error": "Return must be initiated first"}, status=status.HTTP_400_BAD_REQUEST)
+
+        order.status = 'completed'
+        order.save()
+
+        return Response({"message": "Return confirmed successfully"}, status=status.HTTP_200_OK)
+
+
+    
 class OrderItemViewSet(viewsets.ViewSet):
     """
     A viewset for listing, creating, retrieving, updating, and deleting order items.

@@ -1,10 +1,10 @@
 <template>
   <div class="grid grid-cols-12 gap-8 md:px-32 py-4">
     <!-- Sidebar -->
-    <div class="col-span-12 lg:col-span-3 bg-white p-4 rounded-lg hidden lg:block shadow-md">
+    <div class="col-span-12 lg:col-span-3 bg-white p-4 rounded-lg hidden md:block shadow-md">
       <div class="flex items-center space-x-4 mb-6">
-        <i class="bi bi-person text-black text-2xl"></i>
-        <span class="text-lg font-medium">Welcome,
+        <i class="bi bi-person text-black text-xl"></i>
+        <span class="text-xl font-bold">Welcome,
           {{
             authStore.user?.first_name || authStore.user?.email || "John Doe"
           }}</span>
@@ -16,7 +16,7 @@
       <div v-for="(section, index) in visibleSections" :key="index" :class="{
         'text-white bg-[#1c1c1c]': authStore.activeSection === section.name,
         'text-[#ffc107]': authStore.activeSection !== section.name,
-      }" class="nav-item font-semibold py-2 px-4 rounded-md cursor-pointer mb-2" :id="section.name"
+      }" class="nav-item font-semibold py-1 px-3 rounded-md cursor-pointer mb-2 text-sm" :id="section.name"
         @click="navigateToSection(section.name)">
         {{ section.label }}
       </div>
@@ -25,8 +25,8 @@
     <!-- Sidebar -->
     <div v-if="showSidebar" class="col-span-12 lg:col-span-3 bg-white p-4 rounded-lg shadow-md md:block lg:hidden">
       <div class="flex items-center space-x-4 mb-6">
-        <i class="bi bi-person text-black text-2xl"></i>
-        <span class="text-lg font-medium">
+        <i class="bi bi-person text-black text-xl"></i>
+        <span class="text-xl font-bold">
           Welcome,
           {{
             authStore.user?.first_name || authStore.user?.email || "John Doe"
@@ -34,7 +34,7 @@
         </span>
       </div>
       <!-- Logout Option -->
-      <button @click="handleLogout" class="w-full px-4 py-2 text-white bg-red-500 hover:text-[#1c1c1c] rounded">
+      <button @click="handleLogout" class="w-full px-4 py-2 text-white bg-red-500 hover:text-[#1c1c1c] rounded text-sm">
         Logout
       </button>
       <hr class="my-4" />
@@ -43,11 +43,12 @@
       <div v-for="(section, index) in visibleSections" :key="index" :class="{
         'text-white bg-[#1c1c1c]': authStore.activeSection === section.name,
         'text-[#ffc107]': authStore.activeSection !== section.name,
-      }" class="nav-item font-semibold py-2 px-4 rounded-md cursor-pointer mb-2" :id="section.name"
+      }" class="nav-item font-semibold py-1 px-3 rounded-md cursor-pointer mb-2 text-sm" :id="section.name"
         @click="navigateToSection(section.name)">
         {{ section.label }}
       </div>
     </div>
+
 
     <!-- Main Content Area -->
     <div class="col-span-12 md:col-span-8 lg:col-span-9 bg-white p-6 rounded-lg shadow-md">
@@ -209,64 +210,211 @@
             </div>
           </div>
 
-          <!-- My Items Section -->
-          <div v-if="
-            authStore.activeSection === 'my-equipments' &&
-            authStore.user?.role === 'lessor'
-          " id="my-equipments">
-            <button @click="closeSidebar"
-              class="flex items-center text-gray-800 rounded-full p-2 transition hover:bg-gray-200">
-              <i class="pi pi-arrow-circle-left text-xl mr-2"></i> Back
-            </button>
+  <div v-if="authStore.activeSection === 'my-equipments' && authStore.user?.role === 'lessor'" id="my-equipments">
+    <button @click="closeSidebar" class="flex items-center text-gray-800 rounded-full p-2 transition hover:bg-gray-200">
+      <i class="pi pi-arrow-circle-left text-xl mr-2"></i> Back
+    </button>
 
-            <div v-if="store.userEquipments.length > 0">
-              <div class="container mx-auto p-4">
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                  <!-- Loop through the filtered equipments -->
-                  <div v-for="equipment in store.userEquipments" :key="equipment.id" @click="goToDetail(equipment.id)"
-                    class="bg-white rounded-lg shadow-lg overflow-hidden transition-transform hover:scale-105 cursor-pointer">
-                    <div class="relative">
-                      <!-- Availability Badge -->
-                      <span :class="{
-                        'bg-green-500': equipment.is_available,
-                        'bg-red-500': !equipment.is_available,
-                      }"
-                        class="absolute top-2 left-2 text-white text-xs font-bold px-2 py-1 rounded flex items-center">
-                        <i :class="{
-                          'pi pi-check-circle': equipment.is_available,
-                          'pi pi-times-circle': !equipment.is_available,
-                        }" class="mr-1"></i>
-                        {{
-                          equipment.is_available ? "Available" : "Unavailable"
-                        }}
-                      </span>
+    <div v-if="store.userEquipments.length > 0">
+      <div class="container mx-auto p-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <!-- Loop through the filtered equipments -->
+          <div v-for="equipment in store.userEquipments" :key="equipment.id" @click="goToDetail(equipment.id)"
+            class="bg-white rounded-lg shadow-lg overflow-hidden transition-transform hover:scale-105 cursor-pointer">
+            <div class="relative">
+              <!-- Availability Badge -->
+              <span :class="{
+                'bg-green-500': equipment.is_available,
+                'bg-red-500': !equipment.is_available,
+              }" class="absolute top-2 left-2 text-white text-xs font-bold px-2 py-1 rounded flex items-center">
+                <i :class="{
+                  'pi pi-check-circle': equipment.is_available,
+                  'pi pi-times-circle': !equipment.is_available,
+                }" class="mr-1"></i>
+                {{
+                  equipment.is_available ? "Available" : "Unavailable"
+                }}
+              </span>
 
-                      <!-- Equipment Image -->
-                      <img v-if="equipment.images.length > 0" :src="`${equipment.images[0].image_url}`"
-                        :alt="equipment.images[0].image_url" class="w-full h-48 object-cover" />
-                      <img v-else src="https://via.placeholder.com/350" alt="Placeholder Image"
-                        class="w-full h-48 object-cover" />
+              <!-- Equipment Image -->
+              <img v-if="equipment.images.length > 0" :src="`${equipment.images[0].image_url}`" :alt="equipment.images[0].image_url"
+                class="w-full h-48 object-cover" />
 
-                      <!-- Edit Button -->
-                      <a v-if="isEditable(equipment.id)" href="#" @click.stop="openEditModal(equipment)"
-                        class="absolute bottom-4 right-4 bg-[#1c1c1c] text-white rounded-full h-10 w-10 flex items-center justify-center hover:text-[#ffc107] transition">
-                        <i class="pi pi-pencil"></i>
-                      </a>
-                    </div>
-
-                    <!-- Equipment Details -->
-                    <div class="p-4">
-                      <h5 class="text-lg font-semibold">
-                        {{ equipment.name }}
-                      </h5>
-                      <p class="text-gray-600">
-                        {{ equipment.hourly_rate }} / Day
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <!-- Edit Button -->
+              <a v-if="isEditable(equipment.id)" href="#" @click.stop="openEditModal(equipment)"
+                class="absolute bottom-4 right-4 bg-[#1c1c1c] text-white rounded-full h-10 w-10 flex items-center justify-center hover:text-[#ffc107] transition">
+                <i class="pi pi-pencil"></i>
+              </a>
             </div>
+
+            <!-- Equipment Details -->
+            <div class="p-4">
+              <h5 class="text-lg font-semibold">
+                {{ equipment.name }}
+              </h5>
+              <p class="text-gray-600">
+                {{ equipment.hourly_rate }} / Day
+              </p>
+            </div>
+          </div>
+        </div>
+        
+       <!-- Rental Tables -->
+<div class="mt-8">
+  <h2 class="text-2xl font-bold mb-4">Rental Details</h2>
+
+  <!-- Currently Rented Table -->
+  <h3 class="text-xl font-semibold mb-2">Currently Rented</h3>
+  <table class="w-full border-collapse bg-white shadow-md rounded-lg overflow-hidden">
+    <thead>
+      <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+        <th class="py-3 px-6 text-left">Equipment</th>
+        <th class="py-3 px-6 text-left">Lessee ID</th>
+        <th class="py-3 px-6 text-center">Duration</th>
+        <th class="py-3 px-6 text-center">Total Income</th>
+      </tr>
+    </thead>
+    <tbody class="text-gray-600 text-sm font-light">
+      <tr v-for="rental in rentedItems" :key="rental.id" class="border-b border-gray-200 hover:bg-gray-100">
+        <td class="py-3 px-6 text-left">
+          <template v-for="item in rental.order_items" :key="item.id">
+            ({{ item.quantity }}) x {{ item.item.name || 'N/A' }}<br />
+          </template>
+        </td>
+        <td class="py-3 px-6 text-left">{{ rental.user || 'Unknown' }}</td>
+        <td class="py-3 px-6 text-center">
+          <template v-for="item in rental.order_items" :key="item.id">
+            {{ item.booked_dates?.start_date || 'N/A' }} - 
+            {{ item.booked_dates?.end_date || 'N/A' }}<br />
+          </template>
+        </td>
+        <td class="py-3 px-6 text-center">{{ rental.order_total_price ? `$${rental.order_total_price}` : '$0' }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Returned Table -->
+<h3 class="text-xl font-semibold mt-6 mb-2">Returned</h3>
+<table class="w-full border-collapse bg-[#1c1c1c] shadow-md rounded-lg overflow-hidden text-white">
+  <thead>
+    <tr class="bg-gray-700 text-gray-300 uppercase text-sm leading-normal">
+      <th class="py-3 px-6 text-left">Equipment</th>
+      <th class="py-3 px-6 text-left">Lessee ID</th>
+      <th class="py-3 px-6 text-center">Duration</th>
+      <th class="py-3 px-6 text-center">Total Income</th>
+      <th class="py-3 px-6 text-center">Condition</th> <!-- New column -->
+    </tr>
+  </thead>
+  <tbody class="text-gray-300 text-sm font-light">
+    <tr v-for="rental in returnedItems" :key="rental.id" class="border-b border-gray-500 hover:bg-gray-800">
+      <td class="py-3 px-6 text-left">
+        <template v-for="item in rental.order_items" :key="item.id">
+          ({{ item.quantity }}) x {{ item.item.name || 'N/A' }}<br />
+        </template>
+      </td>
+      <td class="py-3 px-6 text-left">{{ rental.user || 'Unknown' }}</td>
+      <td class="py-3 px-6 text-center">
+        <template v-for="item in rental.order_items" :key="item.id">
+          {{ item.booked_dates?.start_date || 'N/A' }} - 
+          {{ item.booked_dates?.end_date || 'N/A' }}<br />
+        </template>
+      </td>
+      <td class="py-3 px-6 text-center">{{ rental.order_total_price ? `$${rental.order_total_price}` : '$0' }}</td>
+      <td class="py-3 px-6 text-center">
+        <button @click="openConditionModal(rental)"
+          class="bg-[#ffc107] text-[#1c1c1c] px-3 py-1 rounded-lg text-sm font-semibold hover:bg-yellow-600 transition">
+          Capture Condition
+        </button>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+
+  <div v-if="showConditionModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+    <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+      
+      <!-- Modal Header -->
+      <h3 class="text-lg font-semibold text-gray-800 text-center mb-4">Capture Item Condition</h3>
+
+      <!-- Condition Select -->
+      <label class="block text-gray-700 text-sm font-medium mb-2">Select Condition:</label>
+      <select v-model="selectedCondition"
+        class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <option value="excellent">Excellent</option>
+        <option value="good">Good</option>
+        <option value="fair">Fair</option>
+        <option value="poor">Poor</option>
+        <option value="other">Other</option>
+      </select>
+
+      <!-- Custom Condition Input (only if "Other" is selected) -->
+      <div v-if="selectedCondition === 'other'" class="mt-3">
+        <label class="block text-gray-700 text-sm font-medium mb-2">Describe Condition:</label>
+        <input type="text" v-model="customCondition"
+          class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Enter condition details..." />
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex justify-end mt-4">
+        <button @click="closeConditionModal"
+          class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium px-4 py-2 rounded-lg mr-2">
+          Cancel
+        </button>
+        <button @click="confirmCondition"
+          class="bg-[#1c1c1c] hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition">
+          Save Condition
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Awaiting Pickup Table -->
+  <h3 class="text-xl font-semibold mt-6 mb-2">Awaiting Pickup</h3>
+  <table class="w-full border-collapse bg-white shadow-md rounded-lg overflow-hidden">
+    <thead>
+      <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+        <th class="py-3 px-6 text-left">Equipment</th>
+        <th class="py-3 px-6 text-left">Lessee ID</th>
+        <th class="py-3 px-6 text-center">Duration</th>
+        <th class="py-3 px-6 text-center">Total Income</th>
+      </tr>
+    </thead>
+    <tbody class="text-[#1c1c1c] text-sm font-light">
+      <tr v-for="rental in awaitingPickups" :key="rental.id" class="border-b border-gray-200 hover:bg-gray-100">
+        <td class="py-3 px-6 text-left">
+          <template v-for="item in rental.order_items" :key="item.id">
+            ({{ item.quantity }}) x {{ item.item.name || 'N/A' }}<br />
+          </template>
+        </td>
+        <td class="py-3 px-6 text-left">{{ rental.user || 'Unknown' }}</td>
+        <td class="py-3 px-6 text-center">
+          <template v-for="item in rental.order_items" :key="item.id">
+            {{ item.booked_dates?.start_date || 'N/A' }} - 
+            {{ item.booked_dates?.end_date || 'N/A' }}<br />
+          </template>
+        </td>
+        <td class="py-3 px-6 text-center">{{ rental.order_total_price ? `$${rental.order_total_price}` : '$0' }}</td>
+        <td class="py-3 px-6 text-center">
+            <button @click="openPickupConfirmationModal(rental)" class="bg-blue-500 text-white px-3 py-1 rounded">Confirm Pickup</button>
+          </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<PickupConfirmationModal
+  :showPickupModal="showPickupConfirmationModal"
+  :rental="selectedRental"
+  @close="showPickupConfirmationModal = false"
+  @confirm="handlePickupConfirmation"
+/>
+
+
+
+      </div>
+    </div>
 
             <div v-else>
               <div class="empty-list-container text-center py-16">
@@ -373,6 +521,9 @@
                   <option value="pending">Pending</option>
                   <option value="approved">Approved</option>
                   <option value="rented">Rented</option>
+                  <option value="pickup">Pickup Initiated</option>
+                  <option value="return">Return Initiated</option>
+
                   <option value="rejected">Rejected</option>
                   <option value="canceled">Canceled</option>
                   <option value="completed">Completed</option>
@@ -402,10 +553,12 @@
                       <td class="py-3 px-6 text-left">{{ order.id }}</td>
                       <td class="py-3 px-6 text-center">
                         <span :class="{
-                          'px-3 py-1 rounded-full text-white': true,
+                          'px-3 py-1 rounded-full text-[#1c1c1c]': true,
                           'bg-yellow-500': order.status === 'pending',
-                          'bg-green-500': order.status === 'approved',
-                          'bg-blue-500': order.status === 'rented',
+                          'bg-green-300': order.status === 'pickup',
+                          'bg-blue-500 text-white': order.status === 'approved',
+                          'bg-orange-500': order.status === 'return',
+                          'bg-green-500': order.status === 'rented',
                           'bg-red-500': order.status === 'rejected',
                           'bg-red-500': order.status === 'canceled',
                           'bg-gray-500': order.status === 'completed',
@@ -442,11 +595,22 @@
 
                       <td class="py-3 px-6 text-center">{{ order.total_order_items }}</td>
                       <td class="py-3 px-6 text-center">${{ order.order_total_price }}</td>
-                      <td class="py-3 px-6 text-center">
+                      <td class="py-3 px-6 text-center flex">
+
                         <button @click="openModal(order)"
                           class="px-4 py-2 bg-blue-500 text-white rounded-md shadow-sm hover:bg-blue-600">
+
                           Manage
+
                         </button>
+
+                        <button v-if="order.status == 'approved'" @click="openPicupModal(order)"
+                          class="ml-2 px-4 py-2 bg-green-500 text-white rounded-md shadow-sm hover:bg-green-600">
+
+                          Initiate Pickup
+
+                        </button>
+
                       </td>
                     </tr>
                   </tbody>
@@ -537,6 +701,13 @@
               </div>
             </div>
           </div>
+       
+           <!-- Child Modal Component -->
+    <PickupModal
+      v-if="showPickupModal"
+      :order="selectedOrder"
+      @close="closePickupModal"
+    />
 
           <!-- <div v-if="activeSection === 'settings'">
             <h1>My Items updated</h1>
@@ -580,7 +751,7 @@
               class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
               <div class="bg-white rounded-lg shadow-lg p-6 w-96">
                 <h2 class="text-lg font-bold text-gray-800 mb-4">Review Your Message</h2>
-                <img :src="chatStore.chatState.equipmentImage" alt="Item image"
+                <img :src="api_base_url + chatStore.chatState.equipmentImage" :alt="chatStore.chatState.equipmentImage"
                   class="w-full h-40 object-cover rounded-lg mb-4" />
 
                 <!-- Editable Message -->
@@ -611,7 +782,7 @@
                   ←
                 </button>
                 <span>
-                  {{ chats.find((chat) => chat.id === activeChat)?.name }}
+                  {{chats.find((chat) => chat.id === activeChat)?.name}}
                 </span>
               </div>
 
@@ -652,7 +823,7 @@
                   class="ml-3 bg-[#ffc107] hover:bg-[#ffd740] text-gray-800 px-4 py-2 rounded-full shadow-md transition">
                   Send
                 </button>
-              </div>
+              </div>UserEquipments
             </div>
 
           </div>
@@ -848,8 +1019,8 @@
   </div>
 </template>
 
-<script>
-import { ref, onMounted, reactive, computed, watch} from "vue";
+<script setup>
+import { ref, reactive, computed, onMounted, onUnmounted, nextTick, defineProps, defineEmits } from 'vue';
 import axios from "axios";
 import { useAuthStore } from "@/store/auth";
 import useNotifications from "@/store/notification.js"; // Import the notification service
@@ -858,625 +1029,655 @@ import { useChatStore } from "@/store/chat";
 import { useRouter, useRoute } from "vue-router";
 import { format } from "date-fns";
 import Cookies from "js-cookie";
-
-export default {
-  setup() {
-    const chats = ref([]); // List of chats
-    const messages = reactive({}); // Messages for each chat, keyed by chat ID
-    const activeChat = ref(null); // Currently open chat ID
-    const newMessage = ref(""); // Message being typed
-
-    const showTerminateConfirm = ref(false);
-
-    const store = useEquipmentsStore();
-    const chatStore = useChatStore();
-    const authStore = useAuthStore();
-    const { showNotification } = useNotifications(); // Initialize notification service
-
-    const categories = ref([]);
-
-    const api_base_url = import.meta.env.VITE_API_BASE_URL;
-
-
-    // Check if equipment is editable
-    const isEditable = (id) => store.userEditableEquipmentsIds.includes(id);
-
-    const report = ref({});
-    const error = ref(null);
-
-    const fetchUserReport = async () => {
-      try {
-        const response = await axios.get(`${api_base_url}/api/reports/`, {
-          withCredentials: true, // Include credentials (cookies) in the request
-        });
-
-        report.value = response.data;
-      } catch (err) {
-        error.value = err.message;
-      } finally {
-        loading.value = false;
-      }
-    };
-
-
-    // Handle Logout functionality
-    const handleLogout = async () => {
-      await authStore.logout(); // Wait for the logout method to finish
-      router.push("/"); // Redirect to login page
-    };
-
-    const editModalVisible = ref(false);
-    const editedEquipment = reactive({
-      id: null,
-      name: "",
-      hourly_rate: "",
-      description: "",
-      category: null,
-      is_available: true,
-      images: null,
-    });
-
-    const openEditModal = async (equipment) => {
-      Object.assign(editedEquipment, equipment); // Clone the equipment into the editedEquipment
-      await store.fetchCategories(); // Fetch categories for the dropdown
-      editModalVisible.value = true;
-    };
-
-    const closeEditModal = () => {
-      editModalVisible.value = false;
-      Object.assign(editedEquipment, {
-        id: null,
-        name: "",
-        hourly_rate: "",
-        description: "",
-        category: null,
-        is_available: true,
-        image: null,
-      });
-    };
-
-    const handleImageUpload = (event) => {
-      const files = event.target.files;
-      if (files.length > 0) {
-        // Store the selected files in an array
-        editedEquipment.images = Array.from(files); // Store multiple images in an array
-      }
-    };
-
-    const updateEquipment = async () => {
-      const formData = new FormData();
-
-      // Append regular fields to the formData
-      formData.append("name", editedEquipment.name);
-      formData.append("hourly_rate", editedEquipment.hourly_rate);
-      formData.append("available_quantity", editedEquipment.available_quantity);
-      formData.append("description", editedEquipment.description);
-      formData.append("category", editedEquipment.category);
-      formData.append("is_available", editedEquipment.is_available);
-
-      // Append images only if they are provided
-      if (editedEquipment.images && editedEquipment.images.length > 0) {
-        for (const image of editedEquipment.images) {
-          formData.append("images", image); // Append each image as 'images[]'
-        }
-      }
-
-      try {
-        // Make the API call to update the equipment
-        await axios.put(
-          `${api_base_url}/api/equipments/${editedEquipment.id}/`,
-          formData,
-          {
-            headers: { "Content-Type": "multipart/form-data" },
-          }
-        );
-
-        // Close the modal and refresh the equipment list after successful update
-        closeEditModal();
-        await store.fetchUserEquipments(); // Refresh the equipment list
-      } catch (error) {
-        console.error("Error updating equipment:", error);
-      }
-    };
-
-    // Fetch the list of chats
-    const fetchChats = async () => {
-      try {
-        const response = await axios.get(
-          `${api_base_url}/api/accounts/chats/`,
-          { withCredentials: true }
-        );
-
-        chats.value = response.data.map((chat) => {
-          const otherParticipant = chat.participants.find(
-            (participant) => participant.id !== authStore.user?.id
-          );
-
-          return {
-            id: chat.id,
-            name: otherParticipant?.username || "Unknown",
-            lastMessage: chat.messages.length
-              ? chat.messages[chat.messages.length - 1].content
-              : "No messages yet",
-            created_at: chat.created_at,
-            participants: chat.participants,
-          };
-        });
-      } catch (error) {
-        console.error("Error fetching chats:", error);
-      }
-    };
-
-    // Fetch messages for a specific chat
-    const fetchMessages = async (chatId) => {
-      try {
-        const response = await axios.get(
-          `${api_base_url}/api/accounts/chats/${chatId}/`,
-          {
-            withCredentials: true,
-          }
-        );
-
-        messages[chatId] = response.data.messages.map((msg) => ({
-          id: msg.id,
-          text: msg.content,
-          sentBy: msg.sender === authStore.user?.id ? "me" : "them",
-          sent_at: msg.sent_at,
-          sender: msg.sender,
-          image_url: msg.image_url,
-        }));
-        activeChat.value = chatId;
-        console.log("Fetched Messages:", messages[chatId]);
-
-      } catch (error) {
-        console.error("Error fetching messages:", error);
-      }
-    };
-
-    // Send a new message
-    const sendMessage = async () => {
-      if (!newMessage.value.trim()) return; // Don't send empty messages
-
-      try {
-        const response = await axios.post(
-          `${api_base_url}/api/accounts/messages/`,
-          {
-            content: newMessage.value,
-            chat: activeChat.value, // Current chat ID
-            receiver: getReceiverId(activeChat.value), // Get receiver ID for this chat
-          },
-          { withCredentials: true }
-        );
-
-        fetchMessages(activeChat.value);
-        newMessage.value = ""; // Clear input field
-      } catch (error) {
-        console.error("Error sending message:", error);
-      }
-    };
-
-
-    watch(
-      () => route.query.chat,
-      (newChatId) => {
-        if (newChatId) {
-          openChat(Number(newChatId));
-        } else {
-          activeChat.value = null;
-        }
-      }
-    );
-
-
-
-    // Open a chat and fetch its messages
-    const openChat = (chatId) => {
-      if (!messages.value[chatId]) {
-        fetchMessages(chatId);
-      } else {
-        activeChat.value = chatId;
-        router.push({ path: "/profile", query: { chat: chatId } }); // Update URL
-      }
-    };
-
-    // Get the receiver's ID for a given chat
-    const getReceiverId = (chatId) => {
-      const chat = chats.value.find((c) => c.id === chatId);
-      const receiver =
-        chat.participants[0] !== authStore.user?.id
-          ? chat.participants[0].id
-          : chat.participants[1].id;
-
-      return receiver;
-    };
-
-    // Initialize the auth store
-    const router = useRouter();
-    const showModal = ref(false);
-    const selectedOrder = ref(null);
-    const showDeleteConfirm = ref(false);
-    const orderToDelete = ref(null);
-    const orderToTerminate = ref(null);
-
-    const openModal = (order) => {
-      selectedOrder.value = order;
-      showModal.value = true;
-    };
-
-    const closeModal = () => {
-      showModal.value = false;
-      selectedOrder.value = null;
-      showDeleteConfirm.value = false;
-      showTerminateConfirm.value = false;
-    };
-
-
-
-    const confirmDelete = (order) => {
-      orderToDelete.value = order;
-      showDeleteConfirm.value = true;
-    };
-
-    const cancelDelete = () => {
-      showDeleteConfirm.value = false;
-      orderToDelete.value = null;
-    };
-
-    const deleteOrder = (orderId) => {
-      // API call to delete the order
-      showDeleteConfirm.value = false;
-      closeModal();
-      // Remove order from UI after success
-    };
-
-    // Trigger the termination confirmation modal
-    const confirmTerminate = (order) => {
-      orderToTerminate.value = order;
-      showTerminateConfirm.value = true;
-    };
-
-    // Close the termination confirmation modal
-    const cancelTerminate = () => {
-      showTerminateConfirm.value = false;
-      orderToTerminate.value = null;
-
-    };
-
-    // Handle order action
-    const performAction = async (order, action) => {
-      try {
-        const response = await axios.post(
-          `${api_base_url}/api/orders/${order}/${action}/`,
-          {},
-          {
-            withCredentials: true, // This ensures cookies (credentials) are sent with the request
-          }
-        );
-        showModal.value = false;
-        await fetchOrders(); // Refresh order list
-        closeModal();
-      } catch (error) {
-        console.error(error);
-        alert(error.response?.data?.error || "An error occurred");
-      }
-    };
-
-    // Computed property for active section based on user role
-
-    const roleSection = computed(() => {
-      return authStore.user?.role === 'lessee' ? 'my-orders' : 'my-equipments';
-    });
-    const phoneNumber = ref("");
-
-    // Fetch user equipments on mount with credentials
-    const fetchUserEquipments = async () => {
-      await store.fetchUserEditableEquipments;
-    };
-
-    const goToDetail = (equipmentId) => {
-      if (equipmentId) {
-        router.push({ name: "equipment-details", params: { id: equipmentId } });
-      } else {
-        console.error("Equipment ID is missing!"); // Log an error if ID is missing
-      }
-    };
-
-    const orders = ref([]);
-    const filteredOrders = ref([]);
-    const searchQuery = ref("");
-    const selectedStatus = ref("");
-    const loading = ref(true);
-
-    const fetchOrders = async () => {
-      try {
-        const response = await axios.get(`${api_base_url}/api/orders/`, {
-          withCredentials: true,
-        });
-        orders.value = response.data;
-        console.log(orders.value);
-        filteredOrders.value = response.data; // Initial population
-      } catch (error) {
-        console.error("Error fetching orders:", error.response.data);
-      } finally {
-        loading.value = false;
-      }
-    };
-
-    const filterOrders = () => {
-      filteredOrders.value = orders.value.filter((order) => {
-        return (
-          (selectedStatus.value
-            ? order.status === selectedStatus.value
-            : true) &&
-          (searchQuery.value
-            ? order.id.toLowerCase().includes(searchQuery.value.toLowerCase())
-            : true)
-        );
-      });
-    };
-
-    // Mock user object for demonstration purposes
-    const user = ref({
-      user_address: {
-        full_name: "", // Default value
-        street_address: "",
-        city: "",
-        state: "",
-        zip_code: "",
-        country: "",
-      },
-    });
-    const addressModalVisible = ref(false);
-    const phoneModalVisible = ref(false);
-    const showSidebar = ref(true); // Sidebar visibility state
-
-    const closeSidebar = () => {
-      showSidebar.value = true;
-      authStore.activeSection = null;
-    };
-
-    // Method to set the active section
-    const setActiveSection = (sectionName) => {
-      authStore.activeSection = sectionName;
-    };
-
-
-    const route = useRoute();
-
-
-
-    // Function to navigate to a section
-    const navigateToSection = (sectionName) => {
-      authStore.activeSection = sectionName;
-
-      // Scroll to the section
-      const sectionElement = document.getElementById(sectionName);
-      if (sectionElement) {
-        sectionElement.scrollIntoView({ behavior: "smooth" });
-      }
-
-      // Hide sidebar on small devices
-      if (window.innerWidth < 1024) {
-        showSidebar.value = false;
-      }
-
-    };
-
-
-    const sections = computed(() => [
-      { name: "personal-info", label: "Personal Information" },
-      {
-        name: "my-equipments",
-        label: "My Items",
-        show: authStore.user?.role === "lessor",
-      },
-      {
-        name: "my-orders",
-        label: "My Orders",
-        show: authStore.user?.role === "lessee",
-      },
-      { name: "chats", label: "Chats" },
-      { name: "reports", label: "Reports" },
-    ]);
-    const otherSections = [
-      {
-        name: "my-equipments",
-        label: "My Items",
-        show: authStore.user?.role === "lessor",
-      },
-      {
-        name: "my-orders",
-        label: "My Orders",
-        show: authStore.user?.role === "lessee",
-      },
-      // { name: "settings", label: "Settings" },
-      { name: "chats", label: "Chats" },
-      { name: "reports", label: "Reports" },
-    ];
-
-    // Filter sections to only include those that should be shown
-    const visibleSections = computed(() =>
-      sections.value.filter((section) => section.show !== false)
-    );
-
-
-
-
-    const uploadProfilePicture = async (event) => {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const formData = new FormData();
-      formData.append("image", file);
-
-      try {
-        const response = await axios.put(
-          `${api_base_url}/api/accounts/users/${authStore.user?.id}/`,
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-            withCredentials: true, // Include authentication cookies
-          }
-        );
-
-        user.image = response.data.image_url; // Update the image URL
-        await authStore.getUserData();
-      } catch (error) {
-        console.error(error);
-      }
-    };
-
-    // Update phone number via PUT request
-    const updatePhoneNumber = async () => {
-      try {
-        const updatedUserData = { phone_number: phoneNumber.value };
-        const response = await axios.put(
-          `${api_base_url}/api/accounts/users/${authStore.user?.id}/`,
-          updatedUserData,
-          { withCredentials: true }
-        );
-        authStore.user = response.data;
-
-        phoneModalVisible.value = false;
-      } catch (error) {
-        console.error("Error updating phone number:", error);
-      }
-    };
-
-    const updateAddress = async () => {
-      try {
-        const updatedAddressData = {
-          full_name: user.value.user_address?.full_name || "",
-          street_address: user.value.user_address?.street_address || "",
-          street_address2: user.value.user_address?.street_address2 || "",
-          city: user.value.user_address?.city || "",
-          state: user.value.user_address?.state || "",
-          zip_code: user.value.user_address?.zip_code || "",
-          country: user.value.user_address?.country || "",
-        };
-
-        let response;
-        if (user.value.user_address.id) {
-          // Update existing address
-          response = await axios.put(
-            `${api_base_url}/api/accounts/physical-addresses/${user.value.user_address.id}/`,
-            updatedAddressData,
-            { withCredentials: true }
-          );
-        } else {
-          // Add new address
-          response = await axios.post(
-            `${api_base_url}/api/accounts/physical-addresses/`,
-            updatedAddressData,
-            { withCredentials: true }
-          );
-        }
-
-        user.value.user_address = response.data;
-        addressModalVisible.value = false;
-      } catch (error) {
-        console.error("Error saving address:", error);
-      }
-    };
-
-    const formatDate = (date) => {
-      try {
-        return format(new Date(date), "Ppp");
-      } catch (error) {
-        return "Invalid Date";
-      }
-    };
-
-    // Fetch user data when the component is mounted
-    onMounted(async () => {
-      const section = route.query.section;
-      if (section) {
-        navigateToSection(section);
-      }
-      await authStore.getUserData();
-      user.value = authStore.user;
-
-      fetchChats();
-      if (route.query.chat) {
-        openChat(Number(route.query.chat));
-      }
-
-      fetchOrders(); // Fetch orders on mount
-      fetchUserReport();
-      await store.fetchUserEditableEquipments();
-    });
-
-
-
-    return {
-      orderToTerminate,
-      confirmTerminate,
-      cancelTerminate,
-      showTerminateConfirm,
-      chatStore,
-      isEditable,
-      store,
-      report,
-      error,
-      fetchUserReport,
-      navigateToSection,
-      closeSidebar,
-      showSidebar,
-      api_base_url,
-      handleLogout,
-      visibleSections,
-      formatDate,
-
-      categories,
-
-      editModalVisible,
-      editedEquipment,
-      openEditModal,
-      closeEditModal,
-      handleImageUpload,
-      updateEquipment,
-
-      fetchChats,
-      fetchMessages,
-
-      getReceiverId,
-      chats,
-      messages,
-      activeChat,
-      newMessage,
-      openChat,
-      sendMessage,
-      showDeleteConfirm,
-      orderToDelete,
-      confirmDelete,
-      cancelDelete,
-      performAction,
-      showModal,
-      openModal,
-      closeModal,
-      selectedOrder,
-      orders,
-      filteredOrders,
-      searchQuery,
-      selectedStatus,
-      filterOrders,
-      loading,
-      goToDetail,
-      uploadProfilePicture,
-      authStore,
-      roleSection,
-      phoneNumber,
-      user,
-      addressModalVisible,
-      phoneModalVisible,
-      sections,
-      otherSections,
-      setActiveSection,
-      updatePhoneNumber,
-      updateAddress,
-    };
-  },
+import PickupModal from './PickupModal.vue'; // Import the child modal component
+import PickupConfirmationModal from './PickupConfirmationModal.vue';
+
+// Reactive stateconst showPickupModal = ref(false);
+const selectedRental = ref(null);
+const showPickupConfirmationModal = ref(null);
+
+const openPickupConfirmationModal = (rental) => {
+  selectedRental.value = rental;
+  showPickupConfirmationModal.value = true;
 };
+
+const closePickupConfirmationModal = () => {
+  showPickupConfirmationModal.value = false;
+  selectedRental.value = null;
+};
+
+const handlePickupConfirmation = () => {
+  console.log("Pickup confirmed for", selectedRental.value);
+  closePickupModal();
+};
+
+
+const showPickupModal = ref(false);
+
+const { showNotification } = useNotifications(); // Initialize notification service
+
+
+// Open the modal
+
+const openPicupModal = (order) => {
+
+  selectedOrder.value = order; // Example order data
+
+  showPickupModal.value = true;
+
+};
+
+
+// Close the modal
+
+const closePickupModal = () => {
+
+  showPickupModal.value = false;
+
+};
+
+const chats = ref([]); // List of chats
+const messages = reactive({}); // Messages for each chat, keyed by chat ID
+const activeChat = ref(null); // Currently open chat ID
+const newMessage = ref(""); // Message being typed
+const showTerminateConfirm = ref(false);
+
+
+
+const showConditionModal = ref(false);
+const selectedCondition = ref("");
+const customCondition = ref("");
+const currentRental = ref(null);
+
+const openConditionModal = (rental) => {
+  currentRental.value = rental;
+  selectedCondition.value = "";
+  customCondition.value = "";
+  showConditionModal.value = true;
+};
+
+const closeConditionModal = () => {
+  showConditionModal.value = false;
+};
+
+const confirmCondition = async () => {
+  if (!selectedCondition.value) {
+    alert("Please select a condition.");
+    return;
+  }
+
+  let conditionData = {
+    return_item_condition: selectedCondition.value,
+  };
+
+  if (selectedCondition.value === "other") {
+    if (!customCondition.value.trim()) {
+      alert("Please enter a description for the condition.");
+      return;
+    }
+    conditionData.return_item_condition_custom = customCondition.value.trim();
+  }
+
+  try {
+    const response = await axios.post(
+      `${api_base_url}/api/orders/${currentRental.value.id}/confirm_return/`,
+      conditionData,
+      {
+        headers: { "Content-Type": "application/json" },
+        withCredentials: true,
+      }
+    );
+
+    if (response.status === 200) {
+      alert("Condition recorded successfully!");
+      closeConditionModal();
+    }
+  } catch (error) {
+    console.error("Error saving condition:", error);
+    alert("Failed to save condition. Please try again.");
+  }
+};
+
+const store = useEquipmentsStore();
+const chatStore = useChatStore();
+const authStore = useAuthStore();
+
+const categories = ref([]);
+
+const api_base_url = import.meta.env.VITE_API_BASE_URL;
+
+
+// Check if equipment is editable
+const isEditable = (id) => store.userEditableEquipmentsIds.includes(id);
+
+const report = ref({});
+const error = ref(null);
+
+const fetchUserReport = async () => {
+  try {
+    const response = await axios.get(`${api_base_url}/api/reports/`, {
+      withCredentials: true, // Include credentials (cookies) in the request
+    });
+
+    report.value = response.data;
+  } catch (err) {
+    error.value = err.message;
+  } finally {
+    loading.value = false;
+  }
+};
+
+
+// Handle Logout functionality
+const handleLogout = async () => {
+  await authStore.logout(); // Wait for the logout method to finish
+  router.push("/"); // Redirect to login page
+};
+
+const editModalVisible = ref(false);
+const editedEquipment = reactive({
+  id: null,
+  name: "",
+  hourly_rate: "",
+  description: "",
+  category: null,
+  is_available: true,
+  images: null,
+});
+
+const openEditModal = async (equipment) => {
+  Object.assign(editedEquipment, equipment); // Clone the equipment into the editedEquipment
+  await store.fetchCategories(); // Fetch categories for the dropdown
+  editModalVisible.value = true;
+};
+
+const closeEditModal = () => {
+  editModalVisible.value = false;
+  Object.assign(editedEquipment, {
+    id: null,
+    name: "",
+    hourly_rate: "",
+    description: "",
+    category: null,
+    is_available: true,
+    image: null,
+  });
+};
+
+const handleImageUpload = (event) => {
+  const files = event.target.files;
+  if (files.length > 0) {
+    // Store the selected files in an array
+    editedEquipment.images = Array.from(files); // Store multiple images in an array
+  }
+};
+
+const updateEquipment = async () => {
+  const formData = new FormData();
+
+  // Append regular fields to the formData
+  formData.append("name", editedEquipment.name);
+  formData.append("hourly_rate", editedEquipment.hourly_rate);
+  formData.append("available_quantity", editedEquipment.available_quantity);
+  formData.append("description", editedEquipment.description);
+  formData.append("category", editedEquipment.category);
+  formData.append("is_available", editedEquipment.is_available);
+
+  // Append images only if they are provided
+  if (editedEquipment.images && editedEquipment.images.length > 0) {
+    for (const image of editedEquipment.images) {
+      formData.append("images", image); // Append each image as 'images[]'
+    }
+  }
+
+  try {
+    // Make the API call to update the equipment
+    await axios.put(
+      `${api_base_url}/api/equipments/${editedEquipment.id}/`,
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      }
+    );
+
+    // Close the modal and refresh the equipment list after successful update
+    closeEditModal();
+    await store.fetchUserEquipments(); // Refresh the equipment list
+  } catch (error) {
+    console.error("Error updating equipment:", error);
+  }
+};
+
+// Fetch the list of chats
+const fetchChats = async () => {
+  try {
+    const response = await axios.get(
+      `${api_base_url}/api/accounts/chats/`,
+      { withCredentials: true }
+    );
+
+    chats.value = response.data.map((chat) => {
+      const otherParticipant = chat.participants.find(
+        (participant) => participant.id !== authStore.user?.id
+      );
+
+      return {
+        id: chat.id,
+        name: otherParticipant?.username || "Unknown",
+        lastMessage: chat.messages.length
+          ? chat.messages[chat.messages.length - 1].content
+          : "No messages yet",
+        created_at: chat.created_at,
+        participants: chat.participants,
+      };
+    });
+  } catch (error) {
+    console.error("Error fetching chats:", error);
+  }
+};
+
+// Fetch messages for a specific chat
+const fetchMessages = async (chatId) => {
+  try {
+    const response = await axios.get(
+      `${api_base_url}/api/accounts/chats/${chatId}/`,
+      {
+        withCredentials: true,
+      }
+    );
+
+    messages[chatId] = response.data.messages.map((msg) => ({
+      id: msg.id,
+      text: msg.content,
+      sentBy: msg.sender === authStore.user?.id ? "me" : "them",
+      sent_at: msg.sent_at,
+      sender: msg.sender,
+      image_url: msg.image_url,
+    }));
+    activeChat.value = chatId;
+    console.log("Fetched Messages:", messages[chatId]);
+
+  } catch (error) {
+    console.error("Error fetching messages:", error);
+  }
+};
+
+// Send a new message
+const sendMessage = async () => {
+  if (!newMessage.value.trim()) return; // Don't send empty messages
+
+  try {
+    const response = await axios.post(
+      `${api_base_url}/api/accounts/messages/`,
+      {
+        content: newMessage.value,
+        chat: activeChat.value, // Current chat ID
+        receiver: getReceiverId(activeChat.value), // Get receiver ID for this chat
+      },
+      { withCredentials: true }
+    );
+
+    fetchMessages(activeChat.value);
+    newMessage.value = ""; // Clear input field
+  } catch (error) {
+    console.error("Error sending message:", error);
+  }
+};
+
+// Open a chat and fetch its messages
+const openChat = (chatId) => {
+  if (!messages[chatId]) {
+    fetchMessages(chatId);
+  } else {
+    activeChat.value = chatId;
+  }
+};
+
+// Get the receiver's ID for a given chat
+const getReceiverId = (chatId) => {
+  const chat = chats.value.find((c) => c.id === chatId);
+  const receiver =
+    chat.participants[0] !== authStore.user?.id
+      ? chat.participants[0].id
+      : chat.participants[1].id;
+
+  return receiver;
+};
+
+// Initialize the auth store
+const router = useRouter();
+const showModal = ref(false);
+const selectedOrder = ref(null);
+const showDeleteConfirm = ref(false);
+const orderToDelete = ref(null);
+const orderToTerminate = ref(null);
+
+const openModal = (order) => {
+  selectedOrder.value = order;
+  showModal.value = true;
+};
+
+const closeModal = () => {
+  showModal.value = false;
+  selectedOrder.value = null;
+  showDeleteConfirm.value = false;
+  showTerminateConfirm.value = false;
+};
+
+
+
+const confirmDelete = (order) => {
+  orderToDelete.value = order;
+  showDeleteConfirm.value = true;
+};
+
+const cancelDelete = () => {
+  showDeleteConfirm.value = false;
+  orderToDelete.value = null;
+};
+
+const deleteOrder = (orderId) => {
+  // API call to delete the order
+  showDeleteConfirm.value = false;
+  closeModal();
+  // Remove order from UI after success
+};
+
+// Trigger the termination confirmation modal
+const confirmTerminate = (order) => {
+  orderToTerminate.value = order;
+  showTerminateConfirm.value = true;
+};
+
+// Close the termination confirmation modal
+const cancelTerminate = () => {
+  showTerminateConfirm.value = false;
+  orderToTerminate.value = null;
+
+};
+
+// Handle order action
+const performAction = async (order, action) => {
+  try {
+    const response = await axios.post(
+      `${api_base_url}/api/orders/${order}/${action}/`,
+      {},
+      {
+        withCredentials: true, // This ensures cookies (credentials) are sent with the request
+      }
+    );
+    showModal.value = false;
+    await fetchOrders(); // Refresh order list
+    closeModal();
+  } catch (error) {
+    console.error(error);
+    alert(error.response?.data?.error || "An error occurred");
+  }
+};
+
+// Computed property for active section based on user role
+
+const roleSection = computed(() => {
+  return authStore.user?.role === 'lessee' ? 'my-orders' : 'my-equipments';
+});
+const phoneNumber = ref("");
+
+// Fetch user equipments on mount with credentials
+const fetchUserEquipments = async () => {
+ store.fetchUserEditableEquipments;
+};
+
+const rentedItems = computed(() => {
+  console.log("Filtered Orders:", filteredOrders.value);
+  const result = Array.isArray(filteredOrders.value) 
+    ? filteredOrders.value.filter(order => order.status === 'rented') 
+    : [];
+  console.log("Rented Items:", result);
+  return result;
+});
+
+
+const returnedItems = computed(() => {
+  return Array.isArray(filteredOrders.value) ? 
+    filteredOrders.value.filter(order => order.status === 'returned') : [];
+});
+
+const awaitingPickups = computed(() => {
+  return Array.isArray(filteredOrders.value) ? 
+    filteredOrders.value.filter(order => order.status === 'pickup') : [];
+});
+
+const goToDetail = (equipmentId) => {
+  if (equipmentId) {
+    router.push({ name: "equipment-details", params: { id: equipmentId } });
+  } else {
+    console.error("Equipment ID is missing!"); // Log an error if ID is missing
+  }
+};
+
+const orders = ref([]);
+const filteredOrders = ref([]);
+const searchQuery = ref("");
+const selectedStatus = ref("");
+const loading = ref(true);
+
+const fetchOrders = async () => {
+  try {
+    const response = await axios.get(`${api_base_url}/api/orders/`, {
+      withCredentials: true,
+    });
+    orders.value = response.data;
+    console.log("Order values", orders.value);
+    filteredOrders.value = response.data; // Initial population
+    console.log("filtered orders values", response.data);
+  } catch (error) {
+    console.error("Error fetching orders:", error.response.data);
+  } finally {
+    loading.value = false;
+  }
+};
+
+const filterOrders = () => {
+  filteredOrders.value = orders.value.filter((order) => {
+    return (
+      (selectedStatus.value
+        ? order.status === selectedStatus.value
+        : true) &&
+      (searchQuery.value
+        ? order.id.toLowerCase().includes(searchQuery.value.toLowerCase())
+        : true)
+    );
+  });
+};
+
+// Mock user object for demonstration purposes
+const user = ref({
+  user_address: {
+    full_name: "", // Default value
+    street_address: "",
+    city: "",
+    state: "",
+    zip_code: "",
+    country: "",
+  },
+});
+const addressModalVisible = ref(false);
+const phoneModalVisible = ref(false);
+const showSidebar = ref(true); // Sidebar visibility state
+
+const closeSidebar = () => {
+  showSidebar.value = true;
+  authStore.activeSection = null;
+};
+
+// Method to set the active section
+const setActiveSection = (sectionName) => {
+  authStore.activeSection = sectionName;
+};
+
+
+const route = useRoute();
+
+
+
+// Function to navigate to a section
+const navigateToSection = (sectionName) => {
+  authStore.activeSection = sectionName;
+
+  // Scroll to the section
+  const sectionElement = document.getElementById(sectionName);
+  if (sectionElement) {
+    sectionElement.scrollIntoView({ behavior: "smooth" });
+  }
+
+  // Hide sidebar on small devices
+  if (window.innerWidth < 1024) {
+    showSidebar.value = false;
+  }
+
+};
+
+
+const sections = computed(() => [
+  { name: "personal-info", label: "Personal Information" },
+  {
+    name: "my-equipments",
+    label: "My Items",
+    show: authStore.user?.role === "lessor",
+  },
+  {
+    name: "my-orders",
+    label: "My Orders",
+    show: authStore.user?.role === "lessee",
+  },
+  { name: "chats", label: "Chats" },
+  { name: "reports", label: "Reports" },
+]);
+const otherSections = [
+  {
+    name: "my-equipments",
+    label: "My Items",
+    show: authStore.user?.role === "lessor",
+  },
+  {
+    name: "my-orders",
+    label: "My Orders",
+    show: authStore.user?.role === "lessee",
+  },
+  // { name: "settings", label: "Settings" },
+  { name: "chats", label: "Chats" },
+  { name: "reports", label: "Reports" },
+];
+
+// Filter sections to only include those that should be shown
+const visibleSections = computed(() =>
+  sections.value.filter((section) => section.show !== false)
+);
+
+
+
+
+const uploadProfilePicture = async (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append("image", file);
+
+  try {
+    const response = await axios.put(
+      `${api_base_url}/api/accounts/users/${authStore.user?.id}/`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+        withCredentials: true, // Include authentication cookies
+      }
+    );
+
+    user.image = response.data.image_url; // Update the image URL
+    await authStore.getUserData();
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+// Update phone number via PUT request
+const updatePhoneNumber = async () => {
+  try {
+    const updatedUserData = { phone_number: phoneNumber.value };
+    const response = await axios.put(
+      `${api_base_url}/api/accounts/users/${authStore.user?.id}/`,
+      updatedUserData,
+      { withCredentials: true }
+    );
+    authStore.user = response.data;
+
+    phoneModalVisible.value = false;
+  } catch (error) {
+    console.error("Error updating phone number:", error);
+  }
+};
+
+const updateAddress = async () => {
+  try {
+    const updatedAddressData = {
+      full_name: user.value.user_address?.full_name || "",
+      street_address: user.value.user_address?.street_address || "",
+      street_address2: user.value.user_address?.street_address2 || "",
+      city: user.value.user_address?.city || "",
+      state: user.value.user_address?.state || "",
+      zip_code: user.value.user_address?.zip_code || "",
+      country: user.value.user_address?.country || "",
+    };
+
+    let response;
+    if (user.value.user_address.id) {
+      // Update existing address
+      response = await axios.put(
+        `${api_base_url}/api/accounts/physical-addresses/${user.value.user_address.id}/`,
+        updatedAddressData,
+        { withCredentials: true }
+      );
+    } else {
+      // Add new address
+      response = await axios.post(
+        `${api_base_url}/api/accounts/physical-addresses/`,
+        updatedAddressData,
+        { withCredentials: true }
+      );
+    }
+
+    user.value.user_address = response.data;
+    addressModalVisible.value = false;
+  } catch (error) {
+    console.error("Error saving address:", error);
+  }
+};
+
+const formatDate = (date) => {
+  try {
+    return format(new Date(date), "Ppp");
+  } catch (error) {
+    return "Invalid Date";
+  }
+};
+
+// Fetch user data when the component is mounted
+onMounted(async () => {
+  const section = route.query.section;
+  if (section) {
+    navigateToSection(section);
+  }
+  await authStore.getUserData();
+  user.value = authStore.user;
+
+  fetchChats();
+  fetchOrders(); // Fetch orders on mount
+  fetchUserReport();
+  await store.fetchUserEditableEquipments();
+});
+
+
 </script>

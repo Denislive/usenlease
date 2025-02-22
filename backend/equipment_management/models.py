@@ -119,27 +119,7 @@ class Equipment(models.Model):
         super().save(*args, **kwargs)
 
 
-class Image(models.Model):
-    id = models.CharField(primary_key=True, max_length=16, default=generate_short_uuid, editable=False)
-    equipment = models.ForeignKey(Equipment, related_name='images', on_delete=models.CASCADE)
-    image = models.ImageField(upload_to='equipment_images/')
 
-    def __str__(self):
-        return f"Image for {self.equipment.name}"
-
-    def clean(self):
-        """Ensure no more than 4 images per equipment."""
-        if Equipment.objects.filter(pk=self.pk).exists():
-            if self.images.count() >= 4:
-                raise ValidationError("An equipment item cannot have more than 4 images.")
-        super().clean()
-
-    @property
-    def image_url(self):
-        return self.image.url
-
-    class Meta:
-        unique_together = ('equipment', 'id')
 
 
 class Specification(models.Model):
@@ -283,11 +263,27 @@ class Order(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Pending'),
         ('approved', 'Approved'),
+        ('pickup', 'Pickup Initiated'),
+        ('return', 'Return Initiated'),
         ('rented', 'Rented'),
         ('rejected', 'Rejected'),
         ('returned', 'Returned'),
         ('completed', 'Completed'),
         ('canceled', 'Canceled'),
+    ]
+
+    ITEM_CONDITION_CHOICES = [
+        ('excellent', 'Excellent'),
+        ('good', 'Good'),
+        ('fair', 'Fair'),
+        ('poor', 'Poor'),
+        ('other', 'Other'),
+    ]
+
+    IDENTITY_DOCUMENT_CHOICES = [
+        ('id', 'ID'),
+        ('dl', 'Driver License'),
+        ('passport', 'Passport'),
     ]
 
     payment_token = models.CharField(max_length=255, blank=True, null=True)
@@ -304,6 +300,13 @@ class Order(models.Model):
     order_total_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     total_order_items = models.IntegerField(default=0)
     ordered = models.BooleanField(default=False)
+
+    # New fields for identity document
+    identity_document_type = models.CharField(max_length=10, choices=IDENTITY_DOCUMENT_CHOICES, default=id)
+    identity_document_image = models.ImageField(upload_to='pickup_identity_documents/', blank=True, null=True)
+    
+    return_item_condition = models.CharField(max_length=10, choices=ITEM_CONDITION_CHOICES, blank=True, null=True)
+    return_item_condition_custom = models.CharField(max_length=255, blank=True, null=True)  # Custom condition description
 
     def __str__(self):
         return f"Order {self.id} for {self.user.username}"
@@ -348,7 +351,7 @@ class Order(models.Model):
         """
         order_items = self.order_items.all()
         total = sum([item.get_order_item_total for item in order_items])
-        service_fee = total * Decimal('0.06')  # Added service fee
+        service_fee = total * Decimal('0.06')
 
         return total + service_fee
 
@@ -368,6 +371,51 @@ class Order(models.Model):
         self.order_total_price = self.get_order_total  # Update total price
         self.total_order_items = self.get_order_items  # Update item count
         super().save(*args, **kwargs)  # Save the order instance
+
+
+
+class Image(models.Model):
+    id = models.CharField(primary_key=True, max_length=16, default=generate_short_uuid, editable=False)
+    equipment = models.ForeignKey(Equipment, related_name='images', on_delete=models.CASCADE)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, blank=True, null=True)
+
+    # Flags to distinguish image types
+    is_pickup = models.BooleanField(default=False)  # True = Pickup image
+    is_return = models.BooleanField(default=False)  # True = Return image
+
+    image = models.ImageField(upload_to='equipment_images/')
+
+    def __str__(self):
+        category = "Pickup" if self.is_pickup else "Return" if self.is_return else "Normal"
+        return f"Image for {self.equipment.name} ({category})"
+
+    def clean(self):
+        """Ensure valid image categorization and enforce limits."""
+        if self.is_pickup and self.is_return:
+            raise ValidationError("An image cannot be both a pickup and a return image.")
+
+        # Count existing images by category
+        pickup_count = self.equipment.images.filter(is_pickup=True).count()
+        return_count = self.equipment.images.filter(is_return=True).count()
+        normal_count = self.equipment.images.filter(is_pickup=False, is_return=False).count()  # Normal images
+
+        # Enforce image limits
+        if self.is_pickup and pickup_count >= 3:
+            raise ValidationError("An equipment item cannot have more than 3 pickup images.")
+        if self.is_return and return_count >= 3:
+            raise ValidationError("An equipment item cannot have more than 3 return images.")
+        if not self.is_pickup and not self.is_return and normal_count >= 4:
+            raise ValidationError("An equipment item cannot have more than 4 normal images.")
+
+        super().clean()
+
+
+    @property
+    def image_url(self):
+        return self.image.url
+
+    class Meta:
+        unique_together = ('equipment', 'id')
 
 
 class OrderItem(models.Model):

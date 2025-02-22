@@ -16,6 +16,11 @@ class EquipmentAdmin(admin.ModelAdmin):
     search_fields = ('name', 'description', 'owner__username', 'category__name')
     inlines = [ImageInline]
 
+@admin.register(Image)
+class ImageAdmin(admin.ModelAdmin):
+    list_display = ('equipment', 'order', 'is_return', 'is_pickup')
+    list_filter = ('equipment', 'order', 'is_return', 'is_pickup')
+
 
 # Category Admin
 @admin.register(Category)
