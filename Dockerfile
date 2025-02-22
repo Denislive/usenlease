@@ -76,7 +76,7 @@ RUN envsubst '${PORT}' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
 # Remove the default.conf file
 RUN rm /etc/nginx/conf.d/default.conf
 
-# Copy the built frontend files to Nginx root
+
 COPY --from=frontend-builder /app/frontend/dist /usr/share/nginx/html
 
 # Copy backend files from the backend-builder stage
