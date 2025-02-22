@@ -302,7 +302,7 @@ class Order(models.Model):
     ordered = models.BooleanField(default=False)
 
     # New fields for identity document
-    identity_document_type = models.CharField(max_length=10, choices=IDENTITY_DOCUMENT_CHOICES, default=id)
+    identity_document_type = models.CharField(max_length=50, choices=IDENTITY_DOCUMENT_CHOICES, default=id)
     identity_document_image = models.ImageField(upload_to='pickup_identity_documents/', blank=True, null=True)
     
     return_item_condition = models.CharField(max_length=10, choices=ITEM_CONDITION_CHOICES, blank=True, null=True)
