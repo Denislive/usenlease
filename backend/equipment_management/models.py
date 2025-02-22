@@ -289,11 +289,11 @@ class Order(models.Model):
     payment_token = models.CharField(max_length=255, blank=True, null=True)
     cart = models.ForeignKey(Cart, on_delete=models.PROTECT, blank=True, null=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
-    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='pending')
+    status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='pending')
     shipping_address = models.ForeignKey(Address, related_name='shipping_address', on_delete=models.PROTECT, blank=True, null=True)
     billing_address = models.ForeignKey(Address, related_name='billing_address', on_delete=models.PROTECT, blank=True, null=True)
     payment_status = models.CharField(
-        max_length=30, choices=[('paid', 'Paid'), ('pending', 'pending'), ('unpaid', 'unpaid')], default='unpaid')
+        max_length=50, choices=[('paid', 'Paid'), ('pending', 'pending'), ('unpaid', 'unpaid')], default='unpaid')
     date_created = models.DateTimeField(auto_now_add=True)
     date_ordered = models.DateTimeField(blank=True, null=True)
 
