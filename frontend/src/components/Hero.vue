@@ -12,24 +12,24 @@
         Find top-quality equipment for any project. Fast delivery and great customer support.
       </p>
 
-      <!-- Search Box with Integrated Categories Dropdown -->
+      <!-- Categories Dropdown -->
+      <div class="flex justify-center mb-4">
+        <select
+          v-model="selectedCategory"
+          @change="goToDetail"
+          class="bg-white text-[#1c1c1c] p-3 focus:outline-none cursor-pointer border border-gray-200"
+        >
+          <option value="All">All</option>
+          <option v-for="category in displayedCategories" :key="category.id" :value="category.slug">
+            {{ category.name }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Search Box -->
       <div class="flex justify-center">
         <div class="w-full max-w-xl bg-white p-2 search shadow-lg">
           <div class="flex items-center">
-            <!-- Categories Dropdown -->
-            <div class="relative flex-shrink-0">
-              <select
-                v-model="selectedCategory"
-                @change="goToDetail"
-                :class="['bg-transparent text-[#1c1c1c] p-3 focus:outline-none cursor-pointer border-r border-gray-200', dropdownWidthClass]"
-              >
-                <option disabled selected>All</option>
-                <option v-for="category in displayedCategories" :key="category.id" :value="category.slug">
-                  {{ category.name }}
-                </option>
-              </select>
-            </div>
-
             <!-- Search Input -->
             <input
               type="text"
@@ -57,7 +57,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, watchEffect } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useStore } from 'vuex';
 import { useEquipmentsStore } from '@/store/equipments';
 import { useRouter } from 'vue-router';
@@ -86,13 +86,6 @@ const displayedCategories = computed(() => {
 });
 
 const selectedCategory = ref('All');
-const dropdownWidthClass = ref('static-width');
-
-// Handle dropdown change
-const handleDropdownChange = (event) => {
-  selectedCategory.value = event.target.value;
-  dropdownWidthClass.value = selectedCategory.value === 'All' ? 'static-width' : 'dynamic-width';
-};
 
 // Navigate to category details
 const goToDetail = () => {
@@ -131,26 +124,9 @@ watch([searchQuery, selectedCategory], () => {
     updateSearch();
   }
 });
-
-// Debugging categories to ensure they don't cause reactivity loops
-watchEffect(() => {
-  console.log('Categories updated:', categories.value);
-});
 </script>
 
-
 <style>
-select.static-width {
-  width: 8rem; /* Static width for the disabled option */
-  background-color: #fff;
-  color: #1c1c1c;
-  border-radius: 5px;
-  margin-right: 5px;
-}
-select.dynamic-width {
-  width: auto; /* Dynamic width for other options */
-}
-
 .search {
   border-radius: 5px;
 }
