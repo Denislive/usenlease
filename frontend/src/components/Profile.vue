@@ -823,7 +823,7 @@
                   class="ml-3 bg-[#ffc107] hover:bg-[#ffd740] text-gray-800 px-4 py-2 rounded-full shadow-md transition">
                   Send
                 </button>
-              </div>UserEquipments
+              </div>
             </div>
 
           </div>
