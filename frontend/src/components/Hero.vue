@@ -12,24 +12,24 @@
         Find top-quality equipment for any project. Fast delivery and great customer support.
       </p>
 
-      <!-- Categories Dropdown -->
-      <div class="flex justify-center mb-4">
-        <select
-          v-model="selectedCategory"
-          @change="goToDetail"
-          class="bg-white text-[#1c1c1c] p-3 focus:outline-none cursor-pointer border border-gray-200"
-        >
-          <option value="All">All</option>
-          <option v-for="category in displayedCategories" :key="category.id" :value="category.slug">
-            {{ category.name }}
-          </option>
-        </select>
-      </div>
-
-      <!-- Search Box -->
+      <!-- Search Box with Integrated Categories Dropdown -->
       <div class="flex justify-center">
         <div class="w-full max-w-xl bg-white p-2 search shadow-lg">
           <div class="flex items-center">
+            <!-- Categories Dropdown -->
+            <div class="relative flex-shrink-0">
+              <select
+                v-model="selectedCategory"
+                @change="goToDetail"
+                :class="['bg-transparent text-[#1c1c1c] p-3 focus:outline-none cursor-pointer border-r border-gray-200', dropdownWidthClass]"
+              >
+                <option disabled selected>All</option>
+                <option v-for="category in displayedCategories" :key="category.id" :value="category.slug">
+                  {{ category.name }}
+                </option>
+              </select>
+            </div>
+
             <!-- Search Input -->
             <input
               type="text"
@@ -57,66 +57,117 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useStore } from 'vuex';
-import { useEquipmentsStore } from '@/store/equipments';
 import { useRouter } from 'vue-router';
+import debounce from 'lodash/debounce';
 
 const store = useStore();
-const equipmentStore = useEquipmentsStore();
 const router = useRouter();
+
+// State to hold city data
+const cities = ref([]);
+const selectedCategories = ref({});
+const selectedCities = ref({});
 
 // Search Query
 const searchQuery = computed({
-  get: () => store.getters.getSearchQuery,
-  set: (value) => store.dispatch('setSearchQuery', value),
+  get: () => {
+    const value = store.getters.getSearchQuery;
+    console.log('HERO - Computed Property [searchQuery] - Getter:', value);
+    return value;
+  },
+  set: (value) => {
+    console.log('HERO - Computed Property [searchQuery] - Setter:', value);
+    store.dispatch('setSearchQuery', value);
+  },
 });
 
 // Categories
-const categories = computed(() => equipmentStore.categories);
+const categories = computed(() => {
+  const value = store.getters.getCategories;
+  console.log('HERO - Computed Property [categories]:', value);
+  return value;
+});
 
 // Equipments
-const equipments = computed(() => equipmentStore.equipments);
+const equipments = computed(() => {
+  const value = store.getters.getEquipments;
+  console.log('HERO - Computed Property [equipments]:', value);
+  return value;
+});
 
 const showMoreCategories = ref(false);
 const displayedCategories = computed(() => {
-  if (!categories.value || categories.value.length === 0) return [];
-  return showMoreCategories.value ? categories.value : categories.value.slice(0, 20);
+  const value = showMoreCategories.value ? categories.value : categories.value.slice(0, 20);
+  console.log('HERO - Computed Property [displayedCategories]:', value);
+  return value;
 });
 
 const selectedCategory = ref('All');
+const dropdownWidthClass = ref('static-width');
 
-// Computed property to filter equipments
-const filteredEquipments = computed(() => {
-  const query = searchQuery.value.trim().toLowerCase();
-  return equipments.value.filter((equipment) => {
-    const matchesCategory =
-      selectedCategory.value === 'All' || equipment.category.toLowerCase() === selectedCategory.value.toLowerCase();
-    const matchesQuery = equipment.name.toLowerCase().includes(query);
-    return matchesCategory && matchesQuery;
-  });
-});
+// Handle dropdown change
+const handleDropdownChange = (event) => {
+  selectedCategory.value = event.target.value;
+  dropdownWidthClass.value = selectedCategory.value === 'All' ? 'static-width' : 'dynamic-width';
+  console.log('HERO - Event [handleDropdownChange] - New selected category:', selectedCategory.value);
+};
 
-// Navigate to category details and update Vuex store with filtered equipments
+// Navigate to category details
 const goToDetail = () => {
-  store.dispatch('setFilteredEquipments', filteredEquipments.value);
-
+  const currentRoute = router.currentRoute.value;
+  console.log('HERO - Function [goToDetail] - Navigating to details. Selected category:', selectedCategory.value, 'Search query:', searchQuery.value, 'Current route:', currentRoute);
   if (selectedCategory.value !== 'All') {
-    const currentRoute = router.currentRoute.value;
     if (
       currentRoute.name === 'category-details' &&
       currentRoute.query.cat === selectedCategory.value &&
       currentRoute.query.search === searchQuery.value
     ) {
+      console.log('HERO - Function [goToDetail] - Replacing route with updated search query.');
       router.replace({ name: 'category-details', query: { cat: selectedCategory.value, search: searchQuery.value + '&' } });
     } else {
+      console.log('HERO - Function [goToDetail] - Pushing new route.');
       router.push({ name: 'category-details', query: { cat: selectedCategory.value, search: searchQuery.value } });
     }
   }
 };
+
+// Update search with debounce
+const updateSearch = debounce(() => {
+  const query = searchQuery.value.trim().toLowerCase();
+  const filteredEquipments = equipments.value.filter((equipment) => {
+    const matchesCategory = selectedCategory.value === 'All' || equipment.category.toLowerCase() === selectedCategory.value.toLowerCase();
+    const matchesQuery = equipment.name.toLowerCase().includes(query);
+    return matchesCategory && matchesQuery;
+  });
+  console.log('HERO - Function [updateSearch] - Filtered equipments based on query and category:', filteredEquipments);
+  store.dispatch('setFilteredEquipments', filteredEquipments);
+}, 300);
+
+// Watch searchQuery and selectedCategory
+watch(
+  [searchQuery, selectedCategory],
+  () => {
+    console.log('HERO - Watcher triggered - searchQuery:', searchQuery.value, 'selectedCategory:', selectedCategory.value);
+    updateSearch();
+  },
+  { immediate: true }
+);
 </script>
 
 <style>
+select.static-width {
+  width: 8rem; /* Static width for the disabled option */
+  background-color: #fff;
+  color: #1c1c1c;
+  border-radius: 5px;
+  margin-right: 5px;
+}
+select.dynamic-width {
+  width: auto; /* Dynamic width for other options */
+}
+
 .search {
   border-radius: 5px;
 }
