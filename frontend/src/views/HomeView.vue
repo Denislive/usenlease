@@ -1,103 +1,72 @@
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue';
-import { useRoute } from 'vue-router';
-import Hero from '@/components/Hero.vue';
-import Breadcrumb from '@/components/Breadcrumb.vue';
-import Card from '@/components/Card.vue';
-import EmptyList from '@/components/Empty.vue';
-import { useEquipmentsStore } from '@/store/equipments';
+import Hero from '@/components/Hero.vue'
+import Sidebar from '@/components/Sidebar.vue'
+import Slider from '@/components/Slider.vue'
+import Equipment from '@/components/Equipment.vue'
+import MobileCategories from '@/components/MobileCategories.vue'
+import { ref } from 'vue'
+import Cookies from 'js-cookie'
 
-const route = useRoute();
-const store = useEquipmentsStore();
+const showBanner = ref(!Cookies.get('cookie_consent')) // Show banner if no consent cookie
 
-const categoryEquipments = ref([]); // To store equipments filtered by category
-const categoryMap = ref({}); // To store category mapping
-
-// ✅ Computed property for search query
-const searchQuery = computed(() => store.searchQuery);
-
-// ✅ Computed `filteredEquipments` that updates dynamically
-const filteredEquipments = computed(() => {
-  const query = searchQuery.value.trim().toLowerCase();
-
-  // If search query is empty, return category filtered items
-  if (query === '') {
-    filterByCategory();
-  }
-
-  // Filter within the selected category based on search query
-  return categoryEquipments.value.filter(equipment => (
-    equipment.name.toLowerCase().includes(query) ||
-    (equipment.description && equipment.description.toLowerCase().includes(query)) ||
-    equipment.hourly_rate.toString().includes(query) ||
-    (equipment.address?.street_address && equipment.address.street_address.toLowerCase().includes(query)) ||
-    (equipment.address?.city && equipment.address.city.toLowerCase().includes(query)) ||
-    (equipment.address?.state && equipment.address.state.toLowerCase().includes(query))
-  ));
-});
-
-// ✅ Function to filter equipment by category
-const filterByCategory = () => {
-  const categorySlug = route.query.cat;
-  const categoryId = categoryMap.value[categorySlug];
-
-  console.log("Category Slug:", categorySlug);
-  console.log("Resolved Category ID:", categoryId);
-
-  if (!categoryId) {
-    categoryEquipments.value = []; // Clear if no category matches
-    return;
-  }
-
-  categoryEquipments.value = store.equipments.filter(equipment => {
-    const equipmentCategoryId = typeof equipment.category === 'object' ? equipment.category.id : equipment.category;
-    return equipmentCategoryId === categoryId;
-  });
-
-  console.log("Filtered Equipment Count:", categoryEquipments.value.length);
-  store.filteredEquipments = categoryEquipments.value;
-};
-
-// ✅ Watch for category changes in URL & update `categoryEquipments`
-watch(() => route.query.cat, filterByCategory, { immediate: true });
-
-// ✅ Watch `store.categories` to build category mapping
-watch(() => store.categories, (newCategories) => {
-  categoryMap.value = newCategories.reduce((map, category) => {
-    map[category.slug] = category.id;
-    return map;
-  }, {});
-
-  // Ensure filtering runs after categories are loaded
-  filterByCategory();
-}, { immediate: true });
-
-// ✅ Fetch categories & equipment on mount
-const fetchData = async () => {
-  if (store.equipments.length === 0) {
-    await store.fetchCategories();
-    await store.fetchEquipments();
-    filterByCategory();
-  }
-};
-
-// Run fetch on mounted
-onMounted(fetchData);
+// Handle accepting cookies
+const acceptCookies = () => {
+  Cookies.set('cookie_consent', 'accepted', { expires: 365 })
+  showBanner.value = false
+}
 </script>
 
 <template>
   <Hero />
-  <Breadcrumb />
 
-  <!-- Show empty state if no equipment is found -->
-  <EmptyList v-if="filteredEquipments.length === 0" />
+  <div class="container mx-auto py-2 w-5/6 hidden md:block">
+    <div class="grid grid-cols-12 gap-4 p-1">
+      <!-- Sidebar Section -->
+      <aside class="col-span-3 bg-gray-100 rounded p-2 max-h-[100vh] overflow-y-auto">
+        <Sidebar />
+      </aside>
 
-  <!-- Equipment List -->
-  <div class="p-2 w-full hidden md:block" v-if="filteredEquipments.length > 0">
-    <Card />
+      <!-- Main Content Section -->
+      <main class="col-span-9 bg-gray-100 p-1 max-h-[100vh] overflow-y-auto">
+        <Slider />
+        <Equipment />
+      </main>
+    </div>
   </div>
 
-  <div class="p-2 w-full text-xs md:hidden" v-if="filteredEquipments.length > 0">
-    <Card />
+  <div class="container p-2 md:hidden">
+    <Equipment />
+  </div>
+
+  <!-- Privacy Banner -->
+  <div v-if="showBanner" class="fixed bottom-0 left-0 w-full bg-gray-800 text-white p-4 z-50">
+    <div class="max-w-4xl mx-auto flex flex-col md:flex-row justify-between items-center">
+      <div>
+        <h3 class="text-lg font-semibold">We Value Your Privacy</h3>
+        <p class="text-sm mt-2">
+          This website uses cookies to enhance your experience. By continuing to use this site, you agree to our use of cookies.
+          <a
+            href="/privacy-cookie-notice"
+            class="underline text-blue-400 hover:text-blue-500"
+          >
+            Learn more.
+          </a>
+        </p>
+      </div>
+      <div class="mt-4 md:mt-0 flex space-x-4">
+        <button
+          @click="acceptCookies"
+          class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md"
+        >
+          Accept
+        </button>
+      </div>
+    </div>
   </div>
 </template>
+
+<style scoped>
+a {
+  transition: color 0.3s ease;
+}
+</style>
