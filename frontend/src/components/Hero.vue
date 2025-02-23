@@ -57,7 +57,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, watchEffect } from 'vue';
 import { useStore } from 'vuex';
 import { useEquipmentsStore } from '@/store/equipments';
 import { useRouter } from 'vue-router';
@@ -69,35 +69,19 @@ const router = useRouter();
 
 // Search Query
 const searchQuery = computed({
-  get: () => {
-    const value = store.getters.getSearchQuery;
-    console.log('Getting search query:', value);
-    return value;
-  },
-  set: (value) => {
-    console.log('Setting search query:', value);
-    store.dispatch('setSearchQuery', value);
-  },
+  get: () => store.getters.getSearchQuery,
+  set: (value) => store.dispatch('setSearchQuery', value),
 });
 
 // Categories
-const categories = computed(() => {
-  console.log('Computing categories:', equipmentStore.categories);
-  return equipmentStore.categories;
-});
+const categories = computed(() => equipmentStore.categories);
 
 // Equipments
-const equipments = computed(() => {
-  console.log('Computing equipments:', equipmentStore.equipments);
-  return equipmentStore.equipments;
-});
+const equipments = computed(() => equipmentStore.equipments);
 
 const showMoreCategories = ref(false);
 const displayedCategories = computed(() => {
-  console.log('Computing displayed categories. Show more:', showMoreCategories.value);
-  if (!categories.value || categories.value.length === 0) {
-    return [];
-  }
+  if (!categories.value || categories.value.length === 0) return [];
   return showMoreCategories.value ? categories.value : categories.value.slice(0, 20);
 });
 
@@ -106,26 +90,21 @@ const dropdownWidthClass = ref('static-width');
 
 // Handle dropdown change
 const handleDropdownChange = (event) => {
-  console.log('Dropdown changed. New value:', event.target.value);
   selectedCategory.value = event.target.value;
   dropdownWidthClass.value = selectedCategory.value === 'All' ? 'static-width' : 'dynamic-width';
 };
 
 // Navigate to category details
 const goToDetail = () => {
-  console.log('Navigating to details. Selected category:', selectedCategory.value, 'Search query:', searchQuery.value);
   if (selectedCategory.value !== 'All') {
     const currentRoute = router.currentRoute.value;
-    console.log('Current route:', currentRoute);
     if (
       currentRoute.name === 'category-details' &&
       currentRoute.query.cat === selectedCategory.value &&
       currentRoute.query.search === searchQuery.value
     ) {
-      console.log('Replacing route with updated search query.');
       router.replace({ name: 'category-details', query: { cat: selectedCategory.value, search: searchQuery.value + '&' } });
     } else {
-      console.log('Pushing new route.');
       router.push({ name: 'category-details', query: { cat: selectedCategory.value, search: searchQuery.value } });
     }
   }
@@ -133,27 +112,32 @@ const goToDetail = () => {
 
 // Update search with debounce
 const updateSearch = debounce(() => {
-  console.log('Updating search with query:', searchQuery.value);
   const query = searchQuery.value.trim().toLowerCase();
+  if (!query && selectedCategory.value === 'All') return; // Prevent unnecessary updates
+
   const filteredEquipments = equipments.value.filter((equipment) => {
     const matchesCategory =
       selectedCategory.value === 'All' || equipment.category.toLowerCase() === selectedCategory.value.toLowerCase();
     const matchesQuery = equipment.name.toLowerCase().includes(query);
     return matchesCategory && matchesQuery;
   });
-  console.log('Filtered equipments:', filteredEquipments);
+
   store.dispatch('setFilteredEquipments', filteredEquipments);
-}, 100000);
+}, 300); // Reduced debounce time to 300ms
 
 // Watch searchQuery and selectedCategory
-watch(
-  [searchQuery, selectedCategory],
-  () => {
-    console.log('Watch triggered. Search query:', searchQuery.value, 'Selected category:', selectedCategory.value);
+watch([searchQuery, selectedCategory], () => {
+  if (searchQuery.value || selectedCategory.value !== 'All') {
     updateSearch();
-  },
-);
+  }
+});
+
+// Debugging categories to ensure they don't cause reactivity loops
+watchEffect(() => {
+  console.log('Categories updated:', categories.value);
+});
 </script>
+
 
 <style>
 select.static-width {
