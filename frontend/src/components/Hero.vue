@@ -57,7 +57,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 import debounce from 'lodash/debounce';
@@ -65,10 +65,13 @@ import debounce from 'lodash/debounce';
 const store = useStore();
 const router = useRouter();
 
-// State to hold city data
-const cities = ref([]);
-const selectedCategories = ref({});
-const selectedCities = ref({});
+// Fetch categories and equipments on component mount
+onMounted(async () => {
+  console.log('HERO - onMounted - Fetching categories and equipments...');
+  await store.dispatch('fetchCategories');
+  await store.dispatch('fetchEquipments');
+  console.log('HERO - onMounted - Data fetching completed.');
+});
 
 // Search Query
 const searchQuery = computed({
@@ -79,22 +82,23 @@ const searchQuery = computed({
   },
   set: (value) => {
     console.log('HERO - Computed Property [searchQuery] - Setter:', value);
-    store.dispatch('setSearchQuery', value);
+    store.commit('setSearchQuery', value); // ✅ FIX APPLIED
   },
 });
+
 
 // Categories
 const categories = computed(() => {
   const value = store.getters.getCategories;
   console.log('HERO - Computed Property [categories]:', value);
-  return value;
+  return value || [];
 });
 
 // Equipments
 const equipments = computed(() => {
   const value = store.getters.getEquipments;
   console.log('HERO - Computed Property [equipments]:', value);
-  return value;
+  return value || [];
 });
 
 const showMoreCategories = ref(false);
@@ -141,8 +145,11 @@ const updateSearch = debounce(() => {
     const matchesQuery = equipment.name.toLowerCase().includes(query);
     return matchesCategory && matchesQuery;
   });
+
   console.log('HERO - Function [updateSearch] - Filtered equipments based on query and category:', filteredEquipments);
-  store.dispatch('setFilteredEquipments', filteredEquipments);
+
+  // ✅ Fix applied: Use commit instead of dispatch
+  store.commit('setFilteredEquipments', filteredEquipments);
 }, 300);
 
 // Watch searchQuery and selectedCategory

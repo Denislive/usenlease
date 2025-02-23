@@ -5,65 +5,69 @@ const api_base_url = import.meta.env.VITE_API_BASE_URL;
 
 const store = createStore({
   state: () => ({
-    searchQuery: '', // New state for the search query
-    filteredEquipments: [], // State for filtered equipments
-    categories: [], // State for categories
-    equipments: [] // State for all equipments
+    searchQuery: '',
+    filteredEquipments: [],
+    categories: [],
+    equipments: [],
   }),
   getters: {
-    getSearchQuery: (state) => state.searchQuery, // Get the current search query
-    getFilteredEquipments: (state) => state.filteredEquipments, // Get the filtered equipments
-    getCategories: (state) => state.categories, // Get the categories
-    getEquipments: (state) => state.equipments // Get all equipments
+    getSearchQuery: (state) => state.searchQuery,
+    getFilteredEquipments: (state) => state.filteredEquipments,
+    getCategories: (state) => state.categories,
+    getEquipments: (state) => state.equipments,
   },
   mutations: {
     setSearchQuery(state, query) {
       console.log('STORE - Mutation [setSearchQuery]:', query);
-      state.searchQuery = query; // Set the search query
+      state.searchQuery = query;
     },
     setFilteredEquipments(state, equipments) {
       console.log('STORE - Mutation [setFilteredEquipments]:', equipments);
-      state.filteredEquipments = equipments; // Set the filtered equipments
+      state.filteredEquipments = equipments;
     },
     setCategories(state, categories) {
       console.log('STORE - Mutation [setCategories]:', categories);
-      state.categories = categories; // Set the categories
+      state.categories = Array.isArray(categories) ? categories : []; // Ensure valid array
     },
     setEquipments(state, equipments) {
       console.log('STORE - Mutation [setEquipments]:', equipments);
-      state.equipments = equipments; // Set all equipments
-    }
+      state.equipments = Array.isArray(equipments) ? equipments : []; // Ensure valid array
+    },
   },
   actions: {
-    setSearchQuery({ commit }, query) {
-      console.log('STORE - Action [setSearchQuery]:', query);
-      commit('setSearchQuery', query); // Action to set the search query
-    },
-    setFilteredEquipments({ commit }, equipments) {
-      console.log('STORE - Action [setFilteredEquipments]:', equipments);
-      commit('setFilteredEquipments', equipments); // Action to set the filtered equipments
-    },
-    fetchCategories: async ({ commit }) => {
+    async fetchCategories({ commit }) {
       try {
         console.log('STORE - Action [fetchCategories] - Fetching categories...');
         const response = await axios.get(`${api_base_url}/api/categories/`);
-        console.log('STORE - Action [fetchCategories] - Fetched categories:', response.data);
-        commit('setCategories', response.data);
+        if (response.data) {
+          console.log('STORE - Action [fetchCategories] - Received categories:', response.data);
+          commit('setCategories', response.data);
+        } else {
+          console.warn('STORE - Action [fetchCategories] - No categories received!');
+          commit('setCategories', []);
+        }
       } catch (error) {
-        console.error('STORE - Error fetching category data:', error);
+        console.error('STORE - Error fetching categories:', error);
+        commit('setCategories', []); // Reset categories on error
       }
     },
-    fetchEquipments: async ({ commit }) => {
+    async fetchEquipments({ commit }) {
       try {
         console.log('STORE - Action [fetchEquipments] - Fetching equipments...');
         const response = await axios.get(`${api_base_url}/api/equipments/`);
-        console.log('STORE - Action [fetchEquipments] - Fetched equipments:', response.data);
-        commit('setEquipments', response.data);
+        if (response.data) {
+          console.log('STORE - Action [fetchEquipments] - Received equipments:', response.data);
+          commit('setEquipments', response.data);
+        } else {
+          console.warn('STORE - Action [fetchEquipments] - No equipments received!');
+          commit('setEquipments', []);
+        }
       } catch (error) {
-        console.error('STORE - Error fetching equipment data:', error);
+        console.error('STORE - Error fetching equipments:', error);
+        commit('setEquipments', []); // Reset equipments on error
       }
-    }
-  }
+    },
+  },
 });
 
 export default store;
