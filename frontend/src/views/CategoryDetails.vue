@@ -1,103 +1,103 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import axios from 'axios';
 import Hero from '@/components/Hero.vue';
 import Breadcrumb from '@/components/Breadcrumb.vue';
 import Card from '@/components/Card.vue';
 import EmptyList from '@/components/Empty.vue';
-
-import { useStore } from 'vuex';
+import { useEquipmentsStore } from '@/store/equipments';
 
 const route = useRoute();
-const equipmentList = ref([]);
+const store = useEquipmentsStore();
+
 const filteredEquipments = ref([]);
+const categoryEquipments = ref([]); // Store category-filtered items separately
 const categoryMap = ref({});
 
-const search = useStore();
+// Get search query from store (computed)
+const searchQuery = computed(() => store.searchQuery);
 
-const searchQuery = computed(() => search.getters.getSearchQuery);
+// Watch store.categories and update categoryMap
+watch(() => store.categories, (newCategories) => {
+  categoryMap.value = newCategories.reduce((map, category) => {
+    map[category.slug] = category.id;
+    return map;
+  }, {});
+}, { immediate: true });
 
-const api_base_url = import.meta.env.VITE_API_BASE_URL;
-
-const fetchCategories = async () => {
-  try {
-    const response = await axios.get(`${api_base_url}/api/categories/`);
-    response.data.forEach(category => {
-      categoryMap.value[category.slug] = category.id;
-    });
-  } catch (error) {
-    console.error('Error fetching category data:', error);
-  }
+// Fetch categories and equipment data
+const fetchData = async () => {
+  await store.fetchCategories();
+  await store.fetchEquipments();
+  filterByCategory();
 };
 
-const fetchEquipments = async () => {
-  try {
-    const response = await axios.get(`${api_base_url}/api/equipments/`);
-    equipmentList.value = response.data;
-    filterEquipments();
-  } catch (error) {
-    console.error('Error fetching equipment data:', error);
-  }
-};
-
-const filterEquipments = () => {
+// **Fix: Ensure category filtering works correctly**
+const filterByCategory = () => {
   const categorySlug = route.query.cat;
   const categoryId = categoryMap.value[categorySlug];
+
+  console.log("Selected categorySlug:", categorySlug);
+  console.log("Resolved categoryId:", categoryId);
+  console.log("Category Map:", categoryMap.value);
+  
   if (!categoryId) {
-    console.error('No matching category ID found for slug:', categorySlug);
+    console.error('❌ No matching category ID found for slug:', categorySlug);
+    categoryEquipments.value = [];
+    filteredEquipments.value = [];
     return;
   }
 
-  filteredEquipments.value = equipmentList.value.filter(equipment => {
-    const matchesCategory = equipment.category === categoryId;
-
-    if (searchQuery.value) {
-      const query = searchQuery.value.toLowerCase();
-      const matchesSearch = (
-        equipment.name.toLowerCase().includes(query) ||
-        equipment.description.toLowerCase().includes(query) ||
-        equipment.hourly_rate.toString().includes(query) ||
-        (equipment.address.street_address && equipment.address.street_address.toLowerCase().includes(query)) ||
-        (equipment.address.city && equipment.address.city.toLowerCase().includes(query)) ||
-        (equipment.address.state && equipment.address.state.toLowerCase().includes(query))
-      );
-      return matchesCategory && matchesSearch;
-    }
-
-    return matchesCategory;
+  // Ensure `equipment.category` contains the correct ID format
+  categoryEquipments.value = store.equipments.filter(equipment => {
+    console.log("Equipment category:", equipment.category, "| Expected categoryId:", categoryId);
+    return equipment.category === categoryId;
   });
+
+  console.log("Filtered Equipment Count:", categoryEquipments.value.length);
+  applySearch();
 };
 
-// Watch for changes in the route to reapply filters
-watch(route, () => {
-  filterEquipments();
-});
+// Apply search on top of category-filtered results
+const applySearch = () => {
+  if (!searchQuery.value) {
+    filteredEquipments.value = categoryEquipments.value;
+    return;
+  }
 
-// Watch for changes in the search query to reapply filters
-watch(searchQuery, () => {
-  filterEquipments();
-});
+  const query = searchQuery.value.toLowerCase();
+  filteredEquipments.value = categoryEquipments.value.filter(equipment => (
+    equipment.name.toLowerCase().includes(query) ||
+    (equipment.description && equipment.description.toLowerCase().includes(query)) ||
+    equipment.hourly_rate.toString().includes(query) ||
+    (equipment.address?.street_address && equipment.address.street_address.toLowerCase().includes(query)) ||
+    (equipment.address?.city && equipment.address.city.toLowerCase().includes(query)) ||
+    (equipment.address?.state && equipment.address.state.toLowerCase().includes(query))
+  ));
+};
 
-onMounted(async () => {
-  await fetchCategories();
-  await fetchEquipments();
-});
+// Watch for route changes and re-filter by category
+watch(() => route.query.cat, filterByCategory);
+
+// Watch for search query changes and apply search filtering
+watch(searchQuery, applySearch);
+
+// Fetch categories & equipment when mounted
+onMounted(fetchData);
 </script>
 
 <template>
   <Hero />
   <Breadcrumb />
 
-  <!-- Check if the equipment list is empty -->
+  <!-- Show empty state if no equipment is found -->
   <EmptyList v-if="filteredEquipments.length === 0" />
 
-  <!-- Render equipment for larger screens -->
+  <!-- Equipment List -->
   <div class="p-2 w-full hidden md:block" v-if="filteredEquipments.length > 0">
     <Card :equipments="filteredEquipments" />
   </div>
 
-  <!-- Render equipment for smaller screens -->
   <div class="p-2 w-full text-xs md:hidden" v-if="filteredEquipments.length > 0">
     <Card :equipments="filteredEquipments" />
   </div>

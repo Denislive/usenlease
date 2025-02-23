@@ -20,6 +20,7 @@
             <span
               v-else
               class="absolute top-0 left-0 bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded flex items-center"
+              @click="goToDetail(equipment.id)"
             >
               <i class="pi pi-info-circle mr-1"></i>
               Click to check details
@@ -43,7 +44,7 @@
             </div>
             <button 
               @click="goToDetail(equipment.id)" 
-              class="bg-[#ff6f00] rounded text-white  px-2 py-1 mt-2 transition duration-300 hover:bg-[#ff9e00] transform hover:scale-110">
+              class="bg-[#ff6f00] rounded text-white px-2 py-1 mt-2 transition duration-300 hover:bg-[#ff9e00] transform hover:scale-110">
               Rent Now
             </button>
           </div>
@@ -52,7 +53,7 @@
     </div>
 
     <!-- Empty List Message -->
-    <div v-if="filteredEquipments.length === 0" class="text-center py-16">
+    <div v-if="store.filteredEquipments.length === 0" class="text-center py-16">
       <i class="pi pi-exclamation-circle text-9xl text-gray-500"></i>
       <p class="text-xl text-gray-500 mt-4">Oops! No items here!</p>
       <p class="text-xl text-gray-500 mt-4">Try adding a new item by hitting the lease button.</p>
@@ -88,15 +89,9 @@
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useEquipmentsStore } from '@/store/equipments';
-import { useStore } from 'vuex';
 
 const router = useRouter();
-const api_base_url = import.meta.env.VITE_API_BASE_URL;
-
 const store = useEquipmentsStore();
-const search = useStore();
-
-const searchQuery = computed(() => search.getters.getSearchQuery);
 
 const itemsPerPage = 20; // Items per page
 const currentPage = ref(1); // Current page number
@@ -106,36 +101,16 @@ onMounted(async () => {
   await store.fetchCategories();
 });
 
-const equipments = computed(() => store.equipments);
-const categories = computed(() => store.categories);
-
-const filteredEquipments = computed(() => {
-  if (!searchQuery.value) return equipments.value;
-
-  const query = searchQuery.value.toLowerCase();
-
-  return equipments.value.filter((equipment) => {
-    return (
-      equipment.name.toLowerCase().includes(query) ||
-      equipment.description.toLowerCase().includes(query) ||
-      equipment.hourly_rate.toString().includes(query) ||
-      (equipment.address?.street_address?.toLowerCase().includes(query)) ||
-      (equipment.address?.city?.toLowerCase().includes(query)) ||
-      (equipment.address?.state?.toLowerCase().includes(query))
-    );
-  });
-});
-
 // Paginated Equipments
 const paginatedEquipments = computed(() => {
   const startIndex = (currentPage.value - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  return filteredEquipments.value.slice(startIndex, endIndex);
+  return store.filteredEquipments.slice(startIndex, endIndex);
 });
 
 // Total Pages
 const totalPages = computed(() =>
-  Math.ceil(filteredEquipments.value.length / itemsPerPage)
+  Math.ceil(store.filteredEquipments.length / itemsPerPage)
 );
 
 // Navigate to a specific page
