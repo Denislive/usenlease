@@ -10,23 +10,20 @@ import { useEquipmentsStore } from '@/store/equipments';
 const route = useRoute();
 const store = useEquipmentsStore();
 
-const categoryEquipments = ref([]); // To store equipments filtered by category
+const categoryEquipments = ref([]); // To store filtered equipments
 const categoryMap = ref({}); // To store category mapping
+
+console.log(`[INIT] Component setup initialized.`);
 
 // ✅ Computed property for search query
 const searchQuery = computed(() => store.searchQuery);
 
-// ✅ Computed `filteredEquipments` that updates dynamically
+// ✅ Computed `filteredEquipments`
 const filteredEquipments = computed(() => {
   const query = searchQuery.value.trim().toLowerCase();
+  console.log(`[SEARCH] Filtering equipments with query: "${query}"`);
 
-  // If search query is empty, return category filtered items
-  if (query === '') {
-    filterByCategory();
-  }
-
-  // Filter within the selected category based on search query
-  return categoryEquipments.value.filter(equipment => (
+  const results = categoryEquipments.value.filter(equipment => (
     equipment.name.toLowerCase().includes(query) ||
     (equipment.description && equipment.description.toLowerCase().includes(query)) ||
     equipment.hourly_rate.toString().includes(query) ||
@@ -34,6 +31,9 @@ const filteredEquipments = computed(() => {
     (equipment.address?.city && equipment.address.city.toLowerCase().includes(query)) ||
     (equipment.address?.state && equipment.address.state.toLowerCase().includes(query))
   ));
+
+  console.log(`[SEARCH] Found ${results.length} matching equipments.`);
+  return results;
 });
 
 // ✅ Function to filter equipment by category
@@ -41,11 +41,11 @@ const filterByCategory = () => {
   const categorySlug = route.query.cat;
   const categoryId = categoryMap.value[categorySlug];
 
-  console.log("Category Slug:", categorySlug);
-  console.log("Resolved Category ID:", categoryId);
+  console.log(`[CATEGORY FILTER] Slug: ${categorySlug}, Resolved ID: ${categoryId}`);
 
   if (!categoryId) {
-    categoryEquipments.value = []; // Clear if no category matches
+    console.warn(`[CATEGORY FILTER] No matching category found! Clearing equipments.`);
+    categoryEquipments.value = [];
     return;
   }
 
@@ -54,30 +54,39 @@ const filterByCategory = () => {
     return equipmentCategoryId === categoryId;
   });
 
-  console.log("Filtered Equipment Count:", categoryEquipments.value.length);
+  console.log(`[CATEGORY FILTER] Equipment found: ${categoryEquipments.value.length}`);
   store.filteredEquipments = categoryEquipments.value;
 };
 
-// ✅ Watch for category changes in URL & update `categoryEquipments`
-watch(() => route.query.cat, filterByCategory, { immediate: true });
+// ✅ Watch for category changes in URL
+watch(() => route.query.cat, () => {
+  console.log(`[WATCH] Category in URL changed to: ${route.query.cat}`);
+  filterByCategory();
+}, { immediate: true });
 
 // ✅ Watch `store.categories` to build category mapping
 watch(() => store.categories, (newCategories) => {
+  console.log(`[WATCH] Categories updated. Rebuilding category mapping.`);
   categoryMap.value = newCategories.reduce((map, category) => {
     map[category.slug] = category.id;
     return map;
   }, {});
 
-  // Ensure filtering runs after categories are loaded
-  filterByCategory();
+  console.log(`[WATCH] Category Map Built:`, categoryMap.value);
+  filterByCategory(); // Ensure filtering happens after categories are loaded
 }, { immediate: true });
 
 // ✅ Fetch categories & equipment on mount
 const fetchData = async () => {
+  console.log(`[MOUNTED] Checking if data needs to be fetched...`);
+
   if (store.equipments.length === 0) {
+    console.log(`[MOUNTED] Fetching categories and equipments...`);
     await store.fetchCategories();
     await store.fetchEquipments();
-    filterByCategory();
+    console.log(`[MOUNTED] Data fetched successfully.`);
+  } else {
+    console.log(`[MOUNTED] Data already exists. Skipping fetch.`);
   }
 };
 
