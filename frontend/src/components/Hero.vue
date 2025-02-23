@@ -159,7 +159,7 @@ watch(
     console.log('HERO - Watcher triggered - searchQuery:', searchQuery.value, 'selectedCategory:', selectedCategory.value);
     updateSearch();
   },
-  { immediate: true }
+  { flush: 'post' }
 );
 </script>
 
