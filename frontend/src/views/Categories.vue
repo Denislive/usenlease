@@ -99,7 +99,7 @@ const categoryIdMap = computed(() => {
 
 // Computed property to filter equipments based on the search query and selected filters
 const filteredEquipments = computed(() => {
-  console.log('Computing filteredEquipments...');
+  console.log('category view Computing filteredEquipments...');
   let filtered = equipments.value;
 
   // Apply search query filtering first
