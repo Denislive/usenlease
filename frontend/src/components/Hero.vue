@@ -21,9 +21,9 @@
               <select
                 v-model="selectedCategory"
                 @change="goToDetail"
-                class="bg-transparent text-[#1c1c1c] p-3 focus:outline-none cursor-pointer border-r border-gray-200"
+                :class="['bg-transparent text-[#1c1c1c] p-3 focus:outline-none cursor-pointer border-r border-gray-200', dropdownWidthClass]"
               >
-                <option :value="'All'">All</option>
+                <option disabled selected>All</option>
                 <option v-for="category in displayedCategories" :key="category.id" :value="category.slug">
                   {{ category.name }}
                 </option>
@@ -59,64 +59,122 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
 import { useStore } from 'vuex';
+import { useEquipmentsStore } from '@/store/equipments';
 import { useRouter } from 'vue-router';
 import debounce from 'lodash/debounce';
 
 const store = useStore();
+const equipmentStore = useEquipmentsStore();
 const router = useRouter();
 
 // Search Query
 const searchQuery = computed({
-  get: () => store.getters.getSearchQuery,
-  set: (value) => store.dispatch('setSearchQuery', value),
+  get: () => {
+    const value = store.getters.getSearchQuery;
+    console.log('Getting search query:', value);
+    return value;
+  },
+  set: (value) => {
+    console.log('Setting search query:', value);
+    store.dispatch('setSearchQuery', value);
+  },
 });
 
 // Categories
-const categories = computed(() => store.getters.getCategories);
-const selectedCategory = ref('All');
-const showMoreCategories = ref(false);
-
-const displayedCategories = computed(() => {
-  return categories.value?.length > 0 ? (showMoreCategories.value ? categories.value : categories.value.slice(0, 20)) : [];
+const categories = computed(() => {
+  console.log('Computing categories:', equipmentStore.categories);
+  return equipmentStore.categories;
 });
+
+// Equipments
+const equipments = computed(() => {
+  console.log('Computing equipments:', equipmentStore.equipments);
+  return equipmentStore.equipments;
+});
+
+const showMoreCategories = ref(false);
+const displayedCategories = computed(() => {
+  console.log('Computing displayed categories. Show more:', showMoreCategories.value);
+  if (!categories.value || categories.value.length === 0) {
+    return [];
+  }
+  return showMoreCategories.value ? categories.value : categories.value.slice(0, 20);
+});
+
+const selectedCategory = ref('All');
+const dropdownWidthClass = ref('static-width');
+
+// Handle dropdown change
+const handleDropdownChange = (event) => {
+  console.log('Dropdown changed. New value:', event.target.value);
+  selectedCategory.value = event.target.value;
+  dropdownWidthClass.value = selectedCategory.value === 'All' ? 'static-width' : 'dynamic-width';
+};
 
 // Navigate to category details
 const goToDetail = () => {
+  console.log('Navigating to details. Selected category:', selectedCategory.value, 'Search query:', searchQuery.value);
   if (selectedCategory.value !== 'All') {
-    const query = { cat: selectedCategory.value, search: searchQuery.value };
     const currentRoute = router.currentRoute.value;
-    
-    if (currentRoute.name === 'category-details' && currentRoute.query.cat === query.cat && currentRoute.query.search === query.search) {
-      router.replace({ name: 'category-details', query: { ...query, search: query.search + '&' } });
+    console.log('Current route:', currentRoute);
+    if (
+      currentRoute.name === 'category-details' &&
+      currentRoute.query.cat === selectedCategory.value &&
+      currentRoute.query.search === searchQuery.value
+    ) {
+      console.log('Replacing route with updated search query.');
+      router.replace({ name: 'category-details', query: { cat: selectedCategory.value, search: searchQuery.value + '&' } });
     } else {
-      router.push({ name: 'category-details', query });
+      console.log('Pushing new route.');
+      router.push({ name: 'category-details', query: { cat: selectedCategory.value, search: searchQuery.value } });
     }
   }
 };
 
 // Update search with debounce
 const updateSearch = debounce(() => {
+  console.log('Updating search with query:', searchQuery.value);
   const query = searchQuery.value.trim().toLowerCase();
-  const filteredEquipments = store.getters.getEquipments.filter((equipment) => {
-    const matchesCategory = selectedCategory.value === 'All' || equipment.category.toLowerCase() === selectedCategory.value.toLowerCase();
+  const filteredEquipments = equipments.value.filter((equipment) => {
+    const matchesCategory =
+      selectedCategory.value === 'All' || equipment.category.toLowerCase() === selectedCategory.value.toLowerCase();
     const matchesQuery = equipment.name.toLowerCase().includes(query);
     return matchesCategory && matchesQuery;
   });
-
+  console.log('Filtered equipments:', filteredEquipments);
   store.dispatch('setFilteredEquipments', filteredEquipments);
-}, 300);
+}, 100000);
 
 // Watch searchQuery and selectedCategory
-watch([searchQuery, selectedCategory], updateSearch, { immediate: true });
+watch(
+  [searchQuery, selectedCategory],
+  () => {
+    console.log('Watch triggered. Search query:', searchQuery.value, 'Selected category:', selectedCategory.value);
+    updateSearch();
+  },
+);
 </script>
 
 <style>
+select.static-width {
+  width: 8rem; /* Static width for the disabled option */
+  background-color: #fff;
+  color: #1c1c1c;
+  border-radius: 5px;
+  margin-right: 5px;
+}
+select.dynamic-width {
+  width: auto; /* Dynamic width for other options */
+}
+
 .search {
   border-radius: 5px;
 }
 
+/* Additional styles can go here if needed */
 .hero {
   min-height: 100px;
+  /* Ensure the hero section is not squeezed */
   display: flex;
   align-items: center;
   justify-content: center;
