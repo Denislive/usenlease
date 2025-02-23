@@ -57,11 +57,10 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed } from 'vue';
 import { useStore } from 'vuex';
 import { useEquipmentsStore } from '@/store/equipments';
 import { useRouter } from 'vue-router';
-import debounce from 'lodash/debounce';
 
 const store = useStore();
 const equipmentStore = useEquipmentsStore();
@@ -87,8 +86,21 @@ const displayedCategories = computed(() => {
 
 const selectedCategory = ref('All');
 
-// Navigate to category details
+// Computed property to filter equipments
+const filteredEquipments = computed(() => {
+  const query = searchQuery.value.trim().toLowerCase();
+  return equipments.value.filter((equipment) => {
+    const matchesCategory =
+      selectedCategory.value === 'All' || equipment.category.toLowerCase() === selectedCategory.value.toLowerCase();
+    const matchesQuery = equipment.name.toLowerCase().includes(query);
+    return matchesCategory && matchesQuery;
+  });
+});
+
+// Navigate to category details and update Vuex store with filtered equipments
 const goToDetail = () => {
+  store.dispatch('setFilteredEquipments', filteredEquipments.value);
+
   if (selectedCategory.value !== 'All') {
     const currentRoute = router.currentRoute.value;
     if (
@@ -102,28 +114,6 @@ const goToDetail = () => {
     }
   }
 };
-
-// Update search with debounce
-const updateSearch = debounce(() => {
-  const query = searchQuery.value.trim().toLowerCase();
-  if (!query && selectedCategory.value === 'All') return; // Prevent unnecessary updates
-
-  const filteredEquipments = equipments.value.filter((equipment) => {
-    const matchesCategory =
-      selectedCategory.value === 'All' || equipment.category.toLowerCase() === selectedCategory.value.toLowerCase();
-    const matchesQuery = equipment.name.toLowerCase().includes(query);
-    return matchesCategory && matchesQuery;
-  });
-
-  store.dispatch('setFilteredEquipments', filteredEquipments);
-}, 300); // Reduced debounce time to 300ms
-
-// Watch searchQuery and selectedCategory
-watch([searchQuery, selectedCategory], () => {
-  if (searchQuery.value || selectedCategory.value !== 'All') {
-    updateSearch();
-  }
-});
 </script>
 
 <style>
