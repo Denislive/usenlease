@@ -1,129 +1,123 @@
 <template>
-  <Hero />
-  <Breadcrumb />
+  <div class="hidden md:block">
+    <h1 class="text-lg font-bold mb-4">
+      <i class="pi pi-filter"></i> Filters
+    </h1>
+    <ul class="space-y-4">
+      <!-- Category Filter -->
+      <li class="product-filters-tab">
+        <a href="#" class="text-base font-semibold hover:text-[#1c1c1c]">Category</a>
+        <ul v-if="displayedCategories.length" class="ml-4 space-y-2 overflow-y-auto max-h-64">
+          <li>
+            <a href="#" class="text-sm text-gray-500" @click.prevent="clearAll('category')">Clear All</a>
+          </li>
+          <li v-for="category in displayedCategories" :key="category.id">
+            <input
+              :id="`category-checkbox-${category.id}`"
+              type="checkbox"
+              class="mr-2"
+              v-model="selectedCategories[category.id]"
+              @change="handleFilterChange"
+            />
+            <label :for="`category-checkbox-${category.id}`" class="text-sm">{{ category.name }}</label>
+          </li>
+        </ul>
+        <p v-else class="text-sm text-gray-500 ml-4">No categories available.</p>
+        <button v-if="categories.length > 20" @click="toggleShowMore('category')" class="text-blue-500 mt-2 text-sm">
+          {{ showMoreCategories ? 'Show Less' : 'Show More' }}
+        </button>
+      </li>
 
-  <div class="container mx-auto py-4 w-5/6 hidden md:block">
-    <div class="grid grid-cols-12 gap-4 p-1">
-      <!-- Sidebar Section -->
-      <aside class="col-span-3 bg-gray-100 rounded p-2">
-        <Filter 
-          :categories="categories" 
-          :cities="cities" 
-          :selectedCategories="selectedCategories" 
-          :selectedCities="selectedCities" 
-        />
-      </aside>
-
-      <!-- Main Content Section -->
-      <main class="col-span-9 bg-gray-100 p-1">
-        <Card :equipments="filteredEquipments" /> <!-- Pass filtered equipments -->
-      </main>
-    </div>
-  </div>
-
-  <div class="p-2 w-full text-xs md:hidden">
-    <MobileFilter 
-      :mobileCategories="categories" 
-      :mobileCities="cities" 
-      :mobileSelectedCategories="selectedCategories" 
-      :mobileSelectedCities="selectedCities" 
-    />
-    <Card :equipments="filteredEquipments" /> <!-- Pass filtered equipments -->
+      <!-- Location Filter -->
+      <li class="product-filters-tab">
+        <a href="#" class="text-base font-semibold hover:text-[#1c1c1c]">Location</a>
+        <ul v-if="displayedCities.length" class="ml-4 space-y-2 overflow-y-auto max-h-64">
+          <li>
+            <a href="#" class="text-sm text-gray-500" @click.prevent="clearAll('location')">Clear All</a>
+          </li>
+          <li v-for="city in displayedCities" :key="city">
+            <input
+              :id="`city-checkbox-${city}`"
+              type="checkbox"
+              class="mr-2"
+              v-model="selectedCities[city]"
+              @change="handleFilterChange"
+            />
+            <label :for="`city-checkbox-${city}`" class="text-sm">{{ city }}</label>
+          </li>
+        </ul>
+        <p v-else class="text-sm text-gray-500 ml-4">No cities available.</p>
+        <button v-if="cities.length > 20" @click="toggleShowMore('location')" class="text-blue-500 mt-2 text-sm">
+          {{ showMoreCities ? 'Show Less' : 'Show More' }}
+        </button>
+      </li>
+    </ul>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
-import axios from 'axios';
-import { useStore } from 'vuex';
-import Hero from '@/components/Hero.vue';
-import Breadcrumb from '@/components/Breadcrumb.vue';
-import Filter from '@/components/Filter.vue';
-import Card from '@/components/Card.vue';
-import MobileFilter from '@/components/MobileFilter.vue';
+import { ref, watch } from 'vue';
+import { useEquipmentsStore } from '@/store/equipments';
 
-// State to hold equipment and category data
-const equipments = ref([]);
-const categories = ref([]);
-const cities = ref([]);
-const selectedCategories = ref({});
-const selectedCities = ref({});
-const store = useStore();
-
-// Computed property to get searchQuery from Vuex
-const searchQuery = computed(() => store.getters.getSearchQuery);
-const api_base_url = import.meta.env.VITE_API_BASE_URL;
-
-// Fetch equipment and category data
-onMounted(async () => {
-  try {
-    const equipmentResponse = await axios.get(`${api_base_url}/api/equipments/`);
-    equipments.value = equipmentResponse.data;
-
-    const categoryResponse = await axios.get(`${api_base_url}/api/categories`);
-    categories.value = categoryResponse.data;
-
-    // Initialize selected categories
-    categories.value.forEach(category => {
-      selectedCategories.value[category.name] = false;
-    });
-
-    // Extract cities from the equipment data (assuming each equipment has a city/location field)
-    const equipmentCities = equipments.value.map(equipment => equipment.address?.city).filter(city => city);
-    cities.value = [...new Set(equipmentCities)]; // Remove duplicates
-
-  } catch (error) {
-    console.error('Error fetching data:', error);
+const props = defineProps({
+  categories: {
+    type: Array,
+    required: true
+  },
+  cities: {
+    type: Array,
+    required: true
   }
 });
 
-// Create a map from category names to their IDs
-const categoryIdMap = computed(() => {
-  const map = {};
-  categories.value.forEach(category => {
-    map[category.name] = category.id;
-  });
-  return map;
-});
+const store = useEquipmentsStore();
+const selectedCategories = store.selectedCategories;
+const selectedCities = store.selectedCities;
 
-// Computed property to filter equipments based on the search query and selected filters
-const filteredEquipments = computed(() => {
-  let filtered = equipments.value;
+const showMoreCategories = ref(false);
+const showMoreCities = ref(false);
 
-  // Apply search query filtering first
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase();
-    return filtered.filter(equipment => {
-      return (
-        equipment.name.toLowerCase().includes(query) ||
-        equipment.description.toLowerCase().includes(query) ||
-        equipment.hourly_rate.toString().includes(query) ||
-        (equipment.address?.street_address?.toLowerCase().includes(query)) ||
-        (equipment.address?.city?.toLowerCase().includes(query)) ||
-        (equipment.address?.state?.toLowerCase().includes(query))
-      );
-    });
+const displayedCategories = ref(props.categories.slice(0, 20));
+const displayedCities = ref(props.cities.slice(0, 20));
+
+// ✅ Ensure displayed lists update when props change
+watch(() => props.categories, (newCategories) => {
+  displayedCategories.value = showMoreCategories.value ? newCategories : newCategories.slice(0, 20);
+}, { immediate: true });
+
+watch(() => props.cities, (newCities) => {
+  displayedCities.value = showMoreCities.value ? newCities : newCities.slice(0, 20);
+}, { immediate: true });
+
+// ✅ Function to handle filter changes and update `filteredEquipments`
+const handleFilterChange = () => {
+  store.updateFilteredEquipments();
+};
+
+// ✅ Toggle Show More
+const toggleShowMore = (type) => {
+  if (type === 'category') {
+    showMoreCategories.value = !showMoreCategories.value;
+    displayedCategories.value = showMoreCategories.value ? props.categories : props.categories.slice(0, 20);
+  } else if (type === 'location') {
+    showMoreCities.value = !showMoreCities.value;
+    displayedCities.value = showMoreCities.value ? props.cities : props.cities.slice(0, 20);
   }
+};
 
-  // If no search query, apply category filtering
-  const selectedCategoryKeys = Object.keys(selectedCategories.value).filter(key => selectedCategories.value[key]);
-
-  if (selectedCategoryKeys.length > 0) {
-    filtered = filtered.filter(equipment => {
-      const equipmentCategoryId = equipment.category; // This is the ID
-      const selectedCategoryIds = selectedCategoryKeys.map(name => categoryIdMap.value[name]); // Map names to IDs
-      return selectedCategoryIds.includes(equipmentCategoryId);
-    });
+// ✅ Clear all filters and re-filter
+const clearAll = (filterType) => {
+  if (filterType === 'category') {
+    store.selectedCategories = {};
+  } else if (filterType === 'location') {
+    store.selectedCities = {};
   }
+  store.updateFilteredEquipments(); // Ensure filteredEquipments updates
+};
 
-  // Apply city filtering
-  const selectedCityKeys = Object.keys(selectedCities.value).filter(key => selectedCities.value[key]);
+// ✅ Watch for changes in selected filters
+watch([selectedCategories, selectedCities], () => {
+  store.updateFilteredEquipments();
+}, { deep: true });
 
-  if (selectedCityKeys.length > 0) {
-    filtered = filtered.filter(equipment => selectedCityKeys.includes(equipment.address?.city));
-  }
-
-  // Log the number of filtered equipments
-  return filtered;
-});
 </script>

@@ -7,11 +7,11 @@
       <!-- Sidebar Section -->
       <aside class="col-span-3 bg-gray-100 rounded p-2">
         <Filter 
-          :categories="categories" 
-          :cities="cities" 
-          :selectedCategories="selectedCategories" 
-          :selectedCities="selectedCities" 
-        />
+  :categories="categories"
+  :cities="cities"
+  
+/>
+
       </aside>
 
       <!-- Main Content Section -->
