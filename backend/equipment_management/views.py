@@ -1221,90 +1221,8 @@ class OrderViewSet(viewsets.ViewSet):
     def get_order(self, pk, user):
         """Helper function to retrieve an order object with permission check"""
         return get_object_or_404(Order, id=pk, user=user)
+    
 
-    @action(detail=True, methods=['post'])
-    def initiate_pickup(self, request, pk=None):
-        """
-        Lessee initiates pickup by providing images and identity document.
-        """
-        order = self.get_order(pk, request.user)
-
-        if order.status != 'approved':
-            return Response({"error": "Order must be approved to initiate pickup"}, status=status.HTTP_400_BAD_REQUEST)
-
-        pickup_images = request.FILES.getlist('pickup_images')
-        identity_document_type = request.data.get('documentType')
-
-        if len(pickup_images) > 3:
-            return Response({"error": "Too many pickup images"}, status=status.HTTP_400_BAD_REQUEST)
-
-        if identity_document_type not in ['id', 'dl', 'passport']:
-            return Response({"error": "Invalid identity document type"}, status=status.HTTP_400_BAD_REQUEST)
-
-        order_items = order.order_items.all()
-        equipment_ids = [item.item.id for item in order_items]
-
-        if not equipment_ids:
-            return Response({"error": "No equipment found for this order"}, status=status.HTTP_400_BAD_REQUEST)
-
-        for index, image in enumerate(pickup_images):
-            equipment_id = equipment_ids[index % len(equipment_ids)]
-            Image.objects.create(order=order, equipment_id=equipment_id, image=image, is_pickup=True)
-            print("Created image -", equipment_id)
-
-        order.identity_document_type = identity_document_type
-        order.status = 'pickup'
-        order.save()
-
-        return Response({"message": "Pickup initiated successfully"}, status=status.HTTP_200_OK)
-
-    @action(detail=True, methods=['post'])
-    def confirm_pickup(self, request, pk=None):
-        """
-        Lessor confirms pickup and stores the captured ID document.
-        """
-        order = self.get_order(pk, request.user)
-
-        if order.status != 'pickup':
-            return Response({"error": "Pickup must be initiated first"}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Check if an image was sent
-        id_image = request.FILES.get("id_image")
-        if not id_image:
-            return Response({"error": "ID document image is required"}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Save the image to the order
-        order.identity_document_image.save(id_image.name, id_image, save=True)
-
-        # Confirm the image is set
-        if not order.identity_document_image:
-            return Response({"error": "Failed to save ID document image"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        # Update order status
-        order.status = 'rented'
-        order.save()
-
-        return Response({
-            "message": "Pickup confirmed successfully",
-            "image_url": order.identity_document_image.url
-        }, status=status.HTTP_200_OK)
-
-
-
-    @action(detail=True, methods=['post'])
-    def confirm_return(self, request, pk=None):
-        """
-        Lessor confirms return.
-        """
-        order = self.get_order(pk, request.user)
-
-        if order.status != 'returned':
-            return Response({"error": "Return must be initiated first"}, status=status.HTTP_400_BAD_REQUEST)
-
-        order.status = 'completed'
-        order.save()
-
-        return Response({"message": "Return confirmed successfully"}, status=status.HTTP_200_OK)
 
 
     
@@ -1320,17 +1238,193 @@ class OrderItemViewSet(viewsets.ViewSet):
         if self.action == "list_booked_items":
             return [permissions.AllowAny()]  # No authentication required
         return [permissions.IsAuthenticated()]  # Authentication required for all other methods
+    
+    def get_order_item(self, pk, user):
+        """
+        Retrieve a specific OrderItem by ID and ensure the user has permission to access it.
+        """
+        try:
+            order_item = OrderItem.objects.get(pk=pk)
+
+            # Ensure the user is either the item owner or the lessor
+            if order_item.item.owner != user and order_item.order.lessor != user:
+                raise PermissionDenied("You do not have permission to access this order item.")
+
+            return order_item
+        except OrderItem.DoesNotExist:
+            return Response(
+                {"error": "Order Item not found!"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    
+    @action(detail=True, methods=['post'])
+    def approve(self, request, pk=None):
+        """
+        Approve a rental request for an order item.
+        Only the owner of the item can approve.
+        """
+        order_item = get_object_or_404(OrderItem, id=pk)
+
+        # Check if the logged-in user is the owner of the item
+        if order_item.item.owner.id != request.user.id:
+            return Response(
+                {"error": "You are not authorized to approve this item."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Ensure the order item is still pending
+        if order_item.status != 'pending':
+            return Response(
+                {"error": "Only pending items can be approved."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Approve the order item
+        order_item.status = 'approved'
+        order_item.save()
+
+        # Check if all order items in the order are approved
+        order = order_item.order
+        if all(item.status == 'approved' for item in order.order_items.all()):
+            order.status = 'approved'
+            order.save()
+
+        return Response({"message": "Order item approved successfully"}, status=status.HTTP_200_OK)
+    
+
+    @action(detail=True, methods=['post'])
+    def initiate_pickup(self, request, pk=None):
+        """
+        Lessee initiates pickup by providing images and identity document.
+        """
+        order_item = get_object_or_404(OrderItem, id=pk)
+
+        if order_item.status != 'approved':
+            return Response({"error": "Order item must be approved to initiate pickup"}, status=status.HTTP_400_BAD_REQUEST)
+
+        pickup_images = request.FILES.getlist('pickup_images')
+        identity_document_type = request.data.get('documentType')
+
+        if len(pickup_images) > 3:
+            return Response({"error": "Too many pickup images"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if identity_document_type not in ['id', 'dl', 'passport']:
+            return Response({"error": "Invalid identity document type"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Save images linked to this order item
+        for image in pickup_images:
+            Image.objects.create(order_item=order_item, image=image, is_pickup=True)
+
+        order_item.identity_document_type = identity_document_type
+        order_item.status = 'pickup'
+        order_item.save()
+
+        return Response({"message": "Pickup initiated successfully"}, status=status.HTTP_200_OK)
+    
+
+    @action(detail=True, methods=['post'])
+    def confirm_pickup(self, request, pk=None):
+        """
+        Lessor confirms pickup for a specific OrderItem and stores the captured ID document.
+        """
+        order_item = self.get_order_item(pk, request.user)
+
+        if order_item.status != 'pickup':
+            return Response({"error": "Pickup must be initiated first"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check if an ID document image was uploaded
+        id_image = request.FILES.get("id_image")
+        if not id_image:
+            return Response({"error": "ID document image is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Save the image to the order item
+        order_item.identity_document_image.save(id_image.name, id_image, save=True)
+
+        # Confirm the image is set
+        if not order_item.identity_document_image:
+            return Response({"error": "Failed to save ID document image"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # Update order item status
+        order_item.status = 'rented'
+        order_item.save()
+
+        return Response({
+            "message": "Pickup confirmed successfully",
+            "image_url": order_item.identity_document_image.url
+        }, status=status.HTTP_200_OK)
+    
+    
+    @action(detail=True, methods=['post'])
+    def confirm_return(self, request, pk=None):
+        """
+        Lessor confirms return. If the item is damaged, it cannot be marked as completed.
+        """
+        order_item = self.get_order_item(pk, request.user)
+
+        if order_item.status != 'rented':
+            return Response({"error": "Item must be rented first"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Get return condition and complaint details from request with safe default values
+        return_condition = request.data.get("returnCondition", "").strip().lower() if request.data.get("returnCondition") else "good"
+        complaint_text = request.data.get("complaintText", "").strip() if request.data.get("complaintText") else ""
+
+        # Validate return condition
+        if return_condition not in ["good", "damaged"]:
+            return Response(
+                {"error": "Invalid return condition. Must be either 'good' or 'damaged'."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Save return condition to the order item
+        order_item.return_item_condition = return_condition
+
+        if return_condition == "damaged":
+            # If damaged, require a complaint
+            if not complaint_text:
+                return Response(
+                    {"error": "A complaint description is required if the item is damaged."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Store complaint text and mark as disputed (NOT completed)
+            order_item.return_item_condition_custom = complaint_text
+            order_item.status = "disputed"
+            order_item.save()
+
+            return Response({
+                "message": "Item return recorded as damaged. Complaint noted.",
+                "return_condition": return_condition,
+                "complaint": complaint_text,
+                "status": "disputed",
+            }, status=status.HTTP_200_OK)
+
+        # If condition is good, complete the order
+        order_item.status = "completed"
+        order_item.save()
+
+        return Response({
+            "message": "Item return confirmed successfully.",
+            "return_condition": return_condition,
+            "status": "completed",
+        }, status=status.HTTP_200_OK)
+
 
 
     def list(self, request):
         """
-        List all order items.
+        List all order items where the item owner is the logged-in user.
         """
         self.check_permissions(request)  # Ensure permission check is applied
 
-        queryset = OrderItem.objects.all()
+        # Filter order items where the item owner is the logged-in user
+        queryset = OrderItem.objects.filter(item__owner_id=request.user.id)
+        print("Order Items:", list(queryset))
+
         serializer = OrderItemSerializer(queryset, many=True)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 
     def create(self, request):
         """

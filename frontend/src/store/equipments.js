@@ -48,6 +48,98 @@ export const useEquipmentsStore = defineStore('equipments', () => {
     }
   };
 
+
+  // Fetch user equipments
+const fetchUserEquipments = async () => {
+  try {
+    const response = await axios.get(`${api_base_url}/api/user-equipment/`, {
+      withCredentials: true,  // This ensures cookies (credentials) are sent with the request
+    });
+    userEquipments.value = response.data;  // Assign the fetched equipment to `equipments`
+  } catch (error) {
+    // Check if the error has a response (for API errors)
+    if (error.response) {
+     
+    } else if (error.request) {
+      // Handle errors with the request (no response received)
+      console.error('Request error:', error.request);
+      showNotification(
+        'Error Fetching Equipments',
+        'No response received from server. Please check your connection.',
+        'error'
+      );
+    } else {
+      // Handle other types of errors (e.g., setup errors)
+      console.error('General error:', error.message);
+      showNotification(
+        'Error Fetching Equipments',
+        'An unexpected error occurred. Please try again later.',
+        'error'
+      );
+    }
+  }
+};
+
+  // Fetch user equipments on mount with credentials
+const fetchUserEditableEquipments = async () => {
+  try {
+    const response = await axios.get(`${api_base_url}/api/user-editable-equipment/`, {
+      withCredentials: true,  // This ensures cookies (credentials) are sent with the request
+    });
+    userEditableEquipmentsIds.value = response.data;  // Assign the fetched equipment to `equipments`
+    console.log(userEditableEquipmentsIds.value);
+    
+  } catch (error) {
+    // Check if the error has a response (for API errors)
+    if (error.response) {
+     
+    } else if (error.request) {
+      // Handle errors with the request (no response received)
+      console.error('Request error:', error.request);
+      showNotification(
+        'Error Fetching Equipments',
+        'No response received from server. Please check your connection.',
+        'error'
+      );
+    } else {
+      // Handle other types of errors (e.g., setup errors)
+      console.error('General error:', error.message);
+      showNotification(
+        'Error Fetching Equipments',
+        'An unexpected error occurred. Please try again later.',
+        'error'
+      );
+    }
+  }
+};
+
+  // Get equipment by its ID
+  const getEquipmentById = async (id) => {
+    // Check if the equipment is already in the list to avoid unnecessary API calls
+    const equipment = equipments.value.find((item) => item.id === id);
+    if (equipment) {
+      selectedEquipment.value = equipment; // Set selected equipment from the list
+    } else {
+      isLoading.value = true; // Set loading state to true
+      error.value = null; // Reset any previous error
+      try {
+        // API request to fetch equipment details by ID
+        const response = await axios.get(`${api_base_url}/api/equipments/${id}/`, {
+          withCredentials: true, // Include credentials (cookies) in the request
+        });
+        selectedEquipment.value = response.data; // Store the fetched equipment
+      } catch (err) {
+        // Handle error if the request fails
+        error.value = `Failed to fetch item with ID ${id}.`;
+        showNotification('Item error', `Error fetching item by ID: ${err.response?.data || err.message}!`, 'error');
+
+      } finally {
+        // Set loading to false once the request is done (either success or failure)
+        isLoading.value = false;
+      }
+    }
+  };
+
   // Fetch Categories
   const fetchCategories = async () => {
     if (categories.value.length > 0) return;
@@ -116,7 +208,11 @@ export const useEquipmentsStore = defineStore('equipments', () => {
     selectedCities,
     filteredEquipments, // ✅ Now a ref([]), not computed!
     fetchEquipments,
+    fetchUserEquipments,
+    getEquipmentById,
+    fetchUserEditableEquipments,
     fetchCategories,
     updateFilteredEquipments, // Manually trigger an update if needed
   };
 });
+

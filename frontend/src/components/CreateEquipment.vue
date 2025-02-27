@@ -22,7 +22,7 @@
             categoryError ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-[#1c1c1c]'
           ]">
             <option value="" disabled selected>Select a category</option>
-            <option v-for="(cat, index) in categories" :key="index" :value="cat.name">
+            <option v-for="(cat, index) in categories" :key="index" :value="cat.id">
               {{ cat.name }}
             </option>
           </select>
@@ -233,7 +233,8 @@ const itemName = ref('');
 const hourlyRate = ref(null);
 const selectedCategory = ref("");
 const tagsInput = ref(""); // Input field value
-const tags = ref([]); // Array of individual tagsconst description = ref('');
+const tags = ref([]); // Array of individual tags
+const description = ref('');
 const terms = ref('');
 const streetAddress = ref('');
 const city = ref('');
@@ -486,7 +487,7 @@ const handleSubmit = async () => {
   formData.append('description', description.value);
   formData.append('hourly_rate', parseFloat(hourlyRate.value));
   formData.append('is_available', true);
-  formData.append('category', selectedCategory.value.id);
+  formData.append('category', selectedCategory.value);
   formData.append('available_quantity', availableItems.value);
   formData.append('terms', terms.value);
   formData.append('specifications', JSON.stringify(specifications.value));

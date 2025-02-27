@@ -49,6 +49,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const showSidebar = ref(true); // Sidebar visibility state
 
+
   const loginError = ref('');
   const isLoading = ref(false);
   const router = useRouter();
@@ -475,6 +476,7 @@ export const useAuthStore = defineStore('auth', () => {
     isLoading,
     getCSRFToken,
     activeSection,
+    showSidebar,
     login,
     logout,
     base64ToFile,

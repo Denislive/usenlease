@@ -271,29 +271,16 @@ class Order(models.Model):
         ('completed', 'Completed'),
         ('canceled', 'Canceled'),
     ]
-
-    ITEM_CONDITION_CHOICES = [
-        ('excellent', 'Excellent'),
-        ('good', 'Good'),
-        ('fair', 'Fair'),
-        ('poor', 'Poor'),
-        ('other', 'Other'),
-    ]
-
-    IDENTITY_DOCUMENT_CHOICES = [
-        ('id', 'ID'),
-        ('dl', 'Driver License'),
-        ('passport', 'Passport'),
-    ]
+ 
 
     payment_token = models.CharField(max_length=255, blank=True, null=True)
     cart = models.ForeignKey(Cart, on_delete=models.PROTECT, blank=True, null=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
-    status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='pending')
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
     shipping_address = models.ForeignKey(Address, related_name='shipping_address', on_delete=models.PROTECT, blank=True, null=True)
     billing_address = models.ForeignKey(Address, related_name='billing_address', on_delete=models.PROTECT, blank=True, null=True)
     payment_status = models.CharField(
-        max_length=50, choices=[('paid', 'Paid'), ('pending', 'pending'), ('unpaid', 'unpaid')], default='unpaid')
+        max_length=10, choices=[('paid', 'Paid'), ('pending', 'pending'), ('unpaid', 'unpaid')], default='unpaid')
     date_created = models.DateTimeField(auto_now_add=True)
     date_ordered = models.DateTimeField(blank=True, null=True)
 
@@ -301,13 +288,7 @@ class Order(models.Model):
     total_order_items = models.IntegerField(default=0)
     ordered = models.BooleanField(default=False)
 
-    # New fields for identity document
-    identity_document_type = models.CharField(max_length=50, choices=IDENTITY_DOCUMENT_CHOICES, default=id)
-    identity_document_image = models.ImageField(upload_to='pickup_identity_documents/', blank=True, null=True)
-    
-    return_item_condition = models.CharField(max_length=10, choices=ITEM_CONDITION_CHOICES, blank=True, null=True)
-    return_item_condition_custom = models.CharField(max_length=255, blank=True, null=True)  # Custom condition description
-
+   
     def __str__(self):
         return f"Order {self.id} for {self.user.username}"
 
@@ -377,7 +358,7 @@ class Order(models.Model):
 class Image(models.Model):
     id = models.CharField(primary_key=True, max_length=16, default=generate_short_uuid, editable=False)
     equipment = models.ForeignKey(Equipment, related_name='images', on_delete=models.CASCADE)
-    order = models.ForeignKey(Order, on_delete=models.CASCADE, blank=True, null=True)
+    order_item = models.ForeignKey(Order, on_delete=models.CASCADE, blank=True, null=True)
 
     # Flags to distinguish image types
     is_pickup = models.BooleanField(default=False)  # True = Pickup image
@@ -419,6 +400,26 @@ class Image(models.Model):
 
 
 class OrderItem(models.Model):
+        
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('pickup', 'Pickup Initiated'),
+        ('rented', 'Rented'),
+        ('rejected', 'Rejected'),
+        ('disputed', 'Disputed'),
+        ('completed', 'Completed'),
+        ('canceled', 'Canceled'),
+    ]
+
+    IDENTITY_DOCUMENT_CHOICES = [
+        ('id', 'ID'),
+        ('dl', 'Driver License'),
+        ('passport', 'Passport'),
+    ]
+
+
+
     id = models.CharField(
         primary_key=True, max_length=16, default=generate_short_uuid, editable=False)
     ordered = models.BooleanField(default=False)
@@ -428,6 +429,16 @@ class OrderItem(models.Model):
     start_date = models.DateField()
     end_date = models.DateField()
     total = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+
+     # New fields for identity document
+    identity_document_type = models.CharField(max_length=15, choices=IDENTITY_DOCUMENT_CHOICES, default=id)
+    identity_document_image = models.ImageField(upload_to='pickup_identity_documents/', blank=True, null=True)
+    
+    return_item_condition = models.CharField(max_length=15, blank=True, null=True)
+    return_item_condition_custom = models.CharField(max_length=255, blank=True, null=True)  # Custom condition description
+
+
 
     def __str__(self):
         return f"{self.quantity} x {self.item.name} in order"

@@ -18,8 +18,8 @@ class EquipmentAdmin(admin.ModelAdmin):
 
 @admin.register(Image)
 class ImageAdmin(admin.ModelAdmin):
-    list_display = ('equipment', 'order', 'is_return', 'is_pickup')
-    list_filter = ('equipment', 'order', 'is_return', 'is_pickup')
+    list_display = ('equipment', 'order_item', 'is_return', 'is_pickup')
+    list_filter = ('equipment', 'order_item', 'is_return', 'is_pickup')
 
 
 # Category Admin

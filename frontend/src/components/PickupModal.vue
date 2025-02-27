@@ -1,7 +1,7 @@
 <template>
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
         <div class="bg-white rounded-lg shadow-lg w-96 p-4">
-            <h2 class="text-xl font-semibold mb-4">Initiate Pickup for Order #{{ order.id }}</h2>
+            <h2 class="text-xl font-semibold mb-4">Initiate Pickup for OrderItem #{{ orderItem }}</h2>
 
             <!-- Document Selection -->
             <label for="documentType" class="block mb-2">Identity Document Type:</label>
@@ -15,7 +15,7 @@
             <!-- Camera Preview -->
             <div class="mb-4">
                 <video ref="videoElement" class="w-full h-auto rounded-md" playsinline autoplay></video>
-                <canvas id="canvasElement" class="hidden w-full h-auto"></canvas>
+                <canvas ref="canvasElement" class="hidden w-full h-auto"></canvas>
             </div>
 
             <!-- Capture Image Button -->
@@ -47,17 +47,15 @@
         </div>
     </div>
 </template>
+
 <script>
 import { ref, onMounted, onUnmounted } from 'vue';
 import axios from 'axios';
-import useNotifications from "@/store/notification.js"; // Import the notification service
-const { showNotification } = useNotifications(); // Initialize notification service
-
+import useNotifications from "@/store/notification.js";
 
 export default {
     props: {
-        order: {
-            type: Object,
+        orderItem: {
             required: true,
         },
     },
@@ -67,151 +65,71 @@ export default {
         const capturedImages = ref([]);
         const cameraAccessDenied = ref(false);
         const cameraStream = ref(null);
-        const videoElement = ref(null); // Ref for the video element
-
+        const videoElement = ref(null);
+        const canvasElement = ref(null); // Fix canvas reference
         const api_base_url = import.meta.env.VITE_API_BASE_URL;
-
-
-        // Camera stream reference
 
         // Start Camera
         const startCamera = async () => {
-            console.log("Starting camera...");
             try {
-                // Request camera with environment facing mode
                 cameraStream.value = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-                console.log("Camera access granted.");
-
-                // Ensure the video element exists
-                const video = videoElement.value;
-                if (video && video instanceof HTMLVideoElement) {
-                    // Set the video source to the camera stream
-                    video.srcObject = cameraStream.value;
-                    video.onloadedmetadata = () => {
-                        video.play();
-                        console.log("Video stream playing.");
-                    };
-                    cameraAccessDenied.value = false;
-                } else {
-                    console.error("Video element not found or invalid.");
+                if (videoElement.value) {
+                    videoElement.value.srcObject = cameraStream.value;
+                    videoElement.value.onloadedmetadata = () => videoElement.value.play();
                 }
+                cameraAccessDenied.value = false;
             } catch (error) {
-                console.error("Error accessing camera:", error);
                 cameraAccessDenied.value = true;
-                showNotification('Info', 'You will not be able to capture pickup images.', 'info');
+                console.error("Camera access denied:", error);
             }
         };
 
-
         // Stop Camera
         const stopCamera = () => {
-            console.log("Stopping camera...");
             if (cameraStream.value) {
                 cameraStream.value.getTracks().forEach(track => track.stop());
                 cameraStream.value = null;
-                console.log("Camera stopped.");
-            } else {
-                console.warn("No active camera stream found.");
             }
         };
 
         // Capture Image (Limit to 3 images)
         const captureImage = () => {
-            console.log("Attempting to capture image...");
-            if (cameraAccessDenied.value) {
-                console.warn("Camera access denied. Cannot capture image.");
-                return;
-            }
-            if (capturedImages.value.length >= 3) {
-                showNotification('Info', 'You can only upload a maximum of 3 images.', 'info');
-                console.warn("Maximum image limit reached.");
-                stopCamera();
-                return;
-            }
+            if (cameraAccessDenied.value || capturedImages.value.length >= 3) return;
 
-            const canvas = document.getElementById("canvasElement");
-
-            if (canvas instanceof HTMLCanvasElement && videoElement.value instanceof HTMLVideoElement) {
+            const canvas = canvasElement.value;
+            if (canvas && videoElement.value) {
                 const context = canvas.getContext("2d");
                 canvas.width = videoElement.value.videoWidth;
                 canvas.height = videoElement.value.videoHeight;
-
                 context.drawImage(videoElement.value, 0, 0, canvas.width, canvas.height);
-
-                const imageData = canvas.toDataURL("image/png");
-                capturedImages.value.push(imageData);
-                console.log(`Image captured. Total images: ${capturedImages.value.length}`);
-            } else {
-                console.error("Video or canvas element not found.");
+                capturedImages.value.push(canvas.toDataURL("image/png"));
             }
         };
+
+        // Submit Pickup
         const submitPickup = async () => {
-            console.log("🚀 Submitting pickup...");
-
-            if (!props.order?.id) {
-                console.error("❌ Order ID is missing.");
-                showNotification("Error", "Invalid order. Please try again.", "error");
-                return;
-            }
-
-            if (!documentType.value) {
-                console.error("❌ Document type is missing.");
-                showNotification("Error", "Please select an identity document type.", "error");
-                return;
-            }
-
-            // Ensure capturedImages is a valid array
-            if (!Array.isArray(capturedImages.value) || capturedImages.value.length === 0) {
-                console.warn("⚠️ No captured images found.");
-                showNotification("Warning", "Please capture at least one pickup image.", "warning");
-                return;
-            }
+            if (!documentType.value || capturedImages.value.length === 0) return;
 
             const formData = new FormData();
-
-            // Convert Base64 images to Blobs and append them under the same key ("pickup_images")
-            for (let index = 0; index < capturedImages.value.length; index++) {
-                const image = capturedImages.value[index];
-                try {
-                    const response = await fetch(image);
-                    const blob = await response.blob();
-                    formData.append("pickup_images", blob, `pickup_image_${index}.png`); // Use pickup_images[] as key
-                    console.log(`📸 Image ${index + 1} added to FormData.`);
-                } catch (err) {
-                    console.error(`🚨 Error converting image at index ${index}:`, err);
-                }
-            }
+            capturedImages.value.forEach((image, index) => {
+                fetch(image).then(res => res.blob()).then(blob => {
+                    formData.append("pickup_images", blob, `pickup_image_${index}.png`);
+                });
+            });
 
             formData.append("documentType", documentType.value);
-            formData.append("orderId", props.order.id);
-
-            // Debug: Log FormData contents before sending
-            console.log("📝 FormData contents:");
-            for (let pair of formData.entries()) {
-                console.log(pair[0], pair[1]);
-            }
+            formData.append("orderId", props.orderItem.id);
 
             try {
-                console.log("📡 Sending request to server...");
-                const response = await axios.post(
-                    `${api_base_url}/api/orders/${props.order.id}/initiate_pickup/`,
-                    formData,
-                    {
-                        headers: { "Content-Type": "multipart/form-data" },
-                        withCredentials: true,
-                    }
-                );
-
-                console.log("✅ Pickup submitted successfully:", response.data);
-                showNotification("Success", "Pickup initiated successfully!", "info");
-
-                close();
+                await axios.post(`${api_base_url}/api/order-items/${props.orderItem}/initiate_pickup/`, formData, {
+                    headers: { "Content-Type": "multipart/form-data" },
+                    withCredentials: true,
+                });
+                emit('close');
             } catch (error) {
-                console.error("❌ Error submitting pickup:", error);
-                showNotification("Error", "Failed to initiate pickup. Please try again.", "error");
+                console.error("Error submitting pickup:", error);
             }
         };
-
 
         // Close the modal
         const close = () => {
@@ -219,21 +137,15 @@ export default {
             emit('close');
         };
 
-        // Initialize camera when the modal is mounted
-        onMounted(() => {
-            startCamera();
-        });
-
-        // Stop camera when the modal is unmounted
-        onUnmounted(() => {
-            stopCamera();
-        });
+        onMounted(startCamera);
+        onUnmounted(stopCamera);
 
         return {
             documentType,
             capturedImages,
             cameraAccessDenied,
             videoElement,
+            canvasElement,
             captureImage,
             submitPickup,
             close,

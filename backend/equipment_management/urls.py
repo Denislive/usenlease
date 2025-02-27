@@ -42,14 +42,15 @@ urlpatterns = [
     path('session-status/', SessionStatusView.as_view(), name='session_status'),
     path('orders/<str:pk>/<str:action>/', OrderActionView.as_view(), name='order-action'),
     path('order-items/<str:pk>/total-booked/', OrderItemViewSet.as_view({'get': 'list_booked_items'})),
+    path('order-items/<str:pk>/approve/', OrderItemViewSet.as_view({'post': 'approve'}), name='approve'),
+
     path('root-categories/', RootCategoryListView.as_view(), name='root-category-list'),
     path('user-equipment/', UserEquipmentView.as_view(), name='user-equipment'),
     path('user-editable-equipment/', UserEditableEquipmentView.as_view(), name='user-editable-equipment-list'),
     path('company-info/', CompanyInfoView.as_view(), name='company-info'),
 
     # Custom order actions (initiate_pickup, confirm_pickup, initiate_return, confirm_return)
-    path('orders/<str:pk>/initiate_pickup/', OrderViewSet.as_view({'post': 'initiate_pickup'}), name='initiate-pickup'),
-    path('orders/<str:pk>/confirm_pickup/', OrderViewSet.as_view({'post': 'confirm_pickup'}), name='confirm-pickup'),
-    path('orders/<str:pk>/initiate_return/', OrderViewSet.as_view({'post': 'initiate_return'}), name='initiate-return'),
-    path('orders/<str:pk>/confirm_return/', OrderViewSet.as_view({'post': 'confirm_return'}), name='confirm-return'),
+    path('order-items/<str:pk>/initiate_pickup/', OrderViewSet.as_view({'post': 'initiate_pickup'}), name='initiate-pickup'),
+    path('order-items/<str:pk>/confirm_pickup/', OrderViewSet.as_view({'post': 'confirm_pickup'}), name='confirm-pickup'),
+    path('order-items/<str:pk>/confirm_return/', OrderViewSet.as_view({'post': 'confirm_return'}), name='confirm-return'),
 ]

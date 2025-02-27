@@ -230,7 +230,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OrderItem
-        fields = ['id', 'ordered', 'item', 'order', 'quantity', 'start_date', 'end_date', 'booked_dates', 'total_booked']
+        fields = ['id', 'ordered', 'item', 'order', 'quantity', 'start_date', 'end_date', 'booked_dates', 'total_booked', 'status', 'identity_document_type', 'identity_document_image', 'return_item_condition', 'return_item_condition_custom']
 
     def get_booked_dates(self, obj):
         """
@@ -255,4 +255,4 @@ class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = ['id', 'payment_token', 'user', 'status', 'shipping_address', 'billing_address',
-                  'payment_status', 'date_created', 'date_ordered', 'ordered', 'cart', 'order_total_price', 'total_order_items', 'order_items', 'identity_document_type', 'identity_document_image', 'return_item_condition', 'return_item_condition_custom']
+                  'payment_status', 'date_created', 'date_ordered', 'ordered', 'cart', 'order_total_price', 'total_order_items', 'order_items']

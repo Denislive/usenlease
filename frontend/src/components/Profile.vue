@@ -210,211 +210,212 @@
             </div>
           </div>
 
-  <div v-if="authStore.activeSection === 'my-equipments' && authStore.user?.role === 'lessor'" id="my-equipments">
-    <button @click="closeSidebar" class="flex items-center text-gray-800 rounded-full p-2 transition hover:bg-gray-200">
-      <i class="pi pi-arrow-circle-left text-xl mr-2"></i> Back
-    </button>
+          <div v-if="authStore.activeSection === 'my-equipments' && authStore.user?.role === 'lessor'"
+            id="my-equipments">
+            <button @click="closeSidebar"
+              class="flex items-center text-gray-800 rounded-full p-2 transition hover:bg-gray-200">
+              <i class="pi pi-arrow-circle-left text-xl mr-2"></i> Back
+            </button>
 
-    <div v-if="store.userEquipments.length > 0">
-      <div class="container mx-auto p-4">
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          <!-- Loop through the filtered equipments -->
-          <div v-for="equipment in store.userEquipments" :key="equipment.id" @click="goToDetail(equipment.id)"
-            class="bg-white rounded-lg shadow-lg overflow-hidden transition-transform hover:scale-105 cursor-pointer">
-            <div class="relative">
-              <!-- Availability Badge -->
-              <span :class="{
-                'bg-green-500': equipment.is_available,
-                'bg-red-500': !equipment.is_available,
-              }" class="absolute top-2 left-2 text-white text-xs font-bold px-2 py-1 rounded flex items-center">
-                <i :class="{
-                  'pi pi-check-circle': equipment.is_available,
-                  'pi pi-times-circle': !equipment.is_available,
-                }" class="mr-1"></i>
-                {{
-                  equipment.is_available ? "Available" : "Unavailable"
-                }}
-              </span>
+            <div v-if="store.userEquipments.length > 0">
+              <div class="container mx-auto p-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                  <!-- Loop through the filtered equipments -->
+                  <div v-for="equipment in store.userEquipments" :key="equipment.id" @click="goToDetail(equipment.id)"
+                    class="bg-white rounded-lg shadow-lg overflow-hidden transition-transform hover:scale-105 cursor-pointer">
+                    <div class="relative">
+                      <!-- Availability Badge -->
+                      <span :class="{
+                        'bg-green-500': equipment.is_available,
+                        'bg-red-500': !equipment.is_available,
+                      }"
+                        class="absolute top-2 left-2 text-white text-xs font-bold px-2 py-1 rounded flex items-center">
+                        <i :class="{
+                          'pi pi-check-circle': equipment.is_available,
+                          'pi pi-times-circle': !equipment.is_available,
+                        }" class="mr-1"></i>
+                        {{
+                          equipment.is_available ? "Available" : "Unavailable"
+                        }}
+                      </span>
 
-              <!-- Equipment Image -->
-              <img v-if="equipment.images.length > 0" :src="`${equipment.images[0].image_url}`" :alt="equipment.images[0].image_url"
-                class="w-full h-48 object-cover" />
+                      <!-- Equipment Image -->
+                      <img v-if="equipment.images.length > 0" :src="`${equipment.images[0].image_url}`"
+                        :alt="equipment.images[0].image_url" class="w-full h-48 object-cover" />
 
-              <!-- Edit Button -->
-              <a v-if="isEditable(equipment.id)" href="#" @click.stop="openEditModal(equipment)"
-                class="absolute bottom-4 right-4 bg-[#1c1c1c] text-white rounded-full h-10 w-10 flex items-center justify-center hover:text-[#ffc107] transition">
-                <i class="pi pi-pencil"></i>
-              </a>
+                      <!-- Edit Button -->
+                      <a v-if="isEditable(equipment.id)" href="#" @click.stop="openEditModal(equipment)"
+                        class="absolute bottom-4 right-4 bg-[#1c1c1c] text-white rounded-full h-10 w-10 flex items-center justify-center hover:text-[#ffc107] transition">
+                        <i class="pi pi-pencil"></i>
+                      </a>
+                    </div>
+
+                    <!-- Equipment Details -->
+                    <div class="p-4">
+                      <h5 class="text-lg font-semibold">
+                        {{ equipment.name }}
+                      </h5>
+                      <p class="text-gray-600">
+                        {{ equipment.hourly_rate }} / Day
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Rental Tables -->
+                <div class="mt-8">
+                  <h2 class="text-2xl font-bold mb-4">Rental Details</h2>
+                  <!-- Currently Rented Table -->
+                  <h3 class="text-xl font-semibold mb-2">Currently Rented</h3>
+                  <table class="w-full border-collapse bg-white shadow-md rounded-lg overflow-hidden">
+                    <thead>
+                      <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                        <th class="py-3 px-6 text-left">Equipment</th>
+                        <th class="py-3 px-6 text-center">Duration</th>
+                        <th class="py-3 px-6 text-center">Total Income</th>
+                        <th class="py-3 px-6 text-center">Actions</th>
+
+                      </tr>
+                    </thead>
+                    <tbody class="text-gray-600 text-sm font-light">
+                      <tr v-for="rental in rentedItems" :key="rental.id"
+                        class="border-b border-gray-200 hover:bg-gray-100">
+                        <td class="py-3 px-6 text-left">
+                          ({{ rental.quantity }}) x {{ rental.item.name || 'N/A' }}
+                        </td>
+                        <td class="py-3 px-6 text-center">
+                          {{ rental.booked_dates?.start_date || 'N/A' }} - {{ rental.booked_dates?.end_date || 'N/A' }}
+                        </td>
+                        <td class="py-3 px-6 text-center">
+                          {{ rental.quantity ? `$${rental.quantity * rental.item.hourly_rate}` : '$0' }}
+                        </td>
+                        <td class="py-3 px-6 text-center"> <button @click="openReturnModal(rental.id)"
+                            class="bg-blue-600 text-white px-4 py-2 rounded mt-2">
+                            Confirm Return
+                          </button></td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <!-- Return Confirmation Modal -->
+                  <ReturnConfirmationModal :showReturnModal="showReturnModal" :orderItemId="selectedOrderItem"
+                    @close="closeReturnModal" @confirm="handleReturnConfirmation" />
+
+
+                  <!-- Awaiting Approval Table -->
+                  <h3 class="text-xl font-semibold mb-2">Awaiting Approval</h3>
+                  <table class="w-full border-collapse bg-white shadow-md rounded-lg overflow-hidden">
+                    <thead>
+                      <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                        <th class="py-3 px-6 text-left">Equipment</th>
+                        <th class="py-3 px-6 text-center">Duration</th>
+                        <th class="py-3 px-6 text-center">Total Income</th>
+                        <th class="py-3 px-6 text-center">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody class="text-gray-600 text-sm font-light">
+                      <tr v-for="approvalItem in awaitingApprovalItems" :key="approvalItem.id"
+                        class="border-b border-gray-200 hover:bg-gray-100">
+                        <td class="py-3 px-6 text-left">
+                          ({{ approvalItem.quantity }}) x {{ approvalItem.item.name || 'N/A' }}<br />
+                        </td>
+                        <td class="py-3 px-6 text-center">
+                          {{ approvalItem.booked_dates?.start_date || 'N/A' }} -
+                          {{ approvalItem.booked_dates?.end_date || 'N/A' }}<br />
+                        </td>
+                        <td class="py-3 px-6 text-center">
+                          {{ approvalItem.quantity ? `$${approvalItem.quantity * approvalItem.item.hourly_rate}` : '$0'
+                          }}
+                        </td>
+                        <td class="py-3 px-6 text-center">
+                          <button @click="openApprovalModal(approvalItem)"
+                            class="py-1 px-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition duration-300">
+                            Approve
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <RentalApproval v-if="isApprovalModalOpen" :isVisible="isApprovalModalOpen" :rental="selectedRental"
+                    @close="isApprovalModalOpen = false" @approve="approveRentalApproval" />
+
+
+                  <!-- Returned Table -->
+                  <h3 class="text-xl font-semibold mt-6 mb-2">Returned</h3>
+                  <table class="w-full border-collapse bg-[#1c1c1c] shadow-md rounded-lg overflow-hidden text-white">
+                    <thead>
+                      <tr class="bg-gray-700 text-gray-300 uppercase text-sm leading-normal">
+                        <th class="py-3 px-6 text-left">Equipment</th>
+                        <th class="py-3 px-6 text-center">Duration</th>
+                        <th class="py-3 px-6 text-center">Total Income</th>
+                        <th class="py-3 px-6 text-center">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody class="text-gray-300 text-sm font-light">
+                      <tr v-for="rental in returnedItems" :key="rental.id"
+                        class="border-b border-gray-500 hover:bg-gray-800">
+                        <td class="py-3 px-6 text-left">
+                          ({{ rental.quantity }}) x {{ rental.item.name || 'N/A' }}
+                        </td>
+                        <td class="py-3 px-6 text-center">
+                          {{ rental.booked_dates?.start_date || 'N/A' }} - {{ rental.booked_dates?.end_date || 'N/A' }}
+                        </td>
+                        <td class="py-3 px-6 text-center">
+                          {{ rental.quantity ? `$${rental.quantity * rental.item.hourly_rate}` : '$0' }}
+                        </td>
+                        <td class="py-3 px-6 text-center">
+                          {{ rental.status }}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+
+                  
+
+                  <!-- Awaiting Pickup Table -->
+                  <h3 class="text-xl font-semibold mt-6 mb-2">Awaiting Pickup</h3>
+                  <table class="w-full border-collapse bg-white shadow-md rounded-lg overflow-hidden">
+                    <thead>
+                      <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                        <th class="py-3 px-6 text-left">Equipment</th>
+                        <th class="py-3 px-6 text-center">Duration</th>
+                        <th class="py-3 px-6 text-center">Total Income</th>
+                        <th class="py-3 px-6 text-center">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody class="text-[#1c1c1c] text-sm font-light">
+                      <tr v-for="rental in awaitingPickups" :key="rental.id"
+                        class="border-b border-gray-200 hover:bg-gray-100">
+                        <td class="py-3 px-6 text-left">
+                          ({{ rental.quantity }}) x {{ rental.item.name || 'N/A' }}
+                        </td>
+                        <td class="py-3 px-6 text-center">
+                          {{ rental.booked_dates?.start_date || 'N/A' }} - {{ rental.booked_dates?.end_date || 'N/A' }}
+                        </td>
+                        <td class="py-3 px-6 text-center">
+                          {{ rental.quantity ? `$${rental.quantity * rental.item.hourly_rate}` : '$0' }}
+                        </td>
+                        <td class="py-3 px-6 text-center">
+                          <button @click="openPickupConfirmationModal(rental.id)"
+                            class="bg-blue-500 text-white px-3 py-1 rounded">
+                            Confirm Pickup
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                </div>
+
+                <PickupConfirmationModal :showPickupModal="showPickupConfirmationModal" :orderItem="selectedOrderItem"
+                  @close="showPickupConfirmationModal = false" @confirm="handlePickupConfirmation" />
+
+
+
+              </div>
             </div>
-
-            <!-- Equipment Details -->
-            <div class="p-4">
-              <h5 class="text-lg font-semibold">
-                {{ equipment.name }}
-              </h5>
-              <p class="text-gray-600">
-                {{ equipment.hourly_rate }} / Day
-              </p>
-            </div>
-          </div>
-        </div>
-        
-       <!-- Rental Tables -->
-<div class="mt-8">
-  <h2 class="text-2xl font-bold mb-4">Rental Details</h2>
-
-  <!-- Currently Rented Table -->
-  <h3 class="text-xl font-semibold mb-2">Currently Rented</h3>
-  <table class="w-full border-collapse bg-white shadow-md rounded-lg overflow-hidden">
-    <thead>
-      <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
-        <th class="py-3 px-6 text-left">Equipment</th>
-        <th class="py-3 px-6 text-left">Lessee ID</th>
-        <th class="py-3 px-6 text-center">Duration</th>
-        <th class="py-3 px-6 text-center">Total Income</th>
-      </tr>
-    </thead>
-    <tbody class="text-gray-600 text-sm font-light">
-      <tr v-for="rental in rentedItems" :key="rental.id" class="border-b border-gray-200 hover:bg-gray-100">
-        <td class="py-3 px-6 text-left">
-          <template v-for="item in rental.order_items" :key="item.id">
-            ({{ item.quantity }}) x {{ item.item.name || 'N/A' }}<br />
-          </template>
-        </td>
-        <td class="py-3 px-6 text-left">{{ rental.user || 'Unknown' }}</td>
-        <td class="py-3 px-6 text-center">
-          <template v-for="item in rental.order_items" :key="item.id">
-            {{ item.booked_dates?.start_date || 'N/A' }} - 
-            {{ item.booked_dates?.end_date || 'N/A' }}<br />
-          </template>
-        </td>
-        <td class="py-3 px-6 text-center">{{ rental.order_total_price ? `$${rental.order_total_price}` : '$0' }}</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <!-- Returned Table -->
-<h3 class="text-xl font-semibold mt-6 mb-2">Returned</h3>
-<table class="w-full border-collapse bg-[#1c1c1c] shadow-md rounded-lg overflow-hidden text-white">
-  <thead>
-    <tr class="bg-gray-700 text-gray-300 uppercase text-sm leading-normal">
-      <th class="py-3 px-6 text-left">Equipment</th>
-      <th class="py-3 px-6 text-left">Lessee ID</th>
-      <th class="py-3 px-6 text-center">Duration</th>
-      <th class="py-3 px-6 text-center">Total Income</th>
-      <th class="py-3 px-6 text-center">Condition</th> <!-- New column -->
-    </tr>
-  </thead>
-  <tbody class="text-gray-300 text-sm font-light">
-    <tr v-for="rental in returnedItems" :key="rental.id" class="border-b border-gray-500 hover:bg-gray-800">
-      <td class="py-3 px-6 text-left">
-        <template v-for="item in rental.order_items" :key="item.id">
-          ({{ item.quantity }}) x {{ item.item.name || 'N/A' }}<br />
-        </template>
-      </td>
-      <td class="py-3 px-6 text-left">{{ rental.user || 'Unknown' }}</td>
-      <td class="py-3 px-6 text-center">
-        <template v-for="item in rental.order_items" :key="item.id">
-          {{ item.booked_dates?.start_date || 'N/A' }} - 
-          {{ item.booked_dates?.end_date || 'N/A' }}<br />
-        </template>
-      </td>
-      <td class="py-3 px-6 text-center">{{ rental.order_total_price ? `$${rental.order_total_price}` : '$0' }}</td>
-      <td class="py-3 px-6 text-center">
-        <button @click="openConditionModal(rental)"
-          class="bg-[#ffc107] text-[#1c1c1c] px-3 py-1 rounded-lg text-sm font-semibold hover:bg-yellow-600 transition">
-          Capture Condition
-        </button>
-      </td>
-    </tr>
-  </tbody>
-</table>
-
-
-  <div v-if="showConditionModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-    <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-      
-      <!-- Modal Header -->
-      <h3 class="text-lg font-semibold text-gray-800 text-center mb-4">Capture Item Condition</h3>
-
-      <!-- Condition Select -->
-      <label class="block text-gray-700 text-sm font-medium mb-2">Select Condition:</label>
-      <select v-model="selectedCondition"
-        class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-        <option value="excellent">Excellent</option>
-        <option value="good">Good</option>
-        <option value="fair">Fair</option>
-        <option value="poor">Poor</option>
-        <option value="other">Other</option>
-      </select>
-
-      <!-- Custom Condition Input (only if "Other" is selected) -->
-      <div v-if="selectedCondition === 'other'" class="mt-3">
-        <label class="block text-gray-700 text-sm font-medium mb-2">Describe Condition:</label>
-        <input type="text" v-model="customCondition"
-          class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="Enter condition details..." />
-      </div>
-
-      <!-- Action Buttons -->
-      <div class="flex justify-end mt-4">
-        <button @click="closeConditionModal"
-          class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium px-4 py-2 rounded-lg mr-2">
-          Cancel
-        </button>
-        <button @click="confirmCondition"
-          class="bg-[#1c1c1c] hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition">
-          Save Condition
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Awaiting Pickup Table -->
-  <h3 class="text-xl font-semibold mt-6 mb-2">Awaiting Pickup</h3>
-  <table class="w-full border-collapse bg-white shadow-md rounded-lg overflow-hidden">
-    <thead>
-      <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
-        <th class="py-3 px-6 text-left">Equipment</th>
-        <th class="py-3 px-6 text-left">Lessee ID</th>
-        <th class="py-3 px-6 text-center">Duration</th>
-        <th class="py-3 px-6 text-center">Total Income</th>
-      </tr>
-    </thead>
-    <tbody class="text-[#1c1c1c] text-sm font-light">
-      <tr v-for="rental in awaitingPickups" :key="rental.id" class="border-b border-gray-200 hover:bg-gray-100">
-        <td class="py-3 px-6 text-left">
-          <template v-for="item in rental.order_items" :key="item.id">
-            ({{ item.quantity }}) x {{ item.item.name || 'N/A' }}<br />
-          </template>
-        </td>
-        <td class="py-3 px-6 text-left">{{ rental.user || 'Unknown' }}</td>
-        <td class="py-3 px-6 text-center">
-          <template v-for="item in rental.order_items" :key="item.id">
-            {{ item.booked_dates?.start_date || 'N/A' }} - 
-            {{ item.booked_dates?.end_date || 'N/A' }}<br />
-          </template>
-        </td>
-        <td class="py-3 px-6 text-center">{{ rental.order_total_price ? `$${rental.order_total_price}` : '$0' }}</td>
-        <td class="py-3 px-6 text-center">
-            <button @click="openPickupConfirmationModal(rental)" class="bg-blue-500 text-white px-3 py-1 rounded">Confirm Pickup</button>
-          </td>
-      </tr>
-    </tbody>
-  </table>
-</div>
-
-<PickupConfirmationModal
-  :showPickupModal="showPickupConfirmationModal"
-  :rental="selectedRental"
-  @close="showPickupConfirmationModal = false"
-  @confirm="handlePickupConfirmation"
-/>
-
-
-
-      </div>
-    </div>
 
             <div v-else>
               <div class="empty-list-container text-center py-16">
@@ -505,7 +506,7 @@
           " id="my-orders">
             <button @click="closeSidebar"
               class="flex items-center text-gray-800 rounded-full p-2 transition hover:bg-gray-200">
-              <i class="pi pi-arrow-circle-left text-xl mr-2"></i> Back
+              <i class="pi pi-arrreturnow-circle-left text-xl mr-2"></i> Back
             </button>
 
             <div class="p-6 bg-gray-100 min-h-screen">
@@ -533,14 +534,14 @@
               </div>
 
               <!-- Orders Table -->
+              <!-- Orders Table -->
               <div class="overflow-x-auto">
                 <table class="table-auto w-full border-collapse">
                   <thead>
                     <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
                       <th class="py-3 px-6 text-left">Order ID</th>
                       <th class="py-3 px-6 text-center">Status</th>
-                      <th class="py-3 px-6 text-center">Order Images</th>
-                      <th class="py-3 px-6 text-center">Order Description</th>
+                      <th class="py-3 px-6 text-center">Order Items</th>
                       <th class="py-3 px-6 text-center">Total Items</th>
                       <th class="py-3 px-6 text-center">Total Price</th>
                       <th class="py-3 px-6 text-center">Actions</th>
@@ -560,62 +561,44 @@
                           'bg-orange-500': order.status === 'return',
                           'bg-green-500': order.status === 'rented',
                           'bg-red-500': order.status === 'rejected',
-                          'bg-red-500': order.status === 'canceled',
                           'bg-gray-500': order.status === 'completed',
                         }">
                           {{ order.status }}
                         </span>
                       </td>
 
-                      <!-- New Column for Item Images -->
+                      <!-- Order Items List -->
                       <td class="py-3 px-6 text-center">
-                        <div class="flex justify-center flex-wrap">
-                          <div v-for="item in order.order_items" :key="item.id" class="mr-2 mb-2">
+                        <div v-for="item in order.order_items" :key="item.id"
+                          class="flex justify-between items-center border-b pb-2">
+                          <div class="flex items-center">
                             <img v-if="item.item.images" :src="item.item.images[0]" alt="Item Image"
-                              class="w-16 h-16 rounded-full object-cover" />
-                            <span v-else>
-                              <p class="text-sm text-gray-500">No image available</p>
-                            </span>
+                              class="w-12 h-12 rounded-full object-cover mr-2" />
+                            <span v-else class="text-gray-500">No image</span>
+                            <p>{{ item.quantity }}x {{ item.item.name }}</p>
                           </div>
-                        </div>
-                      </td>
 
-                      <!-- Item Description -->
-                      <td class="py-3 px-6 text-center">
-                        <div v-for="item in order.order_items" :key="item.id">
-                          <p class="flex items-center">
-                            <span class="mr-2">{{ item.quantity }} x</span>
-                            <router-link :to="{ name: 'equipment-details', params: { id: item.item.id } }"
-                              class="text-blue-500 hover:text-blue-700 cursor-pointer">
-                              {{ item.item.name }}
-                            </router-link>
-                          </p>
+                          <!-- Confirm Button -->
+                          <button v-if="item.status === 'approved'" @click="openPickupModal(item.id)"
+                            class="ml-4 px-3 py-1 bg-green-500 text-white rounded shadow-sm hover:bg-green-600">
+                            Confirm
+                          </button>
                         </div>
                       </td>
 
                       <td class="py-3 px-6 text-center">{{ order.total_order_items }}</td>
                       <td class="py-3 px-6 text-center">${{ order.order_total_price }}</td>
-                      <td class="py-3 px-6 text-center flex">
-
+                      <td class="py-3 px-6 text-center">
                         <button @click="openModal(order)"
                           class="px-4 py-2 bg-blue-500 text-white rounded-md shadow-sm hover:bg-blue-600">
-
                           Manage
-
                         </button>
-
-                        <button v-if="order.status == 'approved'" @click="openPicupModal(order)"
-                          class="ml-2 px-4 py-2 bg-green-500 text-white rounded-md shadow-sm hover:bg-green-600">
-
-                          Initiate Pickup
-
-                        </button>
-
                       </td>
                     </tr>
                   </tbody>
                 </table>
               </div>
+
 
             </div>
 
@@ -629,7 +612,36 @@
                   Current Status: <strong>{{ selectedOrder.status }}</strong>
                 </p>
 
-                <!-- Actions -->
+                <!-- Actions --><!-- Returned Table -->
+                <h3 class="text-xl font-semibold mt-6 mb-2">Returned</h3>
+                <table class="w-full border-collapse bg-[#1c1c1c] shadow-md rounded-lg overflow-hidden text-white">
+                  <thead>
+                    <tr class="bg-gray-700 text-gray-300 uppercase text-sm leading-normal">
+                      <th class="py-3 px-6 text-left">Equipment</th>
+                      <th class="py-3 px-6 text-left">Lessee ID</th>
+                      <th class="py-3 px-6 text-center">Duration</th>
+                      <th class="py-3 px-6 text-center">Total Income</th>
+                      <th class="py-3 px-6 text-center">Condition</th>
+                    </tr>
+                  </thead>
+                  <tbody class="text-gray-300 text-sm font-light">
+                    <tr v-for="rental in returnedItems" :key="rental.id"
+                      class="border-b border-gray-500 hover:bg-gray-800">
+                      <td class="py-3 px-6 text-left">
+                        ({{ rental.quantity }}) x {{ rental.item.name || 'N/A' }}
+                      </td>
+                      <td class="py-3 px-6 text-left">{{ rental.user || 'Unknown' }}</td>
+                      <td class="py-3 px-6 text-center">
+                        {{ rental.booked_dates?.start_date || 'N/A' }} - {{ rental.booked_dates?.end_date || 'N/A' }}
+                      </td>
+                      <td class="py-3 px-6 text-center">
+                        {{ rental.quantity ? `$${rental.quantity * rental.item.hourly_rate}` : '$0' }}
+                      </td>
+
+                    </tr>
+                  </tbody>
+                </table>
+
                 <div>
                   <button v-if="selectedOrder.status === 'pending'" @click="confirmTerminate(selectedOrder)"
                     class="px-4 py-2 bg-red-500 text-white rounded-md shadow-sm hover:bg-red-600">
@@ -701,13 +713,9 @@
               </div>
             </div>
           </div>
-       
-           <!-- Child Modal Component -->
-    <PickupModal
-      v-if="showPickupModal"
-      :order="selectedOrder"
-      @close="closePickupModal"
-    />
+
+          <!-- Child Modal Component -->
+          <PickupModal v-if="showPickupModal" :orderItem="selectedOrderItem" @close="closePickupModal" />
 
           <!-- <div v-if="activeSection === 'settings'">
             <h1>My Items updated</h1>
@@ -757,7 +765,8 @@
                 <!-- Editable Message -->
                 <textarea v-model="chatStore.chatState.initialMessage"
                   class="w-full px-4 py-2 border border-gray-300 rounded-lg mb-4" rows="4"
-                  placeholder="Edit your message here">{{ chatStore.chatState.initialMessage }}</textarea>
+                  placeholder="Edit your message here">{{
+                    chatStore.chatState.initialMessage }}</textarea>
 
                 <div class="flex justify-end space-x-3">
                   <button @click="chatStore.chatState.chatId = null"
@@ -823,7 +832,7 @@
                   class="ml-3 bg-[#ffc107] hover:bg-[#ffd740] text-gray-800 px-4 py-2 rounded-full shadow-md transition">
                   Send
                 </button>
-              </div>
+              </div>UserEquipments
             </div>
 
           </div>
@@ -1031,19 +1040,50 @@ import { format } from "date-fns";
 import Cookies from "js-cookie";
 import PickupModal from './PickupModal.vue'; // Import the child modal component
 import PickupConfirmationModal from './PickupConfirmationModal.vue';
+import RentalApproval from './RentalApproval.vue';
+import ReturnConfirmationModal from "./ReturnConfirmationModal.vue"; // Adjust path if needed
+import { result } from 'lodash';
+
+const isApprovalModalOpen = ref(false);
+
+// Open modal with selected approval rental details
+const openApprovalModal = (approvalItem) => {
+  selectedRental.value = approvalItem;
+  isApprovalModalOpen.value = true;
+};
+
+// Approve rental and send API request
+const approveRentalApproval = async (approvalItem) => {
+  if (!approvalItem?.id) return;
+
+  try {
+    const response = await axios.post(
+      `${api_base_url}/api/order-items/${approvalItem.id}/approve/`,
+      {},
+      { withCredentials: true }
+    );
+
+    console.log('✅ Rental Approval Successful:', response.data);
+
+
+    isApprovalModalOpen.value = false;
+  } catch (error) {
+    console.error('❌ Error approving rental:', error.response?.data || error.message);
+  }
+};
 
 // Reactive stateconst showPickupModal = ref(false);
 const selectedRental = ref(null);
 const showPickupConfirmationModal = ref(null);
 
 const openPickupConfirmationModal = (rental) => {
-  selectedRental.value = rental;
+  selectedOrderItem.value = rental;
   showPickupConfirmationModal.value = true;
 };
 
 const closePickupConfirmationModal = () => {
   showPickupConfirmationModal.value = false;
-  selectedRental.value = null;
+  selectedOrderItem.value = null;
 };
 
 const handlePickupConfirmation = () => {
@@ -1059,9 +1099,9 @@ const { showNotification } = useNotifications(); // Initialize notification serv
 
 // Open the modal
 
-const openPicupModal = (order) => {
+const openPickupModal = (order) => {
 
-  selectedOrder.value = order; // Example order data
+  selectedOrderItem.value = order; // Example order data
 
   showPickupModal.value = true;
 
@@ -1084,59 +1124,51 @@ const showTerminateConfirm = ref(false);
 
 
 
-const showConditionModal = ref(false);
-const selectedCondition = ref("");
-const customCondition = ref("");
-const currentRental = ref(null);
 
-const openConditionModal = (rental) => {
-  currentRental.value = rental;
-  selectedCondition.value = "";
-  customCondition.value = "";
-  showConditionModal.value = true;
+
+const showReturnModal = ref(false);
+
+// Function to open the modal and set the selected order item
+const openReturnModal = (orderItemId) => {
+  selectedOrderItem.value = orderItemId;
+  showReturnModal.value = true;
 };
 
-const closeConditionModal = () => {
-  showConditionModal.value = false;
+// Function to close the modal
+const closeReturnModal = () => {
+  showReturnModal.value = false;
 };
 
-const confirmCondition = async () => {
-  if (!selectedCondition.value) {
-    alert("Please select a condition.");
-    return;
-  }
+// Function to handle return confirmation
+const handleReturnConfirmation = (returnData) => {
 
-  let conditionData = {
-    return_item_condition: selectedCondition.value,
-  };
+  axios.post(`${api_base_url}/api/order-items/${selectedOrderItem.value}/confirm_return/`, returnData, {
+    withCredentials: true, // Ensure credentials (cookies/session) are sent
+  })
+    .then(response => {
+      showNotification("Success", "Item Return confirmed successfully!", "success"); // Notify user
+    })
+    .catch(error => {
 
-  if (selectedCondition.value === "other") {
-    if (!customCondition.value.trim()) {
-      alert("Please enter a description for the condition.");
-      return;
-    }
-    conditionData.return_item_condition_custom = customCondition.value.trim();
-  }
-
-  try {
-    const response = await axios.post(
-      `${api_base_url}/api/orders/${currentRental.value.id}/confirm_return/`,
-      conditionData,
-      {
-        headers: { "Content-Type": "application/json" },
-        withCredentials: true,
+      // Extract detailed error message if available
+      let errorMessage = "Error confirming return. Please try again.";
+      if (error.response) {
+        if (error.response.data && error.response.data.error) {
+          errorMessage = error.response.data.error;
+        } else if (error.response.data && typeof error.response.data === "string") {
+          errorMessage = error.response.data;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
       }
-    );
 
-    if (response.status === 200) {
-      alert("Condition recorded successfully!");
-      closeConditionModal();
-    }
-  } catch (error) {
-    console.error("Error saving condition:", error);
-    alert("Failed to save condition. Please try again.");
-  }
+      showNotification(errorMessage, "error"); // Notify user with specific error
+    });
+
+  showReturnModal.value = false;
 };
+
+
 
 const store = useEquipmentsStore();
 const chatStore = useChatStore();
@@ -1348,6 +1380,8 @@ const getReceiverId = (chatId) => {
 const router = useRouter();
 const showModal = ref(false);
 const selectedOrder = ref(null);
+const selectedOrderItem = ref(null);
+
 const showDeleteConfirm = ref(false);
 const orderToDelete = ref(null);
 const orderToTerminate = ref(null);
@@ -1424,27 +1458,40 @@ const phoneNumber = ref("");
 
 // Fetch user equipments on mount with credentials
 const fetchUserEquipments = async () => {
- store.fetchUserEditableEquipments;
+  store.fetchUserEditableEquipments;
 };
 
+const awaitingApprovalItems = computed(() => {
+  const result = Array.isArray(orderItems.value)
+    ? orderItems.value.filter(item => item.status === 'pending')
+    : [];
+  console.log("Awaiting Approval Items:", result);
+  return result;
+});
+
 const rentedItems = computed(() => {
-  console.log("Filtered Orders:", filteredOrders.value);
-  const result = Array.isArray(filteredOrders.value) 
-    ? filteredOrders.value.filter(order => order.status === 'rented') 
+  console.log("OrderItems values:", orderItems.value);
+  const result = Array.isArray(orderItems.value)
+    ? orderItems.value.filter(item => item.status === 'rented')
     : [];
   console.log("Rented Items:", result);
   return result;
 });
 
-
 const returnedItems = computed(() => {
-  return Array.isArray(filteredOrders.value) ? 
-    filteredOrders.value.filter(order => order.status === 'returned') : [];
+  const result = Array.isArray(orderItems.value)
+    ? orderItems.value.filter(item => item.status === 'completed')
+    : [];
+  console.log("Returned Items:", result);
+  return result;
 });
 
 const awaitingPickups = computed(() => {
-  return Array.isArray(filteredOrders.value) ? 
-    filteredOrders.value.filter(order => order.status === 'pickup') : [];
+  const result = Array.isArray(orderItems.value)
+    ? orderItems.value.filter(item => item.status === 'pickup')
+    : [];
+  console.log("Awaiting Pickup Items:", result);
+  return result;
 });
 
 const goToDetail = (equipmentId) => {
@@ -1456,6 +1503,7 @@ const goToDetail = (equipmentId) => {
 };
 
 const orders = ref([]);
+const orderItems = ref([]);
 const filteredOrders = ref([]);
 const searchQuery = ref("");
 const selectedStatus = ref("");
@@ -1470,6 +1518,21 @@ const fetchOrders = async () => {
     console.log("Order values", orders.value);
     filteredOrders.value = response.data; // Initial population
     console.log("filtered orders values", response.data);
+  } catch (error) {
+    console.error("Error fetching orders:", error.response.data);
+  } finally {
+    loading.value = false;
+  }
+};
+
+
+const fetchOrderItems = async () => {
+  try {
+    const response = await axios.get(`${api_base_url}/api/order-items/`, {
+      withCredentials: true,
+    });
+    orderItems.value = response.data;
+    console.log("Order items values", orderItems.value);
   } catch (error) {
     console.error("Error fetching orders:", error.response.data);
   } finally {
@@ -1675,6 +1738,7 @@ onMounted(async () => {
 
   fetchChats();
   fetchOrders(); // Fetch orders on mount
+  fetchOrderItems();
   fetchUserReport();
   await store.fetchUserEditableEquipments();
 });
