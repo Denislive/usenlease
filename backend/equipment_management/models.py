@@ -432,10 +432,10 @@ class OrderItem(models.Model):
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
 
      # New fields for identity document
-    identity_document_type = models.CharField(max_length=15, choices=IDENTITY_DOCUMENT_CHOICES, default=id)
+    identity_document_type = models.CharField(max_length=30, choices=IDENTITY_DOCUMENT_CHOICES, default=id)
     identity_document_image = models.ImageField(upload_to='pickup_identity_documents/', blank=True, null=True)
     
-    return_item_condition = models.CharField(max_length=15, blank=True, null=True)
+    return_item_condition = models.CharField(max_length=30, blank=True, null=True)
     return_item_condition_custom = models.CharField(max_length=255, blank=True, null=True)  # Custom condition description
 
 
