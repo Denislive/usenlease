@@ -2,16 +2,20 @@
   <Hero />
   <Breadcrumb />
 
-  <div class="container mx-auto py-4 w-5/6 hidden md:block">
+  <div class="w-full mx-4 hidden md:block">
     <div class="grid grid-cols-12 gap-4 p-1">
       <!-- Sidebar Section -->
-      <aside class="col-span-3 bg-gray-100 rounded p-2">
-        <Filter :categories="categories" :cities="cities" />
+      <aside class="col-span-2 bg-gray-100 rounded p-2">
+        <Filter 
+  :categories="categories"
+  :cities="cities"
+  
+/>
 
       </aside>
 
       <!-- Main Content Section -->
-      <main class="col-span-9 bg-gray-100 p-1">
+      <main class="col-span-10 bg-gray-100 p-1">
         <Card :equipments="filteredEquipments" /> <!-- Pass filtered equipments -->
       </main>
     </div>

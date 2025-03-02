@@ -19,15 +19,15 @@ const acceptCookies = () => {
 <template>
   <Hero />
 
-  <div class="container mx-auto py-2 w-5/6 hidden md:block">
+  <div class="w-full mx-4 hidden md:block">
     <div class="grid grid-cols-12 gap-4 p-1">
       <!-- Sidebar Section -->
-      <aside class="col-span-3 bg-gray-100 rounded p-2 max-h-[100vh] overflow-y-auto">
+      <aside class="col-span-2 bg-gray-100 rounded p-2 max-h-[100vh] overflow-y-auto">
         <Sidebar />
       </aside>
 
       <!-- Main Content Section -->
-      <main class="col-span-9 bg-gray-100 p-1 max-h-[100vh] overflow-y-auto">
+      <main class="col-span-10 bg-gray-100 p-1 max-h-[100vh] overflow-y-auto">
         <Slider />
         <Equipment />
       </main>
@@ -37,7 +37,7 @@ const acceptCookies = () => {
   <div class="container p-2 md:hidden">
     <Equipment />
   </div>
-
+  
   <!-- Privacy Banner -->
   <div v-if="showBanner" class="fixed bottom-0 left-0 w-full bg-gray-800 text-white p-4 z-50">
     <div class="max-w-4xl mx-auto flex flex-col md:flex-row justify-between items-center">

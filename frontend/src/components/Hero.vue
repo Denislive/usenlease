@@ -1,5 +1,5 @@
 <template>
-  <section class="hero bg-gradient-to-r from-[#ff9e00] to-[#ffc107] py-2 lg:py-8 relative text-white overflow-hidden flex items-center">
+  <section class="hero bg-gradient-to-r from-[#ff9e00] to-[#ffc107] py-2 lg:py-1 relative text-white overflow-hidden flex items-center">
     <div class="absolute top-0 left-0 w-full h-full bg-gradient-to-t from-[#1c1c1c] to-transparent opacity-60"></div>
 
     <div class="container mx-auto text-center relative z-10 px-4">

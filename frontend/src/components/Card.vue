@@ -43,7 +43,7 @@ const goToDetail = (equipmentId) => {
 
     <!-- Equipment Grid -->
     <div class="scrollable-container">
-      <div class="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+      <div class="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-6">
         <div
           v-for="equipment in paginatedEquipments"
           :key="equipment.id"
