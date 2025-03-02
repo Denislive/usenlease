@@ -57,34 +57,7 @@ const fetchUserEquipments = async () => {
     });
     userEquipments.value = response.data;  // Assign the fetched equipment to `userEquipments`
   } catch (error) {
-    if (error.response) {
-      // If the API responds with an error (e.g., 401, 404), handle it gracefully.
-      let errorMessage = 'An error occurred while fetching equipments.';
-      
-      // If the API provided a detailed error message, use it:
-      if (error.response.data && error.response.data.detail) {
-        errorMessage = error.response.data.detail;
-      } else if (error.response.status === 401) {
-        errorMessage = 'Authentication credentials were not provided or are invalid.';
-      }
-      
-      showNotification('Error Fetching Equipments', errorMessage, 'error');
-      
-    } else if (error.request) {
-      // No response received from the server
-      showNotification(
-        'Error Fetching Equipments',
-        'No response received from server. Please check your connection.',
-        'error'
-      );
-    } else {
-      // Any other errors (like setup errors)
-      showNotification(
-        'Error Fetching Equipments',
-        'An unexpected error occurred. Please try again later.',
-        'error'
-      );
-    }
+   
   }
 };
 
@@ -96,30 +69,7 @@ const fetchUserEditableEquipments = async () => {
     });
     userEditableEquipmentsIds.value = response.data;  // Assign the fetched equipment IDs
   } catch (error) {
-    if (error.response) {
-      // Handle errors returned by the API
-      let errorMessage = 'An error occurred while fetching editable equipments.';
-      if (error.response.data && error.response.data.detail) {
-        errorMessage = error.response.data.detail;
-      } else if (error.response.status === 401) {
-        errorMessage = 'Authentication credentials were not provided or are invalid.';
-      }
-      showNotification('Error Fetching Equipments', errorMessage, 'error');
-    } else if (error.request) {
-      // Handle cases where the request was made but no response was received
-      showNotification(
-        'Error Fetching Equipments',
-        'No response received from server. Please check your connection.',
-        'error'
-      );
-    } else {
-      // Handle other types of errors (e.g., configuration or setup errors)
-      showNotification(
-        'Error Fetching Equipments',
-        'An unexpected error occurred. Please try again later.',
-        'error'
-      );
-    }
+    
   }
 };
 
