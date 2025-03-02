@@ -49,26 +49,36 @@ export const useEquipmentsStore = defineStore('equipments', () => {
   };
 
 
-  // Fetch user equipments
+// Fetch user equipments
 const fetchUserEquipments = async () => {
   try {
     const response = await axios.get(`${api_base_url}/api/user-equipment/`, {
       withCredentials: true,  // This ensures cookies (credentials) are sent with the request
     });
-    userEquipments.value = response.data;  // Assign the fetched equipment to `equipments`
+    userEquipments.value = response.data;  // Assign the fetched equipment to `userEquipments`
   } catch (error) {
-    // Check if the error has a response (for API errors)
     if (error.response) {
-     
+      // If the API responds with an error (e.g., 401, 404), handle it gracefully.
+      let errorMessage = 'An error occurred while fetching equipments.';
+      
+      // If the API provided a detailed error message, use it:
+      if (error.response.data && error.response.data.detail) {
+        errorMessage = error.response.data.detail;
+      } else if (error.response.status === 401) {
+        errorMessage = 'Authentication credentials were not provided or are invalid.';
+      }
+      
+      showNotification('Error Fetching Equipments', errorMessage, 'error');
+      
     } else if (error.request) {
-      // Handle errors with the request (no response received)
+      // No response received from the server
       showNotification(
         'Error Fetching Equipments',
         'No response received from server. Please check your connection.',
         'error'
       );
     } else {
-      // Handle other types of errors (e.g., setup errors)
+      // Any other errors (like setup errors)
       showNotification(
         'Error Fetching Equipments',
         'An unexpected error occurred. Please try again later.',
@@ -78,27 +88,32 @@ const fetchUserEquipments = async () => {
   }
 };
 
-  // Fetch user equipments on mount with credentials
+// Fetch user editable equipments on mount with credentials
 const fetchUserEditableEquipments = async () => {
   try {
     const response = await axios.get(`${api_base_url}/api/user-editable-equipment/`, {
       withCredentials: true,  // This ensures cookies (credentials) are sent with the request
     });
-    userEditableEquipmentsIds.value = response.data;  // Assign the fetched equipment to `equipments`
-    
+    userEditableEquipmentsIds.value = response.data;  // Assign the fetched equipment IDs
   } catch (error) {
-    // Check if the error has a response (for API errors)
     if (error.response) {
-     
+      // Handle errors returned by the API
+      let errorMessage = 'An error occurred while fetching editable equipments.';
+      if (error.response.data && error.response.data.detail) {
+        errorMessage = error.response.data.detail;
+      } else if (error.response.status === 401) {
+        errorMessage = 'Authentication credentials were not provided or are invalid.';
+      }
+      showNotification('Error Fetching Equipments', errorMessage, 'error');
     } else if (error.request) {
-      // Handle errors with the request (no response received)
+      // Handle cases where the request was made but no response was received
       showNotification(
         'Error Fetching Equipments',
         'No response received from server. Please check your connection.',
         'error'
       );
     } else {
-      // Handle other types of errors (e.g., setup errors)
+      // Handle other types of errors (e.g., configuration or setup errors)
       showNotification(
         'Error Fetching Equipments',
         'An unexpected error occurred. Please try again later.',
@@ -107,6 +122,7 @@ const fetchUserEditableEquipments = async () => {
     }
   }
 };
+
 
   // Get equipment by its ID
   const getEquipmentById = async (id) => {
