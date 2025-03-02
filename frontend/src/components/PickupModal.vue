@@ -80,7 +80,6 @@ export default {
                 cameraAccessDenied.value = false;
             } catch (error) {
                 cameraAccessDenied.value = true;
-                console.error("Camera access denied:", error);
             }
         };
 
@@ -127,7 +126,6 @@ export default {
                 });
                 emit('close');
             } catch (error) {
-                console.error("Error submitting pickup:", error);
             }
         };
 

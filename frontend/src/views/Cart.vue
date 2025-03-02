@@ -126,7 +126,6 @@ export default {
     // Load cart data when the component is mounted
     onMounted(async () => {
       await cartStore.loadCart(); // Ensure cartStore is loaded asynchronously
-      console.log("CART", cartStore.cart);
     });
 
     const removeFromCart = async (item) => {

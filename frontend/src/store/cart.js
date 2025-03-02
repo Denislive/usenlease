@@ -87,13 +87,9 @@ export const useCartStore = defineStore('cart', () => {
             }
         } else {
             try {
-                console.log("Trying to get data from indexdb...");
                 const dbData = await getIndexedDBData();
-                console.log("Retrieved IndexedDB Data:", dbData); // Log the retrieved data
                 cart.value = dbData || [];
-                console.log("Updated Cart State:", cart.value); // Check if cart updates correctly
             } catch (error) {
-                console.error("Error retrieving IndexedDB Data:", error);
                 cart.value = [];
             }
         }
@@ -102,7 +98,6 @@ export const useCartStore = defineStore('cart', () => {
 
     // Watch the authentication state to load cart data accordingly
     watch(() => authStore.isAuthenticated, async (newVal) => {
-        console.log("Auth state changed:", newVal);
         await loadCart();
     }, { immediate: true });
     

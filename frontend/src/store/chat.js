@@ -50,7 +50,6 @@ const fetchChats = async () => {
       };
     });
   } catch (error) {
-    console.error("Error fetching chats:", error);
     showNotification("Error", "Failed to fetch chats", "error");
   }
 };
@@ -72,7 +71,6 @@ const fetchChats = async () => {
       }));
       activeChat.value = chatId; // Set the active chat ID
     } catch (error) {
-      console.error("Error fetching messages:", error);
       showNotification('Error', `Failed to load messages for chat ID: ${chatId}`, 'error');
     }
   };
@@ -96,7 +94,6 @@ const fetchChats = async () => {
       fetchMessages(activeChat.value);
       newMessage.value = ""; // Clear the input field
     } catch (error) {
-      console.error("Error sending message:", error);
       showNotification('Error', 'Failed to send the message', 'error');
     }
   };
@@ -154,7 +151,6 @@ const sendMessageAndReset = async () => {
     clearChatState(); // Reset chatState to null
 
   } catch (error) {
-    console.error("Error sending message:", error);
 
     // Show error notification
     showNotification(

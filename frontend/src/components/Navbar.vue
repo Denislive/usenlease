@@ -250,7 +250,6 @@ const handleLogout = async () => {
     await authStore.logout(); // Perform logout
     router.push('/'); // Redirect to the homepage
   } catch (error) {
-    console.error('Error during logout:', error);
     showNotification('error', 'Error during logout. Please try again.', 'error');
   }
 };

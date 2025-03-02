@@ -132,7 +132,6 @@ const fetchEquipments = async () => {
     trendingAds.value = data.filter(ad => ad.is_trending);
     featuredEquipments.value = data.filter(equipment => equipment.is_featured);
   } catch (error) {
-    console.error('Error fetching equipment:', error);
   }
 };
 
@@ -144,7 +143,6 @@ const goToDetail = (equipmentId) => {
   if (equipmentId) {
     router.push({ name: 'equipment-details', params: { id: equipmentId } });
   } else {
-    console.error('Equipment ID is missing!');
   }
 };
 

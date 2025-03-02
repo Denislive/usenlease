@@ -41,8 +41,6 @@ const filterByCategory = () => {
   const categorySlug = route.query.cat;
   const categoryId = categoryMap.value[categorySlug];
 
-  console.log("Category Slug:", categorySlug);
-  console.log("Resolved Category ID:", categoryId);
 
   if (!categoryId) {
     categoryEquipments.value = []; // Clear if no category matches
@@ -54,7 +52,6 @@ const filterByCategory = () => {
     return equipmentCategoryId === categoryId;
   });
 
-  console.log("Filtered Equipment Count:", categoryEquipments.value.length);
   store.filteredEquipments = categoryEquipments.value;
 };
 

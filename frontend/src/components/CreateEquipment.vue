@@ -298,7 +298,6 @@ const fetchCountries = async () => {
     const response = await axios.get("https://restcountries.com/v3.1/all");
     countries.value = response.data.map((c) => c.name.common).sort();
   } catch (error) {
-    console.error("Error fetching countries:", error);
   }
 };
 
@@ -307,7 +306,6 @@ onMounted(async () => {
     const response = await axios.get(`${api_base_url}/api/categories/`);
     categories.value = response.data;
   } catch (error) {
-    console.error('Error fetching categories:', error);
   }
 
   fetchCountries();
@@ -475,7 +473,6 @@ const handleSubmit = async () => {
     imageError.value;
 
   if (hasErrors) {
-    console.log('Form has validation errors, cannot submit.');
     return; // Exit early if there are errors
   }
 
@@ -569,7 +566,6 @@ async function saveFormDataToIndexedDB(formData) {
     await openDB();
     await saveFormData(payload);
   } catch (error) {
-    console.error(error);
     showNotification('Error Saving Data', error, 'error');
   }
 }

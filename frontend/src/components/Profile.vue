@@ -1063,12 +1063,10 @@ const approveRentalApproval = async (approvalItem) => {
       { withCredentials: true }
     );
 
-    console.log('✅ Rental Approval Successful:', response.data);
 
 
     isApprovalModalOpen.value = false;
   } catch (error) {
-    console.error('❌ Error approving rental:', error.response?.data || error.message);
   }
 };
 
@@ -1087,7 +1085,6 @@ const closePickupConfirmationModal = () => {
 };
 
 const handlePickupConfirmation = () => {
-  console.log("Pickup confirmed for", selectedRental.value);
   closePickupModal();
 };
 
@@ -1276,7 +1273,6 @@ const updateEquipment = async () => {
     closeEditModal();
     await store.fetchUserEquipments(); // Refresh the equipment list
   } catch (error) {
-    console.error("Error updating equipment:", error);
   }
 };
 
@@ -1304,7 +1300,6 @@ const fetchChats = async () => {
       };
     });
   } catch (error) {
-    console.error("Error fetching chats:", error);
   }
 };
 
@@ -1327,10 +1322,8 @@ const fetchMessages = async (chatId) => {
       image_url: msg.image_url,
     }));
     activeChat.value = chatId;
-    console.log("Fetched Messages:", messages[chatId]);
 
   } catch (error) {
-    console.error("Error fetching messages:", error);
   }
 };
 
@@ -1352,7 +1345,6 @@ const sendMessage = async () => {
     fetchMessages(activeChat.value);
     newMessage.value = ""; // Clear input field
   } catch (error) {
-    console.error("Error sending message:", error);
   }
 };
 
@@ -1444,7 +1436,6 @@ const performAction = async (order, action) => {
     await fetchOrders(); // Refresh order list
     closeModal();
   } catch (error) {
-    console.error(error);
     alert(error.response?.data?.error || "An error occurred");
   }
 };
@@ -1465,16 +1456,13 @@ const awaitingApprovalItems = computed(() => {
   const result = Array.isArray(orderItems.value)
     ? orderItems.value.filter(item => item.status === 'pending')
     : [];
-  console.log("Awaiting Approval Items:", result);
   return result;
 });
 
 const rentedItems = computed(() => {
-  console.log("OrderItems values:", orderItems.value);
   const result = Array.isArray(orderItems.value)
     ? orderItems.value.filter(item => item.status === 'rented')
     : [];
-  console.log("Rented Items:", result);
   return result;
 });
 
@@ -1482,7 +1470,6 @@ const returnedItems = computed(() => {
   const result = Array.isArray(orderItems.value)
     ? orderItems.value.filter(item => item.status === 'completed')
     : [];
-  console.log("Returned Items:", result);
   return result;
 });
 
@@ -1490,7 +1477,6 @@ const awaitingPickups = computed(() => {
   const result = Array.isArray(orderItems.value)
     ? orderItems.value.filter(item => item.status === 'pickup')
     : [];
-  console.log("Awaiting Pickup Items:", result);
   return result;
 });
 
@@ -1498,7 +1484,6 @@ const goToDetail = (equipmentId) => {
   if (equipmentId) {
     router.push({ name: "equipment-details", params: { id: equipmentId } });
   } else {
-    console.error("Equipment ID is missing!"); // Log an error if ID is missing
   }
 };
 
@@ -1515,11 +1500,8 @@ const fetchOrders = async () => {
       withCredentials: true,
     });
     orders.value = response.data;
-    console.log("Order values", orders.value);
     filteredOrders.value = response.data; // Initial population
-    console.log("filtered orders values", response.data);
   } catch (error) {
-    console.error("Error fetching orders:", error.response.data);
   } finally {
     loading.value = false;
   }
@@ -1532,9 +1514,7 @@ const fetchOrderItems = async () => {
       withCredentials: true,
     });
     orderItems.value = response.data;
-    console.log("Order items values", orderItems.value);
   } catch (error) {
-    console.error("Error fetching orders:", error.response.data);
   } finally {
     loading.value = false;
   }
@@ -1662,7 +1642,6 @@ const uploadProfilePicture = async (event) => {
     user.image = response.data.image_url; // Update the image URL
     await authStore.getUserData();
   } catch (error) {
-    console.error(error);
   }
 };
 
@@ -1679,7 +1658,6 @@ const updatePhoneNumber = async () => {
 
     phoneModalVisible.value = false;
   } catch (error) {
-    console.error("Error updating phone number:", error);
   }
 };
 
@@ -1715,7 +1693,6 @@ const updateAddress = async () => {
     user.value.user_address = response.data;
     addressModalVisible.value = false;
   } catch (error) {
-    console.error("Error saving address:", error);
   }
 };
 

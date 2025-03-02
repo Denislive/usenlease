@@ -25,7 +25,6 @@ const decryptData = (data) => {
     const decryptedData = bytes.toString(CryptoJS.enc.Utf8);
     return decryptedData ? JSON.parse(decryptedData) : null;
   } catch (error) {
-    console.error('Error decrypting data:', error);
     return null; // Return null if decryption fails
   }
 };
@@ -122,23 +121,18 @@ export const useAuthStore = defineStore('auth', () => {
                 );
               }
             } catch (error) {
-              console.error('Error listing item');
             }
           }
         }
       } else {
-        console.error(`Request completed but not successful. Status: ${response.status}`);
       }
     } catch (error) {
-      console.error("Error fetching user data:", error);
     }
   };
 
     // Function to navigate to a section
     const navigateToRoleSection = (sectionName) => {
 
-      console.log("navigating to role", sectionName);
-      console.log("role section value", roleSection.value);
       
       activeSection.value = roleSection.value;
       
@@ -238,7 +232,6 @@ export const useAuthStore = defineStore('auth', () => {
         }
     
       } catch (error) {
-        console.error('Error updating role:', error);
         showNotification('Error', 'Unable to switch role. Please try again.', 'error');
       }
     };
@@ -323,7 +316,6 @@ export const useAuthStore = defineStore('auth', () => {
   
         loginError.value = '';
       } else {
-        console.error('Login response not successful. Status:', response.status);
       }
     } catch (error) {
       handleLoginError(error);
@@ -449,10 +441,8 @@ export const useAuthStore = defineStore('auth', () => {
         // Redirect to home page
         router.push('/');
       } else {
-        console.error(`Logout response not successful. Status: ${response.status}`);
       }
     } catch (error) {
-      console.error('Error during logout:', error);
       showNotification('Logout Error', 'An error occurred while logging out.', 'error');
     } finally {
       isLoading.value = false; // Stop loading spinner
@@ -463,7 +453,6 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       await saveFormData(formData); // Save form data to IndexedDB
     } catch (error) {
-      console.error('Error saving form data to IndexedDB:', error);
     }
   };
 

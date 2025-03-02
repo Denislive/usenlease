@@ -82,7 +82,6 @@ try {
   const videoInputDevices = devices.filter(device => device.kind === "videoinput");
 
   if (videoInputDevices.length === 0) {
-    console.error("No video input devices found.");
     return;
   }
 
@@ -93,7 +92,6 @@ try {
     await webcam.value.play();
   }
 } catch (err) {
-  console.error("Error accessing webcam:", err.message);
 }
 };
 
@@ -143,7 +141,6 @@ try {
   alert("Pickup confirmed successfully!");
   closePickupModal();
 } catch (error) {
-  console.error("Pickup confirmation failed:", error);
   alert("Error confirming pickup. Please try again.");
 }
 };

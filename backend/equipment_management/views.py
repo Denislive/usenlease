@@ -464,7 +464,6 @@ class EquipmentViewSet(viewsets.ModelViewSet):
 
             # Convert incoming querydict to a structured dictionary
             data = convert_querydict_to_dict(request.data)
-            print(data)
 
             # Group address fields into a dictionary
             address = {
@@ -544,7 +543,6 @@ class EquipmentViewSet(viewsets.ModelViewSet):
         # Get booked dates for this equipment
         booked_dates = OrderItem.objects.filter(item=equipment).values("start_date", "end_date")
 
-        print("\n\nBooked dates\n\n", booked_dates)
 
         # Serialize the equipment data
         serializer = EquipmentSerializer(equipment)
@@ -1419,7 +1417,6 @@ class OrderItemViewSet(viewsets.ViewSet):
 
         # Filter order items where the item owner is the logged-in user
         queryset = OrderItem.objects.filter(item__owner_id=request.user.id)
-        print("Order Items:", list(queryset))
 
         serializer = OrderItemSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)

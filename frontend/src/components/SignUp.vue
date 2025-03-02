@@ -308,7 +308,6 @@ const validatePhone = async () => {
             });
             errors.value.phone = response.data.exists ? 'Phone number is already connected to an account!' : '';
         } catch (error) {
-            console.error('Error checking phone:', error);
             errors.value.phone = 'Error checking phone';
         }
     }
@@ -333,7 +332,6 @@ const validateEmail = async () => {
             });
             errors.value.email = response.data.exists ? 'Email is already connected to an account!' : '';
         } catch (error) {
-            console.error('Error checking email:', error);
             errors.value.email = 'Error checking email';
         }
     }

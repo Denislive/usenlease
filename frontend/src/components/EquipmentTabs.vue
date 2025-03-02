@@ -140,7 +140,6 @@ export default {
           throw new Error('Equipment not found.');
         }
       } catch (error) {
-        console.error('Error loading equipment:', error);
         showNotification('Error', 'Failed to load equipment details. Please try again.', 'error');
       }
     });
@@ -168,7 +167,6 @@ export default {
           timeout: 10000, // 10-second timeout
         });
 
-        console.log('Server response:', response.data); // Debugging log
 
         // Ensure `equipment_reviews` is an array before updating
         if (!Array.isArray(selectedEquipment.value.equipment_reviews)) {
@@ -188,7 +186,6 @@ export default {
         newReview.value.text = '';
 
       } catch (error) {
-        console.error('Error submitting review:', error);
 
         if (error.code === 'ECONNABORTED') {
           showNotification('Timeout Error', 'The request timed out. Please check your connection and try again.', 'error');

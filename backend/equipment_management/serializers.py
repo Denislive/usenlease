@@ -154,7 +154,6 @@ class EquipmentSerializer(serializers.ModelSerializer):
 
         # Retrieve the uploaded images from request.FILES
         images = request.FILES.getlist('images') if request else []
-        print("Received images:", images)
 
         # Remove 'owner' from validated_data as it will now be set from the logged-in user
         validated_data.pop('owner', None)

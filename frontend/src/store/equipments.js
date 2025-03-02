@@ -62,7 +62,6 @@ const fetchUserEquipments = async () => {
      
     } else if (error.request) {
       // Handle errors with the request (no response received)
-      console.error('Request error:', error.request);
       showNotification(
         'Error Fetching Equipments',
         'No response received from server. Please check your connection.',
@@ -70,7 +69,6 @@ const fetchUserEquipments = async () => {
       );
     } else {
       // Handle other types of errors (e.g., setup errors)
-      console.error('General error:', error.message);
       showNotification(
         'Error Fetching Equipments',
         'An unexpected error occurred. Please try again later.',
@@ -87,7 +85,6 @@ const fetchUserEditableEquipments = async () => {
       withCredentials: true,  // This ensures cookies (credentials) are sent with the request
     });
     userEditableEquipmentsIds.value = response.data;  // Assign the fetched equipment to `equipments`
-    console.log(userEditableEquipmentsIds.value);
     
   } catch (error) {
     // Check if the error has a response (for API errors)
@@ -95,7 +92,6 @@ const fetchUserEditableEquipments = async () => {
      
     } else if (error.request) {
       // Handle errors with the request (no response received)
-      console.error('Request error:', error.request);
       showNotification(
         'Error Fetching Equipments',
         'No response received from server. Please check your connection.',
@@ -103,7 +99,6 @@ const fetchUserEditableEquipments = async () => {
       );
     } else {
       // Handle other types of errors (e.g., setup errors)
-      console.error('General error:', error.message);
       showNotification(
         'Error Fetching Equipments',
         'An unexpected error occurred. Please try again later.',
@@ -188,7 +183,6 @@ const fetchUserEditableEquipments = async () => {
       return matchesQuery && matchesCategory && matchesCity;
     });
 
-    console.log("🔍 Updated Filtered Equipments:", filteredEquipments.value.length);
   };
 
   // ✅ Watchers to keep `filteredEquipments` reactive

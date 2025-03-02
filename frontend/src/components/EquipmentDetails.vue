@@ -266,8 +266,6 @@ const fetchTotalBookedItems = async () => {
     const response = await axios.get(`${api_base_url}/api/order-items/${equipmentId}/total-booked/`,
       { withCredentials: true });
     totalBooked.value = response.data.total_booked;
-    console.log("Booked Dates with quantity:", response.data.booked_dates);
-    console.log("total booked", totalBooked.value);
 
     items_data.value = response.data.booked_dates;
   } catch (error) {
@@ -399,7 +397,6 @@ const submitBooking = async () => {
       cartStore.cart = existingCart;
     } catch (error) {
       showNotification('Error', 'Failed to update cart in IndexedDB.', 'error');
-      console.error('IndexedDB Error:', error);
     }
   }
 };

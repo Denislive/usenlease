@@ -9,7 +9,7 @@ const slides = [1, 2, 3]; // Add as many slides as you want
 onMounted(() => {
   setInterval(() => {
     nextSlide();
-  }, 5000);
+  }, 10000);
 });
 
 const nextSlide = () => {
@@ -46,13 +46,23 @@ const prevSlide = () => {
                         </div>
                          <!-- Slide 4 -->
                          <div class="flex-shrink-0 w-full">
-                            <img class="w-full h-72 object-cover" src="../assets/gifs/4.gif"
+                            <img class="w-full h-72 object-cover" src="../assets/gifs/4.mp4"
                                 alt="Slide 4">
                         </div>
                          <!-- Slide 5 -->
                          <div class="flex-shrink-0 w-full">
-                            <img class="w-full h-72 object-cover" src="../assets/gifs/5.gif"
+                            <img class="w-full h-72 object-cover" src="../assets/gifs/5.mp4"
                                 alt="Slide 5">
+                        </div>
+                        <!-- Slide 6 -->
+                        <div class="flex-shrink-0 w-full">
+                            <img class="w-full h-72 object-cover" src="../assets/gifs/6.mp4"
+                                alt="Slide 6">
+                        </div>
+                        <!-- Slide 7 -->
+                        <div class="flex-shrink-0 w-full">
+                            <img class="w-full h-72 object-cover" src="../assets/gifs/7.mp4"
+                                alt="Slide 7">
                         </div>
                     </div>
                 </div>

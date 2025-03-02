@@ -96,7 +96,6 @@ const submitForm = async () => {
       handlePaypal();
     }
   } catch (error) {
-    console.error('Error processing payment:', error);
     showNotification('Error', 'Something went wrong. Please try again later.', 'error');
   }
 };

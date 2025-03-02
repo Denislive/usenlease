@@ -109,7 +109,6 @@ class JWTAuthenticationFromCookie(JWTAuthentication):
     """
 
     def authenticate(self, request):
-        print("Starting authentication process.")
 
         # Retrieve tokens from cookies
         access_token = request.COOKIES.get('token')  # Access token cookie
@@ -474,13 +473,10 @@ class MessageViewSet(viewsets.ModelViewSet):
 
         # Process image URL
         url = self.request.data.get("item_image_url", "").strip()
-        print(f"Image URL: {url}")
         image_path = self._extract_relative_path(url)
-        print(f"Image Path: {image_path}")
 
         # Generate signed URL only if necessary
         image_url = generate_signed_url("usenlease-media", image_path) if image_path else url
-        print(f"Signed Image URL: {image_url}")
 
         # Save the message with the signed image URL
         serializer.save(sender=sender, receiver=receiver, chat=chat, image_url=image_url)
@@ -692,14 +688,11 @@ class LoginView(APIView):
         """
         Sync the cart items from the frontend to the database for the user.
         """
-        print("\n--- Starting cart sync process ---")
         user_cart, created = Cart.objects.get_or_create(user=user)
-        print(f"User cart retrieved: {user_cart} (Cart created: {created})")
 
         errors = []  # To store errors for each item
 
         for item_data in cart_data:
-            print(f"\nProcessing item: {item_data}")
             
             item_errors = {}  # Store individual item errors
             try:
@@ -712,7 +705,6 @@ class LoginView(APIView):
                 item_quantity = item_data.get("quantity", 1)
                 start_date = item_data.get("start_date")
                 end_date = item_data.get("end_date")
-                print(f"Item ID: {item_id}, Quantity: {item_quantity}, Start: {start_date}, End: {end_date}")
 
                 # Validate dates
                 if not start_date or not end_date:
@@ -721,7 +713,6 @@ class LoginView(APIView):
                 if start_date and end_date:
                     start_date = date.fromisoformat(start_date)
                     end_date = date.fromisoformat(end_date)
-                    print(f"Parsed dates - Start: {start_date}, End: {end_date}")
 
                     if start_date < date.today():
                         item_errors["dates"] = "Start date cannot be in the past."
@@ -735,7 +726,6 @@ class LoginView(APIView):
                     if not equipment:
                         item_errors["equipment"] = f"Equipment with ID {item_id} not found."
                     else:
-                        print(f"Equipment found: {equipment}")
 
                         # Check availability
                         if not equipment.is_available:
@@ -743,7 +733,6 @@ class LoginView(APIView):
 
                         # Validate quantity and availability for the given dates
                         is_available = equipment.is_available_for_dates(start_date, end_date) if start_date and end_date else True
-                        print(f"Available quantity for equipment: {equipment.available_quantity}")
                         if item_quantity > equipment.available_quantity:
                             item_errors["quantity"] = f"Requested quantity ({item_quantity}) exceeds available quantity ({equipment.available_quantity})."
 
@@ -751,15 +740,12 @@ class LoginView(APIView):
                 if not item_errors:
                     cart_item = CartItem.objects.filter(cart=user_cart, item=equipment).first()
                     if cart_item:
-                        print(f"Updating existing cart item: {cart_item}")
                         # Overwrite dates and update quantity
                         cart_item.start_date = start_date
                         cart_item.end_date = end_date
                         cart_item.quantity = item_quantity
                         cart_item.save()
-                        print(f"Cart item updated: {cart_item}")
                     else:
-                        print("Creating a new cart item.")
                         # Create a new cart item
                         cart_item = CartItem.objects.create(
                             cart=user_cart,
@@ -768,20 +754,16 @@ class LoginView(APIView):
                             end_date=end_date,
                             quantity=item_quantity,
                         )
-                        print(f"New cart item created: {cart_item}")
 
             except Exception as e:
-                print(f"Unexpected Exception: {str(e)}")
                 item_errors["error"] = str(e)
 
             if item_errors:
                 errors.append({"item_data": item_data, "errors": item_errors})
 
         if errors:
-            print(f"Errors found during sync: {errors}")
             return Response({"errors": errors}, status=400)
 
-        print("Cart sync completed successfully.")
         return Response({"success": "Cart synced successfully"}, status=200)
 
 
