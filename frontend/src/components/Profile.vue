@@ -658,7 +658,7 @@
                   </button>
 
                   <button @click="confirmDelete(selectedOrder)"
-                    class="mx-4 px-4 py-2 bg-red-500 text-white rounded-md shadow-sm hover:bg-red-600">
+                    class="mx-4 px-4 py-2chat bg-red-500 text-white rounded-md shadow-sm hover:bg-red-600">
                     Delete Rental
                   </button>
                 </div>
@@ -759,7 +759,7 @@
               class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
               <div class="bg-white rounded-lg shadow-lg p-6 w-96">
                 <h2 class="text-lg font-bold text-gray-800 mb-4">Review Your Message</h2>
-                <img :src="api_base_url + chatStore.chatState.equipmentImage" :alt="chatStore.chatState.equipmentImage"
+                <img :src="chatStore.chatState.equipmentImage" alt="Equipment Image"
                   class="w-full h-40 object-cover rounded-lg mb-4" />
 
                 <!-- Editable Message -->
@@ -832,7 +832,7 @@
                   class="ml-3 bg-[#ffc107] hover:bg-[#ffd740] text-gray-800 px-4 py-2 rounded-full shadow-md transition">
                   Send
                 </button>
-              </div>UserEquipments
+              </div>
             </div>
 
           </div>
