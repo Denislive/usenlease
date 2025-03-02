@@ -1099,6 +1099,10 @@ const phoneNumber = ref("");
 // Store initializations
 const authStore = useAuthStore();
 const store = useEquipmentsStore();
+const chatStore = useChatStore();
+ 
+const api_base_url = import.meta.env.VITE_API_BASE_URL;
+  
 const { showNotification } = useNotifications(); // Initialize notification service
 
 // Computed properties

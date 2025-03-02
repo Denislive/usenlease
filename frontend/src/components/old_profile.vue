@@ -1045,21 +1045,6 @@
   import { result } from 'lodash';
   
   const isApprovalModalOpen = ref(false);
-  // Reactive stateconst showPickupModal = ref(false);
-  const selectedRental = ref(null);
-  const showPickupConfirmationModal = ref(null);
-  
-  const chats = ref([]); // List of chats
-  const messages = reactive({}); // Messages for each chat, keyed by chat ID
-  const activeChat = ref(null); // Currently open chat ID
-  const newMessage = ref(""); // Message being typed
-  const showTerminateConfirm = ref(false);
-  const showReturnModal = ref(false);
-  
-  const showPickupModal = ref(false);
-  
-  const { showNotification } = useNotifications(); // Initialize notification service
-  
   
   // Open modal with selected approval rental details
   const openApprovalModal = (approvalItem) => {
@@ -1087,6 +1072,9 @@
     }
   };
   
+  // Reactive stateconst showPickupModal = ref(false);
+  const selectedRental = ref(null);
+  const showPickupConfirmationModal = ref(null);
   
   const openPickupConfirmationModal = (rental) => {
     selectedOrderItem.value = rental;
@@ -1104,6 +1092,9 @@
   };
   
   
+  const showPickupModal = ref(false);
+  
+  const { showNotification } = useNotifications(); // Initialize notification service
   
   
   // Open the modal
@@ -1125,6 +1116,17 @@
   
   };
   
+  const chats = ref([]); // List of chats
+  const messages = reactive({}); // Messages for each chat, keyed by chat ID
+  const activeChat = ref(null); // Currently open chat ID
+  const newMessage = ref(""); // Message being typed
+  const showTerminateConfirm = ref(false);
+  
+  
+  
+  
+  
+  const showReturnModal = ref(false);
   
   // Function to open the modal and set the selected order item
   const openReturnModal = (orderItemId) => {
@@ -1168,6 +1170,13 @@
   
   
   
+  const store = useEquipmentsStore();
+  const chatStore = useChatStore();
+  const authStore = useAuthStore();
+  
+  const categories = ref([]);
+  
+  const api_base_url = import.meta.env.VITE_API_BASE_URL;
   
   
   // Check if equipment is editable
