@@ -2,11 +2,17 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import Cta from '@/components/Cta.vue';
 
+// Import GIFs correctly
+import gif1 from '@/assets/gifs/1.gif';
+import gif2 from '@/assets/gifs/2.gif';
+import gif3 from '@/assets/gifs/3.gif';
+import gif4 from '@/assets/gifs/four.gif';
+import gif5 from '@/assets/gifs/five.gif';
+import gif6 from '@/assets/gifs/six.gif';
+
 // Reactive variables
 const currentSlide = ref(0);
-const slides = [
-  import.meta.glob('@/assets/gifs/*.gif') // Automatically load GIFs
-];
+const slides = [gif1, gif2, gif3, gif4, gif5, gif6];
 
 let intervalId = null;
 
@@ -32,7 +38,7 @@ const prevSlide = () => {
 <template>
   <div class="container mx-auto p-4">
     <div class="grid grid-cols-12 gap-4">
-      <!-- Carousel Section (8 columns) -->
+      <!-- Carousel Section -->
       <div class="col-span-12 relative" role="region" aria-label="Equipment Slider">
         <div class="overflow-hidden rounded-lg">
           <div
