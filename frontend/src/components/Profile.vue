@@ -1044,19 +1044,168 @@ import RentalApproval from './RentalApproval.vue';
 import ReturnConfirmationModal from "./ReturnConfirmationModal.vue"; // Adjust path if needed
 import { result } from 'lodash';
 
-// Reactive state declarations
 const isApprovalModalOpen = ref(false);
-const showPickupModal = ref(false);
+
+// Open modal with selected approval rental details
+const openApprovalModal = (approvalItem) => {
+  selectedRental.value = approvalItem;
+  isApprovalModalOpen.value = true;
+};
+
+// Approve rental and send API request
+const approveRentalApproval = async (approvalItem) => {
+  if (!approvalItem?.id) return;
+
+  try {
+    const response = await axios.post(
+      `${api_base_url}/api/order-items/${approvalItem.id}/approve/`,
+      {},
+      { withCredentials: true }
+    );
+
+    console.log('✅ Rental Approval Successful:', response.data);
+
+
+    isApprovalModalOpen.value = false;
+  } catch (error) {
+    console.error('❌ Error approving rental:', error.response?.data || error.message);
+  }
+};
+
+// Reactive stateconst showPickupModal = ref(false);
 const selectedRental = ref(null);
 const showPickupConfirmationModal = ref(null);
+
+const openPickupConfirmationModal = (rental) => {
+  selectedOrderItem.value = rental;
+  showPickupConfirmationModal.value = true;
+};
+
+const closePickupConfirmationModal = () => {
+  showPickupConfirmationModal.value = false;
+  selectedOrderItem.value = null;
+};
+
+const handlePickupConfirmation = () => {
+  console.log("Pickup confirmed for", selectedRental.value);
+  closePickupModal();
+};
+
+
+const showPickupModal = ref(false);
+
+const { showNotification } = useNotifications(); // Initialize notification service
+
+
+// Open the modal
+
+const openPickupModal = (order) => {
+
+  selectedOrderItem.value = order; // Example order data
+
+  showPickupModal.value = true;
+
+};
+
+
+// Close the modal
+
+const closePickupModal = () => {
+
+  showPickupModal.value = false;
+
+};
+
 const chats = ref([]); // List of chats
 const messages = reactive({}); // Messages for each chat, keyed by chat ID
 const activeChat = ref(null); // Currently open chat ID
 const newMessage = ref(""); // Message being typed
 const showTerminateConfirm = ref(false);
+
+
+
+
+
 const showReturnModal = ref(false);
+
+// Function to open the modal and set the selected order item
+const openReturnModal = (orderItemId) => {
+  selectedOrderItem.value = orderItemId;
+  showReturnModal.value = true;
+};
+
+// Function to close the modal
+const closeReturnModal = () => {
+  showReturnModal.value = false;
+};
+
+// Function to handle return confirmation
+const handleReturnConfirmation = (returnData) => {
+
+  axios.post(`${api_base_url}/api/order-items/${selectedOrderItem.value}/confirm_return/`, returnData, {
+    withCredentials: true, // Ensure credentials (cookies/session) are sent
+  })
+    .then(response => {
+      showNotification("Success", "Item Return confirmed successfully!", "success"); // Notify user
+    })
+    .catch(error => {
+
+      // Extract detailed error message if available
+      let errorMessage = "Error confirming return. Please try again.";
+      if (error.response) {
+        if (error.response.data && error.response.data.error) {
+          errorMessage = error.response.data.error;
+        } else if (error.response.data && typeof error.response.data === "string") {
+          errorMessage = error.response.data;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      showNotification(errorMessage, "error"); // Notify user with specific error
+    });
+
+  showReturnModal.value = false;
+};
+
+
+
+const store = useEquipmentsStore();
+const chatStore = useChatStore();
+const authStore = useAuthStore();
+
+const categories = ref([]);
+
+const api_base_url = import.meta.env.VITE_API_BASE_URL;
+
+
+// Check if equipment is editable
+const isEditable = (id) => store.userEditableEquipmentsIds.includes(id);
+
 const report = ref({});
 const error = ref(null);
+
+const fetchUserReport = async () => {
+  try {
+    const response = await axios.get(`${api_base_url}/api/reports/`, {
+      withCredentials: true, // Include credentials (cookies) in the request
+    });
+
+    report.value = response.data;
+  } catch (err) {
+    error.value = err.message;
+  } finally {
+    loading.value = false;
+  }
+};
+
+
+// Handle Logout functionality
+const handleLogout = async () => {
+  await authStore.logout(); // Wait for the logout method to finish
+  router.push("/"); // Redirect to login page
+};
+
 const editModalVisible = ref(false);
 const editedEquipment = reactive({
   id: null,
@@ -1067,48 +1216,250 @@ const editedEquipment = reactive({
   is_available: true,
   images: null,
 });
-const orders = ref([]);
-const orderItems = ref([]);
-const filteredOrders = ref([]);
-const searchQuery = ref("");
-const selectedStatus = ref("");
-const loading = ref(true);
-const user = ref({
-  user_address: {
-    full_name: "", // Default value
-    street_address: "",
-    city: "",
-    state: "",
-    zip_code: "",
-    country: "",
-  },
-});
-const addressModalVisible = ref(false);
-const phoneModalVisible = ref(false);
-const showSidebar = ref(true); // Sidebar visibility state
+
+const openEditModal = async (equipment) => {
+  Object.assign(editedEquipment, equipment); // Clone the equipment into the editedEquipment
+  await store.fetchCategories(); // Fetch categories for the dropdown
+  editModalVisible.value = true;
+};
+
+const closeEditModal = () => {
+  editModalVisible.value = false;
+  Object.assign(editedEquipment, {
+    id: null,
+    name: "",
+    hourly_rate: "",
+    description: "",
+    category: null,
+    is_available: true,
+    image: null,
+  });
+};
+
+const handleImageUpload = (event) => {
+  const files = event.target.files;
+  if (files.length > 0) {
+    // Store the selected files in an array
+    editedEquipment.images = Array.from(files); // Store multiple images in an array
+  }
+};
+
+const updateEquipment = async () => {
+  const formData = new FormData();
+
+  // Append regular fields to the formData
+  formData.append("name", editedEquipment.name);
+  formData.append("hourly_rate", editedEquipment.hourly_rate);
+  formData.append("available_quantity", editedEquipment.available_quantity);
+  formData.append("description", editedEquipment.description);
+  formData.append("category", editedEquipment.category);
+  formData.append("is_available", editedEquipment.is_available);
+
+  // Append images only if they are provided
+  if (editedEquipment.images && editedEquipment.images.length > 0) {
+    for (const image of editedEquipment.images) {
+      formData.append("images", image); // Append each image as 'images[]'
+    }
+  }
+
+  try {
+    // Make the API call to update the equipment
+    await axios.put(
+      `${api_base_url}/api/equipments/${editedEquipment.id}/`,
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      }
+    );
+
+    // Close the modal and refresh the equipment list after successful update
+    closeEditModal();
+    await store.fetchUserEquipments(); // Refresh the equipment list
+  } catch (error) {
+    console.error("Error updating equipment:", error);
+  }
+};
+
+// Fetch the list of chats
+const fetchChats = async () => {
+  try {
+    const response = await axios.get(
+      `${api_base_url}/api/accounts/chats/`,
+      { withCredentials: true }
+    );
+
+    chats.value = response.data.map((chat) => {
+      const otherParticipant = chat.participants.find(
+        (participant) => participant.id !== authStore.user?.id
+      );
+
+      return {
+        id: chat.id,
+        name: otherParticipant?.username || "Unknown",
+        lastMessage: chat.messages.length
+          ? chat.messages[chat.messages.length - 1].content
+          : "No messages yet",
+        created_at: chat.created_at,
+        participants: chat.participants,
+      };
+    });
+  } catch (error) {
+    console.error("Error fetching chats:", error);
+  }
+};
+
+// Fetch messages for a specific chat
+const fetchMessages = async (chatId) => {
+  try {
+    const response = await axios.get(
+      `${api_base_url}/api/accounts/chats/${chatId}/`,
+      {
+        withCredentials: true,
+      }
+    );
+
+    messages[chatId] = response.data.messages.map((msg) => ({
+      id: msg.id,
+      text: msg.content,
+      sentBy: msg.sender === authStore.user?.id ? "me" : "them",
+      sent_at: msg.sent_at,
+      sender: msg.sender,
+      image_url: msg.image_url,
+    }));
+    activeChat.value = chatId;
+    console.log("Fetched Messages:", messages[chatId]);
+
+  } catch (error) {
+    console.error("Error fetching messages:", error);
+  }
+};
+
+// Send a new message
+const sendMessage = async () => {
+  if (!newMessage.value.trim()) return; // Don't send empty messages
+
+  try {
+    const response = await axios.post(
+      `${api_base_url}/api/accounts/messages/`,
+      {
+        content: newMessage.value,
+        chat: activeChat.value, // Current chat ID
+        receiver: getReceiverId(activeChat.value), // Get receiver ID for this chat
+      },
+      { withCredentials: true }
+    );
+
+    fetchMessages(activeChat.value);
+    newMessage.value = ""; // Clear input field
+  } catch (error) {
+    console.error("Error sending message:", error);
+  }
+};
+
+// Open a chat and fetch its messages
+const openChat = (chatId) => {
+  if (!messages[chatId]) {
+    fetchMessages(chatId);
+  } else {
+    activeChat.value = chatId;
+  }
+};
+
+// Get the receiver's ID for a given chat
+const getReceiverId = (chatId) => {
+  const chat = chats.value.find((c) => c.id === chatId);
+  const receiver =
+    chat.participants[0] !== authStore.user?.id
+      ? chat.participants[0].id
+      : chat.participants[1].id;
+
+  return receiver;
+};
+
+// Initialize the auth store
 const router = useRouter();
-const route = useRoute();
 const showModal = ref(false);
 const selectedOrder = ref(null);
 const selectedOrderItem = ref(null);
+
 const showDeleteConfirm = ref(false);
 const orderToDelete = ref(null);
 const orderToTerminate = ref(null);
-const phoneNumber = ref("");
 
-// Store initializations
-const authStore = useAuthStore();
-const store = useEquipmentsStore();
-const chatStore = useChatStore();
- 
-const api_base_url = import.meta.env.VITE_API_BASE_URL;
-  
-const { showNotification } = useNotifications(); // Initialize notification service
+const openModal = (order) => {
+  selectedOrder.value = order;
+  showModal.value = true;
+};
 
-// Computed properties
+const closeModal = () => {
+  showModal.value = false;
+  selectedOrder.value = null;
+  showDeleteConfirm.value = false;
+  showTerminateConfirm.value = false;
+};
+
+
+
+const confirmDelete = (order) => {
+  orderToDelete.value = order;
+  showDeleteConfirm.value = true;
+};
+
+const cancelDelete = () => {
+  showDeleteConfirm.value = false;
+  orderToDelete.value = null;
+};
+
+const deleteOrder = (orderId) => {
+  // API call to delete the order
+  showDeleteConfirm.value = false;
+  closeModal();
+  // Remove order from UI after success
+};
+
+// Trigger the termination confirmation modal
+const confirmTerminate = (order) => {
+  orderToTerminate.value = order;
+  showTerminateConfirm.value = true;
+};
+
+// Close the termination confirmation modal
+const cancelTerminate = () => {
+  showTerminateConfirm.value = false;
+  orderToTerminate.value = null;
+
+};
+
+// Handle order action
+const performAction = async (order, action) => {
+  try {
+    const response = await axios.post(
+      `${api_base_url}/api/orders/${order}/${action}/`,
+      {},
+      {
+        withCredentials: true, // This ensures cookies (credentials) are sent with the request
+      }
+    );
+    showModal.value = false;
+    await fetchOrders(); // Refresh order list
+    closeModal();
+  } catch (error) {
+    console.error(error);
+    alert(error.response?.data?.error || "An error occurred");
+  }
+};
+
+// Computed property for active section based on user role
+
 const roleSection = computed(() => {
   return authStore.user?.role === 'lessee' ? 'my-orders' : 'my-equipments';
 });
+const phoneNumber = ref("");
+
+// Fetch user equipments on mount with credentials
+const fetchUserEquipments = async () => {
+  store.fetchUserEditableEquipments;
+};
 
 const awaitingApprovalItems = computed(() => {
   const result = Array.isArray(orderItems.value)
@@ -1143,333 +1494,50 @@ const awaitingPickups = computed(() => {
   return result;
 });
 
-const sections = computed(() => [
-  { name: "personal-info", label: "Personal Information" },
-  {
-    name: "my-equipments",
-    label: "My Items",
-    show: authStore.user?.role === "lessor",
-  },
-  {
-    name: "my-orders",
-    label: "My Orders",
-    show: authStore.user?.role === "lessee",
-  },
-  { name: "chats", label: "Chats" },
-  { name: "reports", label: "Reports" },
-]);
-
-const visibleSections = computed(() =>
-  sections.value.filter((section) => section.show !== false)
-);
-
-// Methods
-const openApprovalModal = (approvalItem) => {
-  selectedRental.value = approvalItem;
-  isApprovalModalOpen.value = true;
-};
-
-const approveRentalApproval = async (approvalItem) => {
-  if (!approvalItem?.id) return;
-
-  try {
-    const response = await axios.post(
-      `${api_base_url}/api/order-items/${approvalItem.id}/approve/`,
-      {},
-      { withCredentials: true }
-    );
-
-    console.log('✅ Rental Approval Successful:', response.data);
-    isApprovalModalOpen.value = false;
-  } catch (error) {
-    console.error('❌ Error approving rental:', error.response?.data || error.message);
+const goToDetail = (equipmentId) => {
+  if (equipmentId) {
+    router.push({ name: "equipment-details", params: { id: equipmentId } });
+  } else {
+    console.error("Equipment ID is missing!"); // Log an error if ID is missing
   }
 };
 
-const openPickupConfirmationModal = (rental) => {
-  selectedOrderItem.value = rental;
-  showPickupConfirmationModal.value = true;
-};
+const orders = ref([]);
+const orderItems = ref([]);
+const filteredOrders = ref([]);
+const searchQuery = ref("");
+const selectedStatus = ref("");
+const loading = ref(true);
 
-const closePickupConfirmationModal = () => {
-  showPickupConfirmationModal.value = false;
-  selectedOrderItem.value = null;
-};
-
-const handlePickupConfirmation = () => {
-  console.log("Pickup confirmed for", selectedRental.value);
-  closePickupModal();
-};
-
-const openPickupModal = (order) => {
-  selectedOrderItem.value = order; // Example order data
-  showPickupModal.value = true;
-};
-
-const closePickupModal = () => {
-  showPickupModal.value = false;
-};
-
-const openReturnModal = (orderItemId) => {
-  selectedOrderItem.value = orderItemId;
-  showReturnModal.value = true;
-};
-
-const closeReturnModal = () => {
-  showReturnModal.value = false;
-};
-
-const handleReturnConfirmation = (returnData) => {
-  axios.post(`${api_base_url}/api/order-items/${selectedOrderItem.value}/confirm_return/`, returnData, {
-    withCredentials: true, // Ensure credentials (cookies/session) are sent
-  })
-    .then(response => {
-      showNotification("Success", "Item Return confirmed successfully!", "success"); // Notify user
-    })
-    .catch(error => {
-      let errorMessage = "Error confirming return. Please try again.";
-      if (error.response) {
-        if (error.response.data && error.response.data.error) {
-          errorMessage = error.response.data.error;
-        } else if (error.response.data && typeof error.response.data === "string") {
-          errorMessage = error.response.data;
-        }
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      showNotification(errorMessage, "error"); // Notify user with specific error
-    });
-
-  showReturnModal.value = false;
-};
-
-const isEditable = (id) => store.userEditableEquipmentsIds.includes(id);
-
-const fetchUserReport = async () => {
+const fetchOrders = async () => {
   try {
-    const response = await axios.get(`${api_base_url}/api/reports/`, {
-      withCredentials: true, // Include credentials (cookies) in the request
+    const response = await axios.get(`${api_base_url}/api/orders/`, {
+      withCredentials: true,
     });
-
-    report.value = response.data;
-  } catch (err) {
-    error.value = err.message;
+    orders.value = response.data;
+    console.log("Order values", orders.value);
+    filteredOrders.value = response.data; // Initial population
+    console.log("filtered orders values", response.data);
+  } catch (error) {
+    console.error("Error fetching orders:", error.response.data);
   } finally {
     loading.value = false;
   }
 };
 
-const handleLogout = async () => {
-  await authStore.logout(); // Wait for the logout method to finish
-  router.push("/"); // Redirect to login page
-};
 
-const openEditModal = async (equipment) => {
-  Object.assign(editedEquipment, equipment); // Clone the equipment into the editedEquipment
-  await store.fetchCategories(); // Fetch categories for the dropdown
-  editModalVisible.value = true;
-};
-
-const closeEditModal = () => {
-  editModalVisible.value = false;
-  Object.assign(editedEquipment, {
-    id: null,
-    name: "",
-    hourly_rate: "",
-    description: "",
-    category: null,
-    is_available: true,
-    image: null,
-  });
-};
-
-const handleImageUpload = (event) => {
-  const files = event.target.files;
-  if (files.length > 0) {
-    editedEquipment.images = Array.from(files); // Store multiple images in an array
-  }
-};
-
-const updateEquipment = async () => {
-  const formData = new FormData();
-  formData.append("name", editedEquipment.name);
-  formData.append("hourly_rate", editedEquipment.hourly_rate);
-  formData.append("available_quantity", editedEquipment.available_quantity);
-  formData.append("description", editedEquipment.description);
-  formData.append("category", editedEquipment.category);
-  formData.append("is_available", editedEquipment.is_available);
-
-  if (editedEquipment.images && editedEquipment.images.length > 0) {
-    for (const image of editedEquipment.images) {
-      formData.append("images", image); // Append each image as 'images[]'
-    }
-  }
-
+const fetchOrderItems = async () => {
   try {
-    await axios.put(
-      `${api_base_url}/api/equipments/${editedEquipment.id}/`,
-      formData,
-      {
-        headers: { "Content-Type": "multipart/form-data" },
-      }
-    );
-
-    closeEditModal();
-    await store.fetchUserEquipments(); // Refresh the equipment list
-  } catch (error) {
-    console.error("Error updating equipment:", error);
-  }
-};
-
-const fetchChats = async () => {
-  try {
-    const response = await axios.get(
-      `${api_base_url}/api/accounts/chats/`,
-      { withCredentials: true }
-    );
-
-    chats.value = response.data.map((chat) => {
-      const otherParticipant = chat.participants.find(
-        (participant) => participant.id !== authStore.user?.id
-      );
-
-      return {
-        id: chat.id,
-        name: otherParticipant?.username || "Unknown",
-        lastMessage: chat.messages.length
-          ? chat.messages[chat.messages.length - 1].content
-          : "No messages yet",
-        created_at: chat.created_at,
-        participants: chat.participants,
-      };
+    const response = await axios.get(`${api_base_url}/api/order-items/`, {
+      withCredentials: true,
     });
+    orderItems.value = response.data;
+    console.log("Order items values", orderItems.value);
   } catch (error) {
-    console.error("Error fetching chats:", error);
+    console.error("Error fetching orders:", error.response.data);
+  } finally {
+    loading.value = false;
   }
-};
-
-const fetchMessages = async (chatId) => {
-  try {
-    const response = await axios.get(
-      `${api_base_url}/api/accounts/chats/${chatId}/`,
-      {
-        withCredentials: true,
-      }
-    );
-
-    messages[chatId] = response.data.messages.map((msg) => ({
-      id: msg.id,
-      text: msg.content,
-      sentBy: msg.sender === authStore.user?.id ? "me" : "them",
-      sent_at: msg.sent_at,
-      sender: msg.sender,
-      image_url: msg.image_url,
-    }));
-    activeChat.value = chatId;
-    console.log("Fetched Messages:", messages[chatId]);
-  } catch (error) {
-    console.error("Error fetching messages:", error);
-  }
-};
-
-const sendMessage = async () => {
-  if (!newMessage.value.trim()) return; // Don't send empty messages
-
-  try {
-    const response = await axios.post(
-      `${api_base_url}/api/accounts/messages/`,
-      {
-        content: newMessage.value,
-        chat: activeChat.value, // Current chat ID
-        receiver: getReceiverId(activeChat.value), // Get receiver ID for this chat
-      },
-      { withCredentials: true }
-    );
-
-    fetchMessages(activeChat.value);
-    newMessage.value = ""; // Clear input field
-  } catch (error) {
-    console.error("Error sending message:", error);
-  }
-};
-
-const openChat = (chatId) => {
-  if (!messages[chatId]) {
-    fetchMessages(chatId);
-  } else {
-    activeChat.value = chatId;
-  }
-};
-
-const getReceiverId = (chatId) => {
-  const chat = chats.value.find((c) => c.id === chatId);
-  const receiver =
-    chat.participants[0] !== authStore.user?.id
-      ? chat.participants[0].id
-      : chat.participants[1].id;
-
-  return receiver;
-};
-
-const openModal = (order) => {
-  selectedOrder.value = order;
-  showModal.value = true;
-};
-
-const closeModal = () => {
-  showModal.value = false;
-  selectedOrder.value = null;
-  showDeleteConfirm.value = false;
-  showTerminateConfirm.value = false;
-};
-
-const confirmDelete = (order) => {
-  orderToDelete.value = order;
-  showDeleteConfirm.value = true;
-};
-
-const cancelDelete = () => {
-  showDeleteConfirm.value = false;
-  orderToDelete.value = null;
-};
-
-const deleteOrder = (orderId) => {
-  // API call to delete the order
-  showDeleteConfirm.value = false;
-  closeModal();
-  // Remove order from UI after success
-};
-
-const confirmTerminate = (order) => {
-  orderToTerminate.value = order;
-  showTerminateConfirm.value = true;
-};
-
-const cancelTerminate = () => {
-  showTerminateConfirm.value = false;
-  orderToTerminate.value = null;
-};
-
-const performAction = async (order, action) => {
-  try {
-    const response = await axios.post(
-      `${api_base_url}/api/orders/${order}/${action}/`,
-      {},
-      {
-        withCredentials: true, // This ensures cookies (credentials) are sent with the request
-      }
-    );
-    showModal.value = false;
-    await fetchOrders(); // Refresh order list
-    closeModal();
-  } catch (error) {
-    console.error(error);
-    alert(error.response?.data?.error || "An error occurred");
-  }
-};
-
-const fetchUserEquipments = async () => {
-  store.fetchUserEditableEquipments;
 };
 
 const filterOrders = () => {
@@ -1485,27 +1553,92 @@ const filterOrders = () => {
   });
 };
 
+// Mock user object for demonstration purposes
+const user = ref({
+  user_address: {
+    full_name: "", // Default value
+    street_address: "",
+    city: "",
+    state: "",
+    zip_code: "",
+    country: "",
+  },
+});
+const addressModalVisible = ref(false);
+const phoneModalVisible = ref(false);
+const showSidebar = ref(true); // Sidebar visibility state
+
 const closeSidebar = () => {
   showSidebar.value = true;
   authStore.activeSection = null;
 };
 
+// Method to set the active section
 const setActiveSection = (sectionName) => {
   authStore.activeSection = sectionName;
 };
 
+
+const route = useRoute();
+
+
+
+// Function to navigate to a section
 const navigateToSection = (sectionName) => {
   authStore.activeSection = sectionName;
 
+  // Scroll to the section
   const sectionElement = document.getElementById(sectionName);
   if (sectionElement) {
     sectionElement.scrollIntoView({ behavior: "smooth" });
   }
 
+  // Hide sidebar on small devices
   if (window.innerWidth < 1024) {
     showSidebar.value = false;
   }
+
 };
+
+
+const sections = computed(() => [
+  { name: "personal-info", label: "Personal Information" },
+  {
+    name: "my-equipments",
+    label: "My Items",
+    show: authStore.user?.role === "lessor",
+  },
+  {
+    name: "my-orders",
+    label: "My Orders",
+    show: authStore.user?.role === "lessee",
+  },
+  { name: "chats", label: "Chats" },
+  { name: "reports", label: "Reports" },
+]);
+const otherSections = [
+  {
+    name: "my-equipments",
+    label: "My Items",
+    show: authStore.user?.role === "lessor",
+  },
+  {
+    name: "my-orders",
+    label: "My Orders",
+    show: authStore.user?.role === "lessee",
+  },
+  // { name: "settings", label: "Settings" },
+  { name: "chats", label: "Chats" },
+  { name: "reports", label: "Reports" },
+];
+
+// Filter sections to only include those that should be shown
+const visibleSections = computed(() =>
+  sections.value.filter((section) => section.show !== false)
+);
+
+
+
 
 const uploadProfilePicture = async (event) => {
   const file = event.target.files[0];
@@ -1533,6 +1666,7 @@ const uploadProfilePicture = async (event) => {
   }
 };
 
+// Update phone number via PUT request
 const updatePhoneNumber = async () => {
   try {
     const updatedUserData = { phone_number: phoneNumber.value };
@@ -1563,12 +1697,14 @@ const updateAddress = async () => {
 
     let response;
     if (user.value.user_address.id) {
+      // Update existing address
       response = await axios.put(
         `${api_base_url}/api/accounts/physical-addresses/${user.value.user_address.id}/`,
         updatedAddressData,
         { withCredentials: true }
       );
     } else {
+      // Add new address
       response = await axios.post(
         `${api_base_url}/api/accounts/physical-addresses/`,
         updatedAddressData,
@@ -1591,7 +1727,7 @@ const formatDate = (date) => {
   }
 };
 
-// Lifecycle hooks
+// Fetch user data when the component is mounted
 onMounted(async () => {
   const section = route.query.section;
   if (section) {
@@ -1606,4 +1742,6 @@ onMounted(async () => {
   fetchUserReport();
   await store.fetchUserEditableEquipments();
 });
+
+
 </script>
