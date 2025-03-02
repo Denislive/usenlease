@@ -150,14 +150,7 @@ const sendMessageAndReset = async () => {
       "Your message was sent successfully!",
       "success"
     );
-
-    router.push({ path: "/profile", query: { chat: chatState.value.chatId } }); // Updates the URL
-
-    // Clear chatState after sending
-    fetchChats(); // Refresh chats after sending
-    if (chatState.value.chatId) {
-      openChat(Number(ref(chatState.value.chatId))); // Open the chat after sending
-    }
+    
     clearChatState(); // Reset chatState to null
 
   } catch (error) {
