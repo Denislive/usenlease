@@ -146,7 +146,7 @@ class CreateCheckoutSessionView(APIView):
                 'cart_items': cart_items,
                 'total_price': order_total_price + service_fee,
             }
-            send_custom_email(
+            send_custom_email.delay(
                 subject="Order Confirmation - Your Rental Order",
                 template_name="emails/order_created.html",
                 context=user_email_context,
@@ -164,7 +164,7 @@ class CreateCheckoutSessionView(APIView):
                     'start_date': cart_item.start_date,
                     'end_date': cart_item.end_date,
                 }
-                send_custom_email(
+                send_custom_email.delay(
                     subject=f"Equipment Rental Notification - {cart_item.item.name}",
                     template_name="emails/equipment_rented.html",
                     context=owner_email_context,

@@ -53,6 +53,13 @@ ALLOWED_HOSTS = [
     '.usenlease.com',
 ]
 
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+
+CELERY_BROKER_URL = 'redis://localhost:6379/0'  # Use Redis as the message broker
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+
+
 RECIPIENT_LIST = os.getenv('RECIPIENT_LIST')
 
 # Login URL

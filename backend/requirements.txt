@@ -30,4 +30,8 @@ google-cloud-storage==2.10.0
 supervisor==4.2.4
 django-tinymce==4.1.0
 requests==2.32.3 
-geopy==2.4.1 
+geopy==2.4.1
+celery==5.4.0
+redi==5.2.1
+django-celery-beat 2.7.0
+

@@ -158,7 +158,7 @@ class PasswordResetViewSet(viewsets.ViewSet):
         recipient_list = [user.email]
 
         try:
-            send_custom_email(subject, template_name, context, recipient_list)
+            send_custom_email.delay(subject, template_name, context, recipient_list)
             return Response({"message": "Password reset email sent successfully!"}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": "Failed to send password reset email", "details": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -207,7 +207,7 @@ class PasswordResetViewSet(viewsets.ViewSet):
             context = {'user': user}
             recipient_list = [user.email]
 
-            send_custom_email(subject, template_name, context, recipient_list)
+            send_custom_email.delay(subject, template_name, context, recipient_list)
 
             return Response({"message": "Password reset successfully!"}, status=status.HTTP_200_OK)
         except (User.DoesNotExist, ValueError):
@@ -608,7 +608,7 @@ class OTPViewSet(viewsets.ViewSet):
         recipient_list = [user.email]
 
         try:
-            send_custom_email(subject, template_name, context, recipient_list)
+            send_custom_email.delay(subject, template_name, context, recipient_list)
             return Response({"message": "OTP sent successfully!"}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": "Failed to send OTP", "details": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -653,7 +653,7 @@ class OTPViewSet(viewsets.ViewSet):
                 context = {'user': user}
                 recipient_list = [user.email]
 
-                send_custom_email(subject, template_name, context, recipient_list)
+                send_custom_email.delay(subject, template_name, context, recipient_list)
 
                 return Response({"message": "OTP verified successfully!"}, status=status.HTTP_200_OK)
             else:
@@ -739,7 +739,7 @@ class LoginView(APIView):
             'device': device
         }
         recipient_list = [user.email]
-        send_custom_email(subject, template_name, context, recipient_list)
+        send_custom_email.delay(subject, template_name, context, recipient_list)
 
         # Sync cart
         cart_data = request.data.get("cart", [])
