@@ -3,7 +3,6 @@ FROM python:3.11-slim-bullseye AS backend-builder
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
-ENV DOCKER_BUILD=1
 
 # Install system dependencies including PostgreSQL libraries, Redis, and build tools
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -38,10 +37,11 @@ RUN pip list
 # Copy the rest of the backend application code
 COPY backend/ /app/backend
 
-# Collect static files without accessing the database
-RUN DJANGO_SETTINGS_MODULE=EquipRentHub.settings python /app/backend/manage.py collectstatic --noinput --clear || echo "Skipping database-dependent collectstatic errors"
+# 🚀 **Set DOCKER_BUILD=1 only for collectstatic to disable Celery Beat**
+RUN export DOCKER_BUILD=1 && \
+    DJANGO_SETTINGS_MODULE=EquipRentHub.settings python /app/backend/manage.py collectstatic --noinput --clear || echo "Skipping database-dependent collectstatic errors"
 
-# Remove DOCKER_BUILD flag after build
+# Unset the build flag after static files are collected
 ENV DOCKER_BUILD=0
 
 # ---------------------------------------------------------------
@@ -81,13 +81,13 @@ RUN npm run build || { echo "Build failed"; exit 1; }
 
 # ---------------------------------------------------------------
 
-# Stage 3: Production Image (Nginx)
+# Stage 3: Production Image (Nginx + Gunicorn + Celery + Redis)
 FROM nginx:alpine
 
 # Set working directory
 WORKDIR /app
 
-# Install necessary system dependencies (Keep Nginx here only)
+# Install necessary system dependencies
 RUN apk add --no-cache bash python3 py3-pip libpq gettext
 
 # Copy Nginx configuration template
@@ -112,5 +112,8 @@ RUN chmod +x /app/start.sh
 # Expose application ports
 EXPOSE 8080
 
-# Start the application (Gunicorn, Celery, Celery Beat, Redis, and Nginx)
+# Start Redis before Celery
+RUN service redis-server start
+
+# Start the application (Gunicorn, Celery Worker, Celery Beat, Redis, and Nginx)
 CMD ["/bin/sh", "/app/start.sh"]

@@ -12,6 +12,9 @@ load_dotenv()
 # Base directory setup
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Detect if we're in a Docker build environment
+DOCKER_BUILD = os.getenv("DOCKER_BUILD", "0") == "1"
+
 # Application domain
 DOMAIN_URL = os.getenv('DOMAIN_URL')
 
@@ -27,8 +30,7 @@ creds_content = os.getenv('GOOGLE_APPLICATION_CREDENTIALS_CONTENT')
 if creds_content:
     os.makedirs(os.path.dirname(creds_path), exist_ok=True)
     try:
-        # Correct the padding for Base64 string
-        creds_content += '=' * (-len(creds_content) % 4)
+        creds_content += '=' * (-len(creds_content) % 4)  # Correct padding
         decoded_creds = base64.b64decode(creds_content)
         with open(creds_path, 'wb') as f:
             f.write(decoded_creds)
@@ -39,26 +41,27 @@ os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = creds_path
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY')
-
 if not SECRET_KEY:
     raise ValueError("The SECRET_KEY environment variable is not set")
-
 
 DEBUG = os.getenv('DEBUG')
 
 ALLOWED_HOSTS = [
-    #'usenleaseprod-4f2da7430c4d.herokuapp.com',
     'usenlease.com',
-    'www.usenlease.com'
+    'www.usenlease.com',
     '.usenlease.com',
 ]
 
+# Celery Configuration
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
-
-CELERY_BROKER_URL = 'redis://localhost:6379/0'  # Use Redis as the message broker
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 
+# **Fix: Disable Celery Beat in Docker Build to Prevent Database Access**
+if DOCKER_BUILD:
+    print("Running in Docker build mode: Disabling Celery Beat")
+    INSTALLED_APPS = [app for app in INSTALLED_APPS if app != "django_celery_beat"]
 
 RECIPIENT_LIST = os.getenv('RECIPIENT_LIST')
 
@@ -71,12 +74,12 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 # Custom User Model
 AUTH_USER_MODEL = 'user_management.User'
 
-# Stripe Keys (from .env file)
+# Stripe Keys
 STRIPE_PUBLIC_KEY = os.getenv("STRIPE_PUBLIC_KEY")
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 
-# Application definition
+# Installed Applications
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -91,7 +94,6 @@ INSTALLED_APPS = [
     'tinymce',
     'django_celery_beat',
 
-
     'whitenoise.runserver_nostatic',
     'rest_framework_simplejwt.token_blacklist',
     'equipment_management.apps.EquipmentManagementConfig',
@@ -99,7 +101,7 @@ INSTALLED_APPS = [
     'storages',  # Google Cloud Storage for media
 ]
 
-# Rest Framework Configuration
+# REST Framework Configuration
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -109,7 +111,7 @@ REST_FRAMEWORK = {
     ),
 }
 
-# Simple JWT settings
+# Simple JWT Settings
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
@@ -119,7 +121,7 @@ SIMPLE_JWT = {
     "AUTH_COOKIE_REFRESH": "refresh",
 }
 
-# Email settings
+# Email Settings
 EMAIL_HOST = os.getenv('EMAIL_HOST')
 EMAIL_PORT = os.getenv('EMAIL_PORT')
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
@@ -129,6 +131,7 @@ EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS')
 # Security Settings
 CORS_ALLOW_CREDENTIALS = True
 
+# CORS Allowed Origins
 AUTH_COOKIE_NAME = os.getenv('AUTH_COOKIE_NAME')
 AUTH_COOKIE_REFRESH = os.getenv('AUTH_COOKIE_REFRESH')
 AUTH_COOKIE_SAMESITE = os.getenv('AUTH_COOKIE_SAMESITE', 'None')
@@ -141,18 +144,15 @@ SESSION_COOKIE_SECURE = os.getenv('SESSION_COOKIE_SECURE', 'True') == 'True'
 CSRF_COOKIE_SECURE = os.getenv('CSRF_COOKIE_SECURE', 'True') == 'True'
 CSRF_COOKIE_NAME = os.getenv('CSRF_COOKIE_NAME', 'csrftoken')
 CSRF_COOKIE_HTTPONLY = os.getenv('CSRF_COOKIE_HTTPONLY', 'False') == 'True'
-
 # Explicitly set CSRF_TRUSTED_ORIGINS and CORS_ALLOWED_ORIGINS
 CSRF_TRUSTED_ORIGINS = [
     'https://usenlease.com',
     'https://www.usenlease.com',
 ]
-
 CORS_ALLOWED_ORIGINS = [
     'https://usenlease.com',
     'https://www.usenlease.com',
 ]
-
 CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^https://(\w+\.)?usenlease\.com$",
 ]
@@ -160,28 +160,15 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
 CORS_ALLOW_CREDENTIALS = True  # If using authentication
 
 CORS_ALLOW_ALL_ORIGINS = False  # Avoid conflicts
-
-# Cross-Origin Resource Sharing headers setup
 CORS_ALLOW_METHODS = [
-    'GET',
-    'POST',
-    'PUT',
-    'PATCH',
-    'DELETE',
-    'OPTIONS'
+    'GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'
 ]
 CORS_ALLOW_HEADERS = [
-    'accept',
-    'accept-encoding',
-    'authorization',
-    'content-type',
-    'dnt',
-    'origin',
-    'user-agent',
-    'x-csrftoken',
-    'x-requested-with',
+    'accept', 'accept-encoding', 'authorization', 'content-type',
+    'dnt', 'origin', 'user-agent', 'x-csrftoken', 'x-requested-with',
 ]
 
+# Middleware Configuration
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
@@ -214,18 +201,15 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'EquipRentHub.wsgi.application'
 
-# Detect if we're in a Docker build environment
-DOCKER_BUILD = os.getenv("DOCKER_BUILD", "0") == "1"
-
-
-# Database configuration (PostgreSQL on Heroku)
+# Database Configuration
 DATABASE_URL = os.getenv('DATABASE_URL')
 
 if DOCKER_BUILD:
-    print("Running in Docker build mode: Using dummy database")
+    print("Running in Docker build mode: Using SQLite fallback")
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.dummy'  # Avoid DB operations in Docker build
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
 else:
@@ -253,8 +237,7 @@ else:
             }
         }
 
-
-# Password validation
+# Password Validation
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -268,16 +251,15 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# Static files (CSS, JavaScript, images)
+# Static Files
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# Media files (uploads) – use Google Cloud Storage for media
+# Media Files (Google Cloud Storage)
 DEFAULT_FILE_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
-# GS_DEFAULT_ACL = 'publicRead'  # Adjust based on your needs
 MEDIA_URL = f"https://storage.googleapis.com/{GS_BUCKET_NAME}/"
 
-# Default primary key field type
+# Default Primary Key Field Type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
