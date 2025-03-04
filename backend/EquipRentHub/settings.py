@@ -44,7 +44,7 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 if not SECRET_KEY:
     raise ValueError("The SECRET_KEY environment variable is not set")
 
-DEBUG = os.getenv('DEBUG')
+DEBUG = os.getenv('DEBUG') == 'True'
 
 ALLOWED_HOSTS = [
     'usenlease.com',
@@ -52,7 +52,7 @@ ALLOWED_HOSTS = [
     '.usenlease.com',
 ]
 
-# Installed Applications (Define this first!)
+# ✅ Installed Applications (Define before modifications)
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -65,7 +65,6 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'corsheaders',
     'tinymce',
-    'django_celery_beat',
 
     'whitenoise.runserver_nostatic',
     'rest_framework_simplejwt.token_blacklist',
@@ -74,16 +73,22 @@ INSTALLED_APPS = [
     'storages',  # Google Cloud Storage for media
 ]
 
-# **🚀 Fix: Disable Celery Beat in Docker Build to Prevent Database Access**
-if DOCKER_BUILD:
-    print("Running in Docker build mode: Disabling Celery Beat")
-    INSTALLED_APPS = [app for app in INSTALLED_APPS if app != "django_celery_beat"]
+# ✅ **Fix: Disable Celery Beat in Docker Build to Prevent Database Access**
+if not DOCKER_BUILD:
+    INSTALLED_APPS.append("django_celery_beat")
 
 # Celery Configuration
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 CELERY_BROKER_URL = 'redis://localhost:6379/0'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
+
+# ✅ **Prevent Celery Beat errors during Docker builds**
+if not DOCKER_BUILD:
+    try:
+        from django_celery_beat.models import PeriodicTask, CrontabSchedule
+    except ImportError:
+        print("Warning: `django_celery_beat` models not found, but safe to ignore in Docker build mode.")
 
 RECIPIENT_LIST = os.getenv('RECIPIENT_LIST')
 
@@ -160,9 +165,7 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
 
 CORS_ALLOW_CREDENTIALS = True  # If using authentication
 CORS_ALLOW_ALL_ORIGINS = False  # Avoid conflicts
-CORS_ALLOW_METHODS = [
-    'GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'
-]
+CORS_ALLOW_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
 CORS_ALLOW_HEADERS = [
     'accept', 'accept-encoding', 'authorization', 'content-type',
     'dnt', 'origin', 'user-agent', 'x-csrftoken', 'x-requested-with',
@@ -217,17 +220,6 @@ else:
         DATABASES = {
             'default': dj_database_url.config(default=DATABASE_URL)
         }
-
-        # Check if database connection is available
-        connection = psycopg2.connect(
-            dbname=DATABASES['default']['NAME'],
-            user=DATABASES['default']['USER'],
-            password=DATABASES['default']['PASSWORD'],
-            host=DATABASES['default']['HOST'],
-            port=DATABASES['default']['PORT']
-        )
-        connection.close()
-
     except Exception as e:
         print(f"PostgreSQL configuration failed: {e}. Falling back to SQLite3.")
         DATABASES = {

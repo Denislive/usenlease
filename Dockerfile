@@ -87,8 +87,8 @@ FROM nginx:alpine
 # Set working directory
 WORKDIR /app
 
-# Install necessary system dependencies
-RUN apk add --no-cache bash python3 py3-pip libpq gettext
+# Install necessary system dependencies **including Redis**
+RUN apk add --no-cache bash python3 py3-pip libpq gettext redis
 
 # Copy Nginx configuration template
 COPY backend/nginx.conf.template /etc/nginx/nginx.conf.template
@@ -112,7 +112,7 @@ RUN chmod +x /app/start.sh
 # Expose application ports
 EXPOSE 8080
 
-# ✅ **Fix: Start Redis properly in Alpine (instead of `service redis-server start`)**
+# ✅ **Fix: Start Redis properly in Alpine**
 RUN redis-server --daemonize yes
 
 # Start the application (Gunicorn, Celery Worker, Celery Beat, Redis, and Nginx)
