@@ -21,7 +21,7 @@ DOMAIN_URL = os.getenv('DOMAIN_URL')
 # Google Cloud Storage Bucket Name
 GS_BUCKET_NAME = os.getenv('GS_BUCKET_NAME')  # e.g., 'my-app-media'
 
-# PORT 
+# PORT
 PORT = os.getenv("PORT")
 
 # Decode the base64 encoded credentials and write to a temporary file
@@ -52,34 +52,7 @@ ALLOWED_HOSTS = [
     '.usenlease.com',
 ]
 
-# Celery Configuration
-CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-
-# **Fix: Disable Celery Beat in Docker Build to Prevent Database Access**
-if DOCKER_BUILD:
-    print("Running in Docker build mode: Disabling Celery Beat")
-    INSTALLED_APPS = [app for app in INSTALLED_APPS if app != "django_celery_beat"]
-
-RECIPIENT_LIST = os.getenv('RECIPIENT_LIST')
-
-# Login URL
-LOGIN_URL = '/accounts/user/login'
-
-# Email Backend
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-
-# Custom User Model
-AUTH_USER_MODEL = 'user_management.User'
-
-# Stripe Keys
-STRIPE_PUBLIC_KEY = os.getenv("STRIPE_PUBLIC_KEY")
-STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
-STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
-
-# Installed Applications
+# Installed Applications (Define this first!)
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -100,6 +73,33 @@ INSTALLED_APPS = [
     'user_management.apps.UserManagementConfig',
     'storages',  # Google Cloud Storage for media
 ]
+
+# **🚀 Fix: Disable Celery Beat in Docker Build to Prevent Database Access**
+if DOCKER_BUILD:
+    print("Running in Docker build mode: Disabling Celery Beat")
+    INSTALLED_APPS = [app for app in INSTALLED_APPS if app != "django_celery_beat"]
+
+# Celery Configuration
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+
+RECIPIENT_LIST = os.getenv('RECIPIENT_LIST')
+
+# Login URL
+LOGIN_URL = '/accounts/user/login'
+
+# Email Backend
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
+# Custom User Model
+AUTH_USER_MODEL = 'user_management.User'
+
+# Stripe Keys
+STRIPE_PUBLIC_KEY = os.getenv("STRIPE_PUBLIC_KEY")
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 
 # REST Framework Configuration
 REST_FRAMEWORK = {
@@ -144,6 +144,7 @@ SESSION_COOKIE_SECURE = os.getenv('SESSION_COOKIE_SECURE', 'True') == 'True'
 CSRF_COOKIE_SECURE = os.getenv('CSRF_COOKIE_SECURE', 'True') == 'True'
 CSRF_COOKIE_NAME = os.getenv('CSRF_COOKIE_NAME', 'csrftoken')
 CSRF_COOKIE_HTTPONLY = os.getenv('CSRF_COOKIE_HTTPONLY', 'False') == 'True'
+
 # Explicitly set CSRF_TRUSTED_ORIGINS and CORS_ALLOWED_ORIGINS
 CSRF_TRUSTED_ORIGINS = [
     'https://usenlease.com',
@@ -158,7 +159,6 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
 ]
 
 CORS_ALLOW_CREDENTIALS = True  # If using authentication
-
 CORS_ALLOW_ALL_ORIGINS = False  # Avoid conflicts
 CORS_ALLOW_METHODS = [
     'GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'
@@ -237,6 +237,7 @@ else:
             }
         }
 
+
 # Password Validation
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -250,16 +251,13 @@ LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
-
-# Static Files
+# Static & Media Files
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# Media Files (Google Cloud Storage)
 DEFAULT_FILE_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
 MEDIA_URL = f"https://storage.googleapis.com/{GS_BUCKET_NAME}/"
 
-# Default Primary Key Field Type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

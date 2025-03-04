@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     redis-server \
     && rm -rf /var/lib/apt/lists/*
 
-
+# Set up working directory
 WORKDIR /app/backend
 
 # Create and activate virtual environment
@@ -112,8 +112,8 @@ RUN chmod +x /app/start.sh
 # Expose application ports
 EXPOSE 8080
 
-# Start Redis before Celery
-RUN service redis-server start
+# ✅ **Fix: Start Redis properly in Alpine (instead of `service redis-server start`)**
+RUN redis-server --daemonize yes
 
 # Start the application (Gunicorn, Celery Worker, Celery Beat, Redis, and Nginx)
 CMD ["/bin/sh", "/app/start.sh"]
