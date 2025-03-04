@@ -2,7 +2,11 @@
 
 set -e  # Exit on any error
 
-echo "Starting Backend..."
+echo "Starting Backend Services..."
+
+# Start Redis server first (Celery depends on it)
+echo "Starting Redis Server..."
+redis-server --daemonize yes || { echo "Failed to start Redis"; exit 1; }
 
 # Activate virtual environment or create it if it doesn't exist
 if [ ! -d "/app/backend/venv" ]; then
@@ -11,33 +15,36 @@ if [ ! -d "/app/backend/venv" ]; then
 fi
 source /app/backend/venv/bin/activate
 
-# Install dependencies inside the virtual environment (no echoing)
+# Install dependencies inside the virtual environment
 pip install --no-cache-dir --break-system-packages -r /app/backend/requirements.txt || { echo "Failed to install dependencies"; exit 1; }
 
-# Run database migrations
+# Run database migrations with better error handling
 echo "Running database migrations..."
-python /app/backend/manage.py makemigrations --noinput || { echo "Makemigrations failed"; exit 1; }
-python /app/backend/manage.py migrate --noinput || { echo "Migrating failed"; exit 1; }
+python /app/backend/manage.py makemigrations --noinput || echo "Makemigrations failed, continuing..."
+python /app/backend/manage.py migrate --noinput || {
+    echo "Migration failed, trying --fake..."
+    python /app/backend/manage.py migrate --fake || {
+        echo "Fake migration also failed. Exiting."
+        exit 1
+    }
+}
 
-
-# # Run database migrations
-# echo "Running database migrations..."
-# python /app/backend/manage.py makemigrations --noinput || echo "Makemigrations failed, continuing..."
-# python /app/backend/manage.py migrate --noinput || {
-#     echo "Migration failed, trying --fake..."
-#     python /app/backend/manage.py migrate --fake || {
-#         echo "Fake migration also failed. Exiting."
-#         exit 1
-#     }
-# }
-
+# Collect static files
 echo "Collecting static files..."
 python /app/backend/manage.py collectstatic --noinput || { echo "Static files collection failed"; exit 1; }
 
-# Start Gunicorn server for the Django backend on a different port, e.g., 8000
+# Start Gunicorn for Django backend
 echo "Starting Gunicorn server on port 8000..."
 cd /app/backend
 gunicorn EquipRentHub.wsgi:application --bind 0.0.0.0:8000 --workers=3 --timeout 240 --graceful-timeout 240 &
+
+# Start Celery Worker
+echo "Starting Celery Worker..."
+celery -A EquipRentHub worker --loglevel=info &
+
+# Start Celery Beat
+echo "Starting Celery Beat..."
+celery -A EquipRentHub beat --loglevel=info &
 
 # Log all environment variables for troubleshooting
 echo "Environment Variables:"
@@ -87,7 +94,6 @@ http {
     types_hash_max_size 2048;
 
     client_body_buffer_size 30M;
-
 
     server {
         listen $PORT;

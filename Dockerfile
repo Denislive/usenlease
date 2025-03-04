@@ -4,10 +4,11 @@ FROM python:3.11-slim-bullseye AS backend-builder
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 
-# Install system dependencies including PostgreSQL libraries and build tools
+# Install system dependencies including PostgreSQL libraries, Redis, and build tools
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
+    redis-server \
     && rm -rf /var/lib/apt/lists/*
 
 # Set up working directory
@@ -26,6 +27,9 @@ ENV SECRET_KEY=${SECRET_KEY}
 COPY backend/requirements.txt /app/backend/
 RUN pip install --upgrade pip setuptools wheel
 RUN pip install --no-cache-dir -r /app/backend/requirements.txt
+
+# Install Celery & Celery Beat dependencies
+RUN pip install celery[redis] django-celery-beat
 
 # Debug: List installed packages
 RUN pip list
@@ -73,13 +77,13 @@ RUN npm run build || { echo "Build failed"; exit 1; }
 
 # ---------------------------------------------------------------
 
-# Stage 3: Production Image
+# Stage 3: Production Image (Nginx)
 FROM nginx:alpine
 
 # Set working directory
 WORKDIR /app
 
-# Install necessary system dependencies
+# Install necessary system dependencies (Keep Nginx here only)
 RUN apk add --no-cache bash python3 py3-pip libpq gettext
 
 # Copy Nginx configuration template
@@ -101,8 +105,8 @@ COPY --from=backend-builder /app/backend /app/backend
 COPY start.sh /app/start.sh
 RUN chmod +x /app/start.sh
 
-# Expose web server port
+# Expose application ports
 EXPOSE 8080
 
-# Start the application
+# Start the application (Gunicorn, Celery, Celery Beat, Redis, and Nginx)
 CMD ["/bin/sh", "/app/start.sh"]
