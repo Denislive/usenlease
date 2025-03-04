@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     redis-server \
     && rm -rf /var/lib/apt/lists/*
 
-# Set up working directory
+
 WORKDIR /app/backend
 
 # Create and activate virtual environment
