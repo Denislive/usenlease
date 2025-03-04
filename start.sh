@@ -16,14 +16,20 @@ pip install --no-cache-dir --break-system-packages -r /app/backend/requirements.
 
 # Run database migrations
 echo "Running database migrations..."
-python /app/backend/manage.py makemigrations --noinput || echo "Makemigrations failed, continuing..."
-python /app/backend/manage.py migrate --noinput || {
-    echo "Migration failed, trying --fake..."
-    python /app/backend/manage.py migrate --fake || {
-        echo "Fake migration also failed. Exiting."
-        exit 1
-    }
-}
+python /app/backend/manage.py makemigrations --noinput || { echo "Makemigrations failed"; exit 1; }
+python /app/backend/manage.py migrate --noinput || { echo "Migrating failed"; exit 1; }
+
+
+# # Run database migrations
+# echo "Running database migrations..."
+# python /app/backend/manage.py makemigrations --noinput || echo "Makemigrations failed, continuing..."
+# python /app/backend/manage.py migrate --noinput || {
+#     echo "Migration failed, trying --fake..."
+#     python /app/backend/manage.py migrate --fake || {
+#         echo "Fake migration also failed. Exiting."
+#         exit 1
+#     }
+# }
 
 echo "Collecting static files..."
 python /app/backend/manage.py collectstatic --noinput || { echo "Static files collection failed"; exit 1; }
