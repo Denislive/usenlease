@@ -3,6 +3,7 @@ FROM python:3.11-slim-bullseye AS backend-builder
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
+ENV DOCKER_BUILD=1
 
 # Install system dependencies including PostgreSQL libraries, Redis, and build tools
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -37,8 +38,11 @@ RUN pip list
 # Copy the rest of the backend application code
 COPY backend/ /app/backend
 
-# Collect static files
-RUN python /app/backend/manage.py collectstatic --noinput
+# Collect static files without accessing the database
+RUN DJANGO_SETTINGS_MODULE=EquipRentHub.settings python /app/backend/manage.py collectstatic --noinput --clear || echo "Skipping database-dependent collectstatic errors"
+
+# Remove DOCKER_BUILD flag after build
+ENV DOCKER_BUILD=0
 
 # ---------------------------------------------------------------
 

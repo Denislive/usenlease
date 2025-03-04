@@ -214,33 +214,45 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'EquipRentHub.wsgi.application'
 
+# Detect if we're in a Docker build environment
+DOCKER_BUILD = os.getenv("DOCKER_BUILD", "0") == "1"
+
+
 # Database configuration (PostgreSQL on Heroku)
 DATABASE_URL = os.getenv('DATABASE_URL')
 
-try:
-    DATABASES = {
-        'default': dj_database_url.config(
-            default=DATABASE_URL
-        )
-    }
-
-    connection = psycopg2.connect(
-        dbname=DATABASES['default']['NAME'],
-        user=DATABASES['default']['USER'],
-        password=DATABASES['default']['PASSWORD'],
-        host=DATABASES['default']['HOST'],
-        port=DATABASES['default']['PORT']
-    )
-    connection.close()
-
-except Exception as e:
-    print(f"PostgreSQL configuration failed: {e}. Falling back to SQLite3.")
+if DOCKER_BUILD:
+    print("Running in Docker build mode: Using dummy database")
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
+            'ENGINE': 'django.db.backends.dummy'  # Avoid DB operations in Docker build
         }
     }
+else:
+    try:
+        DATABASES = {
+            'default': dj_database_url.config(default=DATABASE_URL)
+        }
+
+        # Check if database connection is available
+        connection = psycopg2.connect(
+            dbname=DATABASES['default']['NAME'],
+            user=DATABASES['default']['USER'],
+            password=DATABASES['default']['PASSWORD'],
+            host=DATABASES['default']['HOST'],
+            port=DATABASES['default']['PORT']
+        )
+        connection.close()
+
+    except Exception as e:
+        print(f"PostgreSQL configuration failed: {e}. Falling back to SQLite3.")
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': BASE_DIR / 'db.sqlite3',
+            }
+        }
+
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
