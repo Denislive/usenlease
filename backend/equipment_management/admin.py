@@ -16,6 +16,8 @@ class EquipmentAdmin(admin.ModelAdmin):
     search_fields = ('name', 'description', 'owner__username', 'category__name')
     inlines = [ImageInline]
 
+
+# Image Admin
 @admin.register(Image)
 class ImageAdmin(admin.ModelAdmin):
     list_display = ('equipment', 'order_item', 'is_return', 'is_pickup')
@@ -46,7 +48,7 @@ class CartItemInline(admin.TabularInline):
 # Cart Admin
 @admin.register(Cart)
 class CartAdmin(admin.ModelAdmin):
-    list_display = ('id', 'date_created', 'get_cart_total', 'get_cart_items')
+    list_display = ('id', 'user', 'date_created', 'get_cart_total', 'get_cart_items')
     inlines = [CartItemInline]
     readonly_fields = ('get_cart_total', 'get_cart_items')
 
@@ -85,22 +87,23 @@ class CartItemAdmin(admin.ModelAdmin):
     readonly_fields = ('get_cart_item_total',)
 
 
+# Review Admin
 @admin.register(Review)
 class ReviewAdmin(admin.ModelAdmin):
-    list_display = ('id', 'equipment', 'user', 'rating', 'date_created')  # Fields to display in the list view
-    search_fields = ('equipment__name', 'user__username')  # Enable search on equipment name and user
-    list_filter = ('rating', 'date_created')  # Filters for the admin list view
-
-    class Meta:
-        model = Review
-        fields = '__all__'  # This is not necessary in the admin class
+    list_display = ('id', 'equipment', 'user', 'rating', 'date_created')
+    search_fields = ('equipment__name', 'user__username')
+    list_filter = ('rating', 'date_created')
 
 
-admin.site.register(Specification)
+# Specification Admin
+@admin.register(Specification)
+class SpecificationAdmin(admin.ModelAdmin):
+    list_display = ('equipment', 'name', 'value')
+    search_fields = ('equipment__name', 'name', 'value')
+    list_filter = ('equipment',)
 
-# Change the site header
+
+# Customize Admin Site
 admin.site.site_header = "UseNLease Admin"
-# Change the site title
 admin.site.site_title = "UseNLease Equipment Rental Site Admin"
-# Change the index title
 admin.site.index_title = "Welcome to UseNLease Admin Dashboard"

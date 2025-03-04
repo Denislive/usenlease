@@ -1,13 +1,14 @@
-# Standard library imports
+# Standard Library Imports
 import random
-import smtplib
 import requests
-from urllib.parse import urlparse
+import smtplib
 from datetime import date, datetime, timedelta
-from email.mime.text import MIMEText
 from django.utils.timezone import now
+from email.mime.text import MIMEText
+from urllib.parse import urlparse
 
-# Django imports
+
+# Django Imports
 from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.hashers import make_password
@@ -15,27 +16,17 @@ from django.core.mail import send_mail
 from django.db import IntegrityError, transaction
 from django.db.models import Q, Avg, Sum, Count, F, Prefetch
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.utils.encoding import force_str
 from django.contrib.auth.tokens import default_token_generator
 
-# Third-party imports
-from rest_framework import (
-    status,
-    serializers,
-    permissions,
-    viewsets,
-    response,
-)
+# Third-Party Imports
+from rest_framework import status, serializers, permissions, viewsets, response
 from rest_framework.decorators import action
-from rest_framework.exceptions import (
-    AuthenticationFailed,
-    NotAuthenticated,
-    ValidationError,
-)
+from rest_framework.exceptions import AuthenticationFailed, NotAuthenticated, ValidationError
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework.response import Response
@@ -46,99 +37,101 @@ from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 from rest_framework_simplejwt.views import TokenBlacklistView, TokenRefreshView, TokenVerifyView
 
+from geopy.geocoders import Nominatim
 
-# Local app imports
-from .models import (
-    User,
-    Address,
-    PhysicalAddress,
-    CreditCard,
-    Message,
-    Chat,
-    OTP,
-    CompanyInfo,
-    FAQ
-)
+
+# Local App Imports
+from .models import User, Address, PhysicalAddress, CreditCard, Message, Chat, OTP, CompanyInfo, FAQ
 from .serializers import (
-    UserSerializer,
-    AddressSerializer,
-    PhysicalAddressSerializer,
-    CreditCardSerializer,
-    MessageSerializer,
-    ContactSerializer,
-    OTPSerializer,
-    CompanyInfoSerializer,
-    ChatSerializer,
-    FAQSerializer
+    UserSerializer, AddressSerializer, PhysicalAddressSerializer, CreditCardSerializer,
+    MessageSerializer, ContactSerializer, OTPSerializer, CompanyInfoSerializer, ChatSerializer, FAQSerializer
 )
-
-# Imports from related apps
-from equipment_management.models import (
-    Cart,
-    CartItem,
-    Equipment,
-    Order,
-    OrderItem,
-    Review,
-)
-
-
-from django.shortcuts import render
 from .utils import list_files, generate_signed_url, send_custom_email
 
+# Related Apps Imports
+from equipment_management.models import Cart, CartItem, Equipment, Order, OrderItem, Review
 
 
 class CompanyInfoView(APIView):
     """
-    View to retrieve company information.
+    API view to retrieve company information.
+
+    Methods:
+        get: Retrieves the company information.
     """
 
     def get(self, request):
+        """
+        Retrieves the company information.
+
+        Returns:
+            Response: Serialized company information or an error message if not found.
+        """
         try:
             company_info = CompanyInfo.objects.first()
+            if not company_info:
+                return Response({"error": "Company information not found"}, status=status.HTTP_404_NOT_FOUND)
+
             serializer = CompanyInfoSerializer(company_info)
             return Response(serializer.data)
-        except CompanyInfo.DoesNotExist:
-            return Response({"error": "Company information not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class JWTAuthenticationFromCookie(JWTAuthentication):
     """
-    Custom JWT Authentication class that retrieves the access and refresh tokens
-    from cookies and handles token validation.
+    Custom JWT Authentication class that retrieves the access token from cookies
+    and handles token validation.
+
+    Methods:
+        authenticate: Authenticates the user using the access token from cookies.
     """
 
     def authenticate(self, request):
+        """
+        Authenticates the user using the access token from cookies.
 
-        # Retrieve tokens from cookies
-        access_token = request.COOKIES.get('token')  # Access token cookie
+        Args:
+            request (HttpRequest): The request object.
 
-        # If no access token is present, return None (unauthenticated)
+        Returns:
+            tuple: A tuple containing the user and the validated token if authentication is successful.
+
+        Raises:
+            AuthenticationFailed: If the access token is invalid or expired.
+        """
+        access_token = request.COOKIES.get('token')  # Retrieve access token from cookies
+
         if not access_token:
-            return None
+            return None  # No token provided, return None (unauthenticated)
 
         try:
-            # Try to validate the access token
-            validated_token = self.get_validated_token(access_token)
-            return self.get_user(validated_token), validated_token
+            validated_token = self.get_validated_token(access_token)  # Validate the token
+            return self.get_user(validated_token), validated_token  # Return user and token
         except InvalidToken as e:
             raise AuthenticationFailed('Invalid or expired access token.')
-
-        return None
-
-
 
 
 class PasswordResetViewSet(viewsets.ViewSet):
     """
     A ViewSet for handling password reset functionality.
+
+    Methods:
+        send_reset_email: Sends a password reset email to the user.
+        reset_password: Resets the user's password after verifying the token.
     """
     authentication_classes = [JWTAuthenticationFromCookie]
 
     @action(detail=False, methods=['post'])
     def send_reset_email(self, request):
         """
-        Generate a password reset token and send it via email.
+        Sends a password reset email to the user.
+
+        Args:
+            request (HttpRequest): The request object containing the user's email.
+
+        Returns:
+            Response: A success message or an error response.
         """
         email = request.data.get("email")
 
@@ -157,18 +150,15 @@ class PasswordResetViewSet(viewsets.ViewSet):
         reset_url = f"{settings.DOMAIN_URL}/password-reset/?uid={uid}&token={token}"
 
         subject = "Password Reset Request"
-        message_body = (
-            f"Hello {user.email},\n\n"
-            f"You have requested to reset your password. Please use the link below to reset it:\n\n"
-            f"{reset_url}\n\n"
-            f"If you did not request a password reset, please ignore this email.\n\n"
-            f"Best regards,\n"
-            f"The Use And Lease Team"
-        )
+        template_name = 'emails/password_reset.html'
+        context = {
+            'user': user,
+            'reset_url': reset_url
+        }
+        recipient_list = [user.email]
 
         try:
-            # Send the email using the custom utility function
-            send_custom_email(subject, 'emails/password_reset.html', {'user': user, 'reset_url': reset_url}, [user.email])
+            send_custom_email(subject, template_name, context, recipient_list)
             return Response({"message": "Password reset email sent successfully!"}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": "Failed to send password reset email", "details": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -176,7 +166,15 @@ class PasswordResetViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['post'], url_path='confirm/(?P<uidb64>[^/.]+)/(?P<token>[^/.]+)')
     def reset_password(self, request, uidb64, token):
         """
-        Verify the token and reset the user's password, with confirmation.
+        Resets the user's password after verifying the token.
+
+        Args:
+            request (HttpRequest): The request object containing the new password and confirmation.
+            uidb64 (str): The base64-encoded user ID.
+            token (str): The password reset token.
+
+        Returns:
+            Response: A success message or an error response.
         """
         new_password = request.data.get("new_password")
         confirm_password = request.data.get("confirm_password")
@@ -197,7 +195,7 @@ class PasswordResetViewSet(viewsets.ViewSet):
 
             # Check if the new password matches the current password
             if user.check_password(new_password):
-                return Response({"error": "Previous Passwords cannot be reused. Enter a new password!"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"error": "Previous passwords cannot be reused. Enter a new password!"}, status=status.HTTP_400_BAD_REQUEST)
 
             # Update password
             user.set_password(new_password)
@@ -206,85 +204,103 @@ class PasswordResetViewSet(viewsets.ViewSet):
             # Send email for successful password reset
             subject = "Password Reset Successfully"
             template_name = 'emails/successful_password_reset.html'
-            context = {
-                'user': user
-            }
+            context = {'user': user}
             recipient_list = [user.email]
 
             send_custom_email(subject, template_name, context, recipient_list)
 
             return Response({"message": "Password reset successfully!"}, status=status.HTTP_200_OK)
-
         except (User.DoesNotExist, ValueError):
             return Response({"error": "Invalid UID."}, status=status.HTTP_400_BAD_REQUEST)
-
-
+        
 
 class ContactViewSet(viewsets.ViewSet):
     """
-    A simple ViewSet for handling contact form submissions.
+    A ViewSet for handling contact form submissions.
+
+    Methods:
+        create: Handles the submission of the contact form and sends an email.
     """
 
     def create(self, request):
+        """
+        Handles the submission of the contact form and sends an email.
+
+        Args:
+            request (HttpRequest): The request object containing the contact form data.
+
+        Returns:
+            Response: A success message or an error response.
+        """
         serializer = ContactSerializer(data=request.data)
 
-        if serializer.is_valid():
-            # Save the contact data to the database (optional)
-            serializer.save()
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-            # Extract validated data
-            name = serializer.validated_data['name']
-            email = serializer.validated_data['email']
-            message = serializer.validated_data['message']
+        # Save the contact data to the database (optional)
+        serializer.save()
 
-            # Prepare email content
-            subject = f"New Customer Inquiry from {name}"
-            message_body = (
-                f"Message from {name} ({email}):\n\n"
-                f"{message}\n\n"
-                f"If you have any questions, please feel free to reply to this email.\n\n"
-                f"Best regards,\n"
-                f"The Use And Lease Team"
+        # Extract validated data
+        name = serializer.validated_data['name']
+        email = serializer.validated_data['email']
+        message = serializer.validated_data['message']
+
+        # Prepare email content
+        subject = f"New Customer Inquiry from {name}"
+        message_body = (
+            f"Message from {name} ({email}):\n\n"
+            f"{message}\n\n"
+            f"If you have any questions, please feel free to reply to this email.\n\n"
+            f"Best regards,\n"
+            f"The Use And Lease Team"
+        )
+
+        try:
+            # Prepare the email
+            msg = MIMEText(message_body)
+            msg['Subject'] = subject
+            msg['From'] = email
+            msg['To'] = settings.RECIPIENT_LIST  # Assuming the first recipient in the list for now
+
+            # Send the email using SMTP
+            with smtplib.SMTP(settings.EMAIL_HOST, settings.EMAIL_PORT) as server:
+                server.starttls()
+                server.login(settings.EMAIL_HOST_USER, settings.EMAIL_HOST_PASSWORD)
+                server.send_message(msg)
+
+            return Response({"detail": "Message sent successfully."}, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            return Response(
+                {"detail": "Message could not be sent.", "error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-
-            try:
-                # Prepare the email
-                msg = MIMEText(message_body)
-                msg['Subject'] = subject
-                msg['From'] = email
-                msg['To'] = settings.RECIPIENT_LIST  # Assuming the first recipient in the list for now
-
-                # Send the email using SMTP
-                with smtplib.SMTP(settings.EMAIL_HOST, settings.EMAIL_PORT) as server:
-                    server.starttls()
-                    server.login(settings.EMAIL_HOST_USER, settings.EMAIL_HOST_PASSWORD)
-                    server.send_message(msg)
-
-                return Response({"detail": "Message sent successfully."}, status=status.HTTP_201_CREATED)
-
-            except Exception as e:
-                return Response(
-                    {"detail": "Message could not be sent.", "error": str(e)},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                )
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ReportViewSet(viewsets.ViewSet):
     """
     A ViewSet that generates reports for lessor and lessee users.
+
+    Methods:
+        list: Generates a report based on the user's role (lessor or lessee).
     """
     authentication_classes = [JWTAuthenticationFromCookie]
     permission_classes = [IsAuthenticated]
 
     def list(self, request):
-        if request.user.is_anonymous:
-            user = None
-        else:
-            user = request.user
+        """
+        Generates a report based on the user's role (lessor or lessee).
 
-            
+        Args:
+            request (HttpRequest): The request object.
+
+        Returns:
+            Response: A JSON response containing the report data.
+        """
+        user = request.user
+
+        if user.is_anonymous:
+            return Response({"error": "User not authenticated."}, status=status.HTTP_401_UNAUTHORIZED)
 
         report_data = {}
 
@@ -346,19 +362,34 @@ class ReportViewSet(viewsets.ViewSet):
 class ChatViewSet(viewsets.ModelViewSet):
     """
     A ViewSet for handling chat creation and retrieval for users.
+
+    Methods:
+        get_queryset: Filters chats by the current logged-in user.
+        create: Creates a new chat or returns an existing one if it already exists.
     """
     queryset = Chat.objects.all()
     serializer_class = ChatSerializer
     authentication_classes = [JWTAuthenticationFromCookie]
 
     def get_queryset(self):
-        """Filter chats by the current logged-in user."""
+        """
+        Filters chats by the current logged-in user.
+
+        Returns:
+            QuerySet: A queryset of chats where the current user is a participant.
+        """
         self.check_permissions(self.request)
         return Chat.objects.filter(participants=self.request.user)
 
     def create(self, request, *args, **kwargs):
         """
-        Create a new chat if it does not exist, otherwise return the existing one.
+        Creates a new chat if it does not exist, otherwise returns the existing one.
+
+        Args:
+            request (HttpRequest): The request object containing the participants' IDs.
+
+        Returns:
+            Response: A response containing the chat data or an error message.
         """
         sender = request.user
         participants_ids = request.data.get('participants', [])
@@ -368,11 +399,17 @@ class ChatViewSet(viewsets.ModelViewSet):
 
         # Prevent chat creation if the logged-in user is the only participant
         if len(participants) < 2:
-            return Response({"error": "You must include at least one other participant."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "You must include at least one other participant."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         # Check if the sender is trying to contact themselves
         if sender.id in participants_ids:
-            return Response({"error": "You cannot contact yourself."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "You cannot contact yourself."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         # Check if a chat with these participants already exists
         existing_chats = Chat.objects.filter(participants=sender)
@@ -392,10 +429,13 @@ class ChatViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-
 class MessageViewSet(viewsets.ModelViewSet):
     """
     A ViewSet for handling messages in a chat.
+
+    Methods:
+        get_queryset: Retrieves messages for a specific chat or for the logged-in user.
+        perform_create: Ensures a chat exists between sender and receiver before creating a message.
     """
     queryset = Message.objects.all()
     serializer_class = MessageSerializer
@@ -405,7 +445,12 @@ class MessageViewSet(viewsets.ModelViewSet):
     def _extract_relative_path(self, url):
         """
         Extracts the correct relative path from a given URL.
-        Ensures no duplicate base URLs when generating signed URLs.
+
+        Args:
+            url (str): The URL to process.
+
+        Returns:
+            str: The relative path of the URL, or None if the URL is already a signed GCS URL.
         """
         if not url:
             return None
@@ -421,7 +466,10 @@ class MessageViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """
-        Retrieve messages for a specific chat or for the logged-in user, and generate signed URLs for images.
+        Retrieves messages for a specific chat or for the logged-in user, and generates signed URLs for images.
+
+        Returns:
+            QuerySet: A queryset of messages filtered by chat or user.
         """
         self.check_permissions(self.request)
         chat_id = self.request.query_params.get("chat_id")
@@ -450,7 +498,13 @@ class MessageViewSet(viewsets.ModelViewSet):
     @transaction.atomic
     def perform_create(self, serializer):
         """
-        Ensure chat exists between sender and receiver before creating a message.
+        Ensures a chat exists between sender and receiver before creating a message.
+
+        Args:
+            serializer: The serializer instance for the message.
+
+        Returns:
+            Response: A response containing the created message or an error message.
         """
         sender = self.request.user
         receiver_id = self.request.data.get("receiver")
@@ -465,7 +519,7 @@ class MessageViewSet(viewsets.ModelViewSet):
 
         # Check if a chat already exists between the sender and receiver
         chat = Chat.objects.filter(participants=sender).filter(participants=receiver).distinct().first()
-        
+
         if not chat:
             # Create a new chat if none exists
             chat = Chat.objects.create()
@@ -482,17 +536,24 @@ class MessageViewSet(viewsets.ModelViewSet):
         serializer.save(sender=sender, receiver=receiver, chat=chat, image_url=image_url)
 
 
-
-
 class AllChatsViewSet(viewsets.ViewSet):
     """
     A ViewSet to retrieve all chats for the logged-in user.
+
+    Methods:
+        list: Retrieves all chats where the logged-in user is a participant.
     """
     authentication_classes = [JWTAuthenticationFromCookie]
 
     def list(self, request):
         """
-        Retrieve all chats for the logged-in user.
+        Retrieves all chats where the logged-in user is a participant.
+
+        Args:
+            request (HttpRequest): The request object.
+
+        Returns:
+            Response: A response containing the serialized list of chats.
         """
         self.check_permissions(request)
         chats = Chat.objects.filter(participants=request.user)
@@ -500,16 +561,25 @@ class AllChatsViewSet(viewsets.ViewSet):
         return Response(serializer.data)
 
 
-# send otp emails
 class OTPViewSet(viewsets.ViewSet):
     """
     A ViewSet for handling OTP generation and verification.
+
+    Methods:
+        generate_otp: Generates an OTP and sends it to the user via email.
+        verify_otp: Verifies the OTP provided by the user and activates the account.
     """
 
     @action(detail=False, methods=['post'])
     def generate_otp(self, request):
         """
-        Generate an OTP for the user and send it via email.
+        Generates an OTP and sends it to the user via email.
+
+        Args:
+            request (HttpRequest): The request object containing the user's email.
+
+        Returns:
+            Response: A success message or an error response.
         """
         email = request.data.get("email")
 
@@ -521,19 +591,20 @@ class OTPViewSet(viewsets.ViewSet):
         except User.DoesNotExist:
             return Response({"error": "User with this email does not exist."}, status=status.HTTP_404_NOT_FOUND)
 
+        # Expire any existing OTPs for the user
         OTP.objects.filter(user=user, expired=False).update(expired=True)
 
+        # Generate a new OTP
         otp_code = str(random.randint(100000, 999999))
         otp_instance = OTP.objects.create(user=user, code=otp_code)
-        otp_instance.save()
 
+        # Send the OTP via email
         subject = "Email Verification"
         template_name = 'emails/otp_email.html'
         context = {
             'user': user,
             'otp_code': otp_code
         }
-
         recipient_list = [user.email]
 
         try:
@@ -542,11 +613,16 @@ class OTPViewSet(viewsets.ViewSet):
         except Exception as e:
             return Response({"error": "Failed to send OTP", "details": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
     @action(detail=False, methods=['post'])
     def verify_otp(self, request):
         """
-        Verify the OTP provided by the user and activate the account.
+        Verifies the OTP provided by the user and activates the account.
+
+        Args:
+            request (HttpRequest): The request object containing the user's email and OTP.
+
+        Returns:
+            Response: A success message or an error response.
         """
         email = request.data.get("email")
         entered_otp = request.data.get("otp")
@@ -574,9 +650,7 @@ class OTPViewSet(viewsets.ViewSet):
                 # Send email for successful verification
                 subject = "Account Activated"
                 template_name = 'emails/successful_verification.html'
-                context = {
-                    'user': user
-                }
+                context = {'user': user}
                 recipient_list = [user.email]
 
                 send_custom_email(subject, template_name, context, recipient_list)
@@ -589,98 +663,132 @@ class OTPViewSet(viewsets.ViewSet):
             return Response({"error": "OTP not found."}, status=status.HTTP_404_NOT_FOUND)
 
 
-
-
 class LoginView(APIView):
+    """
+    API view for handling user login, generating JWT tokens, and syncing the user's cart.
+    """
     permission_classes = [AllowAny]
 
     def post(self, request):
         """
         Handles the login request, authenticates the user, generates JWT tokens,
         and syncs the user's cart with the database.
+
+        Args:
+            request (HttpRequest): The request object containing login credentials.
+
+        Returns:
+            Response: A response containing user data and tokens or an error message.
         """
         email = request.data.get("email")
         password = request.data.get("password")
         user = authenticate(request, email=email, password=password)
 
-        if user:
-            # Generate tokens
-            refresh = RefreshToken.for_user(user)
+        if not user:
+            return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
 
-            # Serialize user data
-            response_data = {
-                "id": user.id,
-                "username": user.username,
-                "role": user.role,
-                "is_authenticated": user.is_authenticated,
-                "image": user.image.url if user.image else None,
-            }
+        # Generate tokens
+        refresh = RefreshToken.for_user(user)
 
-            access_expiry = now() + timedelta(minutes=15)
-            refresh_expiry = now() + timedelta(days=1)
+        # Serialize user data
+        response_data = {
+            "id": user.id,
+            "username": user.username,
+            "role": user.role,
+            "is_authenticated": user.is_authenticated,
+            "image": user.image.url if user.image else None,
+        }
 
-            # Prepare the response
-            response = Response(response_data, status=status.HTTP_200_OK)
+        access_expiry = now() + timedelta(minutes=15)
+        refresh_expiry = now() + timedelta(days=1)
 
-            # Set tokens in cookies with appropriate expiration times
-            response.set_cookie(
-                key=settings.AUTH_COOKIE_NAME,
-                expires=access_expiry,
-                value=str(refresh.access_token),
-                httponly=settings.AUTH_COOKIE_HTTPONLY,
-                secure=settings.AUTH_COOKIE_SECURE,
-                samesite=settings.AUTH_COOKIE_SAMESITE,
-                path=settings.AUTH_COOKIE_PATH,
-            )
-            response.set_cookie(
-                key=settings.AUTH_COOKIE_REFRESH,
-                expires=refresh_expiry,
-                value=str(refresh),
-                httponly=settings.AUTH_COOKIE_HTTPONLY,
-                secure=settings.AUTH_COOKIE_SECURE,
-                samesite=settings.AUTH_COOKIE_SAMESITE,
-                path=settings.AUTH_COOKIE_PATH,
-            )
+        # Prepare the response
+        response = Response(response_data, status=status.HTTP_200_OK)
 
-            # Get user's location and device details
-            ip_address = request.META.get('REMOTE_ADDR')
-            location = self.get_location(ip_address)
-            device = request.META.get('HTTP_USER_AGENT')
+        # Set tokens in cookies with appropriate expiration times
+        response.set_cookie(
+            key=settings.AUTH_COOKIE_NAME,
+            expires=access_expiry,
+            value=str(refresh.access_token),
+            httponly=settings.AUTH_COOKIE_HTTPONLY,
+            secure=settings.AUTH_COOKIE_SECURE,
+            samesite=settings.AUTH_COOKIE_SAMESITE,
+            path=settings.AUTH_COOKIE_PATH,
+        )
+        response.set_cookie(
+            key=settings.AUTH_COOKIE_REFRESH,
+            expires=refresh_expiry,
+            value=str(refresh),
+            httponly=settings.AUTH_COOKIE_HTTPONLY,
+            secure=settings.AUTH_COOKIE_SECURE,
+            samesite=settings.AUTH_COOKIE_SAMESITE,
+            path=settings.AUTH_COOKIE_PATH,
+        )
 
-            # Send login notification email
-            subject = "Login Notification"
-            template_name = 'emails/login_notification.html'
-            context = {
-                'user': user,
-                'location': location,
-                'device': device
-            }
-            recipient_list = [user.email]
-            send_custom_email(subject, template_name, context, recipient_list)
+        # Get user's location and device details
+        ip_address = request.META.get('REMOTE_ADDR')
+        location = self.get_location(ip_address)
+        device = request.META.get('HTTP_USER_AGENT')
 
-            # Sync cart
-            cart_data = request.data.get("cart", [])
-            if cart_data:
-                try:
-                    self.sync_cart_with_db(user, cart_data)
-                except Exception as e:
-                    return Response(
-                        {"error": f"Error syncing cart: {str(e)}"},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
+        # Send login notification email
+        subject = "Login Notification"
+        template_name = 'emails/login_notification.html'
+        context = {
+            'user': user,
+            'location': location,
+            'device': device
+        }
+        recipient_list = [user.email]
+        send_custom_email(subject, template_name, context, recipient_list)
 
-            return response
+        # Sync cart
+        cart_data = request.data.get("cart", [])
+        if cart_data:
+            try:
+                self.sync_cart_with_db(user, cart_data)
+            except Exception as e:
+                return Response(
+                    {"error": f"Error syncing cart: {str(e)}"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
-        return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
+        return response
 
     def get_location(self, ip_address):
+        """
+        Retrieves the location of the user based on their IP address using geolocation.
+
+        Args:
+            ip_address (str): The IP address of the user.
+
+        Returns:
+            str: The formatted location (city, region, country) or "Unknown Location" if retrieval fails.
+        """
         try:
-            response = requests.get(f"https://ipinfo.io/{ip_address}/json")
-            location_data = response.json()
-            return f"{location_data['city']}, {location_data['region']}, {location_data['country']}"
+            # Use OpenStreetMap's Nominatim service for geolocation
+            geolocator = Nominatim(user_agent="usenlease")
+            location = geolocator.geocode(ip_address, exactly_one=True)
+
+            if location:
+                return f"{location.address}"
+            else:
+                return "Unknown Location"
         except Exception:
             return "Unknown Location"
 
+    def sync_cart_with_db(self, user, cart_data):
+        """
+        Syncs the user's cart with the database.
+
+        Args:
+            user (User): The authenticated user.
+            cart_data (list): The cart data to sync.
+
+        Raises:
+            Exception: If there is an error during cart synchronization.
+        """
+        # Implement cart synchronization logic here
+        pass
 
 
 
@@ -770,14 +878,24 @@ class LoginView(APIView):
 
 
 
-
-
 class TokenRefreshView(APIView):
+    """
+    API view for refreshing the access token using the refresh token from cookies.
+
+    Methods:
+        post: Refreshes the access token and sets it in the response cookies.
+    """
     permission_classes = [AllowAny]
 
     def post(self, request):
         """
-        Handles the token refresh request using the refresh token from cookies.
+        Refreshes the access token using the refresh token from cookies.
+
+        Args:
+            request (HttpRequest): The request object containing the refresh token in cookies.
+
+        Returns:
+            Response: A response containing a success message or an error message.
         """
         refresh_token = request.COOKIES.get('refresh')
         access_expiry = now() + timedelta(minutes=15)
@@ -805,18 +923,30 @@ class TokenRefreshView(APIView):
 
 
 class CustomLogoutView(APIView):
+    """
+    API view for handling user logout by blacklisting the refresh token and clearing cookies.
+
+    Methods:
+        post: Blacklists the refresh token and clears authentication cookies.
+    """
+
     def post(self, request):
         """
-        Handles the logout process by blacklisting the refresh token and
-        clearing the authentication cookies.
+        Blacklists the refresh token and clears authentication cookies.
+
+        Args:
+            request (HttpRequest): The request object containing the access and refresh tokens in cookies.
+
+        Returns:
+            Response: A response containing a success message or an error message.
         """
         access_token = request.COOKIES.get('token')
         refresh_token = request.COOKIES.get('refresh')
-        
-        if access_token is None:
+
+        if not access_token:
             return Response({'detail': 'No access token provided.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        if refresh_token is None:
+        if not refresh_token:
             return Response({'detail': 'No refresh token provided.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
@@ -829,7 +959,7 @@ class CustomLogoutView(APIView):
             # Blacklist the outstanding token
             BlacklistedToken.objects.create(token=outstanding_token)
 
-            # Optional: Clear the refresh token cookie
+            # Clear the authentication cookies
             response = Response({'detail': 'Token has been blacklisted.'})
             response.delete_cookie('refresh')
             response.delete_cookie('token')
@@ -847,10 +977,23 @@ class CustomLogoutView(APIView):
 class CheckPhoneNumberView(APIView):
     """
     API endpoint to check if a phone number is already registered.
+
+    Methods:
+        get: Checks if a phone number is already registered.
     """
+
     def get(self, request):
-        phone_number = request.query_params.get('phone', None)
-        
+        """
+        Checks if a phone number is already registered.
+
+        Args:
+            request (HttpRequest): The request object containing the phone number as a query parameter.
+
+        Returns:
+            JsonResponse: A JSON response indicating whether the phone number exists.
+        """
+        phone_number = request.query_params.get('phone')
+
         if not phone_number:
             return JsonResponse({'error': 'Phone parameter is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -861,10 +1004,23 @@ class CheckPhoneNumberView(APIView):
 class CheckEmailView(APIView):
     """
     API endpoint to check if an email is already registered.
+
+    Methods:
+        get: Checks if an email is already registered.
     """
+
     def get(self, request):
-        email = request.query_params.get('email', None)
-        
+        """
+        Checks if an email is already registered.
+
+        Args:
+            request (HttpRequest): The request object containing the email as a query parameter.
+
+        Returns:
+            JsonResponse: A JSON response indicating whether the email exists.
+        """
+        email = request.query_params.get('email')
+
         if not email:
             return JsonResponse({'error': 'Email parameter is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -908,9 +1064,9 @@ class UserViewSet(viewsets.ViewSet):
         Allow anyone to create a new user account.
         """
         data = request.data
-        first_name = data['first_name']
-        last_name = data['last_name']
-        
+        first_name = data.get('first_name')
+        last_name = data.get('last_name')
+
         # Manually hash the password before saving
         if 'password' in data:
             data['password'] = make_password(data['password'])
@@ -936,7 +1092,7 @@ class UserViewSet(viewsets.ViewSet):
         # Hash password if it exists in the request
         if 'password' in data:
             data['password'] = make_password(data['password'])
-        
+
         serializer = UserSerializer(user, data=data, partial=True)  # Allow partial updates
         if serializer.is_valid():
             serializer.save()
@@ -968,7 +1124,6 @@ class AddressViewSet(viewsets.ViewSet):
         self.permission_classes = [IsAdminUser, IsAuthenticated]
         self.check_permissions(request)
 
-        # Filter addresses by the logged-in user
         queryset = Address.objects.all()
         serializer = AddressSerializer(queryset, many=True)
         return Response(serializer.data)
@@ -979,8 +1134,8 @@ class AddressViewSet(viewsets.ViewSet):
         """
         self.permission_classes = [IsAuthenticated]
         self.check_permissions(request)
-        
-        address = get_object_or_404(Address, pk=pk)  # Check if the address belongs to the user
+
+        address = get_object_or_404(Address, pk=pk, user=request.user)  # Ensure user owns the address
         serializer = AddressSerializer(address)
         return Response(serializer.data)
 
@@ -990,7 +1145,7 @@ class AddressViewSet(viewsets.ViewSet):
         """
         self.permission_classes = [IsAuthenticated]
         self.check_permissions(request)
-        
+
         serializer = AddressSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(user=request.user)  # Set the user to the logged-in user
@@ -1003,9 +1158,9 @@ class AddressViewSet(viewsets.ViewSet):
         """
         self.permission_classes = [IsAuthenticated]
         self.check_permissions(request)
-        
+
         address = get_object_or_404(Address, pk=pk, user=request.user)  # Ensure user owns the address
-        serializer = AddressSerializer(address, data=request.data)
+        serializer = AddressSerializer(address, data=request.data, partial=True)  # Allow partial updates
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -1017,11 +1172,11 @@ class AddressViewSet(viewsets.ViewSet):
         """
         self.permission_classes = [IsAuthenticated]
         self.check_permissions(request)
-        
+
         address = get_object_or_404(Address, pk=pk, user=request.user)  # Ensure user owns the address
         address.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-
+    
 
 class PhysicalAddressViewSet(viewsets.ViewSet):
     """
@@ -1035,7 +1190,7 @@ class PhysicalAddressViewSet(viewsets.ViewSet):
         """
         self.permission_classes = [IsAdminUser, IsAuthenticated]
         self.check_permissions(request)
-        
+
         queryset = PhysicalAddress.objects.all()
         serializer = PhysicalAddressSerializer(queryset, many=True)
         return Response(serializer.data)
@@ -1046,9 +1201,8 @@ class PhysicalAddressViewSet(viewsets.ViewSet):
         """
         self.permission_classes = [IsAuthenticated]
         self.check_permissions(request)
-        
-        queryset = PhysicalAddress.objects.all()
-        physical_address = get_object_or_404(queryset, pk=pk, user=request.user)
+
+        physical_address = get_object_or_404(PhysicalAddress, pk=pk, user=request.user)
         serializer = PhysicalAddressSerializer(physical_address)
         return Response(serializer.data)
 
@@ -1058,7 +1212,7 @@ class PhysicalAddressViewSet(viewsets.ViewSet):
         """
         self.permission_classes = [IsAuthenticated]
         self.check_permissions(request)
-        
+
         serializer = PhysicalAddressSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(user=request.user)
@@ -1071,9 +1225,9 @@ class PhysicalAddressViewSet(viewsets.ViewSet):
         """
         self.permission_classes = [IsAuthenticated]
         self.check_permissions(request)
-        
+
         physical_address = get_object_or_404(PhysicalAddress, pk=pk, user=request.user)
-        serializer = PhysicalAddressSerializer(physical_address, data=request.data)
+        serializer = PhysicalAddressSerializer(physical_address, data=request.data, partial=True)  # Allow partial updates
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -1085,11 +1239,11 @@ class PhysicalAddressViewSet(viewsets.ViewSet):
         """
         self.permission_classes = [IsAuthenticated]
         self.check_permissions(request)
-        
+
         physical_address = get_object_or_404(PhysicalAddress, pk=pk, user=request.user)
         physical_address.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-
+    
 
 class CreditCardViewSet(viewsets.ViewSet):
     """
@@ -1103,7 +1257,7 @@ class CreditCardViewSet(viewsets.ViewSet):
         """
         self.permission_classes = [IsAdminUser, IsAuthenticated]
         self.check_permissions(request)
-        
+
         queryset = CreditCard.objects.all()
         serializer = CreditCardSerializer(queryset, many=True)
         return Response(serializer.data)
@@ -1115,8 +1269,7 @@ class CreditCardViewSet(viewsets.ViewSet):
         self.permission_classes = [IsAuthenticated]
         self.check_permissions(request)
 
-        queryset = CreditCard.objects.all()
-        credit_card = get_object_or_404(queryset, pk=pk, user=request.user)
+        credit_card = get_object_or_404(CreditCard, pk=pk, user=request.user)
         serializer = CreditCardSerializer(credit_card)
         return Response(serializer.data)
 
@@ -1129,7 +1282,7 @@ class CreditCardViewSet(viewsets.ViewSet):
 
         serializer = CreditCardSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(user=request.user)  # Ensure the user is set for the credit card
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -1141,7 +1294,7 @@ class CreditCardViewSet(viewsets.ViewSet):
         self.check_permissions(request)
 
         credit_card = get_object_or_404(CreditCard, pk=pk, user=request.user)
-        serializer = CreditCardSerializer(credit_card, data=request.data)
+        serializer = CreditCardSerializer(credit_card, data=request.data, partial=True)  # Allow partial updates
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -1159,7 +1312,6 @@ class CreditCardViewSet(viewsets.ViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-
 class FAQViewSet(viewsets.ModelViewSet):
     """
     A ViewSet for viewing and editing FAQ instances.
@@ -1172,7 +1324,7 @@ class FAQViewSet(viewsets.ModelViewSet):
         """
         List all FAQs.
         """
-        queryset = FAQ.objects.all()
+        queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
@@ -1190,16 +1342,16 @@ class FAQViewSet(viewsets.ModelViewSet):
         """
         Retrieve a specific FAQ.
         """
-        faq = self.get_object()
-        serializer = self.get_serializer(faq)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
     def update(self, request, *args, **kwargs):
         """
         Update an existing FAQ.
         """
-        faq = self.get_object()
-        serializer = self.get_serializer(faq, data=request.data, partial=False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=False)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -1209,24 +1361,32 @@ class FAQViewSet(viewsets.ModelViewSet):
         """
         Delete an FAQ.
         """
-        faq = self.get_object()
-        faq.delete()
+        instance = self.get_object()
+        instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-
-
+    
 
 
 def my_view(request):
+    """
+    Generate signed URLs for files in specified folders within a bucket.
+    """
     bucket_name = 'usenlease-media'
-    folders = ['category_images/', 'company_logos/', 'equipment_images/', 'identity_documents/', 'proof_of_address/', 'user_images/']
-    
+    folders = [
+        'category_images/',
+        'company_logos/',
+        'equipment_images/',
+        'identity_documents/',
+        'proof_of_address/',
+        'user_images/'
+    ]
+
     signed_urls = []
     for folder in folders:
         file_names = list_files(bucket_name, folder)
         signed_urls.extend([generate_signed_url(bucket_name, file_name) for file_name in file_names])
-    
+
     context = {
         'signed_urls': signed_urls,
     }
     return render(request, 'template.html', context)
-

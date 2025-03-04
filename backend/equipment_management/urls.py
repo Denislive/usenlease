@@ -20,6 +20,7 @@ from .views import (
 )
 from user_management.views import ReportViewSet, ContactViewSet, CompanyInfoView, FAQViewSet
 
+
 # Create a router and register the viewsets
 router = DefaultRouter()
 router.register('categories', CategoryViewSet, basename='category')
@@ -34,23 +35,32 @@ router.register('reports', ReportViewSet, basename='report')
 router.register('contact', ContactViewSet, basename='contact')
 router.register('orders', OrderViewSet, basename='order')
 router.register('order-items', OrderItemViewSet, basename='order-item')
-router.register(r'faqs', FAQViewSet)
+router.register('faqs', FAQViewSet, basename='faq')
+
 
 urlpatterns = [
-    path('', include(router.urls)),  # Include all the registered routes
+    # Include all the registered routes from the router
+    path('', include(router.urls)),
+
+    # Checkout and session status
     path('create-checkout-session/', CreateCheckoutSessionView.as_view(), name='create_checkout_session'),
     path('session-status/', SessionStatusView.as_view(), name='session_status'),
+
+    # Order actions
     path('orders/<str:pk>/<str:action>/', OrderActionView.as_view(), name='order-action'),
-    path('order-items/<str:pk>/total-booked/', OrderItemViewSet.as_view({'get': 'list_booked_items'})),
+    path('order-items/<str:pk>/total-booked/', OrderItemViewSet.as_view({'get': 'list_booked_items'}), name='total-booked'),
     path('order-items/<str:pk>/approve/', OrderItemViewSet.as_view({'post': 'approve'}), name='approve'),
 
-    path('root-categories/', RootCategoryListView.as_view(), name='root-category-list'),
-    path('user-equipment/', UserEquipmentView.as_view(), name='user-equipment'),
-    path('user-editable-equipment/', UserEditableEquipmentView.as_view(), name='user-editable-equipment-list'),
-    path('company-info/', CompanyInfoView.as_view(), name='company-info'),
-
-    # Custom order actions (initiate_pickup, confirm_pickup, initiate_return, confirm_return)
+    # Custom order actions (initiate_pickup, confirm_pickup, confirm_return)
     path('order-items/<str:pk>/initiate_pickup/', OrderViewSet.as_view({'post': 'initiate_pickup'}), name='initiate-pickup'),
     path('order-items/<str:pk>/confirm_pickup/', OrderViewSet.as_view({'post': 'confirm_pickup'}), name='confirm-pickup'),
     path('order-items/<str:pk>/confirm_return/', OrderViewSet.as_view({'post': 'confirm_return'}), name='confirm-return'),
+
+    # Root categories and user equipment
+    path('root-categories/', RootCategoryListView.as_view(), name='root-category-list'),
+    path('user-equipment/', UserEquipmentView.as_view(), name='user-equipment'),
+    path('user-editable-equipment/', UserEditableEquipmentView.as_view(), name='user-editable-equipment-list'),
+
+    # Company info
+    path('company-info/', CompanyInfoView.as_view(), name='company-info'),
 ]
