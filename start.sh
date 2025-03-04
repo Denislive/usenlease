@@ -29,6 +29,9 @@ python /app/backend/manage.py migrate --noinput || {
     }
 }
 
+# Ensure Celery Beat migrations are applied to avoid missing tables
+python /app/backend/manage.py migrate django_celery_beat --noinput || echo "Celery Beat migration failed, continuing..."
+
 # Collect static files
 echo "Collecting static files..."
 python /app/backend/manage.py collectstatic --noinput || { echo "Static files collection failed"; exit 1; }

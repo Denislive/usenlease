@@ -48,7 +48,6 @@ DEBUG = os.getenv('DEBUG') == 'True'
 
 ALLOWED_HOSTS = ['usenlease.com', 'www.usenlease.com', '.usenlease.com']
 
-# ✅ Installed Applications (Declared before conditional modifications)
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -61,15 +60,14 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'corsheaders',
     'tinymce',
-
     'whitenoise.runserver_nostatic',
     'rest_framework_simplejwt.token_blacklist',
     'equipment_management.apps.EquipmentManagementConfig',
     'user_management.apps.UserManagementConfig',
-    'storages',  # Google Cloud Storage for media
+    'storages',
 ]
 
-# ✅ Only include Celery Beat when NOT in Docker Build Mode
+# ✅ Only disable Celery Beat in Docker build, not in production!
 if not DOCKER_BUILD:
     INSTALLED_APPS.append("django_celery_beat")
 
