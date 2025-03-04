@@ -19,18 +19,18 @@ DOCKER_BUILD = os.getenv("DOCKER_BUILD", "0") == "1"
 DOMAIN_URL = os.getenv('DOMAIN_URL')
 
 # Google Cloud Storage Bucket Name
-GS_BUCKET_NAME = os.getenv('GS_BUCKET_NAME')  # e.g., 'my-app-media'
+GS_BUCKET_NAME = os.getenv('GS_BUCKET_NAME')
 
 # PORT
 PORT = os.getenv("PORT")
 
-# Decode the base64 encoded credentials and write to a temporary file
+# Decode base64 credentials and write to a temporary file
 creds_path = os.path.join(BASE_DIR, 'credentials', 'google-credentials.json')
 creds_content = os.getenv('GOOGLE_APPLICATION_CREDENTIALS_CONTENT')
 if creds_content:
     os.makedirs(os.path.dirname(creds_path), exist_ok=True)
     try:
-        creds_content += '=' * (-len(creds_content) % 4)  # Correct padding
+        creds_content += '=' * (-len(creds_content) % 4)  # Fix padding
         decoded_creds = base64.b64decode(creds_content)
         with open(creds_path, 'wb') as f:
             f.write(decoded_creds)
@@ -39,20 +39,16 @@ if creds_content:
 
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = creds_path
 
-# SECURITY WARNING: keep the secret key used in production secret!
+# SECURITY WARNING: Keep secret key hidden
 SECRET_KEY = os.getenv('SECRET_KEY')
 if not SECRET_KEY:
     raise ValueError("The SECRET_KEY environment variable is not set")
 
 DEBUG = os.getenv('DEBUG') == 'True'
 
-ALLOWED_HOSTS = [
-    'usenlease.com',
-    'www.usenlease.com',
-    '.usenlease.com',
-]
+ALLOWED_HOSTS = ['usenlease.com', 'www.usenlease.com', '.usenlease.com']
 
-# ✅ Installed Applications (Define before modifications)
+# ✅ Installed Applications (Declared before conditional modifications)
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -73,22 +69,15 @@ INSTALLED_APPS = [
     'storages',  # Google Cloud Storage for media
 ]
 
-# ✅ **Fix: Disable Celery Beat in Docker Build to Prevent Database Access**
+# ✅ Only include Celery Beat when NOT in Docker Build Mode
 if not DOCKER_BUILD:
     INSTALLED_APPS.append("django_celery_beat")
 
-# Celery Configuration
+# ✅ Celery Configuration
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 CELERY_BROKER_URL = 'redis://localhost:6379/0'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
-
-# ✅ **Prevent Celery Beat errors during Docker builds**
-if not DOCKER_BUILD:
-    try:
-        from django_celery_beat.models import PeriodicTask, CrontabSchedule
-    except ImportError:
-        print("Warning: `django_celery_beat` models not found, but safe to ignore in Docker build mode.")
 
 RECIPIENT_LIST = os.getenv('RECIPIENT_LIST')
 
@@ -150,21 +139,12 @@ CSRF_COOKIE_SECURE = os.getenv('CSRF_COOKIE_SECURE', 'True') == 'True'
 CSRF_COOKIE_NAME = os.getenv('CSRF_COOKIE_NAME', 'csrftoken')
 CSRF_COOKIE_HTTPONLY = os.getenv('CSRF_COOKIE_HTTPONLY', 'False') == 'True'
 
-# Explicitly set CSRF_TRUSTED_ORIGINS and CORS_ALLOWED_ORIGINS
-CSRF_TRUSTED_ORIGINS = [
-    'https://usenlease.com',
-    'https://www.usenlease.com',
-]
-CORS_ALLOWED_ORIGINS = [
-    'https://usenlease.com',
-    'https://www.usenlease.com',
-]
-CORS_ALLOWED_ORIGIN_REGEXES = [
-    r"^https://(\w+\.)?usenlease\.com$",
-]
-
-CORS_ALLOW_CREDENTIALS = True  # If using authentication
-CORS_ALLOW_ALL_ORIGINS = False  # Avoid conflicts
+# CSRF & CORS
+CSRF_TRUSTED_ORIGINS = ['https://usenlease.com', 'https://www.usenlease.com']
+CORS_ALLOWED_ORIGINS = ['https://usenlease.com', 'https://www.usenlease.com']
+CORS_ALLOWED_ORIGIN_REGEXES = [r"^https://(\w+\.)?usenlease\.com$"]
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOW_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
 CORS_ALLOW_HEADERS = [
     'accept', 'accept-encoding', 'authorization', 'content-type',
@@ -204,7 +184,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'EquipRentHub.wsgi.application'
 
-# Database Configuration
+# ✅ Database Configuration
 DATABASE_URL = os.getenv('DATABASE_URL')
 
 if DOCKER_BUILD:
@@ -228,7 +208,6 @@ else:
                 'NAME': BASE_DIR / 'db.sqlite3',
             }
         }
-
 
 # Password Validation
 AUTH_PASSWORD_VALIDATORS = [
