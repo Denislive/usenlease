@@ -89,6 +89,8 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'corsheaders',
     'tinymce',
+    'django_celery_beat',
+
 
     'whitenoise.runserver_nostatic',
     'rest_framework_simplejwt.token_blacklist',
