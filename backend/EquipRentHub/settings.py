@@ -89,7 +89,7 @@ CELERY_TASK_SERIALIZER = 'json'
 
 # Optimize Redis connection pooling
 CELERY_BROKER_TRANSPORT_OPTIONS = {
-    'max_connections': 5  # Avoid too many connections
+    'max_connections': 5
 }
 
 

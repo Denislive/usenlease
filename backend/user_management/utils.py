@@ -1,4 +1,3 @@
-# utils.py
 from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
@@ -6,13 +5,15 @@ from google.cloud import storage
 from datetime import timedelta
 import logging
 from django.core.mail import send_mail, BadHeaderError
+from celery import shared_task
 
 # Set up logging
 logger = logging.getLogger(__name__)
 
+@shared_task
 def send_custom_email(subject, template_name, context, recipient_list):
     """
-    Function to send custom emails.
+    Celery Task to send custom emails asynchronously.
 
     :param subject: Subject of the email
     :param template_name: Name of the HTML template file
@@ -51,6 +52,7 @@ def list_files(bucket_name, folder_name):
     blobs = storage_client.list_blobs(bucket_name, prefix=folder_name)
     return [blob.name for blob in blobs]
 
+
 def generate_signed_url(bucket_name, blob_name, expiration_minutes=10):
     """
     Generate a signed URL for a file in Google Cloud Storage.
@@ -63,7 +65,7 @@ def generate_signed_url(bucket_name, blob_name, expiration_minutes=10):
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(blob_name)
-    
+
     url = blob.generate_signed_url(
         expiration=timedelta(minutes=expiration_minutes),
         version='v4'
