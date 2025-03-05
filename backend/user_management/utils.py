@@ -21,6 +21,16 @@ def send_custom_email(subject, template_name, context, recipient_list):
     :param recipient_list: List of recipient email addresses
     """
     try:
+        # Ensure context does not contain unserializable data (like Django model instances)
+        if "user" in context and hasattr(context["user"], "id"):
+            context["user"] = {
+                "id": context["user"].id,
+                "username": context["user"].username,
+                "email": context["user"].email,
+                "first_name": context["user"].first_name,
+                "last_name": context["user"].last_name,
+            }
+
         html_message = render_to_string(template_name, context)
         plain_message = strip_tags(html_message)
         from_email = settings.EMAIL_HOST_USER
