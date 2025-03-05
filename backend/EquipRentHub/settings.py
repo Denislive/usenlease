@@ -5,6 +5,7 @@ import os
 import dj_database_url
 import base64
 import psycopg2
+import ssl 
 
 # Load environment variables from .env
 load_dotenv()
@@ -74,10 +75,10 @@ if not DOCKER_BUILD:
 # Use REDIS_URL from Heroku with fallback for local development
 CELERY_BROKER_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
 
-# Ensure Celery handles SSL for Redis (Heroku)
+# Ensure Celery handles SSL correctly for Heroku Redis
 if CELERY_BROKER_URL.startswith("rediss://"):
     CELERY_BROKER_USE_SSL = {
-        'ssl_cert_reqs': 'CERT_NONE'  # Disable SSL verification (Heroku Redis does not require a client certificate)
+        'ssl_cert_reqs': ssl.CERT_NONE  # Use `ssl.CERT_NONE` instead of a string
     }
 else:
     CELERY_BROKER_USE_SSL = None  # Use normal Redis if running locally
