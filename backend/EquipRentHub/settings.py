@@ -72,19 +72,25 @@ INSTALLED_APPS = [
 if not DOCKER_BUILD:
     INSTALLED_APPS.append("django_celery_beat")
 
-# Use REDIS_URL from Heroku with fallback for local development
+from celery import Celery
+
 CELERY_BROKER_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
 
-# Ensure Celery handles SSL correctly for Heroku Redis
+# Ensure Redis SSL handling is correct
 if CELERY_BROKER_URL.startswith("rediss://"):
     CELERY_BROKER_USE_SSL = {
-        'ssl_cert_reqs': ssl.CERT_NONE  # Use `ssl.CERT_NONE` instead of a string
+        'ssl_cert_reqs': ssl.CERT_NONE
     }
 else:
-    CELERY_BROKER_USE_SSL = None  # Use normal Redis if running locally
+    CELERY_BROKER_USE_SSL = None
 
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
+
+# Optimize Redis connection pooling
+CELERY_BROKER_TRANSPORT_OPTIONS = {
+    'max_connections': 5  # Avoid too many connections
+}
 
 
 RECIPIENT_LIST = os.getenv('RECIPIENT_LIST')

@@ -39,7 +39,7 @@ python /app/backend/manage.py collectstatic --noinput || { echo "Static files co
 # Start Gunicorn for Django backend
 echo "Starting Gunicorn server on port 8000..."
 cd /app/backend
-gunicorn EquipRentHub.wsgi:application --bind 0.0.0.0:8000 --workers=2 --timeout 240 --graceful-timeout 240 &
+gunicorn EquipRentHub.wsgi:application --bind 0.0.0.0:8000 --workers=1 --timeout 240 --graceful-timeout 240 &
 
 # Start Celery Worker
 echo "Starting Celery Worker..."
