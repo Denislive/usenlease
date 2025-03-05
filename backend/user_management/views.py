@@ -734,7 +734,7 @@ class LoginView(APIView):
         subject = "Login Notification"
         template_name = 'emails/login_notification.html'
         context = {
-            'user': user,
+            'email': user.email,
             'location': location,
             'device': device
         }
