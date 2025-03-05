@@ -22,13 +22,14 @@ def send_custom_email(subject, template_name, context, recipient_list):
     """
     try:
         # Ensure context does not contain unserializable data (like Django model instances)
-        if "user" in context and hasattr(context["user"], "id"):
+        user_data = context.get("user")
+        if user_data and hasattr(user_data, "id"):
             context["user"] = {
-                "id": context["user"].id,
-                "username": context["user"].username,
-                "email": context["user"].email,
-                "first_name": context["user"].first_name,
-                "last_name": context["user"].last_name,
+                "id": user_data.id,
+                "username": user_data.username,
+                "email": user_data.email,
+                "first_name": user_data.first_name,
+                "last_name": user_data.last_name,
             }
 
         html_message = render_to_string(template_name, context)
