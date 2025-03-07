@@ -12,22 +12,19 @@
 
       <div class="flex justify-center">
         <div class="w-full max-w-lg bg-white p-2 rounded-lg shadow-lg flex items-center">
-          <!-- Category Select (Static Width) -->
+          <!-- Category Select -->
           <select
             v-model="selectedCategory"
             @change="handleCategoryChange"
             class="w-28 bg-white text-[#1c1c1c] p-2 border-r border-gray-300 focus:outline-none cursor-pointer"
           >
-            <!-- Conditionally render the "All" option -->
             <option value="All">All</option>
-            
-            <!-- Render categories from the store -->
             <option v-for="category in categories" :key="category.id" :value="category.slug">
               {{ category.name }}
             </option>
           </select>
 
-          <!-- Search Input (Smaller Size) -->
+          <!-- Search Input -->
           <input
             type="text"
             v-model="searchQuery"
@@ -61,10 +58,10 @@ const store = useEquipmentsStore();
 const searchQuery = ref('');
 const selectedCategory = ref('All');
 
-// Fetch categories and equipments on mount
-onMounted(() => {
-  store.fetchCategories();
-  store.fetchEquipments();
+// Fetch categories and initial equipments on mount
+onMounted(async () => {
+  await store.fetchCategories();
+  await store.fetchEquipments(); // Load all equipments initially
 });
 
 // Computed property for categories
@@ -73,23 +70,22 @@ const categories = computed(() => store.categories);
 // Handle category change
 const handleCategoryChange = async () => {
   if (selectedCategory.value === 'All') {
-    // Reset search query and fetch all equipments
-    searchQuery.value = '';
-    store.searchQuery = '';
-    router.push('/'); // Navigate to the home page
-    await store.fetchEquipments(); // Ensure equipment data is updated
-    store.filteredEquipments = store.equipments;
+    searchQuery.value = ''; // Reset search query
+    await store.fetchEquipments(); // Reset to all equipments
   } else {
-    // Filter based on the selected category
-    router.push({ name: 'category-details', query: { cat: selectedCategory.value } });
+    await store.fetchFilteredEquipments(searchQuery.value, selectedCategory.value);
   }
 };
 
-// Function to update search query
-const filterBySearch = () => {
-  store.searchQuery = searchQuery.value;
+// Handle search query change
+const filterBySearch = async () => {
+  if (!searchQuery.value.trim()) {
+    await store.fetchEquipments(); // Reset if search is empty
+  } else {
+    await store.fetchFilteredEquipments(searchQuery.value, selectedCategory.value);
+  }
 };
 
-// Debounced search to avoid filtering on every keystroke
+// Debounced search to avoid excessive API calls
 const debouncedSearch = debounce(filterBySearch, 700);
 </script>
