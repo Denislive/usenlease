@@ -511,35 +511,32 @@ class CartItem(models.Model):
         return f"{self.quantity} x {self.item.name} in cart"
 
     @property
-    def get_cart_item_total(self) -> Decimal:
+    def get_cart_item_total(self):
         """
-        Calculates and returns the total price for this cart item.
-
-        Returns:
-            Decimal: The total price for the cart item.
+        Calculate and return the total price for this cart item.
         """
-        if self.item and self.item.hourly_rate is not None:
-            # Ensure start_date and end_date are datetime.date objects
-            start_date = self.start_date
-            end_date = self.end_date
+        if not self.item or self.item.hourly_rate is None:
+            return Decimal("0.00")  # Ensure a valid return type
 
-            # Convert to date if they are in string format
-            if isinstance(start_date, str):
-                start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
-            if isinstance(end_date, str):
-                end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+        # Ensure start_date and end_date are datetime.date objects
+        start_date = self.start_date
+        end_date = self.end_date
 
-            # Calculate rental days
-            rental_days = (end_date - start_date).days
-            if rental_days < 0:
-                rental_days = 0
+        # Convert from string if necessary
+        if isinstance(start_date, str):
+            start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
+        if isinstance(end_date, str):
+            end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
 
-            # Calculate total based on hours and quantity
-            total_hours = rental_days * 24
-            calculated_total = self.quantity * self.item.hourly_rate * total_hours
-            self.total = calculated_total  # Update the total field
+        # Calculate rental duration
+        rental_days = (end_date - start_date).days
+        rental_days = max(rental_days, 1)  # Ensure at least 1 rental day is charged
 
-        return self.total if self.total else Decimal('0.00')
+
+        # Compute total
+        total_price = self.quantity * self.item.hourly_rate * rental_days
+
+        return Decimal(total_price)  # Ensure currency precision
 
     def clean(self):
         """
