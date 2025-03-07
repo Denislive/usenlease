@@ -12,14 +12,12 @@
 
       <!-- Right Section: Paragraph & Search -->
       <div class="lg:w-2/3 flex flex-col gap-2 lg:flex-row items-center lg:justify-end mt-1 lg:mt-0">
-        <!-- Paragraph -->
         <p class="text-sm text-white/90 text-center lg:text-left animate__animated animate__fadeIn animate__delay-1s">
           Find high-quality equipment for any project. Fast delivery and excellent support.
         </p>
 
         <!-- Search Box -->
         <div class="w-full max-w-lg bg-white p-2 rounded shadow-xl flex items-center space-x-1 transition-all">
-          <!-- Category Select -->
           <select
             v-model="selectedCategory"
             @change="handleCategoryChange"
@@ -31,13 +29,13 @@
             </option>
           </select>
 
-          <!-- Search Input -->
+          <!-- Search Input with Animated Placeholder -->
           <input
             type="text"
             v-model="searchQuery"
             @input="debouncedSearch"
             class="flex-1 text-[#1c1c1c] border-none text-sm focus:outline-none px-3 py-2"
-            placeholder="What do you need?"
+            :placeholder="animatedPlaceholder"
           />
 
           <!-- Search Button -->
@@ -53,8 +51,6 @@
   </section>
 </template>
 
-
-
 <script setup>
 import { computed, ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
@@ -66,11 +62,15 @@ const store = useEquipmentsStore();
 
 const searchQuery = ref('');
 const selectedCategory = ref('All');
+const animatedPlaceholder = ref('');
+const itemsToType = ["Camera", "Laptop", "Projector", "Drone", "Lighting Kit"];
+let itemIndex = 0;
 
 // Fetch categories and equipments on mount
 onMounted(() => {
   store.fetchCategories();
   store.fetchEquipments();
+  cycleTypingEffect();
 });
 
 // Computed property for categories
@@ -79,14 +79,12 @@ const categories = computed(() => store.categories);
 // Handle category change
 const handleCategoryChange = async () => {
   if (selectedCategory.value === 'All') {
-    // Reset search query and fetch all equipments
     searchQuery.value = '';
     store.searchQuery = '';
-    router.push('/'); // Navigate to the home page
-    await store.fetchEquipments(); // Ensure equipment data is updated
+    router.push('/');
+    await store.fetchEquipments();
     store.filteredEquipments = store.equipments;
   } else {
-    // Filter based on the selected category
     router.push({ name: 'category-details', query: { cat: selectedCategory.value } });
   }
 };
@@ -98,4 +96,34 @@ const filterBySearch = () => {
 
 // Debounced search to avoid filtering on every keystroke
 const debouncedSearch = debounce(filterBySearch, 700);
+
+// Typing effect for placeholder
+const cycleTypingEffect = async () => {
+  while (true) {
+    const text = itemsToType[itemIndex];
+    animatedPlaceholder.value = "";
+    
+    // Type text
+    for (let i = 0; i < text.length; i++) {
+      await new Promise(resolve => setTimeout(() => {
+        animatedPlaceholder.value += text[i];
+        resolve();
+      }, 150));
+    }
+
+    // Wait before deleting
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    // Delete text
+    while (animatedPlaceholder.value.length > 0) {
+      await new Promise(resolve => setTimeout(() => {
+        animatedPlaceholder.value = animatedPlaceholder.value.slice(0, -1);
+        resolve();
+      }, 100));
+    }
+
+    // Move to next item
+    itemIndex = (itemIndex + 1) % itemsToType.length;
+  }
+};
 </script>
