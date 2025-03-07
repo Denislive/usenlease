@@ -11,7 +11,7 @@
           <div class="relative">
             <span
               v-if="equipment.is_available"
-              class="absolute top-0 left-0 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded flex items-center"
+              class="absolute top-0 left-0 bg-green-500 text-white text-[10px] sm:text-xs font-bold px-2 py-1 rounded flex items-center"
             >
               <i class="pi pi-check-circle mr-1"></i>
               <div class="mr-1">{{ equipment.available_quantity }}</div>
@@ -19,32 +19,34 @@
             </span>
             <span
               v-else
-              class="absolute top-0 left-0 bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded flex items-center"
+              class="absolute top-0 left-0 bg-blue-500 text-white text-[10px] sm:text-xs font-bold px-2 py-1 rounded flex items-center"
               @click="goToDetail(equipment.id)"
             >
               <i class="pi pi-info-circle mr-1"></i>
               Click to check details
             </span>
           </div>
+
           <img 
             :src="equipment.images.length ? equipment.images[0].image_url : 'https://via.placeholder.com/350'" 
             :alt="equipment.images.length ? equipment.name : 'Placeholder Image'" 
-            class="w-full h-48 object-contain rounded-t-lg" 
+            class="w-full h-32 lg:h-48 object-contain rounded-t-lg" 
           />
+
           <div class="p-4">
-            <h5 class="text-sm font-semibold mb-1 text-gray-900">
+            <h5 class="text-sm sm:text-base font-semibold mb-1 text-gray-900">
               {{ store.truncateText(equipment.name, 20) }}
             </h5>
-            <p class="text-gray-600 mb-2">${{ equipment.hourly_rate }} / Day</p>
+            <p class="text-gray-600 text-xs sm:text-sm mb-2">${{ equipment.hourly_rate }} / Day</p>
             <div class="flex items-center mb-2">
-              <span class="rating text-yellow-500 mr-1">{{ renderStars(equipment.rating) }}</span>
-              <span class="reviews text-gray-600 text-xs">
+              <span class="rating text-yellow-500 mr-1 text-xs sm:text-sm">{{ renderStars(equipment.rating) }}</span>
+              <span class="reviews text-gray-600 text-[10px] sm:text-xs">
                 ({{ equipment.equipment_reviews?.length || 0 }})
               </span>
             </div>
             <button 
               @click="goToDetail(equipment.id)" 
-              class="bg-[#ff6f00] rounded text-white px-2 py-1 mt-2 transition duration-300 hover:bg-[#ff9e00] transform hover:scale-110">
+              class="bg-[#ff6f00] rounded text-white text-xs sm:text-sm px-2 py-1 mt-2 transition duration-300 hover:bg-[#ff9e00] transform hover:scale-110">
               Rent Now
             </button>
           </div>
@@ -54,9 +56,9 @@
 
     <!-- Empty List Message -->
     <div v-if="store.filteredEquipments.length === 0" class="text-center py-16">
-      <i class="pi pi-exclamation-circle text-9xl text-gray-500"></i>
-      <p class="text-xl text-gray-500 mt-4">Oops! No items here!</p>
-      <p class="text-xl text-gray-500 mt-4">Try adding a new item by hitting the lease button.</p>
+      <i class="pi pi-exclamation-circle text-6xl sm:text-9xl text-gray-500"></i>
+      <p class="text-lg sm:text-xl text-gray-500 mt-4">Oops! No items here!</p>
+      <p class="text-base sm:text-xl text-gray-500 mt-4">Try adding a new item by hitting the lease button.</p>
     </div>
 
     <!-- Pagination Controls -->
@@ -64,13 +66,13 @@
       <button 
         :disabled="currentPage === 1" 
         @click="goToPage(currentPage - 1)"
-        class="px-4 py-2 mx-1 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50">
+        class="px-3 sm:px-4 py-1 sm:py-2 mx-1 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 text-xs sm:text-sm">
         Previous
       </button>
 
       <button 
         v-for="page in totalPages" :key="page" @click="goToPage(page)"
-        class="px-4 py-2 mx-1 rounded-lg"
+        class="px-3 sm:px-4 py-1 sm:py-2 mx-1 rounded-lg text-xs sm:text-sm"
         :class="page === currentPage ? 'bg-black text-white' : 'bg-yellow-500 hover:bg-gray-300'">
         {{ page }}
       </button>
@@ -78,7 +80,7 @@
       <button 
         :disabled="currentPage === totalPages" 
         @click="goToPage(currentPage + 1)"
-        class="px-4 py-2 mx-1 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50">
+        class="px-3 sm:px-4 py-1 sm:py-2 mx-1 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 text-xs sm:text-sm">
         Next
       </button>
     </div>
@@ -86,31 +88,39 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useEquipmentsStore } from '@/store/equipments';
 
 const router = useRouter();
 const store = useEquipmentsStore();
 
-const itemsPerPage = 20; // Items per page
-const currentPage = ref(1); // Current page number
+const currentPage = ref(1);
+const itemsPerPage = ref(window.innerWidth < 1024 ? 32 : 64); // 32 on small, 64 on large
+
+const updateItemsPerPage = () => {
+  itemsPerPage.value = window.innerWidth < 1024 ? 32 : 64;
+};
 
 onMounted(async () => {
   await store.fetchEquipments();
   await store.fetchCategories();
+  window.addEventListener('resize', updateItemsPerPage);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateItemsPerPage);
 });
 
 // Paginated Equipments
 const paginatedEquipments = computed(() => {
-  const startIndex = (currentPage.value - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  return store.filteredEquipments.slice(startIndex, endIndex);
+  const startIndex = (currentPage.value - 1) * itemsPerPage.value;
+  return store.filteredEquipments.slice(startIndex, startIndex + itemsPerPage.value);
 });
 
 // Total Pages
 const totalPages = computed(() =>
-  Math.ceil(store.filteredEquipments.length / itemsPerPage)
+  Math.ceil(store.filteredEquipments.length / itemsPerPage.value)
 );
 
 // Navigate to a specific page
@@ -123,19 +133,16 @@ const goToPage = (page) => {
 const goToDetail = (equipmentId) => {
   if (equipmentId) {
     router.push({ name: 'equipment-details', params: { id: equipmentId } });
-  } else {
-    showNotification('Item Error', 'Equipment ID is missing!', 'error');
   }
 };
 
 const renderStars = (rating) => {
   const fullStars = Math.floor(rating);
   const halfStar = rating % 1 >= 0.5 ? 1 : 0;
-  const emptyStars = 5 - fullStars - halfStar;
-
-  return '★'.repeat(fullStars) + (halfStar ? '☆' : '') + '☆'.repeat(emptyStars);
+  return '★'.repeat(fullStars) + (halfStar ? '☆' : '') + '☆'.repeat(5 - fullStars - halfStar);
 };
 </script>
+
 
 <style scoped>
 .scrollable-container {

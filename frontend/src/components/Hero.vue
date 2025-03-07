@@ -1,45 +1,49 @@
 <template>
-  <section class="hero bg-gradient-to-r from-[#ff9e00] to-[#ffc107] py-2 lg:py-1 relative text-white overflow-hidden flex items-center">
-    <div class="absolute top-0 left-0 w-full h-full bg-gradient-to-t from-[#1c1c1c] to-transparent opacity-60"></div>
+  <section class="hero bg-gradient-to-r from-[#ff9e00] to-[#ffc107] py-1 px-1  relative text-white overflow-hidden flex items-center">
+    <div class="absolute top-0 left-0 w-full h-full bg-gradient-to-t from-[#1c1c1c] to-transparent opacity-50"></div>
 
-    <div class="container mx-auto text-center relative z-10 px-4">
-      <h1 class="text-2xl lg:text-4xl font-bold leading-tight mb-4 animate__animated animate__fadeIn">
-        Rent the Best Equipment for Your Needs
-      </h1>
-      <p class="text-xs text-black lg:text-lg mb-6 animate__animated animate__fadeIn animate__delay-1s">
-        Find top-quality equipment for any project. Fast delivery and great customer support.
-      </p>
+    <div class="container mx-auto flex flex-col lg:flex-row items-center justify-between relative z-10 w-full">
+      <!-- Left Section: Heading Only -->
+      <div class="text-left lg:w-1/3">
+        <h1 class="text-2xl lg:text-3xl font-bold leading-tight animate__animated animate__fadeIn">
+          Rent the Best Equipment
+        </h1>
+      </div>
 
-      <div class="flex justify-center">
-        <div class="w-full max-w-lg bg-white p-2 rounded-lg shadow-lg flex items-center">
-          <!-- Category Select (Static Width) -->
+      <!-- Right Section: Paragraph & Search -->
+      <div class="lg:w-2/3 flex flex-col gap-2 lg:flex-row items-center lg:justify-end mt-1 lg:mt-0">
+        <!-- Paragraph -->
+        <p class="text-sm text-white/90 text-center lg:text-left animate__animated animate__fadeIn animate__delay-1s">
+          Find high-quality equipment for any project. Fast delivery and excellent support.
+        </p>
+
+        <!-- Search Box -->
+        <div class="w-full max-w-lg bg-white p-2 rounded shadow-xl flex items-center space-x-1 transition-all">
+          <!-- Category Select -->
           <select
             v-model="selectedCategory"
             @change="handleCategoryChange"
-            class="w-28 bg-white text-[#1c1c1c] p-2 border-r border-gray-300 focus:outline-none cursor-pointer"
+            class="w-24 bg-white text-[#1c1c1c] text-sm p-2 border-r border-gray-300 focus:outline-none cursor-pointer rounded-l-full"
           >
-            <!-- Conditionally render the "All" option -->
             <option value="All">All</option>
-            
-            <!-- Render categories from the store -->
             <option v-for="category in categories" :key="category.id" :value="category.slug">
               {{ category.name }}
             </option>
           </select>
 
-          <!-- Search Input (Smaller Size) -->
+          <!-- Search Input -->
           <input
             type="text"
             v-model="searchQuery"
             @input="debouncedSearch"
-            class="flex-1 w-full text-[#1c1c1c] border-none text-sm lg:text-base focus:outline-none px-3 py-2"
-            placeholder="I am looking for..."
+            class="flex-1 text-[#1c1c1c] border-none text-sm focus:outline-none px-3 py-2"
+            placeholder="What do you need?"
           />
 
           <!-- Search Button -->
           <button
             @click="filterBySearch"
-            class="bg-[#ff6f00] text-white px-4 py-2 rounded-md transition duration-300 hover:bg-[#ff9e00] transform hover:scale-105"
+            class="bg-[#ff6f00] text-white px-4 py-2 rounded-full transition duration-300 hover:bg-[#ff9e00] transform hover:scale-105 flex items-center justify-center"
           >
             <i class="pi pi-search text-lg"></i>
           </button>
@@ -48,6 +52,8 @@
     </div>
   </section>
 </template>
+
+
 
 <script setup>
 import { computed, ref, onMounted } from 'vue';
