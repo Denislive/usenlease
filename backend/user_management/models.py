@@ -167,7 +167,6 @@ class Message(models.Model):
         return f"Message from {self.sender.email} to {self.receiver.email} on {self.sent_at}"
 
     class Meta:
-        ordering = ['-sent_at']  # Order messages by most recent first
         verbose_name_plural = "messages"
 
 

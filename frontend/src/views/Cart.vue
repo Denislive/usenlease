@@ -1,4 +1,5 @@
 <template>
+
   <div class="container md:py-1 lg:py-1 mx-auto sm:p-0">
     <!-- Shopping Cart Area Start -->
     <div class="mt-0">
@@ -97,15 +98,16 @@
 </template>
 
 
-<script>
+<script setup>
 import { computed, onMounted } from 'vue';
 import { useCartStore } from '@/store/cart';
 import { useAuthStore } from '@/store/auth';
 import axios from 'axios';
 import useNotifications from '@/store/notification.js'; // Import the notification service
 import { useRouter } from 'vue-router';
-const { showNotification } = useNotifications(); // Initialize notification service
 
+const { showNotification } = useNotifications(); // Initialize notification service
+const cartItems = computed(() => cartStore.cart);
 function debounce(func, wait) {
   let timeout;
   return function(...args) {
@@ -113,10 +115,7 @@ function debounce(func, wait) {
     timeout = setTimeout(() => func.apply(this, args), wait);
   };
 }
-
-export default {
-  setup() {
-    const cartStore = useCartStore();
+const cartStore = useCartStore();
     const authStore = useAuthStore();
     const router = useRouter();
 
@@ -126,6 +125,7 @@ export default {
     // Load cart data when the component is mounted
     onMounted(async () => {
       await cartStore.loadCart(); // Ensure cartStore is loaded asynchronously
+      console.log("CART", cartStore.cart);
     });
 
     const removeFromCart = async (item) => {
@@ -203,13 +203,15 @@ export default {
     const debouncedHandleQuantityInput = debounce(handleQuantityInput, 700);
 
     const calculateItemTotal = (item) => {
-      const price = authStore.isAuthenticated && item.item_details
-        ? item.item_details.hourly_rate
-        : item.item
-          ? item.item.hourly_rate
-          : 0;
-      return price * item.quantity;
-    };
+  const price = authStore.isAuthenticated && item.item_details
+    ? item.item_details.hourly_rate
+    : item.item
+      ? item.item.hourly_rate
+      : 0;
+
+  const leaseDuration = calculateLeaseDuration(item); // Get the total rental days
+  return price * item.quantity * leaseDuration; // Ensure total includes all rental days
+};
 
     const calculateLeaseDuration = (item) => {
       const startDate = new Date(item.start_date);
@@ -220,20 +222,18 @@ export default {
     };
 
     const subtotal = computed(() => {
-      return cartStore.cart.reduce((total, item) => {
-        const price = authStore.isAuthenticated && item.item_details
-          ? item.item_details.hourly_rate
-          : item.item
-            ? item.item.hourly_rate
-            : 0;
+  return cartStore.cart.reduce((total, item) => {
+    const price = authStore.isAuthenticated && item.item_details
+      ? item.item_details.hourly_rate
+      : item.item
+        ? item.item.hourly_rate
+        : 0;
 
-        const startDate = new Date(item.start_date);
-        const endDate = new Date(item.end_date);
-        const timeDiff = endDate - startDate;
-        const hours = timeDiff / (1000 * 3600);
-        return total + price * item.quantity;
-      }, 0);
-    });
+    const leaseDuration = calculateLeaseDuration(item); // Ensure total includes all rental days
+    return total + price * item.quantity * leaseDuration;
+  }, 0);
+});
+
 
     const serviceFee = computed(() => {
       return subtotal.value * 0.06
@@ -279,25 +279,6 @@ export default {
   } else {
     showNotification('Item Error', 'Equipment ID is missing!', 'error');
   }
-};
-
-    return {
-      api_base_url,
-      serviceFee,
-      cartItems: computed(() => cartStore.cart),
-      subtotal,
-      removeFromCart,
-      adjustQuantity,
-      calculateItemTotal,
-      calculateLeaseDuration,
-      getItemId,
-      goToDetail,
-      getItemImage,
-      getItemName,
-      getItemPrice,
-      debouncedHandleQuantityInput
-    };
-  },
 };
 </script>
 

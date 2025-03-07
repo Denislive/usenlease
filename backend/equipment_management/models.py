@@ -9,6 +9,7 @@ from decimal import Decimal
 
 # Django Imports
 from django.db import models
+from django.db.models import Sum
 from django.conf import settings
 from django.shortcuts import reverse
 from django.utils.text import slugify
@@ -19,6 +20,7 @@ from django.db.models import Avg
 
 # Local Imports
 from user_management.models import Address
+
 
 
 def generate_short_uuid() -> str:

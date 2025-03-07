@@ -91,29 +91,46 @@ export default {
       }
     };
 
+
+    const calculateLeaseDuration = (item) => {
+      const startDate = new Date(item.start_date);
+      const endDate = new Date(item.end_date);
+      const timeDiff = endDate - startDate;
+      const days = timeDiff / (1000 * 3600 * 24); // Convert milliseconds to days
+      return days;
+    };
+
     // Calculate the total for a single item
     const calculateItemTotal = (item) => {
-      const price = authStore.isAuthenticated && item.item_details
-        ? item.item_details.hourly_rate
-        : item.item
-        ? item.item.hourly_rate
-        : 0; // Fallback price
+  const pricePerHour = authStore.isAuthenticated && item.item_details
+    ? item.item_details.hourly_rate
+    : item.item
+    ? item.item.hourly_rate
+    : 0;
 
-      return price * item.quantity;
-    };
+  const rentalDays = calculateLeaseDuration(item) || 1; // Default to 1 day if not provided
+  const totalHours = rentalDays; // Convert days to hours
+
+  return pricePerHour * totalHours * item.quantity;
+};
+
 
     // Calculate the subtotal
     const subtotal = computed(() => {
-      return cartStore.cart.reduce((total, item) => {
-        const price = authStore.isAuthenticated && item.item_details
-          ? item.item_details.hourly_rate
-          : item.item
-          ? item.item.hourly_rate
-          : 0; // Fallback price
+  return cartStore.cart.reduce((total, item) => {
+    const pricePerHour = authStore.isAuthenticated && item.item_details
+      ? item.item_details.hourly_rate
+      : item.item
+      ? item.item.hourly_rate
+      : 0;
 
-        return total + price * item.quantity;
-      }, 0);
-    });
+    const rentalDays = calculateLeaseDuration(item) || 1;
+    const totalHours = rentalDays;
+
+    return total + pricePerHour * totalHours * item.quantity;
+  }, 0);
+});
+
 
     // Calculate 6% service fee
     const serviceFee = computed(() => {
@@ -151,17 +168,3 @@ export default {
   },
 };
 </script>
-
-
-<style scoped>
-/* Add any additional styles here */
-.container {
-  max-width: 1200px;
-}
-table {
-  table-layout: fixed;
-}
-th, td {
-  padding: 1rem;
-}
-</style>
