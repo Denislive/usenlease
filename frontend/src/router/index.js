@@ -57,8 +57,8 @@ const router = createRouter({
       component: ServicesView,
     },
     {
-      path: '/faq',
-      name: 'faq',
+      path: '/faqs',
+      name: 'faqs',
       component: FaqView,
     },
     
