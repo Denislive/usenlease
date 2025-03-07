@@ -724,7 +724,7 @@ class Order(models.Model):
             Decimal: The total price of the order.
         """
         order_items = self.order_items.all()
-        total = sum(item.get_order_item_total for item in order_iteget_cartms)
+        total = sum(item.get_order_item_total for item in order_items)
         service_fee = total * Decimal('0.06')
         return total + service_fee
 
