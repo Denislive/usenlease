@@ -27,6 +27,8 @@ from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
+from rest_framework.pagination import PageNumberPagination
+
 
 # Local application imports
 from .models import Category, Tag, Equipment, Image, Specification, Review, Cart, CartItem, Order, OrderItem
@@ -42,6 +44,9 @@ from .serializers import (
     OrderSerializer,
     OrderItemSerializer
 )
+
+from .pagination import CustomEquipmentPagination
+
 from user_management.views import JWTAuthenticationFromCookie
 from user_management.utils import send_custom_email
 
@@ -462,6 +467,8 @@ class EquipmentViewSet(viewsets.ModelViewSet):
     queryset = Equipment.objects.all()
     serializer_class = EquipmentSerializer
     authentication_classes = [JWTAuthenticationFromCookie]
+    pagination_class = CustomEquipmentPagination  # Use custom pagination
+
 
     def get_permissions(self):
         """
@@ -474,10 +481,14 @@ class EquipmentViewSet(viewsets.ModelViewSet):
 
     def list(self, request):
         """
-        List all equipment.
+        List all equipment with pagination.
         """
-        queryset = Equipment.objects.all()
-        serializer = EquipmentSerializer(queryset, many=True)
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            return self.get_paginated_response(self.get_serializer(page, many=True).data)
+        
+        serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
     
     def create(self, request, *args, **kwargs):

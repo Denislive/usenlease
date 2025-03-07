@@ -2,12 +2,12 @@ import { defineStore } from 'pinia';
 import axios from 'axios';
 import { ref, watch } from 'vue';
 import useNotifications from '@/store/notification';
+import { toArray } from 'lodash';
 
-export const useEquipmentsStore = defineStore('equipments', () => {
+export const useEquipmentsStore = defineStore('equipmentStore', () => {
   const api_base_url = import.meta.env.VITE_API_BASE_URL;
   const { showNotification } = useNotifications();
 
-  // State variables
   const equipments = ref([]);
   const categories = ref([]);
   const selectedEquipment = ref(null);
@@ -19,127 +19,129 @@ export const useEquipmentsStore = defineStore('equipments', () => {
   const error = ref(null);
   const searchQuery = ref('');
 
-  // ✅ Use `ref([])` instead of `computed` for filtered equipments
   const filteredEquipments = ref([]);
 
-  // Truncate text utility function
-  const truncateText = (text, length) => {
-    return text.length > length ? text.slice(0, length) + '...' : text;
-  };
+  const truncateText = (text, length) => 
+    text.length > length ? text.slice(0, length) + '...' : text;
 
-  // Fetch Equipments
-  const fetchEquipments = async () => {
-    if (equipments.value.length > 0) return;
+  // Pagination variables
+  const nextPageUrl = ref(null);
+  const previousPageUrl = ref(null);
+  const totalPages = ref(1);
+  const currentPage = ref(1);
+  const totalItems = ref(0);
+  const pageLinks = ref([]);
+  const pageSize = ref(120);
+
+  const fetchEquipments = async (url = `${api_base_url}/api/equipments/?page_size=${pageSize.value}`) => {
     isLoading.value = true;
     error.value = null;
 
     try {
-      const response = await axios.get(`${api_base_url}/api/equipments/`, {
-        withCredentials: true,
-      });
+      const response = await axios.get(url, { withCredentials: true });
 
-      equipments.value = response.data;
-      updateFilteredEquipments(); // Ensure filtering runs after fetching
+      equipments.value = response.data?.results || [];
+      nextPageUrl.value = response.data?.next || null;
+      previousPageUrl.value = response.data?.previous || null;
+      totalPages.value = response.data?.total_pages ?? 1;
+      currentPage.value = response.data?.current_page ?? 1;
+      totalItems.value = response.data?.count ?? 0;
+      pageLinks.value = response.data?.page_links || [];
+
+      updateFilteredEquipments();
     } catch (err) {
-      error.value = 'Failed to fetch items.';
-      showNotification('Items error', `Error fetching items: ${err.response?.data || err.message}!`, 'error');
+      error.value = 'Failed to fetch equipments.';
+      showNotification('Error', `Fetching equipments failed: ${err.response?.data || err.message}`, 'error');
     } finally {
       isLoading.value = false;
     }
   };
 
+  const fetchNextPage = () => nextPageUrl.value && fetchEquipments(nextPageUrl.value);
+  const fetchPreviousPage = () => previousPageUrl.value && fetchEquipments(previousPageUrl.value);
+  const fetchPage = (pageUrl) => pageUrl && fetchEquipments(pageUrl);
+  const setPageSize = (size) => {
+    pageSize.value = size;
+    fetchEquipments();
+  };
 
-// Fetch user equipments
-const fetchUserEquipments = async () => {
-  try {
-    const response = await axios.get(`${api_base_url}/api/user-equipment/`, {
-      withCredentials: true,  // This ensures cookies (credentials) are sent with the request
-    });
-    userEquipments.value = response.data;  // Assign the fetched equipment to `userEquipments`
-  } catch (error) {
-   
-  }
-};
+  const fetchUserEquipments = async () => {
+    try {
+      const response = await axios.get(`${api_base_url}/api/user-equipment/`, { withCredentials: true });
+      userEquipments.value = response.data || [];
+    } catch (err) {
+      showNotification('Error', `Fetching user equipments failed: ${err.response?.data || err.message}`, 'error');
+    }
+  };
 
-// Fetch user editable equipments on mount with credentials
-const fetchUserEditableEquipments = async () => {
-  try {
-    const response = await axios.get(`${api_base_url}/api/user-editable-equipment/`, {
-      withCredentials: true,  // This ensures cookies (credentials) are sent with the request
-    });
-    userEditableEquipmentsIds.value = response.data;  // Assign the fetched equipment IDs
-  } catch (error) {
-    
-  }
-};
+  const fetchUserEditableEquipments = async () => {
+    try {
+      const response = await axios.get(`${api_base_url}/api/user-editable-equipment/`, { withCredentials: true });
+      userEditableEquipmentsIds.value = response.data || [];
+    } catch (err) {
+      showNotification('Error', `Fetching editable equipments failed: ${err.response?.data || err.message}`, 'error');
+    }
+  };
 
-
-  // Get equipment by its ID
   const getEquipmentById = async (id) => {
-    // Check if the equipment is already in the list to avoid unnecessary API calls
     const equipment = equipments.value.find((item) => item.id === id);
     if (equipment) {
-      selectedEquipment.value = equipment; // Set selected equipment from the list
-    } else {
-      isLoading.value = true; // Set loading state to true
-      error.value = null; // Reset any previous error
-      try {
-        // API request to fetch equipment details by ID
-        const response = await axios.get(`${api_base_url}/api/equipments/${id}/`, {
-          withCredentials: true, // Include credentials (cookies) in the request
-        });
-        selectedEquipment.value = response.data; // Store the fetched equipment
-      } catch (err) {
-        // Handle error if the request fails
-        error.value = `Failed to fetch item with ID ${id}.`;
-        showNotification('Item error', `Error fetching item by ID: ${err.response?.data || err.message}!`, 'error');
-
-      } finally {
-        // Set loading to false once the request is done (either success or failure)
-        isLoading.value = false;
-      }
+      selectedEquipment.value = equipment;
+      return;
     }
-  };
 
-  // Fetch Categories
-  const fetchCategories = async () => {
-    if (categories.value.length > 0) return;
     isLoading.value = true;
     error.value = null;
 
     try {
-      const response = await axios.get(`${api_base_url}/api/categories/`, {
-        withCredentials: true,
-      });
-
-      categories.value = response.data;
+      const response = await axios.get(`${api_base_url}/api/equipments/${id}/`, { withCredentials: true });
+      selectedEquipment.value = response.data || null;
     } catch (err) {
-      error.value = 'Failed to fetch categories.';
-      showNotification('Items error', `Error fetching categories: ${err.response?.data || err.message}!`, 'error');
+      error.value = `Failed to fetch equipment with ID ${id}.`;
+      showNotification('Error', `Fetching equipment failed: ${err.response?.data || err.message}`, 'error');
     } finally {
       isLoading.value = false;
     }
   };
 
-  // ✅ Function to manually update `filteredEquipments`
+  const fetchCategories = async () => {
+    if (categories.value.length > 0) return;
+
+    isLoading.value = true;
+    error.value = null;
+
+    try {
+      const response = await axios.get(`${api_base_url}/api/categories/`, { withCredentials: true });
+      categories.value = response.data || [];
+    } catch (err) {
+      error.value = 'Failed to fetch categories.';
+      showNotification('Error', `Fetching categories failed: ${err.response?.data || err.message}`, 'error');
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
   const updateFilteredEquipments = () => {
+    if (!equipments.value.length) {
+      filteredEquipments.value = [];
+      return;
+    }
+
     const query = searchQuery.value.trim().toLowerCase();
 
     filteredEquipments.value = equipments.value.filter((equipment) => {
       const matchesQuery =
-        query === '' ||
-        equipment.name.toLowerCase().includes(query) ||
+        !query ||
+        equipment.name?.toLowerCase().includes(query) ||
         equipment.description?.toLowerCase().includes(query) ||
-        equipment.hourly_rate.toString().includes(query) ||
+        equipment.hourly_rate?.toString().includes(query) ||
         equipment.address?.street_address?.toLowerCase().includes(query) ||
         equipment.address?.city?.toLowerCase().includes(query) ||
         equipment.address?.state?.toLowerCase().includes(query);
 
-      // Get active filters
       const activeCategories = Object.keys(selectedCategories.value).filter((key) => selectedCategories.value[key]);
       const activeCities = Object.keys(selectedCities.value).filter((key) => selectedCities.value[key]);
 
-      // ✅ Ensure category filtering works correctly
       const matchesCategory =
         activeCategories.length === 0 || (equipment.category && activeCategories.includes(equipment.category));
 
@@ -148,13 +150,18 @@ const fetchUserEditableEquipments = async () => {
 
       return matchesQuery && matchesCategory && matchesCity;
     });
-
   };
 
-  // ✅ Watchers to keep `filteredEquipments` reactive
   watch([equipments, searchQuery, selectedCategories, selectedCities], updateFilteredEquipments, { deep: true });
 
   return {
+    totalPages,
+    nextPageUrl,
+    previousPageUrl,
+    currentPage,
+    totalItems,
+    pageLinks,
+    pageSize,
     truncateText,
     equipments,
     categories,
@@ -166,13 +173,16 @@ const fetchUserEditableEquipments = async () => {
     searchQuery,
     selectedCategories,
     selectedCities,
-    filteredEquipments, // ✅ Now a ref([]), not computed!
+    filteredEquipments,
     fetchEquipments,
     fetchUserEquipments,
     getEquipmentById,
     fetchUserEditableEquipments,
     fetchCategories,
-    updateFilteredEquipments, // Manually trigger an update if needed
+    updateFilteredEquipments,
+    fetchNextPage,
+    fetchPreviousPage,
+    fetchPage,
+    setPageSize,
   };
 });
-

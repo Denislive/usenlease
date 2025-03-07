@@ -2,9 +2,9 @@
   <div class="container mx-auto p-4">
     <!-- Scrollable Equipment Grid -->
     <div class="scrollable-container">
-      <div class="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2">
+      <div class="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-6">
         <div
-          v-for="equipment in paginatedEquipments"
+          v-for="equipment in store.equipments"
           :key="equipment.id"
           class="bg-white rounded-lg shadow-lg overflow-hidden transition-transform hover:scale-105 cursor-pointer"
         >
@@ -33,7 +33,7 @@
             class="w-full h-32 lg:h-48 object-contain rounded-t-lg" 
           />
 
-          <div class="p-4">
+          <div class="p-1">
             <h5 class="text-sm font-semibold mb-1 text-gray-900">
               {{ store.truncateText(equipment.name, 20) }}
             </h5>
@@ -55,31 +55,32 @@
     </div>
 
     <!-- Empty List Message -->
-    <div v-if="store.filteredEquipments.length === 0" class="text-center py-16">
+    <div v-if="store.equipments.length === 0" class="text-center py-16">
       <i class="pi pi-exclamation-circle text-6xl sm:text-9xl text-gray-500"></i>
       <p class="text-lg sm:text-xl text-gray-500 mt-4">Oops! No items here!</p>
       <p class="text-base sm:text-xl text-gray-500 mt-4">Try adding a new item by hitting the lease button.</p>
     </div>
 
     <!-- Pagination Controls -->
-    <div v-if="totalPages > 1" class="pagination flex justify-center mt-6">
+    <div v-if="store.totalPages" class="pagination flex justify-center mt-6">
       <button 
-        :disabled="currentPage === 1" 
-        @click="goToPage(currentPage - 1)"
+        :disabled="!store.previousPageUrl" 
+        @click="fetchPage(store.previousPageUrl)"
         class="px-3 sm:px-4 py-1 sm:py-2 mx-1 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 text-xs sm:text-sm">
         Previous
       </button>
 
       <button 
-        v-for="page in totalPages" :key="page" @click="goToPage(page)"
+        v-for="page in store.pageLinks" :key="page.url" 
+        @click="fetchPage(page.url)"
         class="px-3 sm:px-4 py-1 sm:py-2 mx-1 rounded-lg text-xs sm:text-sm"
-        :class="page === currentPage ? 'bg-black text-white' : 'bg-yellow-500 hover:bg-gray-300'">
-        {{ page }}
+        :class="page.page === store.currentPage ? 'bg-black text-white' : 'bg-yellow-500 hover:bg-gray-300'">
+        {{ page.page }}
       </button>
 
       <button 
-        :disabled="currentPage === totalPages" 
-        @click="goToPage(currentPage + 1)"
+        :disabled="!store.nextPageUrl" 
+        @click="fetchPage(store.nextPageUrl)"
         class="px-3 sm:px-4 py-1 sm:py-2 mx-1 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 text-xs sm:text-sm">
         Next
       </button>
@@ -88,45 +89,21 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, onUnmounted } from 'vue';
+import { onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useEquipmentsStore } from '@/store/equipments';
 
 const router = useRouter();
 const store = useEquipmentsStore();
 
-const currentPage = ref(1);
-const itemsPerPage = ref(window.innerWidth < 1024 ? 32 : 64); // 32 on small, 64 on large
-
-const updateItemsPerPage = () => {
-  itemsPerPage.value = window.innerWidth < 1024 ? 32 : 64;
-};
-
 onMounted(async () => {
   await store.fetchEquipments();
   await store.fetchCategories();
-  window.addEventListener('resize', updateItemsPerPage);
 });
 
-onUnmounted(() => {
-  window.removeEventListener('resize', updateItemsPerPage);
-});
-
-// Paginated Equipments
-const paginatedEquipments = computed(() => {
-  const startIndex = (currentPage.value - 1) * itemsPerPage.value;
-  return store.filteredEquipments.slice(startIndex, startIndex + itemsPerPage.value);
-});
-
-// Total Pages
-const totalPages = computed(() =>
-  Math.ceil(store.filteredEquipments.length / itemsPerPage.value)
-);
-
-// Navigate to a specific page
-const goToPage = (page) => {
-  if (page >= 1 && page <= totalPages.value) {
-    currentPage.value = page;
+const fetchPage = (pageUrl) => {
+  if (pageUrl) {
+    store.fetchPage(pageUrl);
   }
 };
 
@@ -142,7 +119,6 @@ const renderStars = (rating) => {
   return '★'.repeat(fullStars) + (halfStar ? '☆' : '') + '☆'.repeat(5 - fullStars - halfStar);
 };
 </script>
-
 
 <style scoped>
 .scrollable-container {
