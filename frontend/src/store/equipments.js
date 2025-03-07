@@ -27,18 +27,6 @@ export const useEquipmentsStore = defineStore('equipments', () => {
     return text.length > length ? text.slice(0, length) + '...' : text;
   };
 
-  // Fetch filtered equipments
-  const fetchFilteredEquipments = async (query, category) => {
-    try {
-      const response = await axios.get(`${api_base_url}/api/equipments/search/`, {
-        params: { q: query, category: category }
-      });
-      filteredEquipments.value = response.data; // Initial backend data
-    } catch (error) {
-      console.error('Error fetching filtered equipment:', error);
-    }
-  };
-
   // Fetch Equipments
   const fetchEquipments = async () => {
     if (equipments.value.length > 0) return;
@@ -180,7 +168,6 @@ const fetchUserEditableEquipments = async () => {
     selectedCities,
     filteredEquipments, // ✅ Now a ref([]), not computed!
     fetchEquipments,
-    fetchFilteredEquipments,
     fetchUserEquipments,
     getEquipmentById,
     fetchUserEditableEquipments,

@@ -14,8 +14,6 @@ from django.utils.translation import gettext_lazy as _
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
-from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
-
 
 
 # Third-party imports
@@ -461,32 +459,9 @@ class EquipmentViewSet(viewsets.ModelViewSet):
     Provides list, create, retrieve, and update actions.
     """
     
-    queryset = Equipment.objects.filter(is_available=True).select_related('category', 'address').prefetch_related('tags')
+    queryset = Equipment.objects.all()
     serializer_class = EquipmentSerializer
     authentication_classes = [JWTAuthenticationFromCookie]
-
-
-    @action(detail=False, methods=['get'])
-    def search(self, request):
-        """
-        Optimized search using PostgreSQL full-text search.
-        """
-        query = request.query_params.get('q', '').strip()
-        if not query:
-            return Response({"error": "Query parameter 'q' is required"}, status=400)
-
-        # Use Full-Text Search
-        search_vector = SearchVector('name', weight='A') + \
-                        SearchVector('description', weight='B') + \
-                        SearchVector('category__name', weight='C')
-        search_query = SearchQuery(query)
-
-        results = self.queryset.annotate(
-            rank=SearchRank(search_vector, search_query)
-        ).filter(search_vector=search_query).order_by('-rank')
-
-        serializer = self.get_serializer(results, many=True)
-        return Response(serializer.data)
 
     def get_permissions(self):
         """

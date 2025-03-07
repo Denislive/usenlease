@@ -7,10 +7,8 @@ from decimal import Decimal
 # Third-Party Library Imports
 # (None in this case)
 
-
-
 # Django Imports
-from django.db import models, Index
+from django.db import models
 from django.db.models import Sum
 from django.conf import settings
 from django.shortcuts import reverse
@@ -19,7 +17,7 @@ from django.core.validators import FileExtensionValidator, MinValueValidator
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.db.models import Avg
-from django.contrib.postgres.indexes import GinIndex
+
 # Local Imports
 from user_management.models import Address
 
@@ -203,13 +201,6 @@ class Equipment(models.Model):
     class Meta:
         ordering = ('-date_created',)
         verbose_name_plural = "equipment"
-        indexes = [
-            GinIndex(fields=['name']),  # Index for name
-            Index(fields=['category']),  # Index for category
-            Index(fields=['tags']),
-            GinIndex(fields=['description']),
-        ]
-
 
     def __str__(self) -> str:
         """
