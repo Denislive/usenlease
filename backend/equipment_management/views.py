@@ -92,14 +92,6 @@ class CreateCheckoutSessionView(APIView):
                         status=status.HTTP_400_BAD_REQUEST,
                     )
 
-                # Deduct from available items
-                item.available_quantity -= cart_item.quantity
-
-                if item.available_quantity == 0:
-                    item.is_available = False
-                    
-                item.save()
-
                 # Create order item
                 OrderItem.objects.create(
                     order=order,
@@ -123,28 +115,51 @@ class CreateCheckoutSessionView(APIView):
                 },
             )
 
+            # Create the Stripe session
             session = stripe.checkout.Session.create(
                 mode='payment',
                 customer_email=request.data.get('customer_email'),
                 billing_address_collection='required',
                 shipping_address_collection={'allowed_countries': ['US', 'CA', 'KE']},
                 line_items=[{'price': stripe_price.id, 'quantity': 1}],
-                success_url=f"{DOMAIN}/payment-successful?order_id={order.id}",
-                cancel_url=f"{DOMAIN}/payment-canceled?order_id={order.id}",
+                success_url=f"{settings.DOMAIN_URL}/payment-successful?session_id={{CHECKOUT_SESSION_ID}}&order_id={order.id}",
+                cancel_url=f"{settings.DOMAIN_URL}/payment-canceled?order_id={order.id}",
             )
-
             # Update order with payment details
             order.payment_token = session.id
             order.payment_status = 'pending'
             order.save()
 
-            # === Send Emails ===
-            # 1. Email to the user (Order Creation)
+            # --- Prepare Email Contexts with Serializable Data ---
+
+            # For the user email (Order Creation)
             user_email_context = {
-                'user': user,
-                'order': order,
-                'cart_items': cart_items,
-                'total_price': order_total_price + service_fee,
+                'user': {
+                    'id': user.id,
+                    'username': user.username,
+                    'email': user.email,
+                    'role': getattr(user, 'role', None),
+                    'image_url': user.image.url if hasattr(user, 'image') and user.image else None,
+                },
+                'order': {
+                    'id': order.id,
+                    'order_total_price': str(order.order_total_price),
+                    'total_order_items': order.total_order_items,
+                },
+                'cart_items': [
+                    {
+                        'id': cart_item.id,
+                        'item': {
+                            'id': cart_item.item.id,
+                            'name': cart_item.item.name,
+                        },
+                        'quantity': cart_item.quantity,
+                        'start_date': str(cart_item.start_date),
+                        'end_date': str(cart_item.end_date),
+                    }
+                    for cart_item in cart_items
+                ],
+                'total_price': str(order_total_price + service_fee),
             }
             send_custom_email.delay(
                 subject="Order Confirmation - Your Rental Order",
@@ -153,16 +168,27 @@ class CreateCheckoutSessionView(APIView):
                 recipient_list=[user.email],
             )
 
-            # 2. Notify equipment owners
+            # For equipment owners notification email
             for cart_item in cart_items:
                 owner = cart_item.item.owner
                 owner_email_context = {
-                    'owner': owner,
-                    'item': cart_item.item,
-                    'renter': user,
+                    'owner': {
+                        'id': owner.id,
+                        'username': owner.username,
+                        'email': owner.email,
+                    },
+                    'item': {
+                        'id': cart_item.item.id,
+                        'name': cart_item.item.name,
+                    },
+                    'renter': {
+                        'id': user.id,
+                        'username': user.username,
+                        'email': user.email,
+                    },
                     'quantity': cart_item.quantity,
-                    'start_date': cart_item.start_date,
-                    'end_date': cart_item.end_date,
+                    'start_date': str(cart_item.start_date),
+                    'end_date': str(cart_item.end_date),
                 }
                 send_custom_email.delay(
                     subject=f"Equipment Rental Notification - {cart_item.item.name}",
@@ -187,6 +213,7 @@ class CreateCheckoutSessionView(APIView):
             return Response({"error": e.detail}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({"error": f"An unexpected error occurred. {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 
 class SessionStatusView(APIView):
@@ -1158,31 +1185,35 @@ class OrderViewSet(viewsets.ViewSet):
     def create(self, request):
         self.check_permissions(request)
 
-        data = request.data
-        data['user'] = request.user.id
-
         try:
             cart = Cart.objects.get(user=request.user)
-        except Cart.DoesNotExist:
-            return Response({"error": "No cart found for the user"}, status=status.HTTP_404_NOT_FOUND)
+            cart_items = cart.cart_items.all()
 
-        cart_items = cart.cart_items.all()
+            if not cart_items.exists():
+                return Response({"error": "Cart is empty, cannot create an order"}, status=status.HTTP_400_BAD_REQUEST)
 
-        if not cart_items.exists():
-            return Response({"error": "Cart is empty, cannot create an order"}, status=status.HTTP_400_BAD_REQUEST)
+            # Calculate order totals
+            order_total_price = Decimal(sum(item.quantity * item.item.hourly_rate for item in cart_items))
+            total_order_items = sum(item.quantity for item in cart_items)
+            service_fee = (order_total_price * Decimal('0.06')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            order_total_price_with_fee = (order_total_price + service_fee).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
-        order_total_price = Decimal(sum(item.quantity * item.item.hourly_rate for item in cart_items))
-        total_order_items = sum(item.quantity for item in cart_items)
-        service_fee = order_total_price * Decimal('0.06')
-        order_total_price_with_fee = order_total_price + service_fee
+            # Validate inventory before proceeding
+            for cart_item in cart_items:
+                if cart_item.item.available_quantity < cart_item.quantity:
+                    return Response({
+                        "error": f"Not enough stock for {cart_item.item.name}. Available: {cart_item.item.available_quantity}, Requested: {cart_item.quantity}"
+                    }, status=status.HTTP_400_BAD_REQUEST)
 
-        data['order_total_price'] = order_total_price_with_fee
-        data['total_order_items'] = total_order_items
+            # Create order
+            order = Order.objects.create(
+                user=request.user,
+                order_total_price=order_total_price_with_fee,
+                total_order_items=total_order_items,
+                payment_status='pending'
+            )
 
-        order_serializer = OrderSerializer(data=data)
-        if order_serializer.is_valid():
-            order = order_serializer.save(user=request.user)
-
+            # Create order items
             for cart_item in cart_items:
                 OrderItem.objects.create(
                     order=order,
@@ -1192,29 +1223,14 @@ class OrderViewSet(viewsets.ViewSet):
                     end_date=cart_item.end_date
                 )
 
-            cart_items.delete()
+     
+            return Response({'order_id': order.id}, status=status.HTTP_201_CREATED)
 
-            try:
-                amount_in_cents = int(order_total_price_with_fee * Decimal('100'))
-                intent = stripe.PaymentIntent.create(
-                    amount=amount_in_cents,
-                    currency='usd',
-                    automatic_payment_methods={'enabled': True},
-                )
+        except Cart.DoesNotExist:
+            return Response({"error": "No cart found for the user"}, status=status.HTTP_404_NOT_FOUND)
 
-                order.payment_token = intent.id
-                order.payment_status = 'pending'
-                order.save()
-
-                return Response({
-                    'clientSecret': intent.client_secret,
-                    'order_id': order.id,
-                }, status=status.HTTP_201_CREATED)
-
-            except stripe.error.StripeError as e:
-                return Response({"error": f"Payment processing failed: {e.user_message}"}, status=status.HTTP_400_BAD_REQUEST)
-
-        return Response(order_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"error": f"An unexpected error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def get_order(self, pk, user):
         """Helper function to retrieve an order object with permission check"""

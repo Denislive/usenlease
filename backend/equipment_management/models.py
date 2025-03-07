@@ -724,7 +724,7 @@ class Order(models.Model):
             Decimal: The total price of the order.
         """
         order_items = self.order_items.all()
-        total = sum(item.get_order_item_total for item in order_items)
+        total = sum(item.get_order_item_total for item in order_iteget_cartms)
         service_fee = total * Decimal('0.06')
         return total + service_fee
 
@@ -924,21 +924,19 @@ class OrderItem(models.Model):
         return f"{self.quantity} x {self.item.name} in order"
 
     @property
-    def get_order_item_total(self) -> Decimal:
+    def get_order_item_total(self):
         """
-        Calculates and returns the total price for this order item.
-
-        Returns:
-            Decimal: The total price for the order item.
+        Calculate and return the total price for this order item.
         """
         if not self.start_date or not self.end_date:
-            return Decimal('0.00')  # Return 0 if the dates are missing
+            return Decimal("0.00")  # Return 0 if dates are missing
 
         rental_days = (self.end_date - self.start_date).days
-        if rental_days < 0:
-            rental_days = 0
-        total_hours = rental_days * 24  # Convert rental days to total hours
-        return Decimal(self.quantity) * self.item.hourly_rate * Decimal(total_hours)
+        rental_days = max(rental_days, 1)  # Ensure at least 1 day is charged
+
+
+        return self.quantity * self.item.hourly_rate * rental_days
+    
 
     def save(self, *args, **kwargs):
         """
