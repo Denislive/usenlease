@@ -2,7 +2,7 @@
   <div class="container mx-auto p-4">
     <!-- Scrollable Equipment Grid -->
     <div class="scrollable-container">
-      <div class="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-6">
+      <div class="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2">
         <div
           v-for="equipment in paginatedEquipments"
           :key="equipment.id"
@@ -34,7 +34,7 @@
           />
 
           <div class="p-4">
-            <h5 class="text-sm sm:text-base font-semibold mb-1 text-gray-900">
+            <h5 class="text-sm font-semibold mb-1 text-gray-900">
               {{ store.truncateText(equipment.name, 20) }}
             </h5>
             <p class="text-gray-600 text-xs sm:text-sm mb-2">${{ equipment.hourly_rate }} / Day</p>
