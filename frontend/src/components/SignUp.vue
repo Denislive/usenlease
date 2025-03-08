@@ -200,12 +200,17 @@
                         <button type="button" @click="prevStep" class="bg-gray-300 text-gray-700 rounded-md py-2 px-4">
                             Back
                         </button>
-                        <button type="submit" :class="[
-                            'rounded-md py-2 px-4 transition duration-200',
-                            acceptedTerms ? 'bg-[#1c1c1c] text-white' : 'bg-red-500 text-white'
-                        ]" :disabled="!acceptedTerms">
-                            Sign Up
-                        </button>
+                        <button type="submit" 
+    :disabled="!acceptedTerms || loading" 
+    :class="[
+        'w-96 rounded-md py-2 transition duration-200 flex items-center justify-center',
+        acceptedTerms ? 'bg-[#1c1c1c] text-white' : 'bg-red-500 text-white',
+        loading ? 'opacity-50 cursor-not-allowed' : ''
+    ]">
+    <i v-if="loading" class="pi pi-spinner pi-spin mr-2"></i>
+    <span>{{ loading ? 'Hang on as we create an account for you...' : 'Sign Up' }}</span>
+</button>
+
                     </div>
                 </div>
             </form>
@@ -230,6 +235,7 @@ import useNotifications from '@/store/notification';
 const companyInfoStore = useCompanyInfoStore();
 const { showNotification } = useNotifications();
 
+const loading = ref(false); // Loading state
 
 
 const api_base_url = import.meta.env.VITE_API_BASE_URL;
@@ -308,6 +314,7 @@ const validatePhone = async () => {
             });
             errors.value.phone = response.data.exists ? 'Phone number is already connected to an account!' : '';
         } catch (error) {
+            console.error('Error checking phone:', error);
             errors.value.phone = 'Error checking phone';
         }
     }
@@ -332,6 +339,7 @@ const validateEmail = async () => {
             });
             errors.value.email = response.data.exists ? 'Email is already connected to an account!' : '';
         } catch (error) {
+            console.error('Error checking email:', error);
             errors.value.email = 'Error checking email';
         }
     }
@@ -477,6 +485,7 @@ const handleFileChange = (event, fileType) => {
 
 // Handle signup form submission
 const handleSignup = async () => {
+    loading.value = true; // Start loading
     try {
         const formData = new FormData();
         formData.append('first_name', firstName.value);
@@ -535,6 +544,9 @@ const handleSignup = async () => {
         handleCreateError(error);
         errorMessage.value = 'An unexpected error occurred!';
         successMessage.value = '';
+    } finally {
+        loading.value = false; // Stop loading
+
     }
 };
 
