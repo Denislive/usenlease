@@ -18,6 +18,7 @@ def send_custom_email(self, subject, template_name, context, recipient_list):
     """
     connection = None
     try:
+        # Render the HTML and plain text email content
         html_message = render_to_string(template_name, context)
         plain_message = strip_tags(html_message)
         from_email = settings.EMAIL_HOST_USER
@@ -47,6 +48,8 @@ def send_custom_email(self, subject, template_name, context, recipient_list):
         # Exponential backoff before retrying (waits 5, 10, 20, 40, 80 seconds)
         delay = 5 * (2 ** self.request.retries)
         logger.warning(f"Retrying in {delay} seconds...")
+
+        # Retry with exponential backoff
         raise self.retry(exc=e, countdown=delay)
     finally:
         if connection:
