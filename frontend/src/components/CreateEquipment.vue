@@ -215,7 +215,6 @@
   </div>
 </template>
 
-
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
@@ -251,6 +250,7 @@ const addTags = () => {
   const tag = tagsInput.value.trim(); // Trim any surrounding spaces
   validateTags();
 
+
   if (tag) {
     tags.value.push(tag); // Add the tag to the tags array
     tagsInput.value = ""; // Clear input after adding
@@ -260,9 +260,11 @@ const addTags = () => {
   }
 };
 
+
 const removeTag = (index) => {
   tags.value.splice(index, 1); // Remove tag by index
 };
+
 
 const specifications = ref([{ key: '', value: '' }]);  // Initially, one specification
 
@@ -296,7 +298,6 @@ const fetchCountries = async () => {
     const response = await axios.get("https://restcountries.com/v3.1/all");
     countries.value = response.data.map((c) => c.name.common).sort();
   } catch (error) {
-    console.error("Error fetching countries:", error);
   }
 };
 
@@ -305,7 +306,6 @@ onMounted(async () => {
     const response = await axios.get(`${api_base_url}/api/categories/`);
     categories.value = response.data;
   } catch (error) {
-    console.error('Error fetching categories:', error);
   }
 
   fetchCountries();
@@ -339,6 +339,7 @@ const validateHourlyRate = () => {
 const validateCategory = () => {
   categoryError.value = !selectedCategory.value ? 'Please select a valid category.' : '';
 };
+
 
 const validateTags = () => {
   tagsError.value = tagsInput.value.length < 3
@@ -402,6 +403,7 @@ const validateImages = () => {
       : '';
 };
 
+
 const isFormInvalid = computed(() => {
   return (
     itemNameError.value ||
@@ -439,20 +441,6 @@ const triggerFileSelect = () => {
   document.getElementById('images').click();
 };
 
-const calculatePayloadSize = (formData) => {
-  let totalSize = 0;
-  for (const [key, value] of formData.entries()) {
-    if (value instanceof File) {
-      totalSize += value.size; // Add file size
-    } else if (typeof value === 'string') {
-      totalSize += new Blob([value]).size; // Add string size
-    } else if (typeof value === 'object') {
-      totalSize += new Blob([JSON.stringify(value)]).size; // Add JSON size
-    }
-  }
-  return totalSize;
-};
-
 const handleSubmit = async () => {
   // Run all validation functions before submitting
   validateItemName();
@@ -485,7 +473,6 @@ const handleSubmit = async () => {
     imageError.value;
 
   if (hasErrors) {
-    console.log('Form has validation errors, cannot submit.');
     return; // Exit early if there are errors
   }
 
@@ -513,10 +500,6 @@ const handleSubmit = async () => {
   images.value.forEach(image => {
     formData.append('images', image);
   });
-
-  // Log the size of the payload
-  const payloadSize = calculatePayloadSize(formData);
-  console.log('Total payload size:', (payloadSize / 1024 / 1024).toFixed(2), 'MB');
 
   if (userId) {
     try {
@@ -559,7 +542,7 @@ const resetFormFields = () => {
 
 const handleError = (error) => {
   if (error.response) {
-    showNotification('Error Listing Item', `Error posting item. ${error.response.data.detail}.`, 'error');
+    showNotification('Error Listing Item', `Error posting item. ${error.response}.`, 'error');
   } else if (error.request) {
     showNotification('Error Listing Item', `Check Your Network Connection. ${error.request}`, 'error');
   } else {
@@ -583,7 +566,6 @@ async function saveFormDataToIndexedDB(formData) {
     await openDB();
     await saveFormData(payload);
   } catch (error) {
-    console.error(error);
     showNotification('Error Saving Data', error, 'error');
   }
 }
@@ -597,6 +579,7 @@ function fileToBase64(file) {
   });
 }
 </script>
+
 
 
 

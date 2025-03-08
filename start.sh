@@ -39,7 +39,7 @@ python /app/backend/manage.py collectstatic --noinput || { echo "Static files co
 # Start Gunicorn for Django backend
 echo "Starting Gunicorn server on port 8000..."
 cd /app/backend
-gunicorn EquipRentHub.wsgi:application --bind 0.0.0.0:8000 --workers=2 --timeout 240 --graceful-timeout 240 &
+gunicorn EquipRentHub.wsgi:application --bind 0.0.0.0:8000 --workers=2 --timeout 600 --graceful-timeout 600 &
 
 # Start Celery Worker
 echo "Starting Celery Worker..."
@@ -109,9 +109,17 @@ http {
 
         root /usr/share/nginx/html;
 
+        client_max_body_size 20M;  # Allow larger file uploads
+        client_body_buffer_size 20M;
+
+        proxy_read_timeout 600;
+        proxy_connect_timeout 600;
+        proxy_send_timeout 600;
+        keepalive_timeout 600;
+
         # Admin route (Backend)
         location /admin {
-            client_max_body_size 50M;  # Increase request size for API
+            client_max_body_size 20M;  # Increase request size for API
             proxy_pass http://127.0.0.1:8000;  # Ensure this is handled by the backend
             proxy_set_header Host \$host;
             proxy_set_header X-Real-IP \$remote_addr;
