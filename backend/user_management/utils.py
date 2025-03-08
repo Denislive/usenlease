@@ -2,11 +2,11 @@ import logging
 from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
-from django.core.mail import send_mail, BadHeaderError
+from django.core.mail import send_mail, BadHeaderError, get_connection
 from celery import shared_task
+from celery.exceptions import Retry
 from google.cloud import storage
 from datetime import timedelta
-from time import sleep
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -14,19 +14,25 @@ logger = logging.getLogger(__name__)
 @shared_task(bind=True, max_retries=5)
 def send_custom_email(self, subject, template_name, context, recipient_list):
     """
-    Celery task to send emails asynchronously with retries.
+    Celery task to send emails asynchronously with retries and connection pooling.
     """
+    connection = None
     try:
         html_message = render_to_string(template_name, context)
         plain_message = strip_tags(html_message)
         from_email = settings.EMAIL_HOST_USER
 
+        # Use a persistent SMTP connection
+        connection = get_connection(fail_silently=False)
+        connection.open()  # Open the connection
+
         send_mail(
-            subject, 
-            plain_message, 
-            from_email, 
-            recipient_list, 
-            html_message=html_message
+            subject,
+            plain_message,
+            from_email,
+            recipient_list,
+            html_message=html_message,
+            connection=connection  # Reuse the same connection
         )
 
         logger.info(f"✅ Email sent to {', '.join(recipient_list)} with subject: '{subject}'")
@@ -42,7 +48,9 @@ def send_custom_email(self, subject, template_name, context, recipient_list):
         delay = 5 * (2 ** self.request.retries)
         logger.warning(f"Retrying in {delay} seconds...")
         raise self.retry(exc=e, countdown=delay)
-
+    finally:
+        if connection:
+            connection.close()  # Close the connection after use
 
 def list_files(bucket_name, folder_name):
     """
@@ -57,7 +65,6 @@ def list_files(bucket_name, folder_name):
     except Exception as e:
         logger.error(f"❌ Error listing files in bucket '{bucket_name}': {str(e)}")
         return []
-
 
 def generate_signed_url(bucket_name, blob_name, expiration_minutes=10):
     """
