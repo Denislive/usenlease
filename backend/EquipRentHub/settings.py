@@ -25,6 +25,10 @@ GS_BUCKET_NAME = os.getenv('GS_BUCKET_NAME')
 # PORT
 PORT = os.getenv("PORT")
 
+# settings.py
+DATA_UPLOAD_MAX_MEMORY_SIZE = 30485760  # 10MB
+
+
 # Decode base64 credentials and write to a temporary file
 creds_path = os.path.join(BASE_DIR, 'credentials', 'google-credentials.json')
 creds_content = os.getenv('GOOGLE_APPLICATION_CREDENTIALS_CONTENT')
