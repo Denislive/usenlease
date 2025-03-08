@@ -1120,6 +1120,7 @@ const handleReturnConfirmation = (returnData) => {
   })
     .then(response => {
       showNotification("Success", "Item Return confirmed successfully!", "success"); // Notify user
+      router.push('/');
     })
     .catch(error => {
 
