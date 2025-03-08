@@ -152,7 +152,7 @@ class PasswordResetViewSet(viewsets.ViewSet):
         subject = "Password Reset Request"
         template_name = 'emails/password_reset.html'
         context = {
-            'user': user,
+            'email': user.email,
             'reset_url': reset_url
         }
         recipient_list = [user.email]
@@ -204,7 +204,7 @@ class PasswordResetViewSet(viewsets.ViewSet):
             # Send email for successful password reset
             subject = "Password Reset Successfully"
             template_name = 'emails/successful_password_reset.html'
-            context = {'user': user}
+            context = {'email': user.email}
             recipient_list = [user.email]
 
             send_custom_email.delay(subject, template_name, context, recipient_list)
@@ -602,7 +602,7 @@ class OTPViewSet(viewsets.ViewSet):
         subject = "Email Verification"
         template_name = 'emails/otp_email.html'
         context = {
-            'user': user,
+            'email': user.email,
             'otp_code': otp_code
         }
         recipient_list = [user.email]
@@ -650,7 +650,7 @@ class OTPViewSet(viewsets.ViewSet):
                 # Send email for successful verification
                 subject = "Account Activated"
                 template_name = 'emails/successful_verification.html'
-                context = {'user': user}
+                context = {'email': user.email}
                 recipient_list = [user.email]
 
                 send_custom_email.delay(subject, template_name, context, recipient_list)
