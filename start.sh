@@ -96,7 +96,7 @@ http {
     keepalive_timeout  65;
     types_hash_max_size 2048;
 
-    client_body_buffer_size 50M;
+    client_body_buffer_size 100M;
 
     server {
         listen $PORT;
