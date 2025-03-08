@@ -583,7 +583,10 @@ class EquipmentViewSet(viewsets.ModelViewSet):
                 tag, created = Tag.objects.get_or_create(name=tag_name.strip())  # Get or create tag
                 tags.append(tag)
 
-           
+           # Convert specifications from string to list of dictionaries
+            if 'specifications' in data:
+                specifications_data  = json.loads(data.pop('specifications'))
+
 
             # Initialize and validate the equipment serializer
             serializer = self.get_serializer(data=data, context={'request': request})
@@ -591,6 +594,27 @@ class EquipmentViewSet(viewsets.ModelViewSet):
 
             # Save the equipment instance
             equipment = serializer.save(terms=terms)
+            # Save the equipment instance first (if it's newly created)
+          
+
+            for spec in specifications_data:
+                # Rename 'key' to 'name' in the specification data
+                if 'key' in spec:
+                    spec['name'] = spec.pop('key', None)
+
+                # Ensure 'name' is present
+                if not spec.get('name'):
+                    return Response({'detail': 'Specification name is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+                # Create or retrieve Specification model instance
+                specification_instance, created = Specification.objects.get_or_create(
+                    name=spec['name'],
+                    defaults={'value': spec.get('value')},  # Include other fields as needed
+                    equipment=equipment
+                    
+                )
+
+
 
             # Handle images if necessary
             if images:
