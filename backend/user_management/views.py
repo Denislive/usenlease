@@ -725,9 +725,7 @@ class LoginView(APIView):
             path=settings.AUTH_COOKIE_PATH,
         )
 
-        # Get user's location and device details
-        ip_address = request.META.get('REMOTE_ADDR')
-        location = self.get_location(ip_address)
+        # Get user's device details
         device = request.META.get('HTTP_USER_AGENT')
 
         # Send login notification email
@@ -735,7 +733,6 @@ class LoginView(APIView):
         template_name = 'emails/login_notification.html'
         context = {
             'email': user.email,
-            'location': location,
             'device': device
         }
         recipient_list = [user.email]
@@ -754,27 +751,7 @@ class LoginView(APIView):
 
         return response
 
-    def get_location(self, ip_address):
-        """
-        Retrieves the location of the user based on their IP address using geolocation.
 
-        Args:
-            ip_address (str): The IP address of the user.
-
-        Returns:
-            str: The formatted location (city, region, country) or "Unknown Location" if retrieval fails.
-        """
-        try:
-            # Use OpenStreetMap's Nominatim service for geolocation
-            geolocator = Nominatim(user_agent="usenlease")
-            location = geolocator.geocode(ip_address, exactly_one=True)
-
-            if location:
-                return f"{location.address}"
-            else:
-                return "Unknown Location"
-        except Exception:
-            return "Unknown Location"
 
     def sync_cart_with_db(self, user, cart_data):
         """
