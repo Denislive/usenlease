@@ -471,6 +471,7 @@ class EquipmentViewSet(viewsets.ModelViewSet):
     authentication_classes = [JWTAuthenticationFromCookie]
     pagination_class = CustomEquipmentPagination  # Use custom pagination
 
+
     def get_permissions(self):
         """
         Override permissions to allow unauthenticated access to list and retrieve,
@@ -548,10 +549,6 @@ class EquipmentViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
-
-
-
-
     
     def create(self, request, *args, **kwargs):
         """
@@ -564,7 +561,6 @@ class EquipmentViewSet(viewsets.ModelViewSet):
 
             # Convert incoming querydict to a structured dictionary
             data = convert_querydict_to_dict(request.data)
-            print(data)
 
             # Group address fields into a dictionary
             address = {
@@ -601,21 +597,19 @@ class EquipmentViewSet(viewsets.ModelViewSet):
             equipment = serializer.save(terms=terms)
 
             # Save associated specifications
+            specifications = []  # Store created specifications
+
             for spec in specifications_data:
-                # Rename 'key' to 'name' in the specification data
-                if 'key' in spec:
-                    spec['name'] = spec.pop('key', None)
-
-                # Ensure 'name' is present
-                if not spec.get('name'):
-                    return Response({'detail': 'Specification name is required.'}, status=status.HTTP_400_BAD_REQUEST)
-
-                # Create the specification instance
-                specification_serializer = SpecificationSerializer(data=spec, context={'equipment': equipment})
+                spec['equipment'] = equipment.id  # Ensure foreign key reference
+                specification_serializer = SpecificationSerializer(data=spec)
                 if specification_serializer.is_valid():
-                    specification_serializer.save(equipment=equipment)
-                else:
-                    return Response(specification_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                    spec_instance = specification_serializer.save()
+                    specifications.append(spec_instance)  # Collect created instances
+
+            # Set specifications after creation (only needed if using ManyToMany)
+            if hasattr(equipment, 'specifications'):
+                equipment.specifications.set(specifications)  # ✅ Correct way
+
 
             # Handle images if necessary
             if images:
@@ -644,7 +638,6 @@ class EquipmentViewSet(viewsets.ModelViewSet):
         # Get booked dates for this equipment
         booked_dates = OrderItem.objects.filter(item=equipment).values("start_date", "end_date")
 
-        print("\n\nBooked dates\n\n", booked_dates)
 
         # Serialize the equipment data
         serializer = EquipmentSerializer(equipment)
@@ -698,7 +691,6 @@ class EquipmentViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-
 
 class UserEquipmentView(APIView):
     """
