@@ -34,11 +34,13 @@
           <p v-if="passwordError" class="absolute text-red-500 text-sm mt-1">{{ passwordError }}</p>
         </div>
 
-        <button type="submit" :class="[
-          'w-full rounded-md py-2 transition duration-200',
-          emailError || passwordError ? 'bg-red-500 text-white' : 'bg-[#1c1c1c] text-white'
+        <button type="submit" :disabled="loading" :class="[
+          'w-full rounded-md py-2 transition duration-200 flex items-center justify-center',
+          emailError || passwordError ? 'bg-red-500 text-white' : 'bg-[#1c1c1c] text-white',
+          loading ? 'opacity-50 cursor-not-allowed' : ''
         ]">
-          Login
+          <i v-if="loading" class="pi pi-spinner pi-spin mr-2"></i>
+          <span>{{ loading ? 'Logging in...' : 'Login' }}</span>
         </button>
       </form>
       <p class="mt-4 text-center text-sm">Forgot Password?<router-link to="/password-reset-request"
@@ -54,13 +56,13 @@
 
 <script setup>
 // Login.vue
-import { ref, watch, onMounted } from 'vue';
+import { ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
 import { useCartStore } from '@/store/cart';
 import useNotifications from '@/store/notification';
-const { showNotification } = useNotifications();
 
+const { showNotification } = useNotifications();
 
 const email = ref('');
 const password = ref('');
@@ -69,6 +71,7 @@ const passwordError = ref('');
 const authStore = useAuthStore();
 const cartStore = useCartStore();
 const localLoginError = ref(''); // Local reactive error reference
+const loading = ref(false); // Loading state
 const router = useRouter();
 
 // Watch for changes in the store's loginError and update localLoginError
@@ -90,10 +93,15 @@ const validatePassword = () => {
 const handleLogin = async () => {
   localLoginError.value = ''; // Clear previous errors
   if (!emailError.value && !passwordError.value) {
-    await cartStore.loadCart();
-    await authStore.login(email.value, password.value, cartStore.cart);
+    loading.value = true; // Start loading
+    try {
+      await cartStore.loadCart();
+      await authStore.login(email.value, password.value, cartStore.cart);
+    } catch (error) {
+      localLoginError.value = error.message;
+    } finally {
+      loading.value = false; // Stop loading
+    }
   }
 };
-
-
 </script>
