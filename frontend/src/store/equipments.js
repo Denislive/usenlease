@@ -138,7 +138,6 @@ export const useEquipmentsStore = defineStore('equipmentStore', () => {
       const response = await axios.get(`${api_base_url}/api/user-equipment/`, { withCredentials: true });
       userEquipments.value = response.data || [];
     } catch (err) {
-      showNotification('Error', `Fetching user equipments failed: ${err.response?.data || err.message}`, 'error');
     }
   };
 
@@ -150,7 +149,6 @@ export const useEquipmentsStore = defineStore('equipmentStore', () => {
       const response = await axios.get(`${api_base_url}/api/user-editable-equipment/`, { withCredentials: true });
       userEditableEquipmentsIds.value = response.data || [];
     } catch (err) {
-      showNotification('Error', `Fetching editable equipments failed: ${err.response?.data || err.message}`, 'error');
     }
   };
 
