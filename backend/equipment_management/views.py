@@ -723,9 +723,9 @@ class UserEquipmentView(APIView):
         # Filter equipment based on the logged-in user
         queryset = Equipment.objects.filter(owner=user)
 
-        # Check if no equipment is found
+
         if not queryset.exists():
-            return Response({'detail': 'No equipment found for the authenticated user.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response(status=status.HTTP_204_NO_CONTENT)  # No Content
 
         # Serialize the queryset and return data
         serializer = EquipmentSerializer(queryset, many=True)
@@ -766,9 +766,9 @@ class UserEditableEquipmentView(APIView):
         # Extract the IDs from the filtered queryset (ensure it's flat)
         equipment_ids = list(queryset.values_list('id', flat=True))
 
-        # Check if no equipment is found
+
         if not equipment_ids:
-            return Response({'detail': 'No available equipment found for the authenticated user.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response(status=status.HTTP_204_NO_CONTENT)  # No Content
 
         # Return the IDs as a list
         return Response(equipment_ids, status=status.HTTP_200_OK)
