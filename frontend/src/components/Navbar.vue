@@ -14,7 +14,7 @@
           class="flex items-center justify-between bg-[#121212] border border-gray-700 p-4 rounded-lg shadow-md hidden md:block">
           <div class="flex items-center space-x-3">
             <span class="text-sm text-gray-300">Switch to {{ authStore.user?.role === 'lessor' ? 'lessee' : 'lessor'
-              }}:</span>
+            }}:</span>
             <label for="role-toggle" class="inline-flex relative items-center cursor-pointer">
               <input type="checkbox" id="role-toggle" v-model="authStore.isOn" class="sr-only peer"
                 @change="authStore.updateUserRole()" />
@@ -75,8 +75,7 @@
               <img :src="`${authStore.user.image}`" alt="Profile Icon"
                 class="w-10 h-10 rounded-full border border-gray-300" />
             </button>
-            <div
-              class="absolute left-1/2 mt-7 w-32 bg-[#1c1c1c] rounded-lg shadow-lg text-center z-10 transform -translate-x-1/2"
+            <div class="absolute right-0 mt-7 w-32 bg-[#1c1c1c] rounded-lg shadow-lg text-center z-10"
               v-show="showDropdown">
               <RouterLink to="/profile" @click="showDropdown = false"
                 class="block py-2 text-white hover:text-[#ffc107]">
