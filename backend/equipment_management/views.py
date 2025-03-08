@@ -471,7 +471,6 @@ class EquipmentViewSet(viewsets.ModelViewSet):
     authentication_classes = [JWTAuthenticationFromCookie]
     pagination_class = CustomEquipmentPagination  # Use custom pagination
 
-
     def get_permissions(self):
         """
         Override permissions to allow unauthenticated access to list and retrieve,
@@ -549,6 +548,10 @@ class EquipmentViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
+
+
+
+
     
     def create(self, request, *args, **kwargs):
         """
@@ -561,6 +564,7 @@ class EquipmentViewSet(viewsets.ModelViewSet):
 
             # Convert incoming querydict to a structured dictionary
             data = convert_querydict_to_dict(request.data)
+            print(data)
 
             # Group address fields into a dictionary
             address = {
@@ -640,6 +644,7 @@ class EquipmentViewSet(viewsets.ModelViewSet):
         # Get booked dates for this equipment
         booked_dates = OrderItem.objects.filter(item=equipment).values("start_date", "end_date")
 
+        print("\n\nBooked dates\n\n", booked_dates)
 
         # Serialize the equipment data
         serializer = EquipmentSerializer(equipment)
@@ -693,6 +698,7 @@ class EquipmentViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
+
 
 class UserEquipmentView(APIView):
     """
