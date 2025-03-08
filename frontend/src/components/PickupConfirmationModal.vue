@@ -45,7 +45,8 @@ import { ref, watch, nextTick, defineProps, defineEmits } from "vue";
 import axios from "axios";
 import useNotifications from "@/store/notification.js"; // Import the notification service
 const { showNotification } = useNotifications(); // Initialize notification service
-
+import { useRouter } from "vue-router";
+const router = useRouter();
 const api_base_url = import.meta.env.VITE_API_BASE_URL;
 
 const props = defineProps({
@@ -82,6 +83,7 @@ try {
   const videoInputDevices = devices.filter(device => device.kind === "videoinput");
 
   if (videoInputDevices.length === 0) {
+    console.error("No video input devices found.");
     return;
   }
 
@@ -92,6 +94,7 @@ try {
     await webcam.value.play();
   }
 } catch (err) {
+  console.error("Error accessing webcam:", err.message);
 }
 };
 
@@ -121,7 +124,8 @@ canvas.value.toBlob((blob) => {
 
 const confirmPickup = async () => {
 if (!capturedImage.value) {
-  alert("Please capture the ID document first.");
+  showNotification("Info", "Please capture the ID document first.", "info");
+
   return;
 }
 
@@ -138,9 +142,14 @@ try {
   });
 
   emit("confirm", { orderItem: props.orderItem });
+  showNotification("Success", "Pickup confirmed successfully!", "success");
+  router.push('/');
+
+  
   closePickupModal();
 } catch (error) {
-  alert("Error confirming pickup. Please try again.");
+  showNotification("Error", "Error confirming pickup. Please try again.", "error");
+
 }
 };
 

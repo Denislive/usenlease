@@ -1032,10 +1032,17 @@ const approveRentalApproval = async (approvalItem) => {
       {},
       { withCredentials: true }
     );
-    showNotification("Success", "Item Rental approved!", "success"); // Notify user
-    isApprovalModalOpen.value = false;
 
+    approvalItem.status = 'approved';
+
+    showNotification("Success", " Rental Approved Successfully!", "success"); // Notify user
+    router.push('/');
+
+
+
+    isApprovalModalOpen.value = false;
   } catch (error) {
+    showNotification("Error", " Rental Approval Failed!", "error"); // Notify user
   }
 };
 
