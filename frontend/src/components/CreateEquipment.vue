@@ -204,11 +204,13 @@
 
 
 
-        <button type="submit" :class="[
-          'w-full rounded-md py-2 transition duration-200',
-          isFormInvalid ? 'bg-red-500 text-white' : 'bg-[#1c1c1c] text-white'
+        <button type="submit" :disabled="loading" :class="[
+          'w-full rounded-md py-2 transition duration-200 flex items-center justify-center',
+          isFormInvalid ? 'bg-red-500 text-white' : 'bg-[#1c1c1c] text-white',
+          loading ? 'opacity-50 cursor-not-allowed' : ''
         ]">
-          Submit
+          <i v-if="loading" class="pi pi-spinner pi-spin mr-2"></i>
+          <span>{{ loading ? 'Listing item, please wait...' : 'Submit' }}</span>
         </button>
       </form>
     </div>
@@ -223,6 +225,8 @@ import Cookies from 'js-cookie';
 import { useAuthStore } from '@/store/auth';
 import useNotifications from '@/store/notification';
 import { openDB, saveFormData } from '@/db/db'; // Import the IndexedDB utility
+
+const loading = ref(false); // Loading state
 
 const authStore = useAuthStore();
 const { showNotification } = useNotifications();
@@ -502,6 +506,7 @@ const handleSubmit = async () => {
   });
 
   if (userId) {
+    loading.value = true; // Start loading
     try {
       const response = await axios.post(`${api_base_url}/api/equipments/`, formData, {
         withCredentials: true
@@ -516,6 +521,9 @@ const handleSubmit = async () => {
       }
     } catch (error) {
       handleError(error);
+    } finally {
+      loading.value = false; // Start loading
+
     }
   } else {
     router.push('/login');
