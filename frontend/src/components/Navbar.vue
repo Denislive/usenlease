@@ -4,7 +4,9 @@
       <header class="text-white flex justify-between items-center">
         <!-- Logo -->
         <RouterLink :to="{ name: 'home' }" class="flex items-center">
-          <img :src="company.companyInfo?.logo" :alt="company.companyInfo?.logo" class="h-16" />
+          <img src="../assets/images/dark_logo.png" alt="logo" class="h-16">
+
+          <!-- <img :src="company.companyInfo?.logo" :alt="company.companyInfo?.logo" class="h-16" /> -->
         </RouterLink>
 
         <!-- Role Switch -->
