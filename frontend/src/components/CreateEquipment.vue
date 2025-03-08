@@ -559,7 +559,7 @@ const resetFormFields = () => {
 
 const handleError = (error) => {
   if (error.response) {
-    showNotification('Error Listing Item', `Error posting item. ${error.response.data.detail}. Switch to Lessor!`, 'error');
+    showNotification('Error Listing Item', `Error posting item. ${error.response.data.detail}.`, 'error');
   } else if (error.request) {
     showNotification('Error Listing Item', `Check Your Network Connection. ${error.request}`, 'error');
   } else {
