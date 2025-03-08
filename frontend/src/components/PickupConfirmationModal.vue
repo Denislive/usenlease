@@ -138,7 +138,6 @@ try {
   });
 
   emit("confirm", { orderItem: props.orderItem });
-  alert("Pickup confirmed successfully!");
   closePickupModal();
 } catch (error) {
   alert("Error confirming pickup. Please try again.");

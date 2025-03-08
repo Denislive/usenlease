@@ -1062,10 +1062,9 @@ const approveRentalApproval = async (approvalItem) => {
       {},
       { withCredentials: true }
     );
-
-
-
+    showNotification("Success", "Item Rental approved!", "success"); // Notify user
     isApprovalModalOpen.value = false;
+
   } catch (error) {
   }
 };
@@ -1268,6 +1267,7 @@ const updateEquipment = async () => {
         headers: { "Content-Type": "multipart/form-data" },
       }
     );
+    showNotification("Success", "Item Return confirmed successfully!", "success"); // Notify user
 
     // Close the modal and refresh the equipment list after successful update
     closeEditModal();
