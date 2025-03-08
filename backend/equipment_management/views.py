@@ -620,8 +620,6 @@ class EquipmentViewSet(viewsets.ModelViewSet):
 
                 specifications.append(specification_instance)
 
-            # Use the set() method to associate specifications with the equipment
-            equipment.specifications.set(specifications)
 
             # Handle images if necessary
             if images:
