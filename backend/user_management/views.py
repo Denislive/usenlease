@@ -1036,6 +1036,7 @@ class UserViewSet(viewsets.ViewSet):
 
     # Apply JWT authentication to all actions
     authentication_classes = [JWTAuthenticationFromCookie]
+    serializer_class = UserSerializer  # Add the serializer cla
 
     def list(self, request):
         """
@@ -1060,7 +1061,7 @@ class UserViewSet(viewsets.ViewSet):
         return Response(serializer.data)
 
     def create(self, request):
-        """
+        """UserView
         Allow anyone to create a new user account.
         """
         data = request.data
