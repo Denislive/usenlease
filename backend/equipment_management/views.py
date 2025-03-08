@@ -596,19 +596,21 @@ class EquipmentViewSet(viewsets.ModelViewSet):
             # Save the equipment instance
             equipment = serializer.save(terms=terms)
 
-            # Save associated specifications
-            specifications = []  # Store created specifications
-
             for spec in specifications_data:
-                spec['equipment'] = equipment.id  # Ensure foreign key reference
-                specification_serializer = SpecificationSerializer(data=spec)
-                if specification_serializer.is_valid():
-                    spec_instance = specification_serializer.save()
-                    specifications.append(spec_instance)  # Collect created instances
+                # Rename 'key' to 'name' in the specification data
+                if 'key' in spec:
+                    spec['name'] = spec.pop('key', None)
 
-            # Set specifications after creation (only needed if using ManyToMany)
-            if hasattr(equipment, 'specifications'):
-                equipment.specifications.set(specifications)  # ✅ Correct way
+                # Ensure 'name' is present
+                if not spec.get('name'):
+                    return Response({'detail': 'Specification name is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+                # Create the specification instance
+                specification_serializer = SpecificationSerializer(data=spec, context={'equipment': equipment})
+                if specification_serializer.is_valid():
+                    specification_serializer.save(equipment=equipment)
+                else:
+                    return Response(specification_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
             # Handle images if necessary
