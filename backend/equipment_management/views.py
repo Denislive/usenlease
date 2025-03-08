@@ -583,11 +583,7 @@ class EquipmentViewSet(viewsets.ModelViewSet):
                 tag, created = Tag.objects.get_or_create(name=tag_name.strip())  # Get or create tag
                 tags.append(tag)
 
-            # Convert specifications from string to list of dictionaries
-            if 'specifications' in data:
-                data['specifications'] = json.loads(data.pop('specifications'))
-
-            specifications_data = data['specifications']
+           
 
             # Initialize and validate the equipment serializer
             serializer = self.get_serializer(data=data, context={'request': request})
