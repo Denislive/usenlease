@@ -596,7 +596,9 @@ class EquipmentViewSet(viewsets.ModelViewSet):
             # Save the equipment instance
             equipment = serializer.save(terms=terms)
 
-            # Save associated specifications
+                       # Now process the specifications
+            specifications = []
+
             for spec in specifications_data:
                 # Rename 'key' to 'name' in the specification data
                 if 'key' in spec:
@@ -606,13 +608,20 @@ class EquipmentViewSet(viewsets.ModelViewSet):
                 if not spec.get('name'):
                     return Response({'detail': 'Specification name is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
-                # Create the specification instance and associate it with the equipment
-                Specification.objects.create(
-                    equipment=equipment,
+                # Create or retrieve Specification model instance
+                specification_instance, created = Specification.objects.get_or_create(
                     name=spec['name'],
-                    value=spec.get('value', '')  # Use an empty string as the default for 'value' if it's not provided
+                    defaults={'value': spec.get('value')},  # Include other fields as needed
+                    equipment=equipment
                 )
 
+                # Assign the equipment to the Specification instance
+                specification_instance.save()  # Save the specification
+
+                specifications.append(specification_instance)
+
+            # Use the set() method to associate specifications with the equipment
+            equipment.specifications.set(specifications)
 
             # Handle images if necessary
             if images:
