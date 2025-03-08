@@ -4,7 +4,7 @@
       <header class="text-white flex justify-between items-center">
         <!-- Logo -->
         <RouterLink :to="{ name: 'home' }" class="flex items-center">
-          <img :src="api_base_url + company.companyInfo?.logo" :alt="company.companyInfo?.logo" class="h-16" />
+          <img :src="company.companyInfo?.logo" :alt="company.companyInfo?.logo" class="h-16" />
         </RouterLink>
 
         <!-- Role Switch -->
@@ -185,7 +185,7 @@
 
 
 <script setup>
-import { ref, computed, onMounted, onActivated } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/auth'; // Import the auth store
 import { useCartStore } from '@/store/cart'; // Adjust the path as necessary
@@ -244,14 +244,12 @@ onMounted(async () => {
   await company.fetchCompanyInfo(); // Load company information
 });
 
-
 // Handle logout functionality
 const handleLogout = async () => {
   try {
     await authStore.logout(); // Perform logout
     router.push('/'); // Redirect to the homepage
   } catch (error) {
-    console.error('Error during logout:', error);
     showNotification('error', 'Error during logout. Please try again.', 'error');
   }
 };
