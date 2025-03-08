@@ -6,6 +6,8 @@ from datetime import datetime
 # Django imports
 from django.conf import settings
 from django.db.models import Sum
+from django.db.models import Q
+
 from django.db import transaction
 from django.http import JsonResponse, QueryDict
 from django.shortcuts import get_object_or_404
@@ -475,7 +477,7 @@ class EquipmentViewSet(viewsets.ModelViewSet):
         Override permissions to allow unauthenticated access to list and retrieve,
         but require authentication for create, update, and delete.
         """
-        if self.action in ["list", "retrieve"]:
+        if self.action in ["list", "retrieve", "filter"]:
             return [AllowAny()]  # No authentication required for viewing equipment
         return [IsAuthenticated()]  # Authentication required for create, update, delete
 
@@ -490,6 +492,63 @@ class EquipmentViewSet(viewsets.ModelViewSet):
         
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+    
+    @action(detail=False, methods=["GET"], url_path="filter")
+    def filter(self, request):
+        """
+        Custom filtering action for searching and filtering by category, tags, and city.
+        - `category`: Filter by a single category (ID or name, optional)
+        - `categories`: Filter by multiple categories (comma-separated slugs, optional)
+        - `search`: Search in name, description, and tags (optional)
+        - `city`: Filter by a single city (optional)
+        - `cities`: Filter by multiple cities (comma-separated slugs, optional)
+        """
+        queryset = Equipment.objects.all()
+
+        # Get query parameters
+        category = request.GET.get("category")
+        search = request.GET.get("search")
+        city = request.GET.get("city")
+        categories = request.GET.get("categories", "").split(",") if request.GET.get("categories") else []
+        cities = request.GET.get("cities", "").split(",") if request.GET.get("cities") else []
+
+        # Filter by single category (ID or slug)
+        if category:
+            if category.isdigit():
+                queryset = queryset.filter(category_id=int(category))
+            else:
+                queryset = queryset.filter(category__slug__icontains=category)
+
+        # Filter by multiple categories (slugified)
+        if categories:
+            queryset = queryset.filter(category__slug__in=categories)
+
+        # Filter by single city
+        if city:
+            queryset = queryset.filter(address__city__icontains=city)
+
+        # Filter by multiple cities
+        if cities:
+            print("cities", cities)
+            queryset = queryset.filter(address__city__in=cities)
+
+        # Apply search if provided
+        if search:
+            queryset = queryset.filter(
+                Q(name__icontains=search) |
+                Q(description__icontains=search) |
+                Q(tags__name__icontains=search)
+            ).distinct()
+
+        # Paginate results
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
     
     def create(self, request, *args, **kwargs):
         """

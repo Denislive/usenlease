@@ -11,15 +11,15 @@
           <li>
             <a href="#" class="text-sm text-gray-500" @click.prevent="clearAll('category')">Clear All</a>
           </li>
-          <li v-for="category in displayedCategories" :key="category.id">
+          <li v-for="category in displayedCategories" :key="category.name">
             <input
-              :id="`category-checkbox-${category.id}`"
+              :id="`category-checkbox-${slugify(category.name)}`"
               type="checkbox"
               class="mr-2"
-              v-model="selectedCategories[category.id]"
+              v-model="selectedCategories[category.name]"
               @change="handleFilterChange"
             />
-            <label :for="`category-checkbox-${category.id}`" class="text-sm">{{ category.name }}</label>
+            <label :for="`category-checkbox-${slugify(category.name)}`" class="text-sm">{{ category.name }}</label>
           </li>
         </ul>
         <p v-else class="text-sm text-gray-500 ml-4">No categories available.</p>
@@ -56,8 +56,19 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { useEquipmentsStore } from '@/store/equipments';
+
+// ✅ Function to slugify only category names
+const slugify = (text) => {
+  return text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')   // Replace spaces with -
+    .replace(/[^\w-]+/g, '') // Remove all non-word characters
+    .replace(/--+/g, '-');  // Replace multiple - with single -
+};
 
 const props = defineProps({
   categories: {
@@ -71,8 +82,8 @@ const props = defineProps({
 });
 
 const store = useEquipmentsStore();
-const selectedCategories = store.selectedCategories;
-const selectedCities = store.selectedCities;
+const selectedCategories = ref({});
+const selectedCities = ref({});
 
 const showMoreCategories = ref(false);
 const showMoreCities = ref(false);
@@ -89,9 +100,24 @@ watch(() => props.cities, (newCities) => {
   displayedCities.value = showMoreCities.value ? newCities : newCities.slice(0, 20);
 }, { immediate: true });
 
+// ✅ Convert selected categories (slugified) but keep cities as they are
+const getSelectedCategories = computed(() => {
+  return Object.keys(selectedCategories.value)
+    .filter(name => selectedCategories.value[name])
+    .map(slugify);
+});
+
+const getSelectedCities = computed(() => {
+  return Object.keys(selectedCities.value)
+    .filter(name => selectedCities.value[name]);
+});
+
 // ✅ Function to handle filter changes and update `filteredEquipments`
 const handleFilterChange = () => {
-  store.updateFilteredEquipments();
+  store.fetchFilteredEquipments({
+    categories: getSelectedCategories.value,
+    cities: getSelectedCities.value
+  });
 };
 
 // ✅ Toggle Show More
@@ -108,16 +134,21 @@ const toggleShowMore = (type) => {
 // ✅ Clear all filters and re-filter
 const clearAll = (filterType) => {
   if (filterType === 'category') {
-    store.selectedCategories = {};
+    selectedCategories.value = {};
   } else if (filterType === 'location') {
-    store.selectedCities = {};
+    selectedCities.value = {};
   }
-  store.updateFilteredEquipments(); // Ensure filteredEquipments updates
+  store.fetchFilteredEquipments({
+    categories: getSelectedCategories.value,
+    cities: getSelectedCities.value
+  });
 };
 
 // ✅ Watch for changes in selected filters
 watch([selectedCategories, selectedCities], () => {
-  store.updateFilteredEquipments();
+  store.fetchFilteredEquipments({
+    categories: getSelectedCategories.value,
+    cities: getSelectedCities.value
+  });
 }, { deep: true });
-
 </script>

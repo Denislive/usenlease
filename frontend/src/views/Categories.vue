@@ -7,129 +7,93 @@
       <!-- Sidebar Section -->
       <aside class="col-span-2 bg-gray-100 rounded p-2">
         <Filter 
-  :categories="categories"
-  :cities="cities"
-  
-/>
-
+          :categories="categories"
+          :cities="cities"
+          :selectedCategories="selectedCategories"
+          :selectedCities="selectedCities"
+          @update:selectedCategories="updateSelectedCategories"
+          @update:selectedCities="updateSelectedCities"
+        />
       </aside>
 
       <!-- Main Content Section -->
       <main class="col-span-10 bg-gray-100 p-1">
-        <Card :equipments="filteredEquipments" /> <!-- Pass filtered equipments -->
+        <Card :equipments="equipments" />
       </main>
     </div>
   </div>
 
   <div class="p-2 w-full text-xs md:hidden">
-    <MobileFilter :mobileCategories="categories" :mobileCities="cities" :mobileSelectedCategories="selectedCategories"
-      :mobileSelectedCities="selectedCities" />
-    <Card :equipments="filteredEquipments" /> <!-- Pass filtered equipments -->
+    <MobileFilter 
+      :categories="categories" 
+      :cities="cities" 
+      :selectedCategories="selectedCategories"
+      :selectedCities="selectedCities"
+      @update:selectedCategories="updateSelectedCategories"
+      @update:selectedCities="updateSelectedCities"
+    />
+    <Card :equipments="equipments" />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
-import axios from 'axios';
-import { useStore } from 'vuex';
+import { computed, onMounted, ref, watch } from 'vue';
+import { useEquipmentsStore } from '@/store/equipments';
 import Hero from '@/components/Hero.vue';
 import Breadcrumb from '@/components/Breadcrumb.vue';
 import Filter from '@/components/Filter.vue';
 import Card from '@/components/Card.vue';
 import MobileFilter from '@/components/MobileFilter.vue';
 
-// State to hold equipment and category data
-const equipments = ref([]);
-const categories = ref([]);
-const cities = ref([]);
+const equipmentStore = useEquipmentsStore();
+
+// Reactive states from Pinia store
+const equipments = computed(() => equipmentStore.equipments);
+const categories = computed(() => equipmentStore.categories);
+const searchQuery = computed(() => equipmentStore.searchQuery);
+
+// ✅ Make selected categories and cities reactive
 const selectedCategories = ref({});
 const selectedCities = ref({});
-const store = useStore();
 
-// Computed property to get searchQuery from Vuex
-const searchQuery = computed(() => {
-  const query = store.getters.getSearchQuery;
-  return query;
+// Extract unique cities from the equipments
+const cities = computed(() => {
+  return [...new Set(equipments.value.map(e => e.address?.city).filter(city => city))];
 });
 
-const api_base_url = import.meta.env.VITE_API_BASE_URL;
-
-// Fetch equipment and category data
-onMounted(async () => {
-  try {
-    const equipmentResponse = await axios.get(`${api_base_url}/api/equipments/`);
-    equipments.value = equipmentResponse.data;
-
-    const categoryResponse = await axios.get(`${api_base_url}/api/categories`);
-    categories.value = categoryResponse.data;
-
-    // Initialize selected categories
-    categories.value.forEach(category => {
-      selectedCategories.value[category.name] = false;
-    });
-
-    // Extract cities from the equipment data (assuming each equipment has a city/location field)
-    const equipmentCities = equipments.value.map(equipment => equipment.address?.city).filter(city => city);
-    cities.value = [...new Set(equipmentCities)]; // Remove duplicates
-
-  } catch (error) {
-  }
-});
-
-// Create a map from category names to their IDs
-const categoryIdMap = computed(() => {
-  const map = {};
-  categories.value.forEach(category => {
-    map[category.name] = category.id;
+// Fetch data when component mounts
+onMounted(() => {
+  equipmentStore.fetchFilteredEquipments({ 
+    search: searchQuery.value, 
+    categories: [],
+    cities: []
   });
-  return map;
+  equipmentStore.fetchCategories();
 });
 
-// Computed property to filter equipments based on the search query and selected filters
-const filteredEquipments = computed(() => {
-  let filtered = equipments.value;
+// ✅ Update selected categories
+const updateSelectedCategories = (newSelection) => {
+  selectedCategories.value = newSelection;
+  fetchFilteredEquipments();
+};
 
-  // Apply search query filtering first
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase();
-    filtered = filtered.filter(equipment => {
-      const matches = (
-        equipment.name.toLowerCase().includes(query) ||
-        equipment.description.toLowerCase().includes(query) ||
-        equipment.hourly_rate.toString().includes(query) ||
-        (equipment.address?.street_address?.toLowerCase().includes(query)) ||
-        (equipment.address?.city?.toLowerCase().includes(query)) ||
-        (equipment.address?.state?.toLowerCase().includes(query))
-      );
-      if (matches) {
-        return matches;
-      }
-    });
-  }
+// ✅ Update selected cities
+const updateSelectedCities = (newSelection) => {
+  selectedCities.value = newSelection;
+  fetchFilteredEquipments();
+};
 
-  // Apply category filtering
-  const selectedCategoryKeys = Object.keys(selectedCategories.value).filter(key => selectedCategories.value[key]);
-  if (selectedCategoryKeys.length > 0) {
-    filtered = filtered.filter(equipment => {
-      const equipmentCategoryId = equipment.category; // This is the ID
-      const selectedCategoryIds = selectedCategoryKeys.map(name => categoryIdMap.value[name]); // Map names to IDs
-      const matches = selectedCategoryIds.includes(equipmentCategoryId);
-      return matches;
-    });
-  }
+// ✅ Fetch filtered equipments from the store
+const fetchFilteredEquipments = () => {
+  const params = {
+    search: searchQuery.value || '',
+    categories: Object.keys(selectedCategories.value).filter(key => selectedCategories.value[key]),
+    cities: Object.keys(selectedCities.value).filter(key => selectedCities.value[key])
+  };
 
-  // Apply city filtering
-  const selectedCityKeys = Object.keys(selectedCities.value).filter(key => selectedCities.value[key]);
-  if (selectedCityKeys.length > 0) {
-    filtered = filtered.filter(equipment => {
-      const matches = selectedCityKeys.includes(equipment.address?.city);
-      if (matches) {
-    return matches;
-}
+  equipmentStore.fetchFilteredEquipments(params);
+};
 
-    });
-  }
-
-  return filtered;
-});
+// ✅ Watch for changes in filters and trigger fetching
+watch([selectedCategories, selectedCities, searchQuery], fetchFilteredEquipments);
 </script>

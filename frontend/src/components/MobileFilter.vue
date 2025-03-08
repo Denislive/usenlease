@@ -5,7 +5,7 @@
       @click="toggleFilters" 
       class="w-full text-sm font-bold mb-1 flex items-center justify-center bg-[#1c1c1c] text-white rounded-md py-2 hover:bg-[#ffc107] hover:text-[#1c1c1c] transition"
     >
-      <i class="pi pi-filter mr-2"></i> Filters Items
+      <i class="pi pi-filter mr-2"></i> Filter Items
     </button>
 
     <!-- Filters Panel -->
@@ -22,22 +22,22 @@
                 Clear All
               </a>
             </li>
-            <li v-for="category in displayedCategories" :key="category.id">
+            <li v-for="category in displayedCategories" :key="category.name">
               <input 
-                :id="`mobile-category-checkbox-${category.id}`" 
+                :id="`mobile-category-checkbox-${slugify(category.name)}`" 
                 type="checkbox" 
-                class="mr-2 hidden" 
-                v-model="selectedCategories[category.id]"
+                class="hidden" 
+                v-model="selectedCategories[category.name]"
                 @change="handleFilterChange"
               />
               <label 
-                :for="`mobile-category-checkbox-${category.id}`" 
+                :for="`mobile-category-checkbox-${slugify(category.name)}`" 
                 class="flex items-center space-x-3 cursor-pointer bg-gray-100 hover:bg-gray-200 rounded-md px-2 py-1 transition"
               >
                 <span 
                   :class="{
-                    'pi pi-check-circle text-[#1c1c1c]': selectedCategories[category.id],
-                    'pi pi-circle text-gray-400': !selectedCategories[category.id]
+                    'pi pi-check-circle text-[#1c1c1c]': selectedCategories[category.name],
+                    'pi pi-circle text-gray-400': !selectedCategories[category.name]
                   }" 
                   class="text-xl"
                 ></span>
@@ -68,7 +68,7 @@
               <input 
                 :id="`mobile-city-checkbox-${city}`" 
                 type="checkbox" 
-                class="mr-2 hidden" 
+                class="hidden" 
                 v-model="selectedCities[city]"
                 @change="handleFilterChange"
               />
@@ -115,33 +115,58 @@ const props = defineProps({
 });
 
 const store = useEquipmentsStore();
-const selectedCategories = store.selectedCategories;
-const selectedCities = store.selectedCities;
-
 const showFilters = ref(false);
 const showMoreCategories = ref(false);
 const showMoreCities = ref(false);
 
-// ✅ Use computed properties to dynamically adjust displayed items
-const displayedCategories = computed(() => {
-  return showMoreCategories.value ? props.categories : props.categories.slice(0, 20);
+// Store selected filters using category names
+const selectedCategories = ref({});
+const selectedCities = ref({});
+
+// Watch for prop changes to ensure reactivity
+watch(() => props.categories, (newCategories) => {
+  newCategories.forEach(cat => {
+    if (!(cat.name in selectedCategories.value)) {
+      selectedCategories.value[cat.name] = false;
+    }
+  });
+}, { immediate: true });
+
+watch(() => props.cities, (newCities) => {
+  newCities.forEach(city => {
+    if (!(city in selectedCities.value)) {
+      selectedCities.value[city] = false;
+    }
+  });
+}, { immediate: true });
+
+// Dynamically adjust displayed items
+const displayedCategories = computed(() => showMoreCategories.value ? props.categories : props.categories.slice(0, 20));
+const displayedCities = computed(() => showMoreCities.value ? props.cities : props.cities.slice(0, 20));
+
+// Convert selected objects to arrays before sending filters
+const getSelectedCategories = computed(() => {
+  return Object.keys(selectedCategories.value)
+    .filter(name => selectedCategories.value[name])
+    .map(name => slugify(name)); // ✅ Slugify category names
 });
 
-const displayedCities = computed(() => {
-  return showMoreCities.value ? props.cities : props.cities.slice(0, 20);
-});
+const getSelectedCities = computed(() => Object.keys(selectedCities.value).filter(city => selectedCities.value[city]));
 
-// ✅ Function to update filters
+// Function to update filters
 const handleFilterChange = () => {
-  store.updateFilteredEquipments();
+  store.fetchFilteredEquipments({
+    categories: getSelectedCategories.value,
+    cities: getSelectedCities.value,
+  });
 };
 
-// ✅ Toggle filter visibility
+// Toggle filter visibility
 const toggleFilters = () => {
   showFilters.value = !showFilters.value;
 };
 
-// ✅ Toggle Show More
+// Toggle Show More
 const toggleShowMore = (type) => {
   if (type === 'category') {
     showMoreCategories.value = !showMoreCategories.value;
@@ -150,20 +175,29 @@ const toggleShowMore = (type) => {
   }
 };
 
-// ✅ Clear all filters
+// Clear all filters
 const clearAll = (filterType) => {
   if (filterType === 'category') {
-    Object.keys(selectedCategories).forEach(key => selectedCategories[key] = false);
+    Object.keys(selectedCategories.value).forEach(key => selectedCategories.value[key] = false);
   } else if (filterType === 'location') {
-    Object.keys(selectedCities).forEach(key => selectedCities[key] = false);
+    Object.keys(selectedCities.value).forEach(key => selectedCities.value[key] = false);
   }
-  store.updateFilteredEquipments();
+  store.fetchFilteredEquipments({
+    categories: getSelectedCategories.value,
+    cities: getSelectedCities.value,
+  });
 };
 
-
-// ✅ Watch for changes in selected filters
+// Watch for changes in selected filters
 watch([selectedCategories, selectedCities], () => {
-  store.updateFilteredEquipments();
+  store.fetchFilteredEquipments({
+    categories: getSelectedCategories.value,
+    cities: getSelectedCities.value,
+  });
 }, { deep: true });
 
+// Function to slugify category names
+const slugify = (text) => {
+  return text.toString().toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
+};
 </script>

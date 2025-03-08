@@ -89,21 +89,35 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue';
+import { onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useEquipmentsStore } from '@/store/equipments';
 
 const router = useRouter();
 const store = useEquipmentsStore();
 
+const selectedCategory = computed(() => store.selectedCategory);
+const searchQuery = computed(() => store.searchQuery);
+
 onMounted(async () => {
-  await store.fetchEquipments();
   await store.fetchCategories();
+  fetchEquipmentsData();
 });
+
+const fetchEquipmentsData = async () => {
+  const filters = {
+    category: selectedCategory.value === 'All' ? '' : selectedCategory.value,
+    search: searchQuery.value,
+  };
+  await store.fetchFilteredEquipments(filters);
+};
 
 const fetchPage = (pageUrl) => {
   if (pageUrl) {
-    store.fetchPage(pageUrl);
+    store.fetchPage(pageUrl, {
+      category: selectedCategory.value === 'All' ? '' : selectedCategory.value,
+      search: searchQuery.value,
+    });
   }
 };
 
@@ -119,6 +133,7 @@ const renderStars = (rating) => {
   return '★'.repeat(fullStars) + (halfStar ? '☆' : '') + '☆'.repeat(5 - fullStars - halfStar);
 };
 </script>
+
 
 <style scoped>
 .scrollable-container {

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useEquipmentsStore } from '@/store/equipments';
 
@@ -8,22 +8,29 @@ const store = useEquipmentsStore();
 const currentPage = ref(1);
 const pageSize = ref(store.pageSize || 10); // Default page size
 
+// Fetch data on mount
 onMounted(async () => {
-  await store.fetchEquipments(1, pageSize.value);
+  await store.fetchEquipments(currentPage.value, pageSize.value);
   await store.fetchCategories();
 });
 
-// Watch for changes in page size and fetch data accordingly
+// Watch page size and update data
 watch(pageSize, async (newSize) => {
-  currentPage.value = 1;
-  store.pageSize = newSize; // Update store with new page size
-  await store.fetchEquipments(currentPage.value, newSize);
+  if (newSize !== store.pageSize) {
+    currentPage.value = 1;
+    store.setPageSize(newSize); // Use an action in Pinia store
+    await store.fetchEquipments(currentPage.value, newSize);
+  }
 });
 
-// Get paginated equipment list from the store
+// Computed properties
 const equipments = computed(() => store.equipments);
 const totalPages = computed(() => store.totalPages);
+const pageLinks = computed(() => store.pageLinks);
+const previousPageUrl = computed(() => store.previousPageUrl);
+const nextPageUrl = computed(() => store.nextPageUrl);
 
+// Pagination actions
 const goToPage = async (page) => {
   if (page >= 1 && page <= totalPages.value) {
     currentPage.value = page;
