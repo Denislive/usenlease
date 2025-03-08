@@ -1245,7 +1245,7 @@ const updateEquipment = async () => {
         headers: { "Content-Type": "multipart/form-data" },
       }
     );
-    showNotification("Success", "Item Return confirmed successfully!", "success"); // Notify user
+    showNotification("Success", "Item updated successfully!", "success"); // Notify user
 
     // Close the modal and refresh the equipment list after successful update
     closeEditModal();
