@@ -96,7 +96,7 @@ http {
     keepalive_timeout  65;
     types_hash_max_size 2048;
 
-    client_body_buffer_size 100M;
+    client_body_buffer_size 30M;
 
     server {
         listen $PORT;
@@ -111,6 +111,7 @@ http {
 
         # Admin route (Backend)
         location /admin {
+            client_max_body_size 20M;  # Increase request size for API
             proxy_pass http://127.0.0.1:8000;  # Ensure this is handled by the backend
             proxy_set_header Host \$host;
             proxy_set_header X-Real-IP \$remote_addr;
