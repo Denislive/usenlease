@@ -612,36 +612,6 @@
                   Current Status: <strong>{{ selectedOrder.status }}</strong>
                 </p>
 
-                <!-- Actions --><!-- Returned Table -->
-                <h3 class="text-xl font-semibold mt-6 mb-2">Returned</h3>
-                <table class="w-full border-collapse bg-[#1c1c1c] shadow-md rounded-lg overflow-hidden text-white">
-                  <thead>
-                    <tr class="bg-gray-700 text-gray-300 uppercase text-sm leading-normal">
-                      <th class="py-3 px-6 text-left">Equipment</th>
-                      <th class="py-3 px-6 text-left">Lessee ID</th>
-                      <th class="py-3 px-6 text-center">Duration</th>
-                      <th class="py-3 px-6 text-center">Total Income</th>
-                      <th class="py-3 px-6 text-center">Condition</th>
-                    </tr>
-                  </thead>
-                  <tbody class="text-gray-300 text-sm font-light">
-                    <tr v-for="rental in returnedItems" :key="rental.id"
-                      class="border-b border-gray-500 hover:bg-gray-800">
-                      <td class="py-3 px-6 text-left">
-                        ({{ rental.quantity }}) x {{ rental.item.name || 'N/A' }}
-                      </td>
-                      <td class="py-3 px-6 text-left">{{ rental.user || 'Unknown' }}</td>
-                      <td class="py-3 px-6 text-center">
-                        {{ rental.booked_dates?.start_date || 'N/A' }} - {{ rental.booked_dates?.end_date || 'N/A' }}
-                      </td>
-                      <td class="py-3 px-6 text-center">
-                        {{ rental.quantity ? `$${rental.quantity * rental.item.hourly_rate}` : '$0' }}
-                      </td>
-
-                    </tr>
-                  </tbody>
-                </table>
-
                 <div>
                   <button v-if="selectedOrder.status === 'pending'" @click="confirmTerminate(selectedOrder)"
                     class="px-4 py-2 bg-red-500 text-white rounded-md shadow-sm hover:bg-red-600">
