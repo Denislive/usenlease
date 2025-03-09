@@ -25,6 +25,7 @@ const decryptData = (data) => {
     const decryptedData = bytes.toString(CryptoJS.enc.Utf8);
     return decryptedData ? JSON.parse(decryptedData) : null;
   } catch (error) {
+    console.error('Error decrypting data:', error);
     return null; // Return null if decryption fails
   }
 };
@@ -121,18 +122,23 @@ export const useAuthStore = defineStore('auth', () => {
                 );
               }
             } catch (error) {
+              console.error('Error listing item');
             }
           }
         }
       } else {
+        console.error(`Request completed but not successful. Status: ${response.status}`);
       }
     } catch (error) {
+      console.error("Error fetching user data:", error);
     }
   };
 
     // Function to navigate to a section
     const navigateToRoleSection = (sectionName) => {
 
+      console.log("navigating to role", sectionName);
+      console.log("role section value", roleSection.value);
       
       activeSection.value = roleSection.value;
       
@@ -232,6 +238,7 @@ export const useAuthStore = defineStore('auth', () => {
         }
     
       } catch (error) {
+        console.error('Error updating role:', error);
         showNotification('Error', 'Unable to switch role. Please try again.', 'error');
       }
     };
@@ -316,6 +323,7 @@ export const useAuthStore = defineStore('auth', () => {
   
         loginError.value = '';
       } else {
+        console.error('Login response not successful. Status:', response.status);
       }
     } catch (error) {
       handleLoginError(error);
@@ -409,6 +417,9 @@ export const useAuthStore = defineStore('auth', () => {
         } else {
           // Redirect to login if refresh fails
           console.warn("Redirecting to login due to token refresh failure.");
+          // Clear user data
+          user.value = null; // Reactive state for the user
+          Cookies.remove('user'); // Remove user cookie
           router.push('/login'); // Ensure router is properly imported and accessible
           return Promise.reject(error);
         }
@@ -426,11 +437,16 @@ export const useAuthStore = defineStore('auth', () => {
         {},
         { withCredentials: true }
       );
+      // Clear user data
+      user.value = null; // Reactive state for the user
+      Cookies.remove('user'); // Remove user cookie
 
       if (response.status === 200) {
         // Clear user data
         user.value = null; // Reactive state for the user
         Cookies.remove('user'); // Remove user cookie
+        // Redirect to home page
+        router.push('/');
 
         // Clear cart data
         cartStore.clearCart();
@@ -443,7 +459,6 @@ export const useAuthStore = defineStore('auth', () => {
       } else {
       }
     } catch (error) {
-      showNotification('Logout Error', 'An error occurred while logging out.', 'error');
     } finally {
       isLoading.value = false; // Stop loading spinner
     }
@@ -453,6 +468,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       await saveFormData(formData); // Save form data to IndexedDB
     } catch (error) {
+      console.error('Error saving form data to IndexedDB:', error);
     }
   };
 
