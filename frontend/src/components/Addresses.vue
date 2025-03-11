@@ -19,11 +19,17 @@ const submitForm = async () => {
   try {
     const payload = { paymentMethod: paymentMethod.value };
 
-    const handlePaypal = () => {
+    if (paymentMethod.value === 'paypal') {
       showNotification('Payment Method', 'Coming Soon! Try another method!!', 'info');
-      router.push({ path: router.currentRoute.value.fullPath });
-      loading.value = false; // Reset loading state
-    };
+
+      try {
+        await router.push({ path: router.currentRoute.value.fullPath });
+      } catch (routerError) {
+        console.error('Router error:', routerError);
+      }
+
+      return; // Stop further execution
+    }
 
     if (paymentMethod.value === 'stripe') {
       const response = await axios.post(
@@ -31,16 +37,47 @@ const submitForm = async () => {
         payload,
         { withCredentials: true }
       );
-      window.location.href = response.data.url;
-    } else if (paymentMethod.value === 'paypal') {
-      handlePaypal();
+
+      if (response?.data?.url) {
+        window.location.href = response.data.url;
+      } else {
+        throw new Error('Invalid response: Missing redirect URL.');
+      }
     }
   } catch (error) {
     console.error('Error processing payment:', error);
-    showNotification('Error', 'Something went wrong. Please try again later.', 'error');
-    loading.value = false; // Reset loading state on error
+
+    let message = 'Something went wrong. Please try again later.';
+
+    if (error.response) {
+      // Handle errors from API response
+      const { data, status } = error.response;
+
+      if (data) {
+        // Prioritize extracting the most informative error message
+        message =
+          data.details?.[0] || // Case: data.details is an array with errors
+          data.details ||       // Case: single error in details
+          data.error ||         // Case: API returns error field
+          data.message ||       // Case: General message field
+          `Server error (${status})`; // Fallback
+      } else {
+        message = `Unexpected server error (${status}).`;
+      }
+    } else if (error.request) {
+      // Network error (request sent but no response)
+      message = 'Network error. Please check your connection and try again.';
+    } else {
+      // Unexpected JavaScript error
+      message = error.message || 'An unexpected error occurred.';
+    }
+
+    showNotification('Error', message, 'error');
+  } finally {
+    loading.value = false; // Ensure loading state resets in all cases
   }
 };
+
 
 const selectPaymentMethod = (method) => {
   paymentMethod.value = method;
