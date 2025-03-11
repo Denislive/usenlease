@@ -581,7 +581,7 @@
                           <!-- Confirm Button -->
                           <button v-if="item.status === 'approved'" @click="openPickupModal(item.id)"
                             class="ml-4 px-3 py-1 bg-green-500 text-white rounded shadow-sm hover:bg-green-600">
-                            Confirm
+                            PickUp
                           </button>
                         </div>
                       </td>
