@@ -25,7 +25,7 @@
           <h3 class="text-xl font-semibold text-[#ffc107] mb-4 transition-all duration-300 group-hover:scale-105">Information</h3>
           <ul class="space-y-3 pl-3">
             <li><RouterLink to="/terms-conditions" class="bullet-link">Terms and Conditions</RouterLink></li>
-            <li><RouterLink to="/privacy-policy" class="bullet-link">Privacy Policy</RouterLink></li>
+            <li><RouterLink to="/privacy-cookie-notice" class="bullet-link">Privacy Policy</RouterLink></li>
             <li><RouterLink to="/contact" class="bullet-link">Contact Us</RouterLink></li>
           </ul>
         </div>

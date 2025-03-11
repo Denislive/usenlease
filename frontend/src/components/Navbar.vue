@@ -131,7 +131,7 @@
   </div>
 
   <!-- Sticky Navbar for Mobile -->
-  <nav class="fixed bottom-0 left-0 right-0 bg-[#1c1c1c] text-white p-2 shadow-lg md:hidden z-10">
+  <nav class="fixed bottom-0 left-0 right-0 bg-[#1c1c1c] text-white p-2 shadow-lg md:hidden z-50">
     <div class="flex justify-around items-center">
       <div class="text-center">
         <RouterLink to="/" class="flex flex-col items-center">
