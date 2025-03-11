@@ -15,8 +15,8 @@
           <ul class="space-y-3 pl-3">
             <li><RouterLink to="/cart" class="bullet-link">Cart</RouterLink></li>
             <li><RouterLink to="/profile?section=chats" class="bullet-link">Messages</RouterLink></li>
-            <li><RouterLink to="/profile?section=my-orders" class="bullet-link">My Orders</RouterLink></li>
-            <li><RouterLink to="/profile?section=my-equipments" class="bullet-link">My Items</RouterLink></li>
+            <li><RouterLink to="/profile" class="bullet-link">My Orders</RouterLink></li>
+            <li><RouterLink to="/profile" class="bullet-link">My Items</RouterLink></li>
           </ul>
         </div>
 
