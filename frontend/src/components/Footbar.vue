@@ -14,9 +14,9 @@
           <h3 class="text-xl font-semibold text-[#ffc107] mb-4 transition-all duration-300 group-hover:scale-105">My Account</h3>
           <ul class="space-y-3 pl-3">
             <li><RouterLink to="/cart" class="bullet-link">Cart</RouterLink></li>
-            <li><RouterLink to="/profile" class="bullet-link">Messages</RouterLink></li>
-            <li><RouterLink to="/profile" class="bullet-link">My Orders</RouterLink></li>
-            <li><RouterLink to="/profile" class="bullet-link">My Items</RouterLink></li>
+            <li><RouterLink to="/profile?section=chats" class="bullet-link">Messages</RouterLink></li>
+            <li><RouterLink to="/profile?section=my-orders" class="bullet-link">My Orders</RouterLink></li>
+            <li><RouterLink to="/profile?section=my-equipments" class="bullet-link">My Items</RouterLink></li>
           </ul>
         </div>
 
