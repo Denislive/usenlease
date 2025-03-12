@@ -550,13 +550,29 @@ const resetFormFields = () => {
 
 const handleError = (error) => {
   if (error.response) {
-    showNotification('Error Listing Item', `Error posting item. ${error.response}.`, 'error');
+    // Server responded but with an error status
+    const { status, data } = error.response;
+    const message =
+      data?.detail || // Django/DRF often uses "detail"
+      data?.details || // Some APIs return "details"
+      data?.message || // General message
+      data?.error || // Sometimes "error" is used
+      error.response.statusText || 
+      'An unknown error occurred.';
+
+    showNotification('Error Listing Item', `Error ${message}`, 'error');
   } else if (error.request) {
-    showNotification('Error Listing Item', `Check Your Network Connection. ${error.request}`, 'error');
+    // Request was made but no response was received
+    showNotification('Error Listing Item', 'No response received. Check your network connection.', 'error');
   } else {
-    showNotification('Error Listing Item', `Error setting up the request. ${error}`, 'error');
+    // Other errors (setup issues, cancellation, etc.)
+    showNotification('Error Listing Item', `Unexpected error: ${error.message || error}`, 'error');
   }
+
+  // Optional: Log the full error for debugging
+  console.error('Error details:', error);
 };
+
 
 async function saveFormDataToIndexedDB(formData) {
   const payload = {};
