@@ -7,6 +7,7 @@ from datetime import datetime
 from django.conf import settings
 from django.db.models import Sum
 from django.db.models import Q
+from django.db import transaction
 
 from django.db import transaction
 from django.http import JsonResponse, QueryDict
@@ -76,66 +77,68 @@ class CreateCheckoutSessionView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            # Prepare order data
-            cart_items = cart.cart_items.all()
-            order_total_price = Decimal(cart.get_cart_total)  # Convert to Decimal
-            total_order_items = cart.get_cart_items
+            with transaction.atomic():  # Ensures atomicity of the order creation process
+                # Prepare order data
+                cart_items = cart.cart_items.all()
+                order_total_price = Decimal(cart.get_cart_total)  # Convert to Decimal
+                total_order_items = cart.get_cart_items
 
-            # Create the order
-            order_serializer = OrderSerializer(data={
-                'user': user.id,
-                'order_total_price': order_total_price,
-                'total_order_items': total_order_items,
-            })
-            order_serializer.is_valid(raise_exception=True)
-            order = order_serializer.save()
+                # Create the order
+                order_serializer = OrderSerializer(data={
+                    'user': user.id,
+                    'order_total_price': order_total_price,
+                    'total_order_items': total_order_items,
+                })
+                order_serializer.is_valid(raise_exception=True)
+                order = order_serializer.save()
 
-            # Create order items and update inventory
-            for cart_item in cart_items:
-                item = cart_item.item
-                if item.available_quantity < cart_item.quantity:
-                    return Response(
-                        {"error": f"Not enough inventory for {item.name}. Available: {item.available_quantity}, Requested: {cart_item.quantity}"},
-                        status=status.HTTP_400_BAD_REQUEST,
+                # Create order items and update inventory
+                for cart_item in cart_items:
+                    item = cart_item.item
+                    if item.available_quantity < cart_item.quantity:
+                        return Response(
+                            {"error": f"Not enough inventory for {item.name}. Available: {item.available_quantity}, Requested: {cart_item.quantity}"},
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
+
+                    # Create order item
+                    OrderItem.objects.create(
+                        order=order,
+                        item=item,
+                        quantity=cart_item.quantity,
+                        start_date=cart_item.start_date,
+                        end_date=cart_item.end_date,
                     )
 
-                # Create order item
-                OrderItem.objects.create(
-                    order=order,
-                    item=item,
-                    quantity=cart_item.quantity,
-                    start_date=cart_item.start_date,
-                    end_date=cart_item.end_date,
+                # Calculate service fee (6% of the order total price)
+                service_fee = order_total_price * Decimal('0.06')
+
+                # Convert price to cents (including service fee)
+                amount_in_cents = int((order_total_price + service_fee) * Decimal('100'))
+
+                stripe_price = stripe.Price.create(
+                    unit_amount=amount_in_cents,
+                    currency="usd",
+                    product_data={
+                        "name": f"Order {order.id}",
+                    },
                 )
 
-            # Calculate service fee (6% of the order total price)
-            service_fee = order_total_price * Decimal('0.06')
+                # Create the Stripe session
+                session = stripe.checkout.Session.create(
+                    mode='payment',
+                    customer_email=request.data.get('customer_email'),
+                    billing_address_collection='required',
+                    shipping_address_collection={'allowed_countries': ['US', 'CA', 'KE']},
+                    line_items=[{'price': stripe_price.id, 'quantity': 1}],
+                    success_url=f"{settings.DOMAIN_URL}/payment-successful?session_id={{CHECKOUT_SESSION_ID}}&order_id={order.id}",
+                    cancel_url=f"{settings.DOMAIN_URL}/payment-canceled?order_id={order.id}",
+                )
 
-            # Convert price to cents (including service fee)
-            amount_in_cents = int((order_total_price + service_fee) * Decimal('100'))
-
-            stripe_price = stripe.Price.create(
-                unit_amount=amount_in_cents,
-                currency="usd",
-                product_data={
-                    "name": f"Order {order.id}",
-                },
-            )
-
-            # Create the Stripe session
-            session = stripe.checkout.Session.create(
-                mode='payment',
-                customer_email=request.data.get('customer_email'),
-                billing_address_collection='required',
-                shipping_address_collection={'allowed_countries': ['US', 'CA', 'KE']},
-                line_items=[{'price': stripe_price.id, 'quantity': 1}],
-                success_url=f"{settings.DOMAIN_URL}/payment-successful?session_id={{CHECKOUT_SESSION_ID}}&order_id={order.id}",
-                cancel_url=f"{settings.DOMAIN_URL}/payment-canceled?order_id={order.id}",
-            )
-            # Update order with payment details
-            order.payment_token = session.id
-            order.payment_status = 'pending'
-            order.save()
+                # Update order with payment details
+                order.payment_token = session.id
+                order.payment_status = 'pending'
+                order.save()
 
             # --- Prepare Email Contexts with Serializable Data ---
 
@@ -222,7 +225,6 @@ class CreateCheckoutSessionView(APIView):
             return Response({"error": f"An unexpected error occurred. {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-
 class SessionStatusView(APIView):
     """
     Retrieves the status of a Stripe checkout session.
@@ -244,25 +246,26 @@ class SessionStatusView(APIView):
             # Retrieve Stripe session details
             session = stripe.checkout.Session.retrieve(session_id)
 
-            # Attempt to find the order associated with this session
-            order = Order.objects.filter(payment_token=session_id).first()
+            with transaction.atomic():  # Ensure all database updates are atomic
+                # Attempt to find the order associated with this session
+                order = Order.objects.filter(payment_token=session_id).first()
 
-            if not order:
-                return Response(
-                    {'error': 'Order not found for the given session ID.'},
-                    status=status.HTTP_404_NOT_FOUND,
-                )
+                if not order:
+                    return Response(
+                        {'error': 'Order not found for the given session ID.'},
+                        status=status.HTTP_404_NOT_FOUND,
+                    )
 
-            # Mark the order as paid
-            order.payment_status = 'paid'
-            order.ordered = True
-            order.date_ordered = datetime.now()
-            order.save()
+                # Mark the order as paid
+                order.payment_status = 'paid'
+                order.ordered = True
+                order.date_ordered = datetime.now()
+                order.save()
 
-            # Clear the cart after the payment is successful
-            cart = Cart.objects.filter(user=order.user).first()  # Retrieve the cart for the user
-            if cart:
-                cart.cart_items.all().delete()  # Delete all items in the cart
+                # Clear the cart after the payment is successful
+                cart = Cart.objects.filter(user=order.user).first()  # Retrieve the cart for the user
+                if cart:
+                    cart.cart_items.all().delete()  # Delete all items in the cart
 
             # Build the response with session and order details
             status_response = {
@@ -550,80 +553,76 @@ class EquipmentViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     
+
     def create(self, request, *args, **kwargs):
         """
         Create a new equipment item.
         Handles file uploads and data processing.
         """
         try:
-            # Handle images if provided in the 'images' key
-            images = request.FILES.getlist('images')
+            with transaction.atomic():  # Ensures all operations are atomic
+                # Handle images if provided in the 'images' key
+                images = request.FILES.getlist('images')
 
-            # Convert incoming querydict to a structured dictionary
-            data = convert_querydict_to_dict(request.data)
+                # Convert incoming querydict to a structured dictionary
+                data = convert_querydict_to_dict(request.data)
 
-            # Group address fields into a dictionary
-            address = {
-                'street_address': data.pop('street_address', None),
-                'city': data.pop('city', None),
-                'state': data.pop('state', None),
-                'zip_code': data.pop('zip_code', None),
-                'country': data.pop('country', None)
-            }
-            data['address'] = address
+                # Group address fields into a dictionary
+                address = {
+                    'street_address': data.pop('street_address', None),
+                    'city': data.pop('city', None),
+                    'state': data.pop('state', None),
+                    'zip_code': data.pop('zip_code', None),
+                    'country': data.pop('country', None)
+                }
+                data['address'] = address
 
-            terms = data.pop('terms', None)
-            if terms:
-                data['terms'] = terms
+                terms = data.pop('terms', None)
+                if terms:
+                    data['terms'] = terms
 
-            # Convert tags to a list of Tag instances (or create them if they don't exist)
-            tags_input = data.pop('tags', [])
-            tags = []
-            for tag_name in tags_input:
-                tag, created = Tag.objects.get_or_create(name=tag_name.strip())  # Get or create tag
-                tags.append(tag)
+                # Convert tags to a list of Tag instances (or create them if they don't exist)
+                tags_input = data.pop('tags', [])
+                tags = []
+                for tag_name in tags_input:
+                    tag, created = Tag.objects.get_or_create(name=tag_name.strip())  # Get or create tag
+                    tags.append(tag)
 
-           # Convert specifications from string to list of dictionaries
-            if 'specifications' in data:
-                specifications_data  = json.loads(data.pop('specifications'))
+                # Convert specifications from string to list of dictionaries
+                if 'specifications' in data:
+                    specifications_data  = json.loads(data.pop('specifications'))
 
+                # Initialize and validate the equipment serializer
+                serializer = self.get_serializer(data=data, context={'request': request})
+                serializer.is_valid(raise_exception=True)
 
-            # Initialize and validate the equipment serializer
-            serializer = self.get_serializer(data=data, context={'request': request})
-            serializer.is_valid(raise_exception=True)
+                # Save the equipment instance
+                equipment = serializer.save(terms=terms)
 
-            # Save the equipment instance
-            equipment = serializer.save(terms=terms)
-            # Save the equipment instance first (if it's newly created)
-          
+                for spec in specifications_data:
+                    # Rename 'key' to 'name' in the specification data
+                    if 'key' in spec:
+                        spec['name'] = spec.pop('key', None)
 
-            for spec in specifications_data:
-                # Rename 'key' to 'name' in the specification data
-                if 'key' in spec:
-                    spec['name'] = spec.pop('key', None)
+                    # Ensure 'name' is present
+                    if not spec.get('name'):
+                        return Response({'detail': 'Specification name is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
-                # Ensure 'name' is present
-                if not spec.get('name'):
-                    return Response({'detail': 'Specification name is required.'}, status=status.HTTP_400_BAD_REQUEST)
+                    # Create or retrieve Specification model instance
+                    specification_instance, created = Specification.objects.get_or_create(
+                        name=spec['name'],
+                        defaults={'value': spec.get('value')},  # Include other fields as needed
+                        equipment=equipment
+                    )
 
-                # Create or retrieve Specification model instance
-                specification_instance, created = Specification.objects.get_or_create(
-                    name=spec['name'],
-                    defaults={'value': spec.get('value')},  # Include other fields as needed
-                    equipment=equipment
-                    
-                )
+                # Handle images if necessary
+                if images:
+                    for image in images:
+                        equipment.images.create(image=image)
 
-
-
-            # Handle images if necessary
-            if images:
-                for image in images:
-                    equipment.images.create(image=image)
-
-            # Set the tags after saving the equipment
-            if tags:
-                equipment.tags.set(tags)
+                # Set the tags after saving the equipment
+                if tags:
+                    equipment.tags.set(tags)
 
             # Return the created equipment data
             headers = self.get_success_headers(serializer.data)
@@ -655,6 +654,7 @@ class EquipmentViewSet(viewsets.ModelViewSet):
 
     
     
+
     def update(self, request, pk=None):
         """
         Update an existing equipment item.
@@ -666,36 +666,38 @@ class EquipmentViewSet(viewsets.ModelViewSet):
         equipment = get_object_or_404(Equipment, pk=pk)
         data = request.data
 
+        try:
+            with transaction.atomic():  # Ensures atomicity
+                # Handle images if provided
+                images = request.FILES.getlist('images')
+                if images:
+                    # Clear existing images
+                    equipment.images.all().delete()
 
-        # Handle images if provided
-        images = request.FILES.getlist('images')
-        # Overwrite images if provided
-        images = request.FILES.getlist('images')
-        if images:
-            # Clear existing images
-            equipment.images.all().delete()
+                    # Add new images
+                    for image in images:
+                        equipment.images.create(image=image)
 
-            # Add new images
-            for image in images:
-                equipment.images.create(image=image)
-        # Handle multipart/form-data query dict
-        if isinstance(data, QueryDict):
-            data = data.dict()
+                # Handle multipart/form-data query dict
+                if isinstance(data, QueryDict):
+                    data = data.dict()
 
-        # Resolve category if provided
-        category_instance = None
-        if 'category' in data:
-            category_instance = get_object_or_404(Category, id=data.get('category'))
-            data['category'] = category_instance.id  # Replace with valid category ID
+                # Resolve category if provided
+                if 'category' in data:
+                    category_instance = get_object_or_404(Category, id=data.get('category'))
+                    data['category'] = category_instance.id  # Replace with valid category ID
 
-        # Perform partial updates
-        serializer = EquipmentSerializer(equipment, data=data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
+                # Perform partial updates
+                serializer = EquipmentSerializer(equipment, data=data, partial=True)
+                if serializer.is_valid():
+                    serializer.save()
+                    return Response(serializer.data)
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
 
 class UserEquipmentView(APIView):
     """
@@ -922,6 +924,7 @@ class ReviewViewSet(viewsets.ViewSet):
         serializer = ReviewSerializer(queryset, many=True)
         return Response(serializer.data)
 
+
     def create(self, request):
         """
         Create a new review. The equipment being reviewed must be in a completed order of the user.
@@ -950,11 +953,17 @@ class ReviewViewSet(viewsets.ViewSet):
         # Attach the user ID to request data before validation
         data["user"] = user.id  
 
-        serializer = ReviewSerializer(data=data)
-        if serializer.is_valid():
-            serializer.save(user=user)  
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            with transaction.atomic():  # Ensures atomicity
+                serializer = ReviewSerializer(data=data)
+                if serializer.is_valid():
+                    serializer.save(user=user)  
+                    return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     def retrieve(self, request, pk=None):
         """
@@ -1007,6 +1016,7 @@ class CartViewSet(viewsets.ModelViewSet):
         Cart.objects.get_or_create(user=self.request.user)
         return Cart.objects.filter(user=self.request.user)
 
+
     def create(self, request, *args, **kwargs):
         """
         Create a cart for the logged-in user. If the user is a 'lessor', raise a permission error.
@@ -1017,20 +1027,26 @@ class CartViewSet(viewsets.ModelViewSet):
         if user.role == 'lessor':  # Replace 'lessor' with the actual role name if different
             raise PermissionDenied("You are a lessor!")
 
-        # Get or create a cart for the user
-        cart, created = Cart.objects.get_or_create(user=user)
+        try:
+            with transaction.atomic():  # Ensures atomicity
+                # Get or create a cart for the user
+                cart, created = Cart.objects.get_or_create(user=user)
 
-        if not created:
-            # If the cart already exists, return its details with a custom message
-            serializer = self.get_serializer(cart)
-            return Response(
-                {"detail": "A cart already exists for this user.", "cart": serializer.data},
-                status=status.HTTP_200_OK
-            )
+                if not created:
+                    # If the cart already exists, return its details with a custom message
+                    serializer = self.get_serializer(cart)
+                    return Response(
+                        {"detail": "A cart already exists for this user.", "cart": serializer.data},
+                        status=status.HTTP_200_OK
+                    )
 
-        # If a new cart is created, return its details in the response
-        serializer = self.get_serializer(cart)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+                # If a new cart is created, return its details in the response
+                serializer = self.get_serializer(cart)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
 
     def update(self, request, *args, **kwargs):
         """
@@ -1083,6 +1099,7 @@ class CartItemViewSet(viewsets.ModelViewSet):
         user_cart, _ = Cart.objects.get_or_create(user=self.request.user)
         return CartItem.objects.filter(cart=user_cart)
     
+
     def create(self, request, *args, **kwargs):
         """
         Create a new cart item for the logged-in user. Ensure the user is not leasing their own equipment.
@@ -1093,96 +1110,106 @@ class CartItemViewSet(viewsets.ModelViewSet):
         if user.role == 'lessor':
             raise PermissionDenied("Lessors cannot add items to the cart!")
 
-        user_cart, _ = Cart.objects.get_or_create(user=user)
-        
-        item_data = request.data
-        item_id = item_data.get("item")  # Get the item ID
-        item_quantity = item_data.get("quantity", 1)
-
-        # Ensure valid dates
-        new_start_date = datetime.strptime(item_data.get("start_date"), "%Y-%m-%d").date()
-        new_end_date = datetime.strptime(item_data.get("end_date"), "%Y-%m-%d").date()
-
-        # Get the equipment
         try:
-            equipment = Equipment.objects.get(id=item_id)
-        except Equipment.DoesNotExist:
-            return Response({"error": "Equipment not found."}, status=status.HTTP_404_NOT_FOUND)
+            with transaction.atomic():  # Ensures atomicity
+                user_cart, _ = Cart.objects.get_or_create(user=user)
+                
+                item_data = request.data
+                item_id = item_data.get("item")  # Get the item ID
+                item_quantity = item_data.get("quantity", 1)
 
-        # Prevent the owner from leasing their own equipment
-        if equipment.owner == user:
-            raise PermissionDenied("You cannot rent your own Item!")
+                # Ensure valid dates
+                new_start_date = datetime.strptime(item_data.get("start_date"), "%Y-%m-%d").date()
+                new_end_date = datetime.strptime(item_data.get("end_date"), "%Y-%m-%d").date()
 
-        # Check stock availability
-        if equipment.available_quantity < item_quantity:
-            return Response(
-                {"error": f"Only {equipment.available_quantity} units are available."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+                # Get the equipment
+                try:
+                    equipment = Equipment.objects.get(id=item_id)
+                except Equipment.DoesNotExist:
+                    return Response({"error": "Equipment not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        # Check if the item already exists in the cart
-        existing_cart_item = CartItem.objects.filter(cart=user_cart, item_id=item_id).first()
+                # Prevent the owner from leasing their own equipment
+                if equipment.owner == user:
+                    raise PermissionDenied("You cannot rent your own Item!")
 
-        if existing_cart_item:
-            existing_start_date = existing_cart_item.start_date
-            existing_end_date = existing_cart_item.end_date
+                # Check stock availability
+                if equipment.available_quantity < item_quantity:
+                    return Response(
+                        {"error": f"Only {equipment.available_quantity} units are available."},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
 
-            if existing_start_date != new_start_date or existing_end_date != new_end_date:
-                existing_cart_item.quantity = item_quantity
-                existing_cart_item.start_date = new_start_date
-                existing_cart_item.end_date = new_end_date
-            else:
-                existing_cart_item.quantity += item_quantity
+                # Check if the item already exists in the cart
+                existing_cart_item = CartItem.objects.filter(cart=user_cart, item_id=item_id).first()
 
-            existing_cart_item.save()
-            serializer = self.get_serializer(existing_cart_item)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+                if existing_cart_item:
+                    existing_start_date = existing_cart_item.start_date
+                    existing_end_date = existing_cart_item.end_date
 
-        # Create a new cart item
-        item_data['cart'] = user_cart.id  
-        serializer = self.get_serializer(data=item_data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+                    if existing_start_date != new_start_date or existing_end_date != new_end_date:
+                        existing_cart_item.quantity = item_quantity
+                        existing_cart_item.start_date = new_start_date
+                        existing_cart_item.end_date = new_end_date
+                    else:
+                        existing_cart_item.quantity += item_quantity
 
-    
+                    existing_cart_item.save()
+                    serializer = self.get_serializer(existing_cart_item)
+                    return Response(serializer.data, status=status.HTTP_200_OK)
+
+                # Create a new cart item
+                item_data['cart'] = user_cart.id  
+                serializer = self.get_serializer(data=item_data)
+                serializer.is_valid(raise_exception=True)
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
 
 
     def update(self, request, *args, **kwargs):
         """
         Update an existing cart item by checking the available quantity and date availability.
         """
-        cart_item = self.get_cart_item()
-        item_data = request.data
+        try:
+            with transaction.atomic():  # Ensures atomicity
+                cart_item = self.get_cart_item()
+                item_data = request.data
 
-        # Get the updated item quantity from the request data
-        item_quantity = item_data.get("quantity", cart_item.quantity)
+                # Get the updated item quantity from the request data
+                item_quantity = item_data.get("quantity", cart_item.quantity)
 
-        # Get the updated start and end dates from the request data
-        start_date = item_data.get("start_date", cart_item.start_date)
-        end_date = item_data.get("end_date", cart_item.end_date)
+                # Get the updated start and end dates from the request data
+                start_date = item_data.get("start_date", cart_item.start_date)
+                end_date = item_data.get("end_date", cart_item.end_date)
 
-        # Get the equipment object associated with the cart item
-        equipment = cart_item.item
+                # Get the equipment object associated with the cart item
+                equipment = cart_item.item
 
-        # Check if available quantity is sufficient for the date range
-        available_quantity = equipment.get_available_quantity(start_date, end_date)
+                # Check if available quantity is sufficient for the date range
+                available_quantity = equipment.get_available_quantity(start_date, end_date)
 
-        if available_quantity < item_quantity:
-            return Response(
-                {"error": f"Only {available_quantity} items are available for the selected date range."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+                if available_quantity < item_quantity:
+                    return Response(
+                        {"error": f"Only {available_quantity} items are available for the selected date range."},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
 
-        # Update the cart item with the new quantity and dates
-        cart_item.quantity = item_quantity
-        cart_item.start_date = start_date
-        cart_item.end_date = end_date
-        cart_item.save()
+                # Update the cart item with the new quantity and dates
+                cart_item.quantity = item_quantity
+                cart_item.start_date = start_date
+                cart_item.end_date = end_date
+                cart_item.save()
 
-        # Return the updated cart item as a response
-        serializer = self.get_serializer(cart_item)
-        return Response(serializer.data)
+                # Return the updated cart item as a response
+                serializer = self.get_serializer(cart_item)
+                return Response(serializer.data)
+
+        except Exception as e:
+            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
 
     def destroy(self, request, *args, **kwargs):
         """
@@ -1191,7 +1218,6 @@ class CartItemViewSet(viewsets.ModelViewSet):
         cart_item = self.get_object()
         cart_item.delete()
         return Response({"detail": "Cart item deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
-
 
 
 class OrderActionView(APIView):
@@ -1208,31 +1234,32 @@ class OrderActionView(APIView):
         Each action corresponds to a specific modification to the order.
         """
         try:
-            # Fetch the order object associated with the user
-            order = Order.objects.get(id=pk, user=request.user)
+            with transaction.atomic():  # Ensures atomicity
+                # Fetch the order object associated with the user
+                order = Order.objects.get(id=pk, user=request.user)
 
-            # Handle the corresponding action
-            if action == 'terminate':
-                order.terminate_rental()
-            elif action == 'delete':
-                order.delete()
-            elif action == 'reorder':
-                new_order = order.reorder()
+                # Handle the corresponding action
+                if action == 'terminate':
+                    order.terminate_rental()
+                elif action == 'delete':
+                    order.delete()
+                elif action == 'reorder':
+                    new_order = order.reorder()
+                    return Response(
+                        {'message': 'Order reordered successfully', 'new_order_id': new_order.id},
+                        status=status.HTTP_200_OK
+                    )
+                else:
+                    return Response(
+                        {'error': 'Invalid action'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
+                # Return success message after action
                 return Response(
-                    {'message': 'Order reordered successfully', 'new_order_id': new_order.id},
+                    {'message': f'Order {action} action successful'},
                     status=status.HTTP_200_OK
                 )
-            else:
-                return Response(
-                    {'error': 'Invalid action'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            # Return success message after action
-            return Response(
-                {'message': f'Order {action} action successful'},
-                status=status.HTTP_200_OK
-            )
 
         except Order.DoesNotExist:
             return Response(
@@ -1244,6 +1271,7 @@ class OrderActionView(APIView):
                 {'error': str(e)},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
 
 class OrderViewSet(viewsets.ViewSet):
     authentication_classes = [JWTAuthenticationFromCookie]
@@ -1259,51 +1287,52 @@ class OrderViewSet(viewsets.ViewSet):
         self.check_permissions(request)
 
         try:
-            cart = Cart.objects.get(user=request.user)
-            cart_items = cart.cart_items.all()
+            with transaction.atomic():  # Ensures atomicity
+                cart = Cart.objects.get(user=request.user)
+                cart_items = cart.cart_items.all()
 
-            if not cart_items.exists():
-                return Response({"error": "Cart is empty, cannot create an order"}, status=status.HTTP_400_BAD_REQUEST)
+                if not cart_items.exists():
+                    return Response({"error": "Cart is empty, cannot create an order"}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Calculate order totals
-            order_total_price = Decimal(sum(item.quantity * item.item.hourly_rate for item in cart_items))
-            total_order_items = sum(item.quantity for item in cart_items)
-            service_fee = (order_total_price * Decimal('0.06')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-            order_total_price_with_fee = (order_total_price + service_fee).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                # Calculate order totals
+                order_total_price = Decimal(sum(item.quantity * item.item.hourly_rate for item in cart_items))
+                total_order_items = sum(item.quantity for item in cart_items)
+                service_fee = (order_total_price * Decimal('0.06')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                order_total_price_with_fee = (order_total_price + service_fee).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
-            # Validate inventory before proceeding
-            for cart_item in cart_items:
-                if cart_item.item.available_quantity < cart_item.quantity:
-                    return Response({
-                        "error": f"Not enough stock for {cart_item.item.name}. Available: {cart_item.item.available_quantity}, Requested: {cart_item.quantity}"
-                    }, status=status.HTTP_400_BAD_REQUEST)
+                # Validate inventory before proceeding
+                for cart_item in cart_items:
+                    if cart_item.item.available_quantity < cart_item.quantity:
+                        return Response({
+                            "error": f"Not enough stock for {cart_item.item.name}. Available: {cart_item.item.available_quantity}, Requested: {cart_item.quantity}"
+                        }, status=status.HTTP_400_BAD_REQUEST)
 
-            # Create order
-            order = Order.objects.create(
-                user=request.user,
-                order_total_price=order_total_price_with_fee,
-                total_order_items=total_order_items,
-                payment_status='pending'
-            )
-
-            # Create order items
-            for cart_item in cart_items:
-                OrderItem.objects.create(
-                    order=order,
-                    item=cart_item.item,
-                    quantity=cart_item.quantity,
-                    start_date=cart_item.start_date,
-                    end_date=cart_item.end_date
+                # Create order
+                order = Order.objects.create(
+                    user=request.user,
+                    order_total_price=order_total_price_with_fee,
+                    total_order_items=total_order_items,
+                    payment_status='pending'
                 )
 
-     
-            return Response({'order_id': order.id}, status=status.HTTP_201_CREATED)
+                # Create order items
+                for cart_item in cart_items:
+                    OrderItem.objects.create(
+                        order=order,
+                        item=cart_item.item,
+                        quantity=cart_item.quantity,
+                        start_date=cart_item.start_date,
+                        end_date=cart_item.end_date
+                    )
+
+                return Response({'order_id': order.id}, status=status.HTTP_201_CREATED)
 
         except Cart.DoesNotExist:
             return Response({"error": "No cart found for the user"}, status=status.HTTP_404_NOT_FOUND)
 
         except Exception as e:
             return Response({"error": f"An unexpected error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
     def get_order(self, pk, user):
         """Helper function to retrieve an order object with permission check"""
@@ -1343,159 +1372,162 @@ class OrderItemViewSet(viewsets.ViewSet):
                 {"error": "Order Item not found!"},
                 status=status.HTTP_400_BAD_REQUEST
             )
+        
 
-    
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
         """
         Approve a rental request for an order item.
         Only the owner of the item can approve.
         """
-        order_item = get_object_or_404(OrderItem, id=pk)
+        with transaction.atomic():  # Ensures atomicity
+            order_item = get_object_or_404(OrderItem, id=pk)
 
-        # Check if the logged-in user is the owner of the item
-        if order_item.item.owner.id != request.user.id:
-            return Response(
-                {"error": "You are not authorized to approve this item."},
-                status=status.HTTP_403_FORBIDDEN
-            )
+            # Check if the logged-in user is the owner of the item
+            if order_item.item.owner.id != request.user.id:
+                return Response(
+                    {"error": "You are not authorized to approve this item."},
+                    status=status.HTTP_403_FORBIDDEN
+                )
 
-        # Ensure the order item is still pending
-        if order_item.status != 'pending':
-            return Response(
-                {"error": "Only pending items can be approved."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            # Ensure the order item is still pending
+            if order_item.status != 'pending':
+                return Response(
+                    {"error": "Only pending items can be approved."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
-        # Approve the order item
-        order_item.status = 'approved'
-        order_item.save()
+            # Approve the order item
+            order_item.status = 'approved'
+            order_item.save()
 
-        # Check if all order items in the order are approved
-        order = order_item.order
-        if all(item.status == 'approved' for item in order.order_items.all()):
-            order.status = 'approved'
-            order.save()
+            # Check if all order items in the order are approved
+            order = order_item.order
+            if all(item.status == 'approved' for item in order.order_items.all()):
+                order.status = 'approved'
+                order.save()
 
-        return Response({"message": "Order item approved successfully"}, status=status.HTTP_200_OK)
-    
+            return Response({"message": "Order item approved successfully"}, status=status.HTTP_200_OK)
+
 
     @action(detail=True, methods=['post'])
     def initiate_pickup(self, request, pk=None):
         """
         Lessee initiates pickup by providing images and identity document.
         """
-        order_item = get_object_or_404(OrderItem, id=pk)
+        with transaction.atomic():  # Ensures atomicity
+            order_item = get_object_or_404(OrderItem, id=pk)
 
-        if order_item.status != 'approved':
-            return Response({"error": "Order item must be approved to initiate pickup"}, status=status.HTTP_400_BAD_REQUEST)
+            if order_item.status != 'approved':
+                return Response({"error": "Order item must be approved to initiate pickup"}, status=status.HTTP_400_BAD_REQUEST)
 
-        pickup_images = request.FILES.getlist('pickup_images')
-        identity_document_type = request.data.get('documentType')
+            pickup_images = request.FILES.getlist('pickup_images')
+            identity_document_type = request.data.get('documentType')
 
-        if len(pickup_images) > 3:
-            return Response({"error": "Too many pickup images"}, status=status.HTTP_400_BAD_REQUEST)
+            if len(pickup_images) > 3:
+                return Response({"error": "Too many pickup images"}, status=status.HTTP_400_BAD_REQUEST)
 
-        if identity_document_type not in ['id', 'dl', 'passport']:
-            return Response({"error": "Invalid identity document type"}, status=status.HTTP_400_BAD_REQUEST)
+            if identity_document_type not in ['id', 'dl', 'passport']:
+                return Response({"error": "Invalid identity document type"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Save images linked to this order item
-        for image in pickup_images:
-            Image.objects.create(order_item=order_item, image=image, is_pickup=True)
+            # Save images linked to this order item
+            for image in pickup_images:
+                Image.objects.create(order_item=order_item, image=image, is_pickup=True)
 
-        order_item.identity_document_type = identity_document_type
-        order_item.status = 'pickup'
-        order_item.save()
+            order_item.identity_document_type = identity_document_type
+            order_item.status = 'pickup'
+            order_item.save()
 
-        return Response({"message": "Pickup initiated successfully"}, status=status.HTTP_200_OK)
-    
+            return Response({"message": "Pickup initiated successfully"}, status=status.HTTP_200_OK)
+
 
     @action(detail=True, methods=['post'])
     def confirm_pickup(self, request, pk=None):
         """
         Lessor confirms pickup for a specific OrderItem and stores the captured ID document.
         """
-        order_item = self.get_order_item(pk, request.user)
+        with transaction.atomic():  # Ensures atomicity
+            order_item = self.get_order_item(pk, request.user)
 
-        if order_item.status != 'pickup':
-            return Response({"error": "Pickup must be initiated first"}, status=status.HTTP_400_BAD_REQUEST)
+            if order_item.status != 'pickup':
+                return Response({"error": "Pickup must be initiated first"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Check if an ID document image was uploaded
-        id_image = request.FILES.get("id_image")
-        if not id_image:
-            return Response({"error": "ID document image is required"}, status=status.HTTP_400_BAD_REQUEST)
+            # Check if an ID document image was uploaded
+            id_image = request.FILES.get("id_image")
+            if not id_image:
+                return Response({"error": "ID document image is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Save the image to the order item
-        order_item.identity_document_image.save(id_image.name, id_image, save=True)
+            # Save the image to the order item
+            order_item.identity_document_image.save(id_image.name, id_image, save=True)
 
-        # Confirm the image is set
-        if not order_item.identity_document_image:
-            return Response({"error": "Failed to save ID document image"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            # Confirm the image is set
+            if not order_item.identity_document_image:
+                return Response({"error": "Failed to save ID document image"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        # Update order item status
-        order_item.status = 'rented'
-        order_item.save()
+            # Update order item status
+            order_item.status = 'rented'
+            order_item.save()
 
-        return Response({
-            "message": "Pickup confirmed successfully",
-            "image_url": order_item.identity_document_image.url
-        }, status=status.HTTP_200_OK)
-    
-    
+            return Response({
+                "message": "Pickup confirmed successfully",
+                "image_url": order_item.identity_document_image.url
+            }, status=status.HTTP_200_OK)
+
+
     @action(detail=True, methods=['post'])
     def confirm_return(self, request, pk=None):
         """
         Lessor confirms return. If the item is damaged, it cannot be marked as completed.
         """
-        order_item = self.get_order_item(pk, request.user)
+        with transaction.atomic():  # Ensures atomicity
+            order_item = self.get_order_item(pk, request.user)
 
-        if order_item.status != 'rented':
-            return Response({"error": "Item must be rented first"}, status=status.HTTP_400_BAD_REQUEST)
+            if order_item.status != 'rented':
+                return Response({"error": "Item must be rented first"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Get return condition and complaint details from request with safe default values
-        return_condition = request.data.get("returnCondition", "").strip().lower() if request.data.get("returnCondition") else "good"
-        complaint_text = request.data.get("complaintText", "").strip() if request.data.get("complaintText") else ""
+            # Get return condition and complaint details from request with safe default values
+            return_condition = request.data.get("returnCondition", "").strip().lower() if request.data.get("returnCondition") else "good"
+            complaint_text = request.data.get("complaintText", "").strip() if request.data.get("complaintText") else ""
 
-        # Validate return condition
-        if return_condition not in ["good", "damaged"]:
-            return Response(
-                {"error": "Invalid return condition. Must be either 'good' or 'damaged'."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        # Save return condition to the order item
-        order_item.return_item_condition = return_condition
-
-        if return_condition == "damaged":
-            # If damaged, require a complaint
-            if not complaint_text:
+            # Validate return condition
+            if return_condition not in ["good", "damaged"]:
                 return Response(
-                    {"error": "A complaint description is required if the item is damaged."},
+                    {"error": "Invalid return condition. Must be either 'good' or 'damaged'."},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            # Store complaint text and mark as disputed (NOT completed)
-            order_item.return_item_condition_custom = complaint_text
-            order_item.status = "disputed"
+            # Save return condition to the order item
+            order_item.return_item_condition = return_condition
+
+            if return_condition == "damaged":
+                # If damaged, require a complaint
+                if not complaint_text:
+                    return Response(
+                        {"error": "A complaint description is required if the item is damaged."},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
+                # Store complaint text and mark as disputed (NOT completed)
+                order_item.return_item_condition_custom = complaint_text
+                order_item.status = "disputed"
+                order_item.save()
+
+                return Response({
+                    "message": "Item return recorded as damaged. Complaint noted.",
+                    "return_condition": return_condition,
+                    "complaint": complaint_text,
+                    "status": "disputed",
+                }, status=status.HTTP_200_OK)
+
+            # If condition is good, complete the order
+            order_item.status = "completed"
             order_item.save()
 
             return Response({
-                "message": "Item return recorded as damaged. Complaint noted.",
+                "message": "Item return confirmed successfully.",
                 "return_condition": return_condition,
-                "complaint": complaint_text,
-                "status": "disputed",
+                "status": "completed",
             }, status=status.HTTP_200_OK)
-
-        # If condition is good, complete the order
-        order_item.status = "completed"
-        order_item.save()
-
-        return Response({
-            "message": "Item return confirmed successfully.",
-            "return_condition": return_condition,
-            "status": "completed",
-        }, status=status.HTTP_200_OK)
-
 
 
     def list(self, request):
