@@ -539,7 +539,7 @@ class EquipmentViewSet(viewsets.ModelViewSet):
         if search:
             queryset = queryset.filter(
                 Q(name__icontains=search) |
-                Q(description__icontains=search) |
+                # Q(description__icontains=search) |
                 Q(tags__name__icontains=search)
             ).distinct()
 
