@@ -14,6 +14,7 @@ from django.http import JsonResponse, QueryDict
 from django.shortcuts import get_object_or_404
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
+from django.utils.timezone import now
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
@@ -1609,9 +1610,9 @@ class OrderItemViewSet(viewsets.ViewSet):
         """
 
         try:
-            # Fetch order items for the given item ID (pk)
-            order_items = OrderItem.objects.filter(item_id=pk)
-            
+            # Fetch order items for the given item ID (pk), ensuring end_date is not in the past
+            order_items = OrderItem.objects.filter(item_id=pk, end_date__gte=now().date())
+
             # Compute the total number of booked items for the specific item
             total_booked_quantity = order_items.aggregate(total=Sum('quantity'))['total'] or 0
 
@@ -1620,7 +1621,7 @@ class OrderItemViewSet(viewsets.ViewSet):
 
             for order_item in order_items:
                 date_range_key = (order_item.start_date, order_item.end_date)
-                
+
                 if date_range_key in grouped_bookings:
                     # If the date range already exists, add the quantity
                     grouped_bookings[date_range_key]["quantity"] += order_item.quantity
