@@ -854,6 +854,7 @@ class OrderItem(models.Model):
         ('pending', 'Pending'),
         ('approved', 'Approved'),
         ('pickup', 'Pickup Initiated'),
+        ('return', "Return Initiated"),
         ('rented', 'Rented'),
         ('rejected', 'Rejected'),
         ('disputed', 'Disputed'),

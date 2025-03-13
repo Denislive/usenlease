@@ -372,7 +372,7 @@
                   </table>
 
 
-                  
+
 
                   <!-- Awaiting Pickup Table -->
                   <h3 class="text-xl font-semibold mt-6 mb-2">Awaiting Pickup</h3>
@@ -578,6 +578,12 @@
                             <p>{{ item.quantity }}x {{ item.item.name }}</p>
                           </div>
 
+                          <button v-if="item.status === 'rented' && isPastEndDate(item.end_date)"
+                            @click="openInitiateReturnModal(item.id)" class="bg-blue-500 text-white px-4 py-2 rounded">
+                            Initiate Return
+                          </button>
+
+
                           <!-- Confirm Button -->
                           <button v-if="item.status === 'approved'" @click="openPickupModal(item.id)"
                             class="ml-4 px-3 py-1 bg-green-500 text-white rounded shadow-sm hover:bg-green-600">
@@ -598,6 +604,11 @@
                   </tbody>
                 </table>
               </div>
+
+              <!-- Initiate Return Modal -->
+              <InitiateReturnModal :isVisible="showInitiateReturnModal" :orderItem="selectedOrderItem"
+                @close="showInitiateReturnModal = false" @return-initiated="handleReturnInitiated" />
+
 
 
             </div>
@@ -844,7 +855,7 @@
                       <span>Total Equipments</span>
                       <span class="font-bold">{{
                         report.total_equipments
-                        }}</span>
+                      }}</span>
                     </li>
                     <li
                       class="flex items-center justify-between bg-white p-4 rounded-md shadow-sm transition duration-300 transform hover:scale-105">
@@ -887,7 +898,7 @@
                       <span>Total Rented Items</span>
                       <span class="font-bold">{{
                         report.total_rented_items
-                        }}</span>
+                      }}</span>
                     </li>
                     <li
                       class="flex items-center justify-between bg-white p-4 rounded-md shadow-sm transition duration-300 transform hover:scale-105">
@@ -901,7 +912,7 @@
                       <span>Average Rating Given</span>
                       <span class="font-bold">{{
                         report.average_rating_given
-                        }}</span>
+                      }}</span>
                     </li>
                   </ul>
                 </div>
@@ -1012,6 +1023,7 @@ import PickupModal from './PickupModal.vue'; // Import the child modal component
 import PickupConfirmationModal from './PickupConfirmationModal.vue';
 import RentalApproval from './RentalApproval.vue';
 import ReturnConfirmationModal from "./ReturnConfirmationModal.vue"; // Adjust path if needed
+import InitiateReturnModal from './InitiateReturnModal.vue';
 import { result } from 'lodash';
 
 const isApprovalModalOpen = ref(false);
@@ -1096,6 +1108,27 @@ const newMessage = ref(""); // Message being typed
 const showTerminateConfirm = ref(false);
 
 
+
+
+const showInitiateReturnModal = ref(false);
+
+// Function to open modal and set selected order item ID
+const openInitiateReturnModal = (orderItemId) => {
+  selectedOrderItem.value = orderItemId;
+  showInitiateReturnModal.value = true;
+};
+// Function to check if end_date is before today
+const isPastEndDate = (endDate) => {
+  if (!endDate) return false; // Ensure endDate exists
+  const today = new Date().setHours(0, 0, 0, 0); // Today's date without time
+  const itemEndDate = new Date(endDate).setHours(0, 0, 0, 0); // Convert end_date to Date object
+  return itemEndDate < today; // Check if end_date is before today
+};
+
+// Function to handle return initiation
+const handleReturnInitiated = () => {
+  showReturnModal.value = false; // Close modal after successful action
+};
 
 
 
