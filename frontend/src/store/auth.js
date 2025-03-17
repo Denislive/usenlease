@@ -365,18 +365,50 @@ export const useAuthStore = defineStore('auth', () => {
   
 
   const handleLoginError = (error) => {
-    if (error.response?.status === 401) {
-      loginError.value = 'Incorrect email or password.';
-      showNotification('Login Failed', 'Incorrect email or password.', 'error');
+    let errorMessage = 'An error occurred. Please try again later.';
+    let notificationType = 'error'; // Default notification type
+  
+    if (error.response) {
+      // Extract error message from different possible fields
+      errorMessage = error.response.data?.details || 
+                     error.response.data?.error || 
+                     error.response.data?.message || 
+                     errorMessage;
+  
+      switch (error.response.status) {
+        case 400:
+          errorMessage = errorMessage || 'Invalid request. Please check your input.';
+          break;
+        case 401:
+          errorMessage = errorMessage || 'Incorrect email or password.';
+          break;
+        case 403:
+          errorMessage = errorMessage || 'Account not verified. Please check your email.';
+          notificationType = 'info'; // Change notification type to info
+          break;
+        case 429:
+          errorMessage = errorMessage || 'Too many login attempts. Try again later.';
+          break;
+        case 500:
+          errorMessage = errorMessage || 'Server error. Please try again later.';
+          break;
+        case 503:
+          errorMessage = errorMessage || 'Service temporarily unavailable. Try again later.';
+          break;
+      }
+    } else if (error.request) {
+      // No response received (e.g., network issues)
+      errorMessage = 'Network issue. Please check your connection.';
     } else {
-      loginError.value = 'An error occurred. Please try again later.';
-      showNotification(
-        'Login Error',
-        `${error}`,
-        'error'
-      );
+      // Something else happened
+      errorMessage = error.message || errorMessage;
     }
+  
+    // Update UI
+    loginError.value = errorMessage;
+    showNotification(`Login ${notificationType} `, errorMessage, notificationType);
   };
+  
 
   const refreshToken = async () => {
     try {

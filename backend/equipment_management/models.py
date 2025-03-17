@@ -195,6 +195,9 @@ class Equipment(models.Model):
     date_updated = models.DateTimeField(auto_now=True)
     terms = models.TextField()
     slug = models.SlugField(unique=True, blank=True, editable=False)
+
+    is_verified = models.BooleanField(default=False)
+
     is_trending = models.BooleanField(default=False)
     is_featured = models.BooleanField(default=False)
 

@@ -62,7 +62,7 @@ class UserAdmin(BaseUserAdmin):
         (None, {'fields': ('username', 'password')}),
         ('Personal Info', {
             'fields': ('first_name', 'last_name', 'email', 'phone_number', 'role', 'document_type',
-                       'identity_document', 'proof_of_address', 'image')
+                       'identity_document', 'proof_of_address', 'image', 'is_verified')
         }),
         ('Permissions', {
             'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')

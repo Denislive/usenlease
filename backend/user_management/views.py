@@ -693,6 +693,12 @@ class LoginView(APIView):
 
         if not user:
             return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        # Check if the user is verified
+        if not user.is_verified:  # Ensure the field exists in your User model
+            return Response({"error": "Account not verified.\n Kindly be patient as we check to make sure your documents are in order."}, status=status.HTTP_403_FORBIDDEN)
+
+
 
         # Generate tokens
         refresh = RefreshToken.for_user(user)
