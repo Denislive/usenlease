@@ -20,14 +20,22 @@ pip install --no-cache-dir --break-system-packages -r /app/backend/requirements.
 
 # Run database migrations with better error handling
 echo "Running database migrations..."
-python /app/backend/manage.py makemigrations --noinput || echo "Makemigrations failed, continuing..."
+python /app/backend/manage.py makemigrations --noinput || {
+    echo "Makemigrations failed! Check the error and fix it."
+    exit 1
+}
+
 python /app/backend/manage.py migrate --noinput || {
-    echo "Migration failed, trying --fake..."
-    python /app/backend/manage.py migrate --fake || {
-        echo "Fake migration also failed. Exiting."
+    echo "Migration failed! Checking database schema..."
+    python /app/backend/manage.py showmigrations
+    python /app/backend/manage.py migrate --fake-initial || {
+        echo "Fake migration also failed! Manual intervention required."
         exit 1
     }
 }
+
+echo "Database migrations completed successfully."
+
 
 # Ensure Celery Beat migrations are applied to avoid missing tables
 python /app/backend/manage.py migrate django_celery_beat --noinput || echo "Celery Beat migration failed, continuing..."
