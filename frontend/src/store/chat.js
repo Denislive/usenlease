@@ -47,6 +47,8 @@ const fetchChats = async () => {
         lastMessage: lastMessage,
         created_at: chat.created_at,
         participants: chat.participants,
+        item_name: chat.item_name,
+
       };
     });
   } catch (error) {
@@ -172,6 +174,8 @@ const sendMessageAndReset = async () => {
           `${api_base_url}/api/accounts/chats/`,
           {
             participants: [equipmentOwner],
+            item_name: equipmentDetails.name, // Include item name in request payload
+
           },
           {
             withCredentials: true,
@@ -189,6 +193,8 @@ const sendMessageAndReset = async () => {
           initialMessage,
           equipmentOwner,
           equipmentDetails,
+          item_name: equipmentDetails.name,
+
         };
   
         showNotification(
@@ -219,6 +225,8 @@ const sendMessageAndReset = async () => {
     initialMessage: "",
     equipmentOwner: null,
     equipmentDetails: null,
+    item_name: "",
+
   });
   
   

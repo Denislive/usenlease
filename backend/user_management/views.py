@@ -392,7 +392,8 @@ class ChatViewSet(viewsets.ModelViewSet):
             Response: A response containing the chat data or an error message.
         """
         sender = request.user
-        participants_ids = request.data.get('participants', [])
+        participants_ids = request.data.get("participants", [])
+        item_name = request.data.get("item_name", "")  # Get item_name from request
 
         # Ensure the logged-in user is included in the participants list
         participants = [sender.id] + participants_ids
@@ -401,14 +402,14 @@ class ChatViewSet(viewsets.ModelViewSet):
         if len(participants) < 2:
             return Response(
                 {"error": "You must include at least one other participant."},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         # Check if the sender is trying to contact themselves
         if sender.id in participants_ids:
             return Response(
                 {"error": "You cannot contact yourself."},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         # Check if a chat with these participants already exists
@@ -418,13 +419,19 @@ class ChatViewSet(viewsets.ModelViewSet):
 
         if existing_chats.exists():
             existing_chat = existing_chats.first()
+            # Update the item_name even if the chat exists
+            existing_chat.item_name = item_name
+            existing_chat.save(update_fields=["item_name"])
+            
             serializer = self.get_serializer(existing_chat)
             return Response(serializer.data, status=status.HTTP_200_OK)
 
+
         # Save the chat with the combined participants if no existing chat is found
         participants_users = User.objects.filter(id__in=participants_ids)
-        chat = Chat.objects.create()
+        chat = Chat.objects.create(item_name=item_name)  # Set item_name
         chat.participants.set([sender] + list(participants_users))
+        
         serializer = self.get_serializer(chat)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 

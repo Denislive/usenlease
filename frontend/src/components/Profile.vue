@@ -724,7 +724,7 @@
                     {{ chat.name.charAt(0) }}
                   </div>
                   <div class="ml-3 flex-1">
-                    <p class="font-medium text-gray-800">{{ chat.name }}</p>
+                    <p class="font-medium text-gray-800">{{ chat.item_name }}</p>
                     <p class="text-sm text-gray-600 truncate">
                       {{ chat.lastMessage }}
                     </p>
@@ -772,7 +772,7 @@
                   ←
                 </button>
                 <span>
-                  {{chats.find((chat) => chat.id === activeChat)?.name}}
+                  {{chats.find((chat) => chat.id === activeChat)?.item_name}}
                 </span>
               </div>
 
@@ -1308,6 +1308,7 @@ const fetchChats = async () => {
           : "No messages yet",
         created_at: chat.created_at,
         participants: chat.participants,
+        item_name: chat.item_name,
       };
     });
   } catch (error) {

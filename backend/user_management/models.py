@@ -104,6 +104,8 @@ class Chat(models.Model):
         settings.AUTH_USER_MODEL,
         related_name='chats'
     )
+    item_name = models.CharField(max_length=50, blank=True, null=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
