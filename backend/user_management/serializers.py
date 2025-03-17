@@ -220,7 +220,7 @@ class ChatSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Chat
-        fields = ['id', 'participants', 'messages', 'item_name', 'created_at', 'updated_at']
+        fields = ['id', 'participants', 'messages', 'created_at', 'updated_at']
 
 
 class CreditCardSerializer(serializers.ModelSerializer):
