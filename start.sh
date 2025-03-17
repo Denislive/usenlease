@@ -19,15 +19,27 @@ source /app/backend/venv/bin/activate
 pip install --no-cache-dir --break-system-packages -r /app/backend/requirements.txt || { echo "Failed to install dependencies"; exit 1; }
 
 # Run database migrations with better error handling
-echo "Running database migrations..."
-python /app/backend/manage.py makemigrations --noinput || echo "Makemigrations failed, continuing..."
-python /app/backend/manage.py migrate --noinput || {
-    echo "Migration failed, trying --fake..."
-    python /app/backend/manage.py migrate --fake || {
-        echo "Fake migration also failed. Exiting."
+echo "Running database migrations for user_management..."
+python /app/backend/manage.py makemigrations user_management --noinput || echo "Makemigrations failed for user_management, continuing..."
+python /app/backend/manage.py migrate user_management --noinput || {
+    echo "Migration failed for user_management, trying --fake..."
+    python /app/backend/manage.py migrate user_management --fake || {
+        echo "Fake migration also failed for user_management. Exiting."
         exit 1
     }
 }
+
+echo "Running database migrations for equipment_management..."
+python /app/backend/manage.py makemigrations equipment_management --noinput || echo "Makemigrations failed for equipment_management, continuing..."
+python /app/backend/manage.py migrate equipment_management --noinput || {
+    echo "Migration failed for equipment_management, trying --fake..."
+    python /app/backend/manage.py migrate equipment_management --fake || {
+        echo "Fake migration also failed for equipment_management. Exiting."
+        exit 1
+    }
+}
+
+echo "Database migrations completed successfully!"
 
 # Ensure Celery Beat migrations are applied to avoid missing tables
 python /app/backend/manage.py migrate django_celery_beat --noinput || echo "Celery Beat migration failed, continuing..."
