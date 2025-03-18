@@ -549,10 +549,11 @@ class EquipmentViewSet(viewsets.ModelViewSet):
         # Paginate results
         page = self.paginate_queryset(queryset)
         if page is not None:
+            if not page:  # Check if the page is empty
+                return Response({"message": "No equipment found for the given filters"}, status=200)
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
 
-        serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
     
