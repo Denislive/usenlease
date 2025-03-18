@@ -565,7 +565,7 @@ class EquipmentViewSet(viewsets.ModelViewSet):
             equipment = self.get_object()
             related_items = Equipment.objects.filter(
                 category=equipment.category
-            ).exclude(id=equipment.id)[:10]  # Limit to 12 items
+            ).exclude(id=equipment.id)[:12]  # Limit to 12 items
 
             serializer = self.get_serializer(related_items, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
