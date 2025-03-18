@@ -115,10 +115,9 @@ class SpecificationSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = Specification
-        fields = ['value']
+        fields = ['name', 'value']
         extra_kwargs = {
             'equipment': {'write_only': True},  # Hide equipment field in responses
-            'name': {'write_only': True}  # Hide name field in responses
         }
 
 
