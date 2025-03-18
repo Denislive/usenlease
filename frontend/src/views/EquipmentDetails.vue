@@ -13,6 +13,7 @@
         </main>
       </div>
       <EquipmentTabs />
+      <RelatedItems />
     </div>
   </main>
 </template>
@@ -24,6 +25,7 @@ import Hero from '@/components/Hero.vue';
 import EquipmentImage from '@/components/EquipmentImage.vue';
 import EquipmentDetails from '@/components/EquipmentDetails.vue';
 import EquipmentTabs from '@/components/EquipmentTabs.vue';
+import RelatedItems from '@/components/RelatedItems.vue';
 
 const equipment = ref(null);
 const loading = ref(true);

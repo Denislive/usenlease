@@ -60,6 +60,8 @@ urlpatterns = [
     path('root-categories/', RootCategoryListView.as_view(), name='root-category-list'),
     path('user-equipment/', UserEquipmentView.as_view(), name='user-equipment'),
     path('user-editable-equipment/', UserEditableEquipmentView.as_view(), name='user-editable-equipment-list'),
+    path('equipments/<str:pk>/related/', EquipmentViewSet.as_view({'get': 'related'}), name='related-items'),
+
 
     # Company info
     path('company-info/', CompanyInfoView.as_view(), name='company-info'),

@@ -28,6 +28,15 @@ export const useEquipmentsStore = defineStore('equipmentStore', () => {
   const totalItems = ref(0);
   const pageLinks = ref([]);
   const pageSize = ref(120);
+  const relatedEquipments = computed(() => store.relatedEquipments);
+
+  const fetchRelatedItems = async () => {
+    const equipmentId = route.params.id; // Extracting ID from the URL
+    if (equipmentId) {
+      await store.fetchRelatedEquipments(equipmentId);
+    }
+  };
+  
 
   // Utility function
   const truncateText = (text, length) =>
@@ -214,6 +223,7 @@ export const useEquipmentsStore = defineStore('equipmentStore', () => {
     pageSize,
     truncateText,
     equipments,
+    relatedEquipments,
     categories,
     selectedEquipment,
     userEquipments,
@@ -225,6 +235,7 @@ export const useEquipmentsStore = defineStore('equipmentStore', () => {
     selectedCities,
     filteredEquipments,
     fetchEquipments,
+    fetchRelatedItems,
     fetchFilteredEquipments,
     fetchUserEquipments,
     getEquipmentById,

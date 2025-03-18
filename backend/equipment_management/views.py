@@ -481,7 +481,7 @@ class EquipmentViewSet(viewsets.ModelViewSet):
         Override permissions to allow unauthenticated access to list and retrieve,
         but require authentication for create, update, and delete.
         """
-        if self.action in ["list", "retrieve", "filter"]:
+        if self.action in ["list", "retrieve", "filter", "related"]:
             return [AllowAny()]  # No authentication required for viewing equipment
         return [IsAuthenticated()]  # Authentication required for create, update, delete
 
@@ -555,6 +555,22 @@ class EquipmentViewSet(viewsets.ModelViewSet):
             return self.get_paginated_response(serializer.data)
 
         return Response(serializer.data)
+    
+    @action(detail=True, methods=["GET"], url_path="related")
+    def related(self, request, pk=None):
+        """
+        Retrieve related equipment items based on the same category.
+        """
+        try:
+            equipment = self.get_object()
+            related_items = Equipment.objects.filter(
+                category=equipment.category
+            ).exclude(id=equipment.id)[:10]  # Limit to 12 items
+
+            serializer = self.get_serializer(related_items, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Equipment.DoesNotExist:
+            return Response({"detail": "Equipment not found."}, status=status.HTTP_404_NOT_FOUND)
 
     
 
