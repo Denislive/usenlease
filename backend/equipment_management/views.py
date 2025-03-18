@@ -487,15 +487,17 @@ class EquipmentViewSet(viewsets.ModelViewSet):
 
     def list(self, request):
         """
-        List all equipment with pagination.
+        List all verified equipment with pagination.
         """
-        queryset = self.filter_queryset(self.get_queryset())
+        queryset = self.filter_queryset(self.get_queryset().filter(is_verified=True))  # Filter only verified items
+        
         page = self.paginate_queryset(queryset)
         if page is not None:
             return self.get_paginated_response(self.get_serializer(page, many=True).data)
         
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+
     
     @action(detail=False, methods=["GET"], url_path="filter")
     def filter(self, request):
@@ -507,7 +509,7 @@ class EquipmentViewSet(viewsets.ModelViewSet):
         - `city`: Filter by a single city (optional)
         - `cities`: Filter by multiple cities (comma-separated slugs, optional)
         """
-        queryset = Equipment.objects.all()
+        queryset = Equipment.objects.filter(is_verified=True)
 
         # Get query parameters
         category = request.GET.get("category")

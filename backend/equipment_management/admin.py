@@ -11,8 +11,8 @@ class ImageInline(admin.TabularInline):
 # Equipment Admin
 @admin.register(Equipment)
 class EquipmentAdmin(admin.ModelAdmin):
-    list_display = ('name', 'owner', 'category', 'hourly_rate', 'is_available', 'date_created')
-    list_filter = ('owner', 'category', 'is_available', 'date_created')
+    list_display = ('name', 'owner', 'category', 'hourly_rate', 'is_available', 'date_created', 'is_verified')
+    list_filter = ('owner', 'category', 'is_available', 'date_created', 'is_verified')
     search_fields = ('name', 'description', 'owner__username', 'category__name')
     inlines = [ImageInline]
 
