@@ -96,8 +96,9 @@ class UserAdmin(BaseUserAdmin):
 # Chat Admin
 @admin.register(Chat)
 class ChatAdmin(admin.ModelAdmin):
-    list_display = ('id', 'created_at', 'updated_at', 'item_name')
-    search_fields = ('participants__username', 'item_name')
+    list_filter = ('updated_at', 'created_at', 'item_name')
+    search_fields = ('participants__email', 'participants__username', 'item_name')
+
     ordering = ('-updated_at',)
 
 
