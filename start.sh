@@ -17,10 +17,21 @@ source /app/backend/venv/bin/activate
 
 # Install dependencies inside the virtual environment
 pip install --no-cache-dir --break-system-packages -r /app/backend/requirements.txt || { echo "Failed to install dependencies"; exit 1; }
+#!/bin/bash
 
-# Run database migrations with better error handling
-echo "Running database migrations..."
-python /app/backend/manage.py makemigrations --noinput || echo "Makemigrations failed, continuing..."
+echo "Removing old migrations..."
+find /app/backend -path "*/migrations/*.py" -not -name "__init__.py" -delete
+find /app/backend -path "*/migrations/*.pyc" -delete
+
+# Make migrations
+echo "Creating new migrations..."
+python /app/backend/manage.py makemigrations --noinput || {
+    echo "Makemigrations failed. Exiting."
+    exit 1
+}
+
+# Apply migrations
+echo "Applying migrations..."
 python /app/backend/manage.py migrate --noinput || {
     echo "Migration failed, trying --fake..."
     python /app/backend/manage.py migrate --fake || {
@@ -29,8 +40,13 @@ python /app/backend/manage.py migrate --noinput || {
     }
 }
 
-# Ensure Celery Beat migrations are applied to avoid missing tables
-python /app/backend/manage.py migrate django_celery_beat --noinput || echo "Celery Beat migration failed, continuing..."
+# Ensure Celery Beat migrations are applied
+echo "Applying Celery Beat migrations..."
+python /app/backend/manage.py migrate django_celery_beat --noinput || {
+    echo "Celery Beat migration failed, continuing..."
+}
+
+echo "Migrations completed successfully!"
 
 # Collect static files
 echo "Collecting static files..."
