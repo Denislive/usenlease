@@ -19,17 +19,6 @@ source /app/backend/venv/bin/activate
 pip install --no-cache-dir --break-system-packages -r /app/backend/requirements.txt || { echo "Failed to install dependencies"; exit 1; }
 
 # Run database migrations with better error handling
-echo "Running database migrations for equipment_management..."
-python /app/backend/manage.py makemigrations equipment_management --noinput || echo "Makemigrations failed for equipment_management, continuing..."
-python /app/backend/manage.py migrate equipment_management --noinput || {
-    echo "Migration failed for equipment_management, trying --fake..."
-    python /app/backend/manage.py migrate equipment_management --fake || {
-        echo "Fake migration also failed for equipment_management. Exiting."
-        exit 1
-    }
-}
-
-
 echo "Running database migrations for user_management..."
 python /app/backend/manage.py makemigrations user_management --noinput || echo "Makemigrations failed for user_management, continuing..."
 python /app/backend/manage.py migrate user_management --noinput || {
@@ -40,6 +29,15 @@ python /app/backend/manage.py migrate user_management --noinput || {
     }
 }
 
+echo "Running database migrations for equipment_management..."
+python /app/backend/manage.py makemigrations equipment_management --noinput || echo "Makemigrations failed for equipment_management, continuing..."
+python /app/backend/manage.py migrate equipment_management --noinput || {
+    echo "Migration failed for equipment_management, trying --fake..."
+    python /app/backend/manage.py migrate equipment_management --fake || {
+        echo "Fake migration also failed for equipment_management. Exiting."
+        exit 1
+    }
+}
 
 echo "Database migrations completed successfully!"
 
