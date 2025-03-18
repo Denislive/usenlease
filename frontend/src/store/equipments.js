@@ -238,7 +238,7 @@ export const useEquipmentsStore = defineStore('equipmentStore', () => {
     selectedCities,
     filteredEquipments,
     fetchEquipments,
-    fetchRelatedItems,
+    fetchRelatedEquipments,
     fetchFilteredEquipments,
     fetchUserEquipments,
     getEquipmentById,
