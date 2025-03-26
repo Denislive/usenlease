@@ -30,7 +30,7 @@ const isLoading = ref(false)
     </div>
   </div>
 
-  <RouterView />
+  <RouterView :key="$route.params.id" />
   <Footbar />
 </template>
 

@@ -117,8 +117,9 @@
     </div>
   </div>
 </template>
+
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useEquipmentsStore } from "@/store/equipments";
 
@@ -135,12 +136,12 @@ window.addEventListener("resize", () => {
 isSmallScreen.value = window.innerWidth < 640;
 });
 
-// Pagination variables (only for small screens)
+// Pagination variables
 const currentIndex = ref(0);
 const itemsPerPage = ref(3);
 
 const paginatedEquipments = computed(() => {
-if (!isSmallScreen.value) return relatedEquipments.value; // Show all items on larger screens
+if (!isSmallScreen.value) return relatedEquipments.value;
 return relatedEquipments.value.slice(currentIndex.value, currentIndex.value + itemsPerPage.value);
 });
 
@@ -170,7 +171,9 @@ if (equipmentId) {
 }
 };
 
-onMounted(() => {
-fetchRelatedItems();
-});
+// Fetch data when the component mounts
+onMounted(fetchRelatedItems);
+
+// Watch for route changes and refetch data
+watch(() => route.params.id, fetchRelatedItems);
 </script>
