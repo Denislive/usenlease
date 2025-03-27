@@ -43,24 +43,24 @@
         <div>
           <h3 class="text-xl font-semibold text-[#ffc107] mb-4">Contact Us</h3>
           <ul class="space-y-3 pl-3">
-            <li class="flex items-start space-x-3">
+            <!-- <li class="flex items-start space-x-3">
               <i class="pi pi-map-marker text-xl text-gray-200"></i>
               <span class="leading-5">{{ formattedAddress }}</span>
             </li>
             <li class="flex items-center space-x-3">
               <i class="pi pi-clock text-xl text-gray-200"></i>
               <span>{{ companyInfoStore.companyInfo?.opening_hours }}</span>
-            </li>
+            </li> -->
             <li class="flex items-center space-x-3">
               <i class="pi pi-envelope text-xl text-gray-200"></i>
               <a :href="'mailto:' + companyInfoStore.companyInfo?.email" class="hover:text-[#ffc107]">
                 {{ companyInfoStore.companyInfo?.email }}
               </a>
             </li>
-            <li class="flex items-center space-x-3">
+            <!-- <li class="flex items-center space-x-3">
               <i class="pi pi-phone text-xl text-gray-200"></i>
               <span>{{ companyInfoStore.companyInfo?.phone_number }}</span>
-            </li>
+            </li> -->
             <li class="flex justify-start space-x-4 mt-2">
               <a v-for="(link, key) in socialLinks" :key="key" :href="link" class="social-link">
                 <i :class="'pi pi-' + key + ' text-xl'"></i>
