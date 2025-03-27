@@ -28,13 +28,13 @@
         <div v-for="(booking, index) in items_data" :key="index"
           class="booking-item flex items-center justify-between p-2 bg-white shadow-md rounded-md mb-2">
           <p class="text-gray-700">
-            <span class="font-semibold">{{ equipment.is_available ? (totalBooked + equipment.available_quantity) -
+            <span class="font-semibold">{{ equipment.is_available ? (equipment.available_quantity) -
               booking.quantity : totalBooked - booking.quantity }} Available</span>
             between: <span class="text-blue-600">{{ formatDate(booking.start_date) }}</span>
             - <span class="text-red-500">{{ formatDate(booking.end_date) }}</span>
           </p>
         </div>
-        <p class="text-blue-500">{{ `${totalBooked + equipment.available_quantity} Available from
+        <p class="text-blue-500">{{ `${equipment.available_quantity} Available from
           ${formatDate(nextAvailableDate)}` }}</p>
       </div>
       

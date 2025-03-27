@@ -1,7 +1,6 @@
 # Standard library imports
 import json
-from datetime import datetime
-
+from datetime import datetime, timedelta
 
 # Django imports
 from django.conf import settings
@@ -1152,12 +1151,34 @@ class CartItemViewSet(viewsets.ModelViewSet):
                 if equipment.owner == user:
                     raise PermissionDenied("You cannot rent your own Item!")
 
-                # Check stock availability
-                if equipment.available_quantity < item_quantity:
-                    return Response(
-                        {"error": f"Only {equipment.available_quantity} units are available."},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
+                # Check **future bookings** for the same equipment in the requested period
+                overlapping_bookings = OrderItem.objects.filter(
+                    item=equipment,
+                    start_date__lt=new_end_date,  # Overlaps requested period
+                    end_date__gt=new_start_date
+                )
+
+                # Calculate the **daily available quantity** by checking existing bookings
+                date_cursor = new_start_date
+                while date_cursor < new_end_date:
+                    # Sum all booked quantities for this specific day
+                    booked_quantity_on_day = overlapping_bookings.filter(
+                        start_date__lte=date_cursor,
+                        end_date__gt=date_cursor
+                    ).aggregate(total_booked=Sum("quantity"))["total_booked"] or 0
+
+                    available_on_day = equipment.available_quantity - booked_quantity_on_day
+
+                    if available_on_day < item_quantity:
+                        return Response(
+                            {
+                                "error": f"Only {available_on_day} units are available on {date_cursor}. "
+                                        "Your booking would exceed the available stock."
+                            },
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+
+                    date_cursor += timedelta(days=1)  # Move to the next day
 
                 # Check if the item already exists in the cart
                 existing_cart_item = CartItem.objects.filter(cart=user_cart, item_id=item_id).first()
@@ -1185,8 +1206,7 @@ class CartItemViewSet(viewsets.ModelViewSet):
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         except Exception as e:
-            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
     def update(self, request, *args, **kwargs):

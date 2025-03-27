@@ -6,7 +6,7 @@
       <!-- Left Section: Heading Only -->
       <div class="text-left lg:w-1/3">
         <h1 class="text-2xl lg:text-3xl font-bold leading-tight animate__animated animate__fadeIn">
-          Rent the Best Equipment
+          Rent or Lease Anything You Need
         </h1>
       </div>
 
@@ -14,7 +14,7 @@
       <div class="lg:w-2/3 flex flex-col gap-2 lg:flex-row items-center lg:justify-end mt-1 lg:mt-0">
         <!-- Paragraph -->
         <p class="text-sm text-white/90 text-center lg:text-left animate__animated animate__fadeIn animate__delay-1s">
-          Find high-quality equipment for any project. Fast delivery and excellent support.
+          Find the perfect item for any occasion. We connect renters and lessors for a secure seamless experience.
         </p>
 
         <!-- Search Box -->
