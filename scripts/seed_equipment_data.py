@@ -11,7 +11,7 @@ cursor = conn.cursor()
 
 faker = Faker()
 
-# Static values (IDs & image)
+# Static values (IDs & imageS)
 image_url = "https://storage.cloud.google.com/usenlease-media/category_images/1000027605.jpg"
 address_id = "SJGY-3pOQFG2Y2Zw"
 category_id = "Xzli15S8QhSErCBp"
