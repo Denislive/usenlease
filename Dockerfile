@@ -93,6 +93,10 @@ WORKDIR /app
 # Install system dependencies
 RUN apk add --no-cache bash python3 py3-pip libpq gettext redis
 
+# ✅ Install Python dependencies in final image
+COPY --from=backend-builder /app/backend/requirements.txt /app/backend/requirements.txt
+RUN pip install --no-cache-dir -r /app/backend/requirements.txt
+
 # Copy Nginx configuration template
 COPY backend/nginx.conf.template /etc/nginx/nginx.conf.template
 
@@ -105,7 +109,7 @@ RUN rm /etc/nginx/conf.d/default.conf
 # Copy frontend build files
 COPY --from=frontend-builder /app/frontend/dist /usr/share/nginx/html
 
-# Copy backend files (including your scripts)
+# Copy backend files (including scripts)
 COPY --from=backend-builder /app/backend /app/backend
 
 # Copy start script
@@ -115,8 +119,8 @@ RUN chmod +x /app/start.sh
 # Expose ports
 EXPOSE 8080
 
-
+# Start Redis
 RUN redis-server --daemonize yes
 
-# Start everything (Gunicorn + Celery + Nginx)
+# Start the app
 CMD ["/bin/sh", "/app/start.sh"]
