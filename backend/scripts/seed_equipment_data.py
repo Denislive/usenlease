@@ -12,7 +12,7 @@ cursor = conn.cursor()
 faker = Faker()
 
 # Static values (IDs & images)
-image_url = "https://storage.cloud.google.com/usenlease-media/category_images/1000027605.jpg"
+image_url = "equipment_images/bike.jpeg"  # ✅ relative path only
 address_id = "SJGY-3pOQFG2Y2Zw"
 category_id = "Xzli15S8QhSErCBp"
 owner_id = "RS_TW2-pTDy5Gols"
@@ -53,4 +53,4 @@ conn.commit()
 cursor.close()
 conn.close()
 
-print("✅ Inserted 100 equipment records with images.")
+print("✅ Inserted 100 equipment records with bike images.")
