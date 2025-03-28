@@ -43,10 +43,10 @@ for _ in range(100):
     image_id = str(uuid.uuid4())[:16]
     cursor.execute("""
         INSERT INTO equipment_management_image (
-            id, image, equipment_id, is_pickup
-        ) VALUES (%s, %s, %s, %s)
+            id, image, equipment_id, is_pickup, is_return
+        ) VALUES (%s, %s, %s, %s, %s)
     """, (
-        image_id, image_url, equipment_id, False  # or True if applicable
+        image_id, image_url, equipment_id, False, False
     ))
 
 conn.commit()
