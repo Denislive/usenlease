@@ -1,5 +1,6 @@
 pipeline {
     agent any
+
     environment {
         IMAGE = 'ngumonelson123/combined-image'
         GOOGLE_CLOUD_PROJECT = 'buoyant-song-448609-h9'
@@ -11,6 +12,7 @@ pipeline {
         HEROKU_API_KEY = credentials('heroku-backend-api-key')
         HEROKU_APP_NAME = 'usenleaseprod'
     }
+
     stages {
         stage('Setup') {
             steps {
@@ -26,6 +28,7 @@ pipeline {
                 '''
             }
         }
+
         stage('Check Prerequisites') {
             steps {
                 script {
@@ -37,12 +40,14 @@ pipeline {
                 }
             }
         }
+
         stage('Clone Repository') {
             steps {
                 echo "Cloning the repository..."
                 git url: 'https://github.com/Denislive/usenlease.git'
             }
         }
+
         stage('Build and Push Docker Image') {
             steps {
                 script {
@@ -59,6 +64,22 @@ pipeline {
                 }
             }
         }
+
+        // ✅ TEMPORARY: One-time Seed Script Execution
+        stage('Seed Database') {
+            steps {
+                withCredentials([string(credentialsId: 'heroku-database-url', variable: 'DATABASE_URL')]) {
+                    sh '''
+                    echo "Seeding data to Heroku Postgres..."
+                    docker run --rm \
+                        -e DATABASE_URL=$DATABASE_URL \
+                        ${IMAGE}:v1.1.0 \
+                        /app/backend/venv/bin/python /app/backend/scripts/seed_equipment_data.py
+                    '''
+                }
+            }
+        }
+
         stage('Deploy to Heroku') {
             steps {
                 script {
@@ -74,38 +95,38 @@ pipeline {
                 }
             }
         }
-        stage('Deploy to Google Cloud') {
-    steps {
-        script {
-            echo 'Deploying to Google Cloud...'
-            sh '''
-            # Check if the instance already exists
-            INSTANCE_NAME="usenlease-instance"
-            INSTANCE_EXISTS=$(gcloud compute instances list --filter="name=${INSTANCE_NAME}" --format="value(name)" --project=${GOOGLE_CLOUD_PROJECT})
 
-            if [ "$INSTANCE_EXISTS" = "$INSTANCE_NAME" ]; then
-                echo "Instance ${INSTANCE_NAME} already exists. Skipping creation..."
-            else
-                echo "Instance ${INSTANCE_NAME} does not exist. Creating it..."
-                gcloud auth activate-service-account --key-file=${GOOGLE_APPLICATION_CREDENTIALS}
-                gcloud compute instances create ${INSTANCE_NAME} \
-                    --project=${GOOGLE_CLOUD_PROJECT} \
-                    --zone=${GOOGLE_CLOUD_ZONE} \
-                    --tags=http-server,https-server \
-                    --metadata=startup-script='#!/bin/bash
-                    apt-get update
-                    apt-get install -y docker.io
-                    systemctl start docker
-                    docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
-                    docker pull ${IMAGE}:v1.1.0
-                    docker-compose up -d'
-            fi
-            '''
+        stage('Deploy to Google Cloud') {
+            steps {
+                script {
+                    echo 'Deploying to Google Cloud...'
+                    sh '''
+                    INSTANCE_NAME="usenlease-instance"
+                    INSTANCE_EXISTS=$(gcloud compute instances list --filter="name=${INSTANCE_NAME}" --format="value(name)" --project=${GOOGLE_CLOUD_PROJECT})
+
+                    if [ "$INSTANCE_EXISTS" = "$INSTANCE_NAME" ]; then
+                        echo "Instance ${INSTANCE_NAME} already exists. Skipping creation..."
+                    else
+                        echo "Creating instance ${INSTANCE_NAME}..."
+                        gcloud auth activate-service-account --key-file=${GOOGLE_APPLICATION_CREDENTIALS}
+                        gcloud compute instances create ${INSTANCE_NAME} \
+                            --project=${GOOGLE_CLOUD_PROJECT} \
+                            --zone=${GOOGLE_CLOUD_ZONE} \
+                            --tags=http-server,https-server \
+                            --metadata=startup-script='#!/bin/bash
+                            apt-get update
+                            apt-get install -y docker.io
+                            systemctl start docker
+                            docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
+                            docker pull ${IMAGE}:v1.1.0
+                            docker-compose up -d'
+                    fi
+                    '''
+                }
+            }
         }
     }
-}
 
-    }
     post {
         success {
             echo "Pipeline completed successfully!"

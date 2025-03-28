@@ -18,7 +18,7 @@ category_id = "Xzli15S8QhSErCBp"
 owner_id = "RS_TW2-pTDy5Gols"
 
 # Insert records
-for _ in range(50):
+for _ in range(100):
     equipment_id = str(uuid.uuid4())[:16]
     name = faker.unique.word().capitalize() + " Equipment"
     slug = slugify(name + "-" + str(uuid.uuid4())[:4])

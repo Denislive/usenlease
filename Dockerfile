@@ -34,10 +34,13 @@ RUN pip install celery[redis] django-celery-beat
 # Debug: List installed packages
 RUN pip list
 
-# Copy the rest of the backend application code
+# Copy the rest of the backend application code (including your scripts)
 COPY backend/ /app/backend
 
-# 🚀 **Set DOCKER_BUILD=1 only for collectstatic to disable Celery Beat**
+# ✅ Optional: Confirm the seed script exists (for debugging only)
+RUN ls -la /app/backend/scripts
+
+# Collect static files (skip errors during build)
 RUN export DOCKER_BUILD=1 && \
     DJANGO_SETTINGS_MODULE=EquipRentHub.settings python /app/backend/manage.py collectstatic --noinput --clear || echo "Skipping database-dependent collectstatic errors"
 
@@ -64,8 +67,8 @@ RUN npm install --package-lock-only
 # Copy the newly generated package-lock.json
 COPY frontend/package-lock.json /app/frontend/
 
-# Now run npm ci for clean install
-RUN npm ci  # Clean install for dependencies
+# Clean install for dependencies
+RUN npm ci
 
 # Debugging: List installed packages
 RUN npm list
@@ -87,7 +90,7 @@ FROM nginx:alpine
 # Set working directory
 WORKDIR /app
 
-# Install necessary system dependencies **including Redis**
+# Install system dependencies
 RUN apk add --no-cache bash python3 py3-pip libpq gettext redis
 
 # Copy Nginx configuration template
@@ -96,24 +99,24 @@ COPY backend/nginx.conf.template /etc/nginx/nginx.conf.template
 # Replace environment variables in Nginx config
 RUN envsubst '${PORT}' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
 
-# Remove the default.conf file
+# Remove default Nginx conf
 RUN rm /etc/nginx/conf.d/default.conf
 
 # Copy frontend build files
 COPY --from=frontend-builder /app/frontend/dist /usr/share/nginx/html
 
-# Copy backend files from backend-builder
+# Copy backend files (including your scripts)
 COPY --from=backend-builder /app/backend /app/backend
 
-# Copy start script and set executable permissions
+# Copy start script
 COPY start.sh /app/start.sh
 RUN chmod +x /app/start.sh
 
-# Expose application ports
+# Expose ports
 EXPOSE 8080
 
-# ✅ **Fix: Start Redis properly in Alpine**
+# Start Redis
 RUN redis-server --daemonize yes
 
-# Start the application (Gunicorn, Celery Worker, Celery Beat, Redis, and Nginx)
+# Start everything (Gunicorn + Celery + Nginx)
 CMD ["/bin/sh", "/app/start.sh"]
