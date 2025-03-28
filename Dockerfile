@@ -115,7 +115,7 @@ RUN chmod +x /app/start.sh
 # Expose ports
 EXPOSE 8080
 
-# Start Redis
+
 RUN redis-server --daemonize yes
 
 # Start everything (Gunicorn + Celery + Nginx)
