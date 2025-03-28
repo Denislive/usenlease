@@ -2,7 +2,7 @@ import os
 import psycopg2
 from faker import Faker
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from slugify import slugify
 
 # Connect using env variable from Heroku
@@ -26,7 +26,7 @@ for _ in range(100):
     terms = faker.sentence(nb_words=8)
     hourly_rate = round(faker.pydecimal(left_digits=2, right_digits=2, positive=True), 2)
     available_quantity = faker.random_int(min=1, max=20)
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     cursor.execute("""
         INSERT INTO equipment_management_equipment (
@@ -43,14 +43,14 @@ for _ in range(100):
     image_id = str(uuid.uuid4())[:16]
     cursor.execute("""
         INSERT INTO equipment_management_image (
-            id, image, equipment_id
-        ) VALUES (%s, %s, %s)
+            id, image, equipment_id, is_pickup
+        ) VALUES (%s, %s, %s, %s)
     """, (
-        image_id, image_url, equipment_id
+        image_id, image_url, equipment_id, False  # or True if applicable
     ))
 
 conn.commit()
 cursor.close()
 conn.close()
 
-print("✅ Inserted 50 equipment records with images.")
+print("✅ Inserted 100 equipment records with images.")
