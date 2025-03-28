@@ -65,16 +65,16 @@ pipeline {
             }
         }
 
-        // ✅ TEMPORARY: One-time Seed Script Execution
         stage('Seed Database') {
             steps {
                 withCredentials([string(credentialsId: 'heroku-database-url', variable: 'DATABASE_URL')]) {
                     sh '''
-                    echo "Seeding data to Heroku Postgres..."
+                    echo "🌱 Seeding data to Heroku Postgres..."
                     docker run --rm \
                         -e DATABASE_URL=$DATABASE_URL \
                         ${IMAGE}:v1.1.0 \
-                        /app/backend/venv/bin/python /app/backend/scripts/seed_equipment_data.py
+                        python3 /app/backend/scripts/seed_equipment_data.py
+                    echo "✅ Seeding complete."
                     '''
                 }
             }
@@ -129,10 +129,10 @@ pipeline {
 
     post {
         success {
-            echo "Pipeline completed successfully!"
+            echo "✅ Pipeline completed successfully!"
         }
         failure {
-            echo "Pipeline failed."
+            echo "❌ Pipeline failed."
         }
     }
 }
