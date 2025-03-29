@@ -18,7 +18,7 @@ category_id = "Xzli15S8QhSErCBp"
 owner_id = "RS_TW2-pTDy5Gols"
 
 # Insert records
-for _ in range(100):
+for _ in range(1000):
     equipment_id = str(uuid.uuid4())[:16]
     name = faker.unique.word().capitalize() + " Equipment"
     slug = slugify(name + "-" + str(uuid.uuid4())[:4])
@@ -53,4 +53,4 @@ conn.commit()
 cursor.close()
 conn.close()
 
-print("✅ Inserted 100 equipment records with bike images.")
+print("✅ Inserted 1000 equipment records with bike images.")
