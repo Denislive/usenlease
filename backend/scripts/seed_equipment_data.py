@@ -45,8 +45,8 @@ for tag_name in set(image_tag_map.values()):
 
     tag_id_map[tag_name] = tag_id
 
-# 🔁 Insert 1,000 equipment records
-for _ in range(1000):
+# 🔁 Insert 10,000 equipment records
+for _ in range(10000):
     equipment_id = str(uuid.uuid4())[:16]
 
     base_name = faker.word().capitalize() + " Equipment"
@@ -87,14 +87,13 @@ for _ in range(1000):
         image_id, image_path, equipment_id, False, False
     ))
 
-    # Link equipment to tag
-    link_id = str(uuid.uuid4())[:16]
+    # Insert equipment-tag relationship (let DB handle ID)
     cursor.execute("""
         INSERT INTO equipment_management_equipment_tags (
-            id, equipment_id, tag_id
-        ) VALUES (%s, %s, %s)
+            equipment_id, tag_id
+        ) VALUES (%s, %s)
     """, (
-        link_id, equipment_id, tag_id
+        equipment_id, tag_id
     ))
 
 # Finalize
@@ -102,4 +101,4 @@ conn.commit()
 cursor.close()
 conn.close()
 
-print("✅ Inserted 1,000 equipment records with images and tags.")
+print("✅ Inserted 10,000 equipment records with tagged images.")
