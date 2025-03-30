@@ -54,13 +54,16 @@ export const useEquipmentsStore = defineStore('equipmentStore', () => {
   const fetchEquipments = async (url = `${api_base_url}/api/equipments/?page_size=${pageSize.value}`) => {
     isLoading.value = true;
     error.value = null;
-
+  
     try {
       const response = await axios.get(url, { withCredentials: true });
-
+  
       equipments.value = response.data?.results || [];
-      nextPageUrl.value = response.data?.next || null;
-      previousPageUrl.value = response.data?.previous || null;
+      
+      // Ensure next and previous URLs use HTTPS
+      nextPageUrl.value = response.data?.next ? response.data.next.replace(/^http:\/\//i, "https://") : null;
+      previousPageUrl.value = response.data?.previous ? response.data.previous.replace(/^http:\/\//i, "https://") : null;
+  
       totalPages.value = response.data?.total_pages ?? 1;
       currentPage.value = response.data?.current_page ?? 1;
       totalItems.value = response.data?.count ?? 0;
@@ -72,6 +75,7 @@ export const useEquipmentsStore = defineStore('equipmentStore', () => {
       isLoading.value = false;
     }
   };
+  
 
   /**
    * Fetch filtered equipments based on category, search query, selected categories, and cities.

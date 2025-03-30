@@ -1250,7 +1250,6 @@ const handleImageUpload = (event) => {
     editedEquipment.images = Array.from(files); // Store multiple images in an array
   }
 };
-
 const updateEquipment = async () => {
   const formData = new FormData();
 
@@ -1265,7 +1264,7 @@ const updateEquipment = async () => {
   // Append images only if they are provided
   if (editedEquipment.images && editedEquipment.images.length > 0) {
     for (const image of editedEquipment.images) {
-      formData.append("images", image); // Append each image as 'images[]'
+      formData.append("images", image); // Append each image
     }
   }
 
@@ -1276,16 +1275,21 @@ const updateEquipment = async () => {
       formData,
       {
         headers: { "Content-Type": "multipart/form-data" },
+        withCredentials: true, // Move this outside headers
       }
     );
+
     showNotification("Success", "Item updated successfully!", "success"); // Notify user
 
     // Close the modal and refresh the equipment list after successful update
     closeEditModal();
     await store.fetchUserEquipments(); // Refresh the equipment list
   } catch (error) {
+    console.error("Failed to update equipment:", error);
+    showNotification("Error", "Failed to update item. Please try again.", "error"); // Notify user
   }
 };
+
 
 // Fetch the list of chats
 const fetchChats = async () => {

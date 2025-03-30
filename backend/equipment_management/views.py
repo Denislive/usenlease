@@ -679,7 +679,6 @@ class EquipmentViewSet(viewsets.ModelViewSet):
         Update an existing equipment item.
         Handles images and category updates.
         """
-        self.check_permissions(request)
 
         # Retrieve the existing equipment instance or raise 404 error
         equipment = get_object_or_404(Equipment, pk=pk)
