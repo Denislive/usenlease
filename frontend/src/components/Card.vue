@@ -102,13 +102,31 @@ const renderStars = (rating) => {
 
 <template>
   <div class="container mx-auto p-4">
-    <!-- Loading State -->
-    <div v-if="isLoading" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-white p-6 rounded-lg shadow-xl">
-        <i class="pi pi-spinner pi-spin text-4xl text-[#ff6f00]"></i>
-        <p class="mt-4 text-gray-700">Loading equipment...</p>
-      </div>
+ <!-- Enhanced Loading State -->
+<div 
+  v-if="isLoading"
+  class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100] transition-opacity duration-300"
+  role="status"
+  aria-live="polite"
+  aria-label="Loading equipment"
+>
+  <div 
+    class="bg-white p-10 rounded-2xl shadow-xl flex flex-col items-center max-w-md mx-4 transform transition-all duration-300 animate-fade-in border border-gray-200"
+  >
+    <!-- Animated Dots Loader -->
+    <div class="flex space-x-2 mb-4">
+      <span class="w-3 h-3 bg-[#ff6f00] rounded-full animate-bounce"></span>
+      <span class="w-3 h-3 bg-[#ff9e00] rounded-full animate-bounce animation-delay-150"></span>
+      <span class="w-3 h-3 bg-[#ffc400] rounded-full animate-bounce animation-delay-300"></span>
     </div>
+
+    <!-- Loading text with a subtle animation -->
+    <p class="text-sm text-gray-600 tracking-wide font-medium">
+      Loading items, please wait...
+    </p>
+  </div>
+</div>
+
 
     <!-- Page Size Selection -->
     <div class="mb-4 flex justify-end items-center">
@@ -289,4 +307,23 @@ button:focus, select:focus {
 [class*="hover:"] {
   transition: all 0.2s ease;
 }
+
+
+/* Fade-in animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+.animate-fade-in { animation: fadeIn 0.3s ease-out; }
+
+/* Animated dots bouncing */
+@keyframes bounce {
+  0%, 80%, 100% { transform: scale(0); opacity: 0.3; }
+  40% { transform: scale(1); opacity: 1; }
+}
+.animate-bounce { animation: bounce 1.2s infinite ease-in-out; }
+
+/* Delay animations for a cascading effect */
+.animation-delay-150 { animation-delay: 0.15s; }
+.animation-delay-300 { animation-delay: 0.3s; }
 </style>
