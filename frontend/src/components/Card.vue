@@ -122,7 +122,7 @@ const renderStars = (rating) => {
 
     <!-- Loading text with a subtle animation -->
     <p class="text-sm text-gray-600 tracking-wide font-medium">
-      Loading items, please wait...
+      Rent or Lease Anything You Need...
     </p>
   </div>
 </div>
