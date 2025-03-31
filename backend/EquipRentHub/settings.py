@@ -28,6 +28,8 @@ PORT = os.getenv("PORT")
 # settings.py
 DATA_UPLOAD_MAX_MEMORY_SIZE = 30485760  # 10MB
 
+# Tell Django to trust the X-Forwarded-Proto header
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Decode base64 credentials and write to a temporary file
 creds_path = os.path.join(BASE_DIR, 'credentials', 'google-credentials.json')
