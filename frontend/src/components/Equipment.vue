@@ -10,27 +10,26 @@
         >
           <div class="relative">
             <span
-              v-if="equipment.is_available"
-              class="absolute top-0 left-0 bg-green-500 text-white text-[10px] sm:text-xs font-bold px-2 py-1 rounded flex items-center"
-            >
-              <i class="pi pi-check-circle mr-1"></i>
-              <div class="mr-1">{{ equipment.available_quantity }}</div>
-              Available
-            </span>
-            <span
-              v-else
-              class="absolute top-0 left-0 bg-blue-500 text-white text-[10px] sm:text-xs font-bold px-2 py-1 rounded flex items-center"
-              @click="goToDetail(equipment.id)"
-            >
-              <i class="pi pi-info-circle mr-1"></i>
-              Click to check details
-            </span>
+      v-if="equipment.is_available"
+      class="absolute top-0 left-0 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded z-10"
+      aria-label="Available"
+    >
+      {{ equipment.available_quantity }} Available
+    </span>
+    <span
+      v-else
+      class="absolute top-0 left-0 bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded z-10"
+      aria-label="Check details"
+    >
+      View Details
+    </span>
           </div>
 
           <img 
             :src="equipment.images.length ? equipment.images[0].image_url : 'https://via.placeholder.com/350'" 
             :alt="equipment.images.length ? equipment.name : 'Placeholder Image'" 
             class="w-full h-32 lg:h-48 object-contain rounded-t-lg" 
+            @click="goToDetail(equipment.id)"
           />
 
           <div class="p-1">
@@ -46,7 +45,7 @@
             </div>
             <button 
               @click="goToDetail(equipment.id)" 
-              class="bg-[#ff6f00] rounded text-white text-xs sm:text-sm px-2 py-1 mt-2 transition duration-300 hover:bg-[#ff9e00] transform hover:scale-110">
+              class="w-full bg-[#ff6f00] rounded text-white text-xs sm:text-sm px-4 py-1 mt-2 transition duration-300 hover:bg-[#ff9e00] transform hover:scale-110">
               Rent Now
             </button>
           </div>
@@ -86,12 +85,15 @@
       </button>
     </div>
   </div>
+  <Carousel />
+
 </template>
 
 <script setup>
 import { onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useEquipmentsStore } from '@/store/equipments';
+import Carousel from './Carousels.vue';
 
 const router = useRouter();
 const store = useEquipmentsStore();
