@@ -55,7 +55,7 @@
 
     <!-- Empty List Message -->
     <div v-if="store.equipments.length === 0" class="text-center py-16">
-      <i class="pi pi-exclamation-circle text-6xl sm:text-9xl text-gray-500"></i>
+      <i class="pi pi-inbox text-6xl sm:text-9xl text-gray-500"></i>
       <p class="text-lg sm:text-xl text-gray-500 mt-4">Oops! No items here!</p>
       <p class="text-base sm:text-xl text-gray-500 mt-4">Try adding a new item by hitting the lease button.</p>
     </div>

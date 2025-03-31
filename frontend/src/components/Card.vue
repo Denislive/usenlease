@@ -222,7 +222,7 @@ const renderStars = (rating) => {
         class="text-center py-16 bg-gray-50 rounded-lg"
         aria-live="polite"
       >
-        <i class="pi pi-exclamation-circle text-6xl text-gray-400"></i>
+        <i class="pi pi-inbox text-6xl text-gray-400"></i>
         <h3 class="text-xl text-gray-600 mt-4">No equipment available</h3>
         <p class="text-gray-500 mt-2">Please check back later or try different filters</p>
       </div>
