@@ -34,13 +34,10 @@ RUN pip install celery[redis] django-celery-beat
 # Debug: List installed packages
 RUN pip list
 
-# Copy the rest of the backend application code (including your scripts)
+# Copy the rest of the backend application code
 COPY backend/ /app/backend
 
-# ✅ Optional: Confirm the seed script exists
-RUN ls -la /app/backend/scripts
-
-# Collect static files (skip errors during build)
+# 🚀 **Set DOCKER_BUILD=1 only for collectstatic to disable Celery Beat**
 RUN export DOCKER_BUILD=1 && \
     DJANGO_SETTINGS_MODULE=EquipRentHub.settings python /app/backend/manage.py collectstatic --noinput --clear || echo "Skipping database-dependent collectstatic errors"
 
@@ -48,6 +45,7 @@ RUN export DOCKER_BUILD=1 && \
 ENV DOCKER_BUILD=0
 
 # ---------------------------------------------------------------
+
 # Stage 2: Frontend Build Stage
 FROM node:18-alpine AS frontend-builder
 
@@ -66,8 +64,8 @@ RUN npm install --package-lock-only
 # Copy the newly generated package-lock.json
 COPY frontend/package-lock.json /app/frontend/
 
-# Clean install for dependencies
-RUN npm ci
+# Now run npm ci for clean install
+RUN npm ci  # Clean install for dependencies
 
 # Debugging: List installed packages
 RUN npm list
@@ -82,41 +80,40 @@ RUN ls -la
 RUN npm run build || { echo "Build failed"; exit 1; }
 
 # ---------------------------------------------------------------
-# Stage 3: Production Image (Nginx + Gunicorn + Celery + Redis + Python)
+
+# Stage 3: Production Image (Nginx + Gunicorn + Celery + Redis)
 FROM nginx:alpine
 
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies
+# Install necessary system dependencies **including Redis**
 RUN apk add --no-cache bash python3 py3-pip libpq gettext redis
 
-# ✅ Create Python virtual environment in production image
-RUN python3 -m venv /app/venv
-ENV PATH="/app/venv/bin:$PATH"
+# Copy Nginx configuration template
+COPY backend/nginx.conf.template /etc/nginx/nginx.conf.template
 
-# ✅ Copy backend & install Python dependencies into venv
-COPY --from=backend-builder /app/backend /app/backend
-COPY --from=backend-builder /app/backend/requirements.txt /app/backend/requirements.txt
-RUN pip install --no-cache-dir -r /app/backend/requirements.txt
+# Replace environment variables in Nginx config
+RUN envsubst '${PORT}' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
+
+# Remove the default.conf file
+RUN rm /etc/nginx/conf.d/default.conf
 
 # Copy frontend build files
 COPY --from=frontend-builder /app/frontend/dist /usr/share/nginx/html
 
-# Copy Nginx configuration template
-COPY backend/nginx.conf.template /etc/nginx/nginx.conf.template
-RUN envsubst '${PORT}' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
-RUN rm /etc/nginx/conf.d/default.conf
+# Copy backend files from backend-builder
+COPY --from=backend-builder /app/backend /app/backend
 
-# Copy start script
+# Copy start script and set executable permissions
 COPY start.sh /app/start.sh
 RUN chmod +x /app/start.sh
 
-# Start Redis
-RUN redis-server --daemonize yes
-
-# Expose ports
+# Expose application ports
 EXPOSE 8080
 
-# Start app
+# ✅ **Fix: Start Redis properly in Alpine**
+RUN redis-server --daemonize yes
+
+# Start the application (Gunicorn, Celery Worker, Celery Beat, Redis, and Nginx)
 CMD ["/bin/sh", "/app/start.sh"]
