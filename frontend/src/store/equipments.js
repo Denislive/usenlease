@@ -56,26 +56,46 @@ export const useEquipmentsStore = defineStore('equipmentStore', () => {
     error.value = null;
   
     try {
-      const response = await axios.get(url, { withCredentials: true });
-  
-      equipments.value = response.data?.results || [];
-      
-      // Ensure next and previous URLs use HTTPS
-      nextPageUrl.value = response.data?.next ? response.data.next.replace(/^http:\/\//i, "https://") : null;
-      previousPageUrl.value = response.data?.previous ? response.data.previous.replace(/^http:\/\//i, "https://") : null;
-  
-      totalPages.value = response.data?.total_pages ?? 1;
-      currentPage.value = response.data?.current_page ?? 1;
-      totalItems.value = response.data?.count ?? 0;
-      pageLinks.value = response.data?.page_links || [];
+        const response = await axios.get(url, { withCredentials: true });
+        
+        equipments.value = response.data?.results || [];
+        
+        // Helper function to enforce HTTPS
+        const enforceHttps = (url) => {
+            if (!url) return null;
+            try {
+                const urlObj = new URL(url);
+                if (urlObj.protocol === 'http:') {
+                    urlObj.protocol = 'https:';
+                    return urlObj.toString();
+                }
+            } catch (e) {
+                console.error('Invalid URL:', url);
+            }
+            return url;
+        };
+        
+        // Apply HTTPS enforcement to all pagination URLs
+        nextPageUrl.value = enforceHttps(response.data?.next);
+        previousPageUrl.value = enforceHttps(response.data?.previous);
+        
+        // Ensure page links are HTTPS
+        pageLinks.value = (response.data?.page_links || []).map(link => ({
+            ...link,
+            url: enforceHttps(link.url)
+        }));
+        
+        totalPages.value = response.data?.total_pages ?? 1;
+        currentPage.value = response.data?.current_page ?? 1;
+        totalItems.value = response.data?.count ?? 0;
+        
     } catch (err) {
-      error.value = 'Failed to fetch equipments.';
-      showNotification('Error', `Fetching equipments failed: ${err.response?.data || err.message}`, 'error');
+        error.value = 'Failed to fetch equipments.';
+        showNotification('Error', `Fetching equipments failed: ${err.response?.data || err.message}`, 'error');
     } finally {
-      isLoading.value = false;
+        isLoading.value = false;
     }
-  };
-  
+};
 
   /**
    * Fetch filtered equipments based on category, search query, selected categories, and cities.
