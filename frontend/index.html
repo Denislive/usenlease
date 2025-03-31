@@ -3,12 +3,46 @@
   <head>
     <meta charset="UTF-8">
     <link rel="icon" href="/favicon.ico" sizes="32x32">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UseNLease - Lease or Rent anything</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+    <title>UseNLease</title>
+    <style>
+      html {
+        -webkit-text-size-adjust: 100%;
+        -moz-text-size-adjust: 100%;
+        -ms-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+        touch-action: manipulation;
+        box-sizing: border-box;
+        width: 100vw;
+        overflow-x: hidden;
+      }
+      *, *::before, *::after {
+        box-sizing: inherit;
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        overflow-x: hidden;
+        -webkit-tap-highlight-color: transparent;
+        -webkit-touch-callout: none;
+      }
+      #app {
+        width: 100%;
+        position: relative;
+      }
+    </style>
   </head>
   <body>
     <div id="app"></div>
     <script type="module" src="/src/main.js"></script>
-
+    <script>
+      document.addEventListener('dblclick', function(e) {
+        e.preventDefault();
+      }, { passive: false });
+      document.addEventListener('gesturestart', function(e) {
+        e.preventDefault();
+      });
+    </script>
   </body>
 </html>
