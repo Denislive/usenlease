@@ -1,126 +1,226 @@
 <template>
-  <div class="flex justify-center items-center min-h-screen bg-gray-100">
-    <div class="flex flex-col items-center p-8 bg-white rounded-lg shadow-lg w-80">
-      <h2 class="text-2xl font-semibold mb-6 text-[#1c1c1c]">Enter OTP</h2>
-      <input type="text" v-model="otp" maxlength="6" placeholder="Enter OTP"
-        class="border border-gray-300 text-gray-700 text-center font-medium p-3 rounded w-full mb-6 focus:outline-none focus:ring-2 focus:ring-[#ffc107] placeholder-gray-400"
-        @input="autoSubmit" />
-      <button @click="submitOTP" :disabled="isSubmitting"
-        class="bg-[#1c1c1c] text-white font-semibold p-3 rounded w-full mb-4 hover:bg-yellow-500 disabled:opacity-50">
-        Submit
-      </button>
-      <div v-if="isTimerActive" class="text-red-500 mb-4 text-sm">
-        Resend OTP in: {{ remainingTime }} seconds
+  <div class="flex justify-center items-center min-h-screen bg-gray-100 p-4">
+    <div class="w-full max-w-md bg-white rounded-xl shadow-lg overflow-hidden">
+      <div class="p-8">
+        <!-- Header -->
+        <div class="text-center mb-8">
+          <h2 class="text-2xl font-bold text-gray-800">Enter Verification Code</h2>
+          <p class="mt-2 text-gray-600">
+            We've sent a 6-digit code to {{ maskedEmail }}
+          </p>
+        </div>
+
+        <!-- OTP Input -->
+        <div class="mb-6">
+          <label for="otp-input" class="sr-only">Enter OTP</label>
+          <input
+            id="otp-input"
+            v-model="otp"
+            type="text"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            maxlength="6"
+            autocomplete="one-time-code"
+            placeholder="• • • • • •"
+            class="w-full px-4 py-3 text-center text-xl font-medium tracking-widest border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+            @input="handleOtpInput"
+            @paste.prevent="handleOtpPaste"
+          />
+        </div>
+
+        <!-- Submit Button -->
+        <button
+          @click="submitOTP"
+          :disabled="isSubmitting || otp.length !== 6"
+          class="w-full py-3 px-4 bg-gray-900 text-white font-semibold rounded-lg hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <span v-if="!isSubmitting">Verify</span>
+          <span v-else class="flex items-center justify-center">
+            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Verifying...
+          </span>
+        </button>
+
+        <!-- Resend OTP Section -->
+        <div class="mt-6 text-center">
+          <p class="text-sm text-gray-600">
+            Didn't receive the code?
+            <button
+              @click="requestNewOTP"
+              :disabled="isTimerActive || isSubmitting"
+              class="text-yellow-600 font-medium hover:text-yellow-700 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Resend OTP
+            </button>
+          </p>
+          <p v-if="isTimerActive" class="mt-1 text-sm text-red-500">
+            Please wait {{ remainingTime }} seconds before requesting a new code
+          </p>
+        </div>
       </div>
-      <button v-if="!isTimerActive" @click="requestNewOTP" :disabled="isSubmitting"
-        class="border border-[#ffc107] text-[#ffc107] font-semibold p-3 rounded w-full hover:bg-[#ffc107] hover:text-white disabled:opacity-50">
-        Request New OTP
-      </button>
     </div>
   </div>
 </template>
 
-<script>
-import { ref, onMounted } from 'vue';
+<script setup>
+import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
 import useNotifications from '@/store/notification.js';
 import Cookies from 'js-cookie';
 
-export default {
-  setup() {
-    const otp = ref('');
-    const router = useRouter();
-    const { showNotification } = useNotifications();
+const router = useRouter();
+const { showNotification } = useNotifications();
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
-    const isSubmitting = ref(false);
-    const isTimerActive = ref(false);
-    const remainingTime = ref(60);
-    const email = ref(Cookies.get('email'));
-    let timerInterval;
+// Reactive state
+const otp = ref('');
+const isSubmitting = ref(false);
+const isTimerActive = ref(false);
+const remainingTime = ref(60);
+const email = ref(Cookies.get('email') || '');
+let timerInterval = null;
 
-    const autoSubmit = () => {
-      if (otp.value.length === 6) {
-        submitOTP();
-      }
-    };
+// Computed properties
+const maskedEmail = computed(() => {
+  if (!email.value) return '';
+  const [name, domain] = email.value.split('@');
+  return `${name.substring(0, 3)}***@${domain}`;
+});
 
-
-    // Example function to delete the email cookie
-    function deleteEmailCookie() {
-      Cookies.remove('email');
-    }
-
-    const submitOTP = async () => {
-      if (!otp.value) {
-        showNotification("Error", "Please enter the OTP.", "error");
-        return;
-      }
-      isSubmitting.value = true;
-      try {
-        const response = await axios.post(
-          `${import.meta.env.VITE_API_BASE_URL}/api/accounts/otp/verify/`,
-          { otp: otp.value, email: email.value },
-
-        );
-        showNotification("Success", "OTP verified successfully.", "success");
-        router.push('/login');
-        // Usage example
-        deleteEmailCookie();
-      } catch (error) {
-        showNotification("Error", error.response?.data || "OTP verification failed.", "error");
-      } finally {
-        isSubmitting.value = false;
-      }
-    };
-
-    const requestNewOTP = async () => {
-      isSubmitting.value = true;
-      try {
-        await axios.post(
-          `${import.meta.env.VITE_API_BASE_URL}/api/accounts/otp/`,
-          { email: email.value },
-        );
-        showNotification("Success", "New OTP sent to your email.", "success");
-        startTimer();
-      } catch (error) {
-        showNotification("Error", error.response?.data || "Failed to send new OTP.", "error");
-      } finally {
-        isSubmitting.value = false;
-      }
-    };
-
-    const startTimer = () => {
-      isTimerActive.value = true;
-      remainingTime.value = 60;
-      timerInterval = setInterval(() => {
-        remainingTime.value -= 1;
-        if (remainingTime.value <= 0) {
-          clearInterval(timerInterval);
-          isTimerActive.value = false;
-        }
-      }, 1000);
-    };
-
-    onMounted(() => {
-      requestNewOTP();
-
-    });
-
-    return {
-      otp,
-      isSubmitting,
-      isTimerActive,
-      remainingTime,
-      submitOTP,
-      requestNewOTP,
-      autoSubmit,
-    };
-  },
+// Input handlers
+const handleOtpInput = (e) => {
+  // Allow only numbers
+  otp.value = e.target.value.replace(/\D/g, '');
+  
+  // Auto-submit when OTP is complete
+  if (otp.value.length === 6) {
+    submitOTP();
+  }
 };
 
+const handleOtpPaste = (e) => {
+  const pasteData = e.clipboardData.getData('text');
+  const numbersOnly = pasteData.replace(/\D/g, '');
+  otp.value = numbersOnly.substring(0, 6);
+  
+  if (otp.value.length === 6) {
+    submitOTP();
+  }
+};
+
+// Timer functions
+const startTimer = () => {
+  isTimerActive.value = true;
+  remainingTime.value = 60;
+  
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    remainingTime.value -= 1;
+    if (remainingTime.value <= 0) {
+      clearInterval(timerInterval);
+      isTimerActive.value = false;
+    }
+  }, 1000);
+};
+
+const clearTimer = () => {
+  clearInterval(timerInterval);
+  isTimerActive.value = false;
+};
+
+// API functions
+const submitOTP = async () => {
+  if (otp.value.length !== 6) {
+    showNotification('Error', 'Please enter a 6-digit code', 'error');
+    return;
+  }
+
+  isSubmitting.value = true;
+  
+  try {
+    const response = await axios.post(
+      `${apiBaseUrl}/api/accounts/otp/verify/`,
+      { 
+        otp: otp.value,
+        email: email.value 
+      },
+      {
+        timeout: 10000,
+        withCredentials: true
+      }
+    );
+
+    showNotification('Success', 'Account verified successfully', 'success');
+    Cookies.remove('email');
+    router.push('/login');
+  } catch (error) {
+    const errorMessage = error.response?.data?.message || 
+                        error.response?.data?.detail || 
+                        'Verification failed. Please try again.';
+    showNotification('Error', errorMessage, 'error');
+    
+    // Clear OTP on error
+    otp.value = '';
+  } finally {
+    isSubmitting.value = false;
+  }
+};
+
+const requestNewOTP = async () => {
+  if (!email.value) {
+    showNotification('Error', 'Email not found. Please start the process again.', 'error');
+    router.push('/register');
+    return;
+  }
+
+  isSubmitting.value = true;
+  
+  try {
+    await axios.post(
+      `${apiBaseUrl}/api/accounts/otp/`,
+      { email: email.value },
+      {
+        timeout: 10000,
+        withCredentials: true
+      }
+    );
+    
+    showNotification('Success', 'New verification code sent', 'success');
+    startTimer();
+  } catch (error) {
+    const errorMessage = error.response?.data?.message || 
+                        'Failed to send new code. Please try again.';
+    showNotification('Error', errorMessage, 'error');
+  } finally {
+    isSubmitting.value = false;
+  }
+};
+
+// Lifecycle hooks
+onMounted(() => {
+  if (!email.value) {
+    showNotification('Error', 'Email not found. Please register again.', 'error');
+    router.push('/register');
+    return;
+  }
+  
+  requestNewOTP();
+});
 </script>
 
-<style>
-/* Add any additional global styles here */
+<style scoped>
+/* Custom transitions */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
 </style>

@@ -6,48 +6,60 @@
     <ul class="space-y-4">
       <!-- Category Filter -->
       <li class="product-filters-tab">
-        <a href="#" class="text-base font-semibold hover:text-[#1c1c1c]">Category</a>
+        <button class="text-base font-semibold hover:text-[#1c1c1c] focus:outline-none">Category</button>
         <ul v-if="displayedCategories.length" class="ml-4 space-y-2 overflow-y-auto max-h-64">
           <li>
-            <a href="#" class="text-sm text-gray-500" @click.prevent="clearAll('category')">Clear All</a>
+            <button class="text-sm text-gray-500 hover:underline focus:outline-none" @click.prevent="clearAll('category')">Clear All</button>
           </li>
           <li v-for="category in displayedCategories" :key="category.name">
             <input
               :id="`category-checkbox-${slugify(category.name)}`"
               type="checkbox"
               class="mr-2"
-              v-model="selectedCategories[category.name]"
-              @change="handleFilterChange"
+              :checked="selectedCategories[category.name]"
+              @change="handleCheckboxChange($event, category.name, 'category')"
             />
-            <label :for="`category-checkbox-${slugify(category.name)}`" class="text-sm">{{ category.name }}</label>
+            <label :for="`category-checkbox-${slugify(category.name)}`" class="text-sm cursor-pointer">{{ category.name }}</label>
           </li>
         </ul>
         <p v-else class="text-sm text-gray-500 ml-4">No categories available.</p>
-        <button v-if="categories.length > 20" @click="toggleShowMore('category')" class="text-blue-500 mt-2 text-sm">
+        <button 
+          v-if="categories.length > 20" 
+          @click="toggleShowMore('category')" 
+          class="text-blue-500 hover:text-blue-700 mt-2 text-sm focus:outline-none"
+          :aria-expanded="showMoreCategories"
+          :aria-controls="'category-filter-list'"
+        >
           {{ showMoreCategories ? 'Show Less' : 'Show More' }}
         </button>
       </li>
 
       <!-- Location Filter -->
       <li class="product-filters-tab">
-        <a href="#" class="text-base font-semibold hover:text-[#1c1c1c]">Location</a>
+        <button class="text-base font-semibold hover:text-[#1c1c1c] focus:outline-none">Location</button>
         <ul v-if="displayedCities.length" class="ml-4 space-y-2 overflow-y-auto max-h-64">
           <li>
-            <a href="#" class="text-sm text-gray-500" @click.prevent="clearAll('location')">Clear All</a>
+            <button class="text-sm text-gray-500 hover:underline focus:outline-none" @click.prevent="clearAll('location')">Clear All</button>
           </li>
           <li v-for="city in displayedCities" :key="city">
             <input
               :id="`city-checkbox-${city}`"
               type="checkbox"
               class="mr-2"
-              v-model="selectedCities[city]"
-              @change="handleFilterChange"
+              :checked="selectedCities[city]"
+              @change="handleCheckboxChange($event, city, 'location')"
             />
-            <label :for="`city-checkbox-${city}`" class="text-sm">{{ city }}</label>
+            <label :for="`city-checkbox-${city}`" class="text-sm cursor-pointer">{{ city }}</label>
           </li>
         </ul>
         <p v-else class="text-sm text-gray-500 ml-4">No cities available.</p>
-        <button v-if="cities.length > 20" @click="toggleShowMore('location')" class="text-blue-500 mt-2 text-sm">
+        <button 
+          v-if="cities.length > 20" 
+          @click="toggleShowMore('location')" 
+          class="text-blue-500 hover:text-blue-700 mt-2 text-sm focus:outline-none"
+          :aria-expanded="showMoreCities"
+          :aria-controls="'location-filter-list'"
+        >
           {{ showMoreCities ? 'Show Less' : 'Show More' }}
         </button>
       </li>
@@ -59,25 +71,32 @@
 import { ref, watch, computed } from 'vue';
 import { useEquipmentsStore } from '@/store/equipments';
 
-// ✅ Function to slugify only category names
+// Constants
+const SHOW_MORE_THRESHOLD = 20;
+const INITIAL_DISPLAY_COUNT = 20;
+
+// Slugify function with input validation
 const slugify = (text) => {
+  if (typeof text !== 'string') return '';
   return text
     .toString()
     .toLowerCase()
     .trim()
-    .replace(/\s+/g, '-')   // Replace spaces with -
-    .replace(/[^\w-]+/g, '') // Remove all non-word characters
-    .replace(/--+/g, '-');  // Replace multiple - with single -
+    .replace(/\s+/g, '-')
+    .replace(/[^\w-]+/g, '')
+    .replace(/--+/g, '-');
 };
 
 const props = defineProps({
   categories: {
     type: Array,
-    required: true
+    required: true,
+    validator: (value) => Array.isArray(value) && value.every(item => item?.name)
   },
   cities: {
     type: Array,
-    required: true
+    required: true,
+    validator: (value) => Array.isArray(value) && value.every(item => typeof item === 'string')
   }
 });
 
@@ -88,31 +107,37 @@ const selectedCities = ref({});
 const showMoreCategories = ref(false);
 const showMoreCities = ref(false);
 
-const displayedCategories = ref(props.categories.slice(0, 20));
-const displayedCities = ref(props.cities.slice(0, 20));
+const displayedCategories = ref([]);
+const displayedCities = ref([]);
 
-// ✅ Ensure displayed lists update when props change
-watch(() => props.categories, (newCategories) => {
-  displayedCategories.value = showMoreCategories.value ? newCategories : newCategories.slice(0, 20);
-}, { immediate: true });
-
-watch(() => props.cities, (newCities) => {
-  displayedCities.value = showMoreCities.value ? newCities : newCities.slice(0, 20);
-}, { immediate: true });
-
-// ✅ Convert selected categories (slugified) but keep cities as they are
+// Computed properties
 const getSelectedCategories = computed(() => {
-  return Object.keys(selectedCategories.value)
-    .filter(name => selectedCategories.value[name])
-    .map(slugify);
+  return Object.entries(selectedCategories.value)
+    .filter(([_, isSelected]) => isSelected)
+    .map(([name]) => slugify(name));
 });
 
 const getSelectedCities = computed(() => {
-  return Object.keys(selectedCities.value)
-    .filter(name => selectedCities.value[name]);
+  return Object.entries(selectedCities.value)
+    .filter(([_, isSelected]) => isSelected)
+    .map(([name]) => name);
 });
 
-// ✅ Function to handle filter changes and update `filteredEquipments`
+// Methods
+const handleCheckboxChange = (event, value, type) => {
+  if (type === 'category') {
+    selectedCategories.value = {
+      ...selectedCategories.value,
+      [value]: event.target.checked
+    };
+  } else if (type === 'location') {
+    selectedCities.value = {
+      ...selectedCities.value,
+      [value]: event.target.checked
+    };
+  }
+};
+
 const handleFilterChange = () => {
   store.fetchFilteredEquipments({
     categories: getSelectedCategories.value,
@@ -120,35 +145,41 @@ const handleFilterChange = () => {
   });
 };
 
-// ✅ Toggle Show More
 const toggleShowMore = (type) => {
   if (type === 'category') {
     showMoreCategories.value = !showMoreCategories.value;
-    displayedCategories.value = showMoreCategories.value ? props.categories : props.categories.slice(0, 20);
+    displayedCategories.value = showMoreCategories.value 
+      ? props.categories 
+      : props.categories.slice(0, INITIAL_DISPLAY_COUNT);
   } else if (type === 'location') {
     showMoreCities.value = !showMoreCities.value;
-    displayedCities.value = showMoreCities.value ? props.cities : props.cities.slice(0, 20);
+    displayedCities.value = showMoreCities.value 
+      ? props.cities 
+      : props.cities.slice(0, INITIAL_DISPLAY_COUNT);
   }
 };
 
-// ✅ Clear all filters and re-filter
 const clearAll = (filterType) => {
   if (filterType === 'category') {
     selectedCategories.value = {};
   } else if (filterType === 'location') {
     selectedCities.value = {};
   }
-  store.fetchFilteredEquipments({
-    categories: getSelectedCategories.value,
-    cities: getSelectedCities.value
-  });
+  handleFilterChange();
 };
 
-// ✅ Watch for changes in selected filters
-watch([selectedCategories, selectedCities], () => {
-  store.fetchFilteredEquipments({
-    categories: getSelectedCategories.value,
-    cities: getSelectedCities.value
-  });
-}, { deep: true });
+// Watchers
+watch(() => props.categories, (newCategories) => {
+  displayedCategories.value = showMoreCategories.value 
+    ? newCategories 
+    : newCategories.slice(0, INITIAL_DISPLAY_COUNT);
+}, { immediate: true });
+
+watch(() => props.cities, (newCities) => {
+  displayedCities.value = showMoreCities.value 
+    ? newCities 
+    : newCities.slice(0, INITIAL_DISPLAY_COUNT);
+}, { immediate: true });
+
+watch([selectedCategories, selectedCities], handleFilterChange, { deep: true });
 </script>

@@ -1,28 +1,53 @@
 import { ref } from 'vue';
 
-// Store for notifications
 const notifications = ref([]);
+const idCounter = ref(0); // For unique IDs
 
 const useNotifications = () => {
-    // Function to show a notification
-    const showNotification = (message, description, type = 'info') => {
-        // Push the new notification to the notifications list
-        notifications.value.push({ message, description, type });
-
-        // Automatically dismiss the notification after 5 seconds
-        setTimeout(() => {
-            notifications.value.shift(); // Remove the first notification
-        }, 15000); // Notification will disappear after 5 seconds
+  const showNotification = (message, description, type = 'info', duration = 5000) => {
+    const id = idCounter.value++;
+    const notification = { 
+      id, 
+      message, 
+      description, 
+      type,
+      duration,
+      isLeaving: false // For exit animation
     };
+    
+    notifications.value.push(notification);
 
-    // Function to remove a notification manually by index
-    const removeNotification = (index) => {
-        // Remove notification at the specified index
-        notifications.value.splice(index, 1);
-    };
+    // Auto-dismiss
+    if (duration > 0) {
+      setTimeout(() => {
+        dismissNotification(id);
+      }, duration);
+    }
+  };
 
-    // Return the notifications array and functions to manage them
-    return { notifications, showNotification, removeNotification };
+  const dismissNotification = (id) => {
+    const index = notifications.value.findIndex(n => n.id === id);
+    if (index !== -1) {
+      // Trigger leave animation
+      notifications.value[index].isLeaving = true;
+      
+      // Remove after animation completes
+      setTimeout(() => {
+        notifications.value = notifications.value.filter(n => n.id !== id);
+      }, 300);
+    }
+  };
+
+  const removeAllNotifications = () => {
+    notifications.value = [];
+  };
+
+  return { 
+    notifications, 
+    showNotification, 
+    dismissNotification,
+    removeAllNotifications
+  };
 };
 
 export default useNotifications;

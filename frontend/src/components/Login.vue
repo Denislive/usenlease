@@ -1,107 +1,231 @@
 <template>
-  <div class="flex items-center justify-center md:h-screen bg-gray-100 p-4">
-    <div class="bg-white shadow-md rounded-lg sm:p-2 p-8 w-full max-w-sm">
-      <div class="flex justify-center items-center">
-        <img src="../assets/images/logo.jpeg" alt="logo" class="h-30 w-40">
+  <div class="flex items-center justify-center min-h-screen bg-gray-100 p-4">
+    <div class="bg-white shadow-md rounded-lg p-6 sm:p-8 w-full max-w-sm">
+      <div class="flex justify-center items-center mb-6">
+        <img 
+          src="../assets/images/logo.jpeg" 
+          alt="Company Logo" 
+          class="h-30 w-40"
+          loading="lazy"
+          width="160"
+          height="120"
+        >
       </div>
-      <h2 class="text-2xl font-bold text-center my-6">Login</h2>
+      <h1 class="text-2xl font-bold text-center mb-6">Login to Your Account</h1>
 
-      <!-- Display server error message if login fails -->
-      <div v-if="localLoginError" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"
-        role="alert">
-        <i class="pi pi-exclamation-triangle mr-2"></i>
-        <span class="block sm:inline">{{ localLoginError }}</span>
+      <!-- Error Message -->
+      <div 
+        v-if="localLoginError" 
+        class="bg-red-50 border-l-4 border-red-500 p-4 mb-4 flex items-start"
+        role="alert"
+        aria-live="assertive"
+      >
+        <i class="pi pi-exclamation-triangle text-red-500 mr-2 mt-0.5"></i>
+        <div>
+          <p class="text-red-700 font-medium">Login Error</p>
+          <p class="text-red-600 text-sm">{{ localLoginError }}</p>
+        </div>
       </div>
 
-      <form @submit.prevent="handleLogin">
-        <div class="mb-4 relative">
-          <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
-          <input type="email" id="email" v-model="email" placeholder="user@email.com" @input="validateEmail" required
+      <form @submit.prevent="handleLogin" novalidate>
+        <!-- Email Field -->
+        <div class="mb-4">
+          <label for="email" class="block text-sm font-medium text-gray-700 mb-1">
+            Email Address
+            <span class="text-red-500">*</span>
+          </label>
+          <input
+            type="email"
+            id="email"
+            v-model.trim="email"
+            @input="validateEmail"
+            @blur="validateEmail"
+            placeholder="user@example.com"
+            required
+            autocomplete="email"
             :class="[
-              'mt-1 block w-full border rounded-md p-2 focus:outline-none',
-              emailError ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-[#1c1c1c]'
-            ]" />
-          <p v-if="emailError" class="absolute text-red-500 text-sm mt-1">{{ emailError }}</p>
+              'w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1',
+              emailError ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-[#1c1c1c] focus:ring-[#1c1c1c]'
+            ]"
+            aria-describedby="email-error"
+          />
+          <p 
+            v-if="emailError" 
+            id="email-error" 
+            class="mt-1 text-sm text-red-600"
+          >
+            {{ emailError }}
+          </p>
         </div>
 
-        <div class="mb-6 relative">
-          <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
-          <input type="password" id="password" placeholder="password" v-model="password" @input="validatePassword"
-            required :class="[
-              'mt-1 block w-full border rounded-md p-2 focus:outline-none',
-              passwordError ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-[#1c1c1c]'
-            ]" />
-          <p v-if="passwordError" class="absolute text-red-500 text-sm mt-1">{{ passwordError }}</p>
+        <!-- Password Field -->
+        <div class="mb-6">
+          <label for="password" class="block text-sm font-medium text-gray-700 mb-1">
+            Password
+            <span class="text-red-500">*</span>
+          </label>
+          <input
+            type="password"
+            id="password"
+            v-model.trim="password"
+            @input="validatePassword"
+            @blur="validatePassword"
+            placeholder="••••••••"
+            required
+            minlength="12"
+            autocomplete="current-password"
+            :class="[
+              'w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1',
+              passwordError ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-[#1c1c1c] focus:ring-[#1c1c1c]'
+            ]"
+            aria-describedby="password-error"
+          />
+          <p 
+            v-if="passwordError" 
+            id="password-error" 
+            class="mt-1 text-sm text-red-600"
+          >
+            {{ passwordError }}
+          </p>
         </div>
 
-        <button type="submit" :disabled="loading" :class="[
-          'w-full rounded-md py-2 transition duration-200 flex items-center justify-center',
-          emailError || passwordError ? 'bg-red-500 text-white' : 'bg-[#1c1c1c] text-white',
-          loading ? 'opacity-50 cursor-not-allowed' : ''
-        ]">
+        <!-- Submit Button -->
+        <button
+          type="submit"
+          :disabled="loading || emailError || passwordError"
+          :class="[
+            'w-full py-2.5 px-4 rounded-md font-medium transition-colors duration-200 flex items-center justify-center',
+            loading || emailError || passwordError 
+              ? 'bg-gray-400 text-white cursor-not-allowed' 
+              : 'bg-[#1c1c1c] text-white hover:bg-gray-800 focus:ring-2 focus:ring-[#1c1c1c] focus:ring-offset-2'
+          ]"
+          aria-live="polite"
+        >
           <i v-if="loading" class="pi pi-spinner pi-spin mr-2"></i>
-          <span>{{ loading ? 'Logging in...' : 'Login' }}</span>
+          <span>{{ loading ? 'Authenticating...' : 'Login' }}</span>
         </button>
       </form>
-      <p class="mt-4 text-center text-sm">Forgot Password?<router-link to="/password-reset-request"
-          class="text-[#ffc107] font-bold hover:underline"> Reset</router-link></p>
 
-      <p class="mt-4 text-center text-sm font-bold">
-        Don't have an account?
-        <RouterLink :to="{ name: 'signup' }" class="text-[#ffc107] hover:underline">Sign up</RouterLink>
-      </p>
+      <!-- Links Section -->
+      <div class="mt-6 space-y-3 text-center">
+        <p class="text-sm">
+          <router-link 
+            to="/password-reset-request"
+            class="text-[#ffc107] font-semibold hover:underline focus:outline-none focus:underline"
+          >
+            Forgot Password?
+          </router-link>
+        </p>
+        <p class="text-sm font-semibold">
+          Don't have an account?
+          <router-link 
+            :to="{ name: 'signup' }" 
+            class="text-[#ffc107] hover:underline focus:outline-none focus:underline"
+          >
+            Sign up
+          </router-link>
+        </p>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-// Login.vue
 import { ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
 import { useCartStore } from '@/store/cart';
 import useNotifications from '@/store/notification';
 
-const { showNotification } = useNotifications();
+// Constants
+const MIN_PASSWORD_LENGTH = 12;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// Stores and Services
+const { showNotification } = useNotifications();
+const authStore = useAuthStore();
+const cartStore = useCartStore();
+const router = useRouter();
+
+// Reactive State
 const email = ref('');
 const password = ref('');
 const emailError = ref('');
 const passwordError = ref('');
-const authStore = useAuthStore();
-const cartStore = useCartStore();
-const localLoginError = ref(''); // Local reactive error reference
-const loading = ref(false); // Loading state
-const router = useRouter();
+const localLoginError = ref('');
+const loading = ref(false);
 
-// Watch for changes in the store's loginError and update localLoginError
+// Watchers
 watch(
   () => authStore.loginError,
   (newError) => {
     localLoginError.value = newError;
+    if (newError) {
+      showNotification({
+        title: 'Login Failed',
+        message: newError,
+        type: 'error'
+      });
+    }
   }
 );
 
+// Validation Functions
 const validateEmail = () => {
-  emailError.value = /\S+@\S+\.\S+/.test(email.value) ? '' : 'Please enter a valid email address.';
+  if (!email.value) {
+    emailError.value = 'Email is required';
+  } else if (!EMAIL_REGEX.test(email.value)) {
+    emailError.value = 'Please enter a valid email address';
+  } else {
+    emailError.value = '';
+  }
 };
 
 const validatePassword = () => {
-  passwordError.value = password.value.length >= 12 ? '' : 'Password must be at least 12 characters long.';
+  if (!password.value) {
+    passwordError.value = 'Password is required';
+  } else if (password.value.length < MIN_PASSWORD_LENGTH) {
+    passwordError.value = `Password must be at least ${MIN_PASSWORD_LENGTH} characters`;
+  } else {
+    passwordError.value = '';
+  }
 };
 
+// Form Submission
 const handleLogin = async () => {
-  localLoginError.value = ''; // Clear previous errors
-  if (!emailError.value && !passwordError.value) {
-    loading.value = true; // Start loading
-    try {
-      await cartStore.loadCart();
-      await authStore.login(email.value, password.value, cartStore.cart);
-    } catch (error) {
-      localLoginError.value = error.message;
-    } finally {
-      loading.value = false; // Stop loading
-    }
+  // Validate before submission
+  validateEmail();
+  validatePassword();
+  
+  if (emailError.value || passwordError.value) {
+    return;
+  }
+
+  loading.value = true;
+  localLoginError.value = '';
+
+  try {
+    await Promise.all([
+      cartStore.loadCart(),
+      authStore.login(email.value, password.value, cartStore.cart)
+    ]);
+    
+    showNotification({
+      title: 'Login Successful',
+      message: 'Welcome back!',
+      type: 'success'
+    });
+    
+    router.push({ name: 'dashboard' });
+  } catch (error) {
+    console.error('Login error:', error);
+    localLoginError.value = error.message || 'Login failed. Please try again.';
+    
+    // Clear sensitive data on error
+    password.value = '';
+    passwordError.value = '';
+  } finally {
+    loading.value = false;
   }
 };
 </script>
