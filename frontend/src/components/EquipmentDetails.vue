@@ -199,23 +199,23 @@
 }
 </style>
 
-
 <script setup>
-// filepath: /home/techbro/Desktop/usenlease/frontend/src/components/EquipmentDetails.vue
 import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/store/auth';
 import { useCartStore } from '@/store/cart';
 import useNotifications from '@/store/notification';
 import axios from 'axios';
 import { useChatStore } from '@/store/chat';
-import { useRoute } from 'vue-router';  // Import useRoute to access route parameters
+import { useRoute } from 'vue-router';
 
-const route = useRoute();  // Get the current route object
-
+const route = useRoute();
 const authStore = useAuthStore();
 const chatStore = useChatStore();
+const cartStore = useCartStore();
+const { showNotification } = useNotifications();
 
 const api_base_url = import.meta.env.VITE_API_BASE_URL;
+const equipmentId = route.params.id;
 
 const props = defineProps({
   equipment: {
@@ -232,78 +232,99 @@ const props = defineProps({
   },
 });
 
-const cartStore = useCartStore();
-const { showNotification } = useNotifications();
-
 const startDate = ref('');
 const endDate = ref('');
 const quantity = ref(1);
 const dateError = ref('');
 const quantityError = ref('');
-const totalBooked = ref(0);  // New ref to store total booked items
-
+const totalBooked = ref(0);
 const items_data = ref(null);
-
 const today = new Date().toISOString().split('T')[0];
 
 const isFullyBooked = computed(() => props.equipment.available_quantity === 0);
+const bookedDates = computed(() => {
+  return props.equipment.booked_dates?.map(range => `${range.start_date} to ${range.end_date}`).join(', ') || '';
+});
 
-const equipmentId = route.params.id;
+const nextAvailableDate = computed(() => {
+  if (!props.equipment.booked_dates?.length) return today;
+  
+  const lastBookedDate = props.equipment.booked_dates.reduce((latest, range) => {
+    const endDate = new Date(range.end_date);
+    return endDate > latest ? endDate : latest;
+  }, new Date(0));
+
+  return new Date(lastBookedDate.setDate(lastBookedDate.getDate() + 1)).toISOString().split('T')[0];
+});
+
+const availableForPartialBooking = computed(() => {
+  if (!props.equipment.booked_dates?.length) return props.equipment.available_quantity;
+  
+  let totalBookedCount = totalBooked.value;
+  props.equipment.booked_dates.forEach((range) => {
+    const bookedStart = new Date(range.start_date);
+    const bookedEnd = new Date(range.end_date);
+    const now = new Date();
+    if (bookedStart <= now && bookedEnd >= now) {
+      totalBookedCount++;
+    }
+  });
+
+  return Math.max(0, props.equipment.available_quantity - totalBookedCount);
+});
+
+const partialAvailabilityMessage = computed(() => {
+  if (!props.equipment.booked_dates?.length || props.equipment.booked_dates.length < 2) return '';
+  
+  const availablePeriods = [];
+  for (let i = 0; i < props.equipment.booked_dates.length - 1; i++) {
+    const currentEnd = new Date(props.equipment.booked_dates[i].end_date);
+    const nextStart = new Date(props.equipment.booked_dates[i + 1].start_date);
+
+    if (currentEnd < nextStart) {
+      const diffDays = Math.ceil((nextStart - currentEnd) / (1000 * 60 * 60 * 24));
+      if (diffDays >= 1) {
+        availablePeriods.push(`${currentEnd.toISOString().split('T')[0]} to ${nextStart.toISOString().split('T')[0]}`);
+      }
+    }
+  }
+
+  return availablePeriods.length > 0 ? `Available between: ${availablePeriods.join(', ')}` : '';
+});
 
 const createChat = async () => {
-  const recepient = props.equipment.owner;
-  const chat = await chatStore.createChat(recepient, props.equipment);
+  if (!props.equipment.owner) return;
+  await chatStore.createChat(props.equipment.owner, props.equipment);
 };
 
 const formatDate = (date) => {
   if (!date) return "Unavailable";
-  const options = { year: "numeric", month: "short", day: "numeric" };
-  return new Date(date).toLocaleDateString(undefined, options);
+  return new Date(date).toLocaleDateString(undefined, { 
+    year: "numeric", 
+    month: "short", 
+    day: "numeric" 
+  });
 };
 
 const fetchTotalBookedItems = async () => {
   try {
-    const response = await axios.get(`${api_base_url}/api/order-items/${equipmentId}/total-booked/`,
-      { withCredentials: true });
+    const response = await axios.get(
+      `${api_base_url}/api/order-items/${equipmentId}/total-booked/`,
+      { withCredentials: true }
+    );
     totalBooked.value = response.data.total_booked;
-
     items_data.value = response.data.booked_dates;
   } catch (error) {
-    showNotification('Failed to fetch booked items', `Error: ${error.response?.data.error || error.response?.data.detail || error}`, 'error');
+    showNotification(
+      'Failed to fetch booked items', 
+      `Error: ${error.response?.data.error || error.response?.data.detail || error.message}`, 
+      'error'
+    );
   }
-};
-
-// Fetch total booked items when the component is mounted
-onMounted(() => {
-  fetchTotalBookedItems();
-});
-
-const isDateRangePartiallyBooked = (start, end, quantity) => {
-  let totalBookedCount = totalBooked.value;
-
-  for (let i = 0; i < props.equipment.booked_dates.length; i++) {
-    const bookedStart = new Date(props.equipment.booked_dates[i].start_date);
-    const bookedEnd = new Date(props.equipment.booked_dates[i].end_date);
-    const rangeStart = new Date(start);
-    const rangeEnd = new Date(end);
-
-    // Check if the selected range overlaps with the booked range
-    if (
-      (rangeStart >= bookedStart && rangeStart <= bookedEnd) ||
-      (rangeEnd >= bookedStart && rangeEnd <= bookedEnd) ||
-      (rangeStart <= bookedStart && rangeEnd >= bookedEnd)
-    ) {
-      totalBookedCount++;
-    }
-  }
-
-  // Check if the remaining quantity after booking is sufficient
-  return totalBookedCount + quantity > props.equipment.available_quantity;
 };
 
 const validateQuantity = () => {
   quantityError.value = '';
-
   if (quantity.value <= 0) {
     quantityError.value = 'Quantity must be greater than zero.';
   } else if (quantity.value > props.equipment.available_quantity) {
@@ -316,9 +337,7 @@ const submitBooking = async () => {
   quantityError.value = '';
 
   validateQuantity();
-  if (quantityError.value) {
-    return;
-  }
+  if (quantityError.value) return;
 
   const payload = {
     item: props.equipment.id,
@@ -326,8 +345,6 @@ const submitBooking = async () => {
     start_date: startDate.value,
     end_date: endDate.value,
   };
-
-  // Check if selected dates are fully booked
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -342,32 +359,23 @@ const submitBooking = async () => {
     return;
   }
 
-  if (payload.quantity <= 0) {
-    quantityError.value = 'Quantity must be greater than zero.';
-    return;
-  }
-
-  const availableQuantity = props.equipment.available_quantity;
-  if (payload.quantity > availableQuantity) {
-    quantityError.value = `Only ${availableQuantity} items available.`;
-    return;
-  }
-
   if (authStore.isAuthenticated) {
     try {
-      const response = await axios.post(`${api_base_url}/api/cart-items/`, payload, {
+      await axios.post(`${api_base_url}/api/cart-items/`, payload, {
         withCredentials: true,
       });
       cartStore.loadCart();
       showNotification('Add to Cart', 'Item added to cart!', 'success');
     } catch (error) {
-      showNotification('Failed adding to Cart', `Error: ${error.response.data.error || error.response.data.detail || 'Unknown error'}`, 'error');
+      showNotification(
+        'Failed adding to Cart', 
+        `Error: ${error.response?.data.error || error.response?.data.detail || 'Unknown error'}`, 
+        'error'
+      );
     }
   } else {
-    const plainEquipment = JSON.parse(JSON.stringify(props.equipment));
-
     const localPayload = {
-      item: plainEquipment,
+      item: JSON.parse(JSON.stringify(props.equipment)),
       quantity: quantity.value,
       start_date: startDate.value,
       end_date: endDate.value,
@@ -375,17 +383,16 @@ const submitBooking = async () => {
 
     try {
       const existingCart = await cartStore.getIndexedDBData();
-
-      const existingItemIndex = existingCart.findIndex((cartItem) => cartItem.item.id === localPayload.item.id);
+      const existingItemIndex = existingCart.findIndex(
+        cartItem => cartItem.item.id === localPayload.item.id
+      );
 
       if (existingItemIndex !== -1) {
         const newQuantity = existingCart[existingItemIndex].quantity + localPayload.quantity;
-
-        if (newQuantity > availableQuantity) {
-          quantityError.value = `Adding this quantity exceeds available stock. Only ${availableQuantity} items are available.`;
+        if (newQuantity > props.equipment.available_quantity) {
+          quantityError.value = `Adding this quantity exceeds available stock. Only ${props.equipment.available_quantity} items are available.`;
           return;
         }
-
         existingCart[existingItemIndex].quantity = newQuantity;
         showNotification('Updated Quantity', 'Quantity updated in the cart!', 'info');
       } else {
@@ -404,79 +411,28 @@ const submitBooking = async () => {
 const renderStars = (rating) => {
   const fullStars = Math.floor(rating);
   const halfStar = rating % 1 >= 0.5 ? 1 : 0;
-  const emptyStars = 5 - fullStars - halfStar;
-
-  return '★'.repeat(fullStars) + (halfStar ? '☆' : '') + '☆'.repeat(emptyStars);
+  return '★'.repeat(fullStars) + (halfStar ? '☆' : '') + '☆'.repeat(5 - fullStars - halfStar);
 };
 
 const isDateBooked = (date) => {
-  return props.equipment.booked_dates.some((range) => {
+  return props.equipment.booked_dates?.some(range => {
     const start = new Date(range.start_date);
     const end = new Date(range.end_date);
     const checkDate = new Date(date);
     return checkDate >= start && checkDate <= end;
-  });
+  }) || false;
 };
 
 const isPartiallyBooked = (date) => {
-  return props.equipment.booked_dates.some((range) => {
+  return props.equipment.booked_dates?.some(range => {
     const start = new Date(range.start_date);
     const end = new Date(range.end_date);
     const checkDate = new Date(date);
     return checkDate >= start && checkDate <= end && props.equipment.available_quantity > 1;
-  });
+  }) || false;
 };
 
-const bookedDates = computed(() => {
-  return props.equipment.booked_dates.map(range => `${range.start_date} to ${range.end_date}`).join(', ');
-});
-
-const nextAvailableDate = computed(() => {
-  const lastBookedDate = props.equipment.booked_dates.reduce((latest, range) => {
-    const endDate = new Date(range.end_date);
-    return endDate > latest ? endDate : latest;
-  }, new Date(0));
-
-  return new Date(lastBookedDate.setDate(lastBookedDate.getDate() + 1)).toISOString().split('T')[0];
-});
-
-const availableForPartialBooking = computed(() => {
-  // Calculate the partially available quantity by checking the booked ranges
-  let totalBookedCount = totalBooked.value;
-  let totalAvailableForPartial = props.equipment.available_quantity;
-
-  props.equipment.booked_dates.forEach((range) => {
-    const bookedStart = new Date(range.start_date);
-    const bookedEnd = new Date(range.end_date);
-
-    // Check if the equipment is partially booked within a given range
-    const now = new Date();
-    if (bookedStart <= now && bookedEnd >= now) {
-      totalBookedCount++;
-    }
-  });
-
-  totalAvailableForPartial -= totalBookedCount;
-
-  return totalAvailableForPartial > 0 ? totalAvailableForPartial : 0;
-});
-
-const partialAvailabilityMessage = computed(() => {
-  const now = new Date();
-  const availablePeriods = [];
-
-  for (let i = 0; i < props.equipment.booked_dates.length - 1; i++) {
-    const currentEnd = new Date(props.equipment.booked_dates[i].end_date);
-    const nextStart = new Date(props.equipment.booked_dates[i + 1].start_date);
-
-    if (currentEnd < nextStart) {
-      const diffDays = Math.ceil((nextStart - currentEnd) / (1000 * 60 * 60 * 24));
-      if (diffDays >= 1) {
-        availablePeriods.push(`${currentEnd.toISOString().split('T')[0]} to ${nextStart.toISOString().split('T')[0]}`);
-      }
-    }
-  }
-
-  return availablePeriods.length > 0 ? `Available between: ${availablePeriods.join(', ')}` : '';
+onMounted(() => {
+  fetchTotalBookedItems();
 });
 </script>

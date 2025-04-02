@@ -25,13 +25,19 @@
     </span>
           </div>
 
-          <img 
-            :src="equipment.images.length ? equipment.images[0].image_url : 'https://via.placeholder.com/350'" 
-            :alt="equipment.images.length ? equipment.name : 'Placeholder Image'" 
-            class="w-full h-32 lg:h-48 object-contain rounded-t-lg" 
-            @click="goToDetail(equipment.id)"
-          />
-
+          <img
+                v-if="equipment.images && equipment.images.length > 0"
+                :src="equipment.images[0].image_url"
+                :alt="equipment.name"
+                class="w-full h-full object-cover"
+                loading="lazy"
+              />
+              <div
+                v-else
+                class="w-full h-full bg-gray-100 flex items-center justify-center"
+              >
+                <i class="pi pi-image text-4xl text-gray-400"></i>
+              </div>
           <div class="p-1">
             <h5 class="text-sm font-semibold mb-1 text-gray-900">
               {{ store.truncateText(equipment.name, 20) }}

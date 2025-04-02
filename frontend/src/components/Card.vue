@@ -174,22 +174,19 @@ const renderStars = (rating) => {
     >
       View Details
     </span>
-            <img
-              v-if="equipment.images.length > 0"
-              :src="equipment.images[0].image_url"
-              :alt="`Image of ${equipment.name}`"
-              class="w-full h-full object-cover"
-              loading="lazy"
-              @click="goToDetail(equipment.id)"
-            />
-            <img
-              v-else
-              src="https://via.placeholder.com/350"
-              :alt="`${equipment.category}-${equipment.name}`"
-              class="w-full h-full object-cover"
-              loading="lazy"
-              @click="goToDetail(equipment.id)"
-            />
+    <img
+                v-if="equipment.images && equipment.images.length > 0"
+                :src="equipment.images[0].image_url"
+                :alt="equipment.name"
+                class="w-full h-full object-cover"
+                loading="lazy"
+              />
+              <div
+                v-else
+                class="w-full h-full bg-gray-100 flex items-center justify-center"
+              >
+                <i class="pi pi-image text-4xl text-gray-400"></i>
+              </div>
           </div>
 
           <div class="p-3">
