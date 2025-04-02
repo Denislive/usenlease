@@ -245,7 +245,6 @@ const renderStars = (rating) => {
 
       <template v-for="page in pageLinks" :key="page.url">
         <button 
-          v-if="page.page !== '...'"
           @click="fetchPage(page.url)"
           class="px-4 py-2 mx-1 rounded-lg text-sm min-w-[40px] transition-colors"
           :class="page.page === currentPage ? 'bg-black text-white' : 'bg-yellow-500 hover:bg-gray-300'"
@@ -254,13 +253,7 @@ const renderStars = (rating) => {
         >
           {{ page.page }}
         </button>
-        <span 
-          v-else
-          class="px-1 mx-1 flex items-end"
-          aria-hidden="true"
-        >
-          ...
-        </span>
+      
       </template>
 
       <button 
