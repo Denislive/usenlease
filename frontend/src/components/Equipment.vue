@@ -23,21 +23,18 @@
     >
       View Details
     </span>
+    <div @click="goToDetail(equipment.id)" class="w-full h-32 lg:h-48 flex items-center justify-center rounded-t-lg bg-gray-100">
+  <img 
+    v-if="equipment.images.length" 
+    :src="equipment.images[0].image_url" 
+    :alt="equipment.name" 
+    class="w-full h-full object-contain rounded-t-lg"
+  />
+  <i v-else class="pi pi-image text-4xl text-gray-400"></i>
+</div>
+
           </div>
 
-          <img
-                v-if="equipment.images && equipment.images.length > 0"
-                :src="equipment.images[0].image_url"
-                :alt="equipment.name"
-                class="w-full h-full object-cover"
-                loading="lazy"
-              />
-              <div
-                v-else
-                class="w-full h-full bg-gray-100 flex items-center justify-center"
-              >
-                <i class="pi pi-image text-4xl text-gray-400"></i>
-              </div>
           <div class="p-1">
             <h5 class="text-sm font-semibold mb-1 text-gray-900">
               {{ store.truncateText(equipment.name, 20) }}
