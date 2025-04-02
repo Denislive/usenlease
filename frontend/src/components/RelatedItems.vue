@@ -2,9 +2,9 @@
   <div v-if="relatedEquipments.length" class="mt-6">
     <h3 class="text-lg font-semibold mb-3 text-gray-900">You May Also Like</h3>
 
-    <!-- Grid Layout: Shows all items for md and larger -->
+    <!-- Grid Layout for Medium and Larger Screens -->
     <div v-if="!isSmallScreen" class="grid sm:grid-cols-3 md:grid-cols-6 lg:grid-cols-10 xl:grid-cols-10 gap-4">
-      <div v-for="equipment in relatedEquipments" :key="equipment.id" class="bg-white p-2 rounded shadow-md">
+      <div v-for="equipment in relatedEquipments" :key="equipment.id" class="bg-white p-2 rounded shadow-md h-full">
         <div class="relative">
           <span
             v-if="equipment.is_available"
@@ -14,27 +14,26 @@
           </span>
           <span
             v-else
-            class="absolute top-0 left-0 bg-blue-500 text-white text-[10px] sm:text-xs font-bold px-2 py-1 rounded"
+            class="absolute top-0 left-0 bg-blue-500 text-white text-[10px] sm:text-xs font-bold px-2 py-1 rounded cursor-pointer"
             @click="goToDetail(equipment.id)"
           >
-            Click to check details
+          check details
           </span>
 
+          <!-- Image or Placeholder -->
           <img
-            v-if="equipment.images.length > 0"
-            :src="equipment.images[0].image_url"
-            alt="Equipment Image"
-            class="w-full h-32 lg:h-48 object-contain"
+            v-if="equipment.images && equipment.images.length > 0"
+            :src="`http://127.0.0.1:8000/${equipment.images[0].image_url}`"
+            :alt="`Image of ${equipment.name}`"
+            class="w-full h-32 object-cover rounded-t-md"
+            loading="lazy"
           />
-          <img
-            v-else
-            src="https://via.placeholder.com/350"
-            alt="Placeholder Image"
-            class="w-full h-32 object-contain"
-          />
+          <div v-else class="w-full h-32 bg-gray-100 flex items-center justify-center rounded-t-md">
+            <i class="pi pi-image text-4xl text-gray-400"></i>
+          </div>
         </div>
 
-        <div class="p-1">
+        <div class="p-2">
           <h5 class="text-sm font-semibold mb-1 text-gray-900">
             {{ store.truncateText(equipment.name, 20) }}
           </h5>
@@ -49,10 +48,10 @@
       </div>
     </div>
 
-    <!-- Paginated Layout: Only for small screens -->
+    <!-- Paginated Layout for Small Screens -->
     <div v-else>
       <div class="grid grid-cols-3 gap-4">
-        <div v-for="equipment in paginatedEquipments" :key="equipment.id" class="bg-white p-2 rounded shadow-md">
+        <div v-for="equipment in paginatedEquipments" :key="equipment.id" class="bg-white p-2 rounded shadow-md h-full">
           <div class="relative">
             <span
               v-if="equipment.is_available"
@@ -62,27 +61,26 @@
             </span>
             <span
               v-else
-              class="absolute top-0 left-0 bg-blue-500 text-white text-[10px] sm:text-xs font-bold px-2 py-1 rounded"
+              class="absolute top-0 left-0 bg-blue-500 text-white text-[10px] sm:text-xs font-bold px-2 py-1 rounded cursor-pointer"
               @click="goToDetail(equipment.id)"
             >
               Click to check details
             </span>
 
+            <!-- Image or Placeholder -->
             <img
-              v-if="equipment.images.length > 0"
-              :src="equipment.images[0].image_url"
-              alt="Equipment Image"
-              class="w-full h-32 lg:h-48 object-contain"
+              v-if="equipment.images && equipment.images.length > 0"
+              :src="`http://127.0.0.1:8000/${equipment.images[0].image_url}`"
+              :alt="equipment.name"
+              class="w-full h-32 lg:h-48 object-cover rounded-t-md"
+              loading="lazy"
             />
-            <img
-              v-else
-              src="https://via.placeholder.com/350"
-              alt="Placeholder Image"
-              class="w-full h-32 object-contain"
-            />
+            <div v-else class="w-full h-32 lg:h-48 bg-gray-100 flex items-center justify-center rounded-t-md">
+              <i class="pi pi-image text-4xl text-gray-400"></i>
+            </div>
           </div>
 
-          <div class="p-1">
+          <div class="p-2">
             <h5 class="text-sm font-semibold mb-1 text-gray-900">
               {{ store.truncateText(equipment.name, 20) }}
             </h5>
@@ -97,8 +95,8 @@
         </div>
       </div>
 
-      <!-- Pagination Controls -->
-      <div class="flex justify-between mt-4">
+      <!-- Pagination Controls (Only if there are more items to show) -->
+      <div v-if="relatedEquipments.length > itemsPerPage" class="flex justify-between mt-4">
         <button
           @click="prev"
           :disabled="currentIndex === 0"
@@ -117,6 +115,7 @@
     </div>
   </div>
 </template>
+
 
 <script setup>
 import { ref, onMounted, computed, watch } from "vue";

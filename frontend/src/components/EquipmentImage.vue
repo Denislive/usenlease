@@ -15,9 +15,10 @@
         />
         <div
           v-else
-          class="w-full h-full bg-gray-100 flex items-center justify-center rounded-lg"
+          class="w-full h-full bg-gray-100 flex flex-col items-center justify-center rounded-lg"
         >
           <i class="pi pi-image text-8xl text-gray-400"></i>
+          <span class="mt-2 text-gray-500 text-sm">No Images for {{ equipment.name }}</span>
         </div>
       </div>
       <div

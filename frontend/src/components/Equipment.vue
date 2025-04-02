@@ -3,35 +3,24 @@
     <!-- Scrollable Equipment Grid -->
     <div class="scrollable-container">
       <div class="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-6">
-        <div
-          v-for="equipment in store.equipments"
-          :key="equipment.id"
-          class="bg-white rounded-lg shadow-lg overflow-hidden transition-transform hover:scale-105 cursor-pointer"
-        >
+        <div v-for="equipment in store.equipments" :key="equipment.id"
+          class="bg-white rounded-lg shadow-lg overflow-hidden transition-transform hover:scale-105 cursor-pointer">
           <div class="relative">
-            <span
-      v-if="equipment.is_available"
-      class="absolute top-0 left-0 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded z-10"
-      aria-label="Available"
-    >
-      {{ equipment.available_quantity }} Available
-    </span>
-    <span
-      v-else
-      class="absolute top-0 left-0 bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded z-10"
-      aria-label="Check details"
-    >
-      View Details
-    </span>
-    <div @click="goToDetail(equipment.id)" class="w-full h-32 lg:h-48 flex items-center justify-center rounded-t-lg bg-gray-100">
-  <img 
-    v-if="equipment.images.length" 
-    :src="equipment.images[0].image_url" 
-    :alt="equipment.name" 
-    class="w-full h-full object-contain rounded-t-lg"
-  />
-  <i v-else class="pi pi-image text-4xl text-gray-400"></i>
-</div>
+            <span v-if="equipment.is_available"
+              class="absolute top-0 left-0 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded z-10"
+              aria-label="Available">
+              {{ equipment.available_quantity }} Available
+            </span>
+            <span v-else class="absolute top-0 left-0 bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded z-10"
+              aria-label="Check details">
+              View Details
+            </span>
+            <div @click="goToDetail(equipment.id)"
+              class="w-full h-32 lg:h-48 flex items-center justify-center rounded-t-lg bg-gray-100">
+              <img v-if="equipment.images.length" :src="equipment.images[0].image_url" :alt="equipment.name"
+                class="w-full h-full object-contain rounded-t-lg" />
+              <i v-else class="pi pi-image text-4xl text-gray-400"></i>
+            </div>
 
           </div>
 
@@ -46,8 +35,7 @@
                 ({{ equipment.equipment_reviews?.length || 0 }})
               </span>
             </div>
-            <button 
-              @click="goToDetail(equipment.id)" 
+            <button @click="goToDetail(equipment.id)"
               class="w-full bg-[#ff6f00] rounded text-white text-xs sm:text-sm px-4 py-1 mt-2 transition duration-300 hover:bg-[#ff9e00] transform hover:scale-110">
               Rent Now
             </button>
@@ -65,24 +53,18 @@
 
     <!-- Pagination Controls -->
     <div v-if="store.totalPages" class="pagination flex justify-center mt-6">
-      <button 
-        :disabled="!store.previousPageUrl" 
-        @click="fetchPage(store.previousPageUrl)"
+      <button :disabled="!store.previousPageUrl" @click="fetchPage(store.previousPageUrl)"
         class="px-3 sm:px-4 py-1 sm:py-2 mx-1 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 text-xs sm:text-sm">
         Previous
       </button>
 
-      <button 
-        v-for="page in store.pageLinks" :key="page.url" 
-        @click="fetchPage(page.url)"
+      <button v-for="page in store.pageLinks" :key="page.url" @click="fetchPage(page.url)"
         class="px-3 sm:px-4 py-1 sm:py-2 mx-1 rounded-lg text-xs sm:text-sm"
         :class="page.page === store.currentPage ? 'bg-black text-white' : 'bg-yellow-500 hover:bg-gray-300'">
         {{ page.page }}
       </button>
 
-      <button 
-        :disabled="!store.nextPageUrl" 
-        @click="fetchPage(store.nextPageUrl)"
+      <button :disabled="!store.nextPageUrl" @click="fetchPage(store.nextPageUrl)"
         class="px-3 sm:px-4 py-1 sm:py-2 mx-1 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 text-xs sm:text-sm">
         Next
       </button>
@@ -145,6 +127,7 @@ const renderStars = (rating) => {
   max-height: 80vh;
   overflow-y: auto;
 }
+
 .rounded {
   border-radius: 5px;
 }
