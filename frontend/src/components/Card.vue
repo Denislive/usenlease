@@ -248,7 +248,7 @@ const renderStars = (rating) => {
           v-if="page.page !== '...'"
           @click="fetchPage(page.url)"
           class="px-4 py-2 mx-1 rounded-lg text-sm min-w-[40px] transition-colors"
-          :class="page.page === currentPage ? 'bg-[#ff6f00] text-white' : 'bg-gray-100 hover:bg-gray-200'"
+          :class="page.page === currentPage ? 'bg-black text-white' : 'bg-yellow-500 hover:bg-gray-300'"
           :aria-label="`Go to page ${page.page}`"
           :aria-current="page.page === currentPage ? 'page' : null"
         >
