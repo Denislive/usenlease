@@ -14,7 +14,6 @@ const fetchCategories = async () => {
     error.value = null;
 
     const response = await axios.get(`${apiBaseUrl}/api/root-categories/`, {
-      timeout: 10000, // 10 second timeout
       withCredentials: true // Include credentials if needed
     });
 
