@@ -2,240 +2,162 @@ import { defineStore } from 'pinia';
 import { ref, computed, watch } from 'vue';
 import { useAuthStore } from '@/store/auth';
 import axios from 'axios';
-import useNotifications from '@/store/notification.js';
+import useNotifications from '@/store/notification.js'; // Import the notification service
 import { useRoute } from 'vue-router';
 import Cookies from 'js-cookie';
 
-// Secure IndexedDB operations with error handling
 const openIndexedDB = () => {
     return new Promise((resolve, reject) => {
         const request = indexedDB.open('CartDB', 1);
 
         request.onupgradeneeded = (event) => {
-            try {
-                const db = event.target.result;
-                if (!db.objectStoreNames.contains('cart')) {
-                    db.createObjectStore('cart', { 
-                        keyPath: 'id', 
-                        autoIncrement: true 
-                    });
-                }
-            } catch (error) {
-                console.error('DB upgrade error:', error);
-                reject(error);
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains('cart')) {
+                db.createObjectStore('cart', { keyPath: 'id', autoIncrement: true });
             }
         };
 
-        request.onsuccess = (event) => {
-            resolve(event.target.result);
-        };
-        
-        request.onerror = (event) => {
-            console.error('DB open error:', event.target.error);
-            reject(event.target.error);
-        };
+        request.onsuccess = (event) => resolve(event.target.result);
+        request.onerror = (event) => reject(event.target.error);
     });
 };
 
 const getIndexedDBData = async () => {
-    try {
-        const db = await openIndexedDB();
-        return new Promise((resolve, reject) => {
-            const transaction = db.transaction('cart', 'readonly');
-            const store = transaction.objectStore('cart');
-            const request = store.getAll();
+    const db = await openIndexedDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction('cart', 'readonly');
+        const store = transaction.objectStore('cart');
+        const request = store.getAll();
 
-            request.onsuccess = () => {
-                const result = request.result || [];
-                resolve(result);
-            };
-            
-            request.onerror = (event) => {
-                console.error('DB read error:', event.target.error);
-                reject(event.target.error);
-            };
-        });
-    } catch (error) {
-        console.error('Failed to get DB data:', error);
-        return [];
-    }
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = (event) => reject(event.target.error);
+    });
 };
 
 const saveIndexedDBData = async (data) => {
-    try {
-        const db = await openIndexedDB();
-        return new Promise((resolve, reject) => {
-            const transaction = db.transaction('cart', 'readwrite');
-            const store = transaction.objectStore('cart');
-            
-            // Clear existing data first
-            const clearRequest = store.clear();
+    const db = await openIndexedDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction('cart', 'readwrite');
+        const store = transaction.objectStore('cart');
+        store.clear(); // Clear existing data
 
-            clearRequest.onsuccess = () => {
-                // Add new data with error handling
-                const addOperations = data.map(item => {
-                    try {
-                        // Sanitize data before storing
-                        const cleanItem = JSON.parse(JSON.stringify(item));
-                        return store.add(cleanItem);
-                    } catch (error) {
-                        console.error('Data sanitization error:', error);
-                        return Promise.reject(error);
-                    }
-                });
+        // Convert all items to plain objects
+        data.forEach(item => store.add(JSON.parse(JSON.stringify(item))));
 
-                Promise.all(addOperations)
-                    .then(() => resolve())
-                    .catch(error => {
-                        console.error('DB write error:', error);
-                        reject(error);
-                    });
-            };
-
-            clearRequest.onerror = (event) => {
-                console.error('DB clear error:', event.target.error);
-                reject(event.target.error);
-            };
-        });
-    } catch (error) {
-        console.error('Failed to save DB data:', error);
-        throw error;
-    }
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = (event) => reject(event.target.error);
+    });
 };
 
-const clearIndexedDBData = async () => {
-    try {
-        const db = await openIndexedDB();
-        return new Promise((resolve, reject) => {
-            const transaction = db.transaction('cart', 'readwrite');
-            const store = transaction.objectStore('cart');
-            const request = store.clear();
 
-            request.onsuccess = () => resolve();
-            request.onerror = (event) => {
-                console.error('DB clear error:', event.target.error);
-                reject(event.target.error);
-            };
-        });
-    } catch (error) {
-        console.error('Failed to clear DB data:', error);
-        throw error;
-    }
+const clearIndexedDBData = async () => {
+    const db = await openIndexedDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction('cart', 'readwrite');
+        const store = transaction.objectStore('cart');
+        const request = store.clear();
+
+        request.onsuccess = () => resolve();
+        request.onerror = (event) => reject(event.target.error);
+    });
 };
 
 export const useCartStore = defineStore('cart', () => {
     const api_base_url = import.meta.env.VITE_API_BASE_URL;
-    const cart = ref([]);
+
+    const cart = ref([]); // Array to hold cart items
     const authStore = useAuthStore();
     const route = useRoute();
-    const { showNotification } = useNotifications();
+    const { showNotification } = useNotifications(); // Initialize notification service
 
-    // Secure computed properties
-    const cartTotalPrice = computed(() => {
-        return cart.value.reduce((total, item) => {
-            const itemTotal = parseFloat(item.total) || 0;
-            return total + itemTotal;
-        }, 0);
-    });
-
+    // Automatically calculated totals based on cart items
+    const cartTotalPrice = computed(() => cart.value.reduce((total, item) => total + parseFloat(item.total), 0));
     const totalCartItems = computed(() => cart.value.length);
-    const currentCategory = computed(() => route.params.cat || '');
 
-    // Secure cart loading with authentication check
+    // Load cart based on user's authentication status
     const loadCart = async () => {
-        try {
-            if (authStore.isAuthenticated) {
+        if (authStore.isAuthenticated) {
+            try {
                 const response = await axios.get(`${api_base_url}/api/cart-items/`, {
                     withCredentials: true,
-                    headers: {
-                        'X-CSRFToken': authStore.getCSRFToken()
-                    }
                 });
-                
-                if (response.status === 200) {
-                    cart.value = response.data || [];
-                } else {
-                    throw new Error('Invalid response status');
-                }
-            } else {
+                cart.value = response.data;
+            } catch (error) {
+                showNotification('Error', 'Could not load your cart items.', 'error');
+            }
+        } else {
+            try {
                 const dbData = await getIndexedDBData();
-                cart.value = Array.isArray(dbData) ? dbData : [];
+                cart.value = dbData || [];
+            } catch (error) {
+                cart.value = [];
             }
-        } catch (error) {
-            console.error('Cart load error:', error);
-            cart.value = [];
-            showNotification('Error', 'Could not load your cart items.', 'error');
         }
     };
+    
 
-    // Secure authentication state watcher
+    // Watch the authentication state to load cart data accordingly
     watch(() => authStore.isAuthenticated, async (newVal) => {
-        try {
-            await loadCart();
-        } catch (error) {
-            console.error('Auth state change error:', error);
-        }
+        await loadCart();
     }, { immediate: true });
+    
 
-    // Secure item removal
+    // Show notification if item not found
+    const notifyItemNotFound = () => {
+        showNotification('Error', 'Item not found in cart.', 'error');
+    };
+
+    // Remove item from the cart
     const removeItem = async (itemId) => {
-        try {
-            const index = cart.value.findIndex(item => item.id === itemId);
-            if (index === -1) {
-                throw new Error('Item not found');
-            }
-
-            if (authStore.isAuthenticated) {
-                await axios.delete(`${api_base_url}/api/cart-items/${itemId}/`, {
-                    withCredentials: true,
-                    headers: {
-                        'X-CSRFToken': authStore.getCSRFToken()
-                    }
-                });
-            }
-
-            cart.value.splice(index, 1);
-            
-            if (!authStore.isAuthenticated) {
-                await saveIndexedDBData(cart.value);
-            }
-
-            showNotification('Success', 'Item removed from cart', 'success');
-        } catch (error) {
-            console.error('Remove item error:', error);
-            showNotification('Error', 'Failed to remove item from cart', 'error');
+        const index = cart.value.findIndex(item => item.id === itemId);
+        if (index !== -1) {
+            cart.value.splice(index, 1); // Remove the item at the found index
+            await saveIndexedDBData(cart.value);
+        } else {
+            notifyItemNotFound();
         }
     };
 
-    // Secure quantity update with validation
+    // Update item quantity in cart
     const updateItemQuantity = async (itemId, quantity) => {
-        try {
-            quantity = parseInt(quantity, 10);
-            if (isNaN(quantity)) {
-                throw new Error('Invalid quantity');
-            }
-
-            const isAuthenticated = authStore.isAuthenticated;
-            const foundItem = cart.value.find(item => 
-                isAuthenticated ? item.id === itemId : item.id === itemId
-            );
-
-            if (!foundItem) {
-                throw new Error('Item not found');
-            }
-
-            const availableQuantity = isAuthenticated 
-                ? foundItem.available_quantity 
-                : foundItem.item?.available_quantity;
-
-            if (quantity <= 0 || quantity > availableQuantity) {
-                throw new Error('Invalid quantity');
-            }
-
-            foundItem.quantity = quantity;
-            foundItem.total = (parseFloat(foundItem.hourly_rate) || 0) * quantity;
-
-            if (isAuthenticated) {
+        const isAuthenticated = authStore.isAuthenticated;
+        const foundItem = cart.value.find(item => isAuthenticated ? item.id === itemId : item.id === itemId);
+    
+        if (!foundItem) {
+            showNotification('Error', 'Item not found in the cart.', 'error');
+            return;
+        }
+    
+        // Ensure quantity is a valid positive integer
+        quantity = parseInt(quantity, 10);
+        if (isNaN(quantity) || quantity <= 0) {
+            showNotification('Invalid Quantity', 'Please enter a valid quantity.', 'error');
+            return;
+        }
+    
+        const availableQuantity = isAuthenticated ? foundItem.available_quantity : foundItem.item.available_quantity;
+    
+        // Prevent exceeding available quantity
+        if (quantity > availableQuantity) {
+            showNotification('Quantity Exceeds Availability', `Only ${availableQuantity} items are available.`, 'error');
+            return;
+        }
+    
+        foundItem.quantity = quantity;
+        foundItem.total = parseFloat(foundItem.hourly_rate) * quantity;
+    
+        const successMessage = isAuthenticated
+            ? `${foundItem.item_details.name} quantity has been updated.`
+            : `${foundItem.item.name} quantity has been updated.`;
+    
+        showNotification('Quantity Updated', successMessage, 'success');
+    
+        // Save to IndexedDB if user is logged out
+        if (!isAuthenticated) {
+            await saveIndexedDBData(cart.value);
+        } else {
+            // If user is authenticated, update on server as well
+            try {
                 const payload = {
                     id: foundItem.id,
                     quantity: foundItem.quantity,
@@ -243,67 +165,26 @@ export const useCartStore = defineStore('cart', () => {
                     end_date: foundItem.end_date,
                     total: foundItem.total,
                 };
-
-                await axios.put(`${api_base_url}/api/cart-items/${foundItem.id}/`, 
-                    payload, 
-                    {
-                        withCredentials: true,
-                        headers: {
-                            'X-CSRFToken': authStore.getCSRFToken()
-                        }
-                    }
-                );
-            } else {
-                await saveIndexedDBData(cart.value);
+                await axios.put(`${api_base_url}/api/cart-items/${foundItem.id}/`, payload, { withCredentials: true });
+            } catch (error) {
+                showNotification('Error', `Error updating the quantity of ${foundItem.item_details.name}.`, 'error');
             }
-
-            const itemName = isAuthenticated 
-                ? foundItem.item_details?.name 
-                : foundItem.item?.name;
-                
-            showNotification(
-                'Success', 
-                `${itemName || 'Item'} quantity updated`, 
-                'success'
-            );
-        } catch (error) {
-            console.error('Quantity update error:', error);
-            showNotification(
-                'Error', 
-                error.message === 'Invalid quantity' 
-                    ? 'Please enter a valid quantity' 
-                    : 'Failed to update quantity',
-                'error'
-            );
         }
     };
+    
 
-    // Secure cart clearing
+    // Clear the cart
     const clearCart = async () => {
-        try {
-            if (authStore.isAuthenticated) {
-                await axios.delete(`${api_base_url}/api/cart-items/clear/`, {
-                    withCredentials: true,
-                    headers: {
-                        'X-CSRFToken': authStore.getCSRFToken()
-                    }
-                });
-            } else {
-                await clearIndexedDBData();
-            }
-            
-            cart.value = [];
-            showNotification('Success', 'Cart cleared', 'success');
-        } catch (error) {
-            console.error('Clear cart error:', error);
-            showNotification('Error', 'Failed to clear cart', 'error');
-        }
+        cart.value = [];
+        await clearIndexedDBData();
     };
+
+    const currentCategory = computed(() => route.params.cat || ''); // Retrieve category from URL
 
     return {
         api_base_url,
         cart,
-        currentCategory,
+        currentCategory, // Make category available in the component
         cartTotalPrice,
         totalCartItems,
         removeItem,
