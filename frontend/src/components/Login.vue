@@ -92,7 +92,7 @@
         <!-- Submit Button -->
         <button
           type="submit"
-          :disabled="loading || emailError || passwordError"
+          :disabled="loading"
           :class="[
             'w-full py-2.5 px-4 rounded-md font-medium transition-colors duration-200 flex items-center justify-center',
             loading || emailError || passwordError 
