@@ -75,10 +75,10 @@
 
   <!-- Fallback states -->
   <div v-else-if="loading" class="text-center">
-    <p>Loading equipment details...</p>
+    <p>Loading item details...</p>
   </div>
   <div v-else class="text-center">
-    <p>No equipment available.</p>
+    <p>No item available.</p>
   </div>
 </template>
 
@@ -103,7 +103,7 @@ const equipmentId = route.params.id;
 
 const fetchEquipmentData = async () => {
   if (!equipmentId) {
-    error.value = 'No equipment ID provided';
+    error.value = 'No item ID provided';
     loading.value = false;
     return;
   }
@@ -126,8 +126,8 @@ const fetchEquipmentData = async () => {
   } catch (err) {
     error.value = err;
     showNotification(
-      'Error Loading Equipment',
-      err.response?.data?.message || err.message || 'Failed to load equipment details',
+      'Error Loading item',
+      err.response?.data?.message || err.message || 'Failed to load item details',
       'error'
     );
   } finally {

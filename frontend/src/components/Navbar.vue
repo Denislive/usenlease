@@ -69,7 +69,7 @@
           >
             <button
               class="px-4 py-2 bg-[#ffc107] text-[#1c1c1c] font-semibold rounded-lg shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-xl active:scale-95"
-              aria-label="Lease out equipment"
+              aria-label="Lease out item"
             >
               Lease Out
             </button>

@@ -29,7 +29,7 @@ const company = useCompanyInfoStore();
         </div>
         <h3 class="text-2xl font-bold mb-4">Quality</h3>
         <p class="text-lg">
-          We ensure all our equipment is of the highest quality, regularly maintained, and ready for use.
+          We ensure all our items are of the highest quality, regularly maintained, and ready for use.
         </p>
       </div>
 
@@ -40,7 +40,7 @@ const company = useCompanyInfoStore();
         </div>
         <h3 class="text-2xl font-bold mb-4">Customer Support</h3>
         <p class="text-lg">
-          Our team is always available to assist you in choosing the right equipment and ensuring smooth delivery and returns.
+          Our team is always available to assist you in choosing the right item and ensuring smooth delivery and returns.
         </p>
       </div>
 
@@ -51,7 +51,7 @@ const company = useCompanyInfoStore();
         </div>
         <h3 class="text-2xl font-bold mb-4">Convenience</h3>
         <p class="text-lg">
-          Rent your equipment effortlessly online and get it delivered to your location quickly.
+          Rent your item effortlessly online and get it delivered to your location quickly.
         </p>
       </div>
     </div>

@@ -8,7 +8,7 @@
       class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
       role="status"
       aria-live="polite"
-      aria-label="Loading equipment"
+      aria-label="Loading item"
     >
       <div class="bg-white p-6 rounded-lg shadow-lg flex flex-col items-center">
         <div class="flex space-x-2 mb-4">
@@ -36,7 +36,7 @@
         v-if="store.equipments.length > 0"
         class="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-6"
         role="list"
-        aria-label="List of equipment"
+        aria-label="List of items"
       >
         <div
           v-for="equipment in store.equipments"
@@ -91,7 +91,7 @@
             <button
               @click="goToDetail(equipment.id)"
               class="w-full bg-[#ff6f00] rounded text-white text-xs sm:text-sm px-4 py-1 mt-2 transition duration-300 hover:bg-[#ff9e00] transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-[#ff6f00]"
-              aria-label="Rent this equipment"
+              aria-label="Rent this item"
             >
               Rent Now
             </button>

@@ -5,7 +5,7 @@
     class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100] transition-opacity duration-300"
     role="status"
     aria-live="polite"
-    aria-label="Loading equipment"
+    aria-label="Loading items"
   >
     <div 
       class="bg-white p-10 rounded-2xl shadow-xl flex flex-col items-center max-w-md mx-4 transform transition-all duration-300 animate-fade-in border border-gray-200"
@@ -41,7 +41,7 @@
     <!-- Trending Ads Carousel -->
     <section class="trending-ads py-8" v-if="storeTrendingAds.length > 0">
       <div class="container mx-auto px-4">
-        <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Trending Equipment</h2>
+        <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Trending Items</h2>
         <div class="relative">
           <div class="overflow-hidden">
             <div class="flex transition-transform duration-300" :style="{ transform: `translateX(-${currentTrendingIndex * 100}%)` }">
@@ -77,7 +77,7 @@
     <!-- Featured Equipment Carousel -->
     <section class="featured-equipments py-8 bg-gray-50" v-if="storeFeaturedEquipments.length > 0">
       <div class="container mx-auto px-4">
-        <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Featured Equipment</h2>
+        <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Featured items</h2>
         <div class="relative">
           <div class="overflow-hidden">
             <div class="flex transition-transform duration-300" :style="{ transform: `translateX(-${currentFeaturedIndex * 100}%)` }">
@@ -117,8 +117,8 @@
     >
       <div class="max-w-md mx-auto">
         <i class="pi pi-inbox text-6xl text-gray-400 mb-4"></i>
-        <h3 class="text-xl font-medium text-gray-600 mb-2">No equipment available</h3>
-        <p class="text-gray-500 mb-6">We couldn't find any trending or featured equipment at this time.</p>
+        <h3 class="text-xl font-medium text-gray-600 mb-2">No items available</h3>
+        <p class="text-gray-500 mb-6">We couldn't find any trending or featured items at this time.</p>
         <button 
           @click="retryFetch"
           class="bg-[#ff6f00] text-white px-6 py-3 rounded-lg hover:bg-[#ff9e00] transition"

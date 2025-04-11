@@ -270,7 +270,7 @@
                   <table class="w-full border-collapse bg-white shadow-md rounded-lg overflow-hidden">
                     <thead>
                       <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
-                        <th class="py-3 px-6 text-left">Equipment</th>
+                        <th class="py-3 px-6 text-left">Item</th>
                         <th class="py-3 px-6 text-center">Duration</th>
                         <th class="py-3 px-6 text-center">Total Income</th>
                         <th class="py-3 px-6 text-center">Actions</th>
@@ -307,7 +307,7 @@
                   <table class="w-full border-collapse bg-white shadow-md rounded-lg overflow-hidden">
                     <thead>
                       <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
-                        <th class="py-3 px-6 text-left">Equipment</th>
+                        <th class="py-3 px-6 text-left">Item</th>
                         <th class="py-3 px-6 text-center">Duration</th>
                         <th class="py-3 px-6 text-center">Total Income</th>
                         <th class="py-3 px-6 text-center">Actions</th>
@@ -346,7 +346,7 @@
                   <table class="w-full border-collapse bg-[#1c1c1c] shadow-md rounded-lg overflow-hidden text-white">
                     <thead>
                       <tr class="bg-gray-700 text-gray-300 uppercase text-sm leading-normal">
-                        <th class="py-3 px-6 text-left">Equipment</th>
+                        <th class="py-3 px-6 text-left">Item</th>
                         <th class="py-3 px-6 text-center">Duration</th>
                         <th class="py-3 px-6 text-center">Total Income</th>
                         <th class="py-3 px-6 text-center">Status</th>
@@ -379,7 +379,7 @@
                   <table class="w-full border-collapse bg-white shadow-md rounded-lg overflow-hidden">
                     <thead>
                       <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
-                        <th class="py-3 px-6 text-left">Equipment</th>
+                        <th class="py-3 px-6 text-left">Item</th>
                         <th class="py-3 px-6 text-center">Duration</th>
                         <th class="py-3 px-6 text-center">Total Income</th>
                         <th class="py-3 px-6 text-center">Actions</th>
@@ -421,7 +421,7 @@
               <div class="empty-list-container text-center py-16">
                 <i class="pi pi-exclamation-circle text-9xl text-gray-500"></i>
                 <p class="text-xl text-gray-500 mt-4 mb-4">
-                  Oops! You have not listed any Equipment!
+                  Oops! You have not listed any Item!
                 </p>
 
                 <!-- Lease Out Button for Non-Authenticated Users -->
@@ -439,7 +439,7 @@
           <div v-if="editModalVisible" @click.self="closeEditModal"
             class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div class="bg-white rounded-lg p-6 w-1/2">
-              <h3 class="text-xl font-semibold mb-4">Edit Equipment</h3>
+              <h3 class="text-xl font-semibold mb-4">Edit Item</h3>
               <form @submit.prevent="updateEquipment">
                 <div class="mb-4">
                   <label for="name" class="block text-sm font-medium text-gray-700">Name</label>
@@ -740,7 +740,7 @@
               class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
               <div class="bg-white rounded-lg shadow-lg p-6 w-96">
                 <h2 class="text-lg font-bold text-gray-800 mb-4">Review Your Message</h2>
-                <img :src="chatStore.chatState.equipmentImage" alt="Equipment Image"
+                <img :src="chatStore.chatState.equipmentImage" alt="Item Image"
                   class="w-full h-40 object-cover rounded-lg mb-4" />
 
                 <!-- Editable Message -->
@@ -852,7 +852,7 @@
                     <li
                       class="flex items-center justify-between bg-white p-4 rounded-md shadow-sm transition duration-300 transform hover:scale-105">
                       <i class="pi pi-cog text-[#1c1c1c] text-2xl"></i>
-                      <span>Total Equipments</span>
+                      <span>Total Items</span>
                       <span class="font-bold">{{
                         report.total_equipments
                       }}</span>
@@ -1285,7 +1285,7 @@ const updateEquipment = async () => {
     closeEditModal();
     await store.fetchUserEquipments(); // Refresh the equipment list
   } catch (error) {
-    console.error("Failed to update equipment:", error);
+    console.error("Failed to update item:", error);
     showNotification("Error", "Failed to update item. Please try again.", "error"); // Notify user
   }
 };

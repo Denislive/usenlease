@@ -11,7 +11,7 @@
         Our Services
       </h2>
       <p class="text-lg max-w-3xl mx-auto mb-8">
-        Welcome to <strong>Use N Lease</strong> – experience the freedom of renting. We connect individuals and businesses to a diverse world of goods, making it easy to access what you need when you need it. From construction equipment and vehicles to electronics, furniture, and more, our platform empowers you to rent anything and only buy what you truly need.
+        Welcome to <strong>Use N Lease</strong> – experience the freedom of renting. We connect individuals and businesses to a diverse world of goods, making it easy to access what you need when you need it. From construction item and vehicles to electronics, furniture, and more, our platform empowers you to rent anything and only buy what you truly need.
       </p>
 
       <!-- Services List -->
@@ -21,7 +21,7 @@
           <div class="absolute inset-0 bg-gradient-to-r from-[#ff6f00] to-[#ff9e00] opacity-30"></div>
           <i class="pi pi-box text-5xl text-[#ff6f00] mb-6 z-10"></i>
           <h3 class="text-3xl font-semibold mb-3 z-10">Extensive Inventory</h3>
-          <p class="text-lg text-[#1c1c1c] z-10">Access a wide selection of items, from heavy machinery and vehicles to IT equipment, furniture, and more.</p>
+          <p class="text-lg text-[#1c1c1c] z-10">Access a wide selection of items, from heavy machinery and vehicles to IT item, furniture, and more.</p>
           <div class="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-[#1c1c1c] opacity-20"></div>
         </div>
 

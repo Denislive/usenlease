@@ -132,7 +132,7 @@ watch(
       class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100] transition-opacity duration-300"
       role="status"
       aria-live="polite"
-      aria-label="Loading equipment"
+      aria-label="Loading item"
     >
       <div
         class="bg-white p-10 rounded-2xl shadow-xl flex flex-col items-center max-w-md mx-4 transform transition-all duration-300 animate-fade-in border border-gray-200"
@@ -171,7 +171,7 @@ watch(
         v-if="equipments.length > 0"
         class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-4"
         role="list"
-        aria-label="List of equipment"
+        aria-label="List of item"
       >
         <div
           v-for="equipment in equipments"
@@ -232,7 +232,7 @@ watch(
             <button
               @click.stop="goToDetail(equipment.id)"
               class="w-full bg-[#ff6f00] rounded text-white text-xs px-3 py-2 mt-2 transition-colors duration-200 hover:bg-[#ff9e00] focus:outline-none focus:ring-2 focus:ring-[#ff6f00] focus:ring-opacity-50"
-              aria-label="Rent this equipment"
+              aria-label="Rent this Item"
             >
               Rent Now
             </button>
@@ -247,7 +247,7 @@ watch(
         aria-live="polite"
       >
         <i class="pi pi-inbox text-6xl text-gray-400"></i>
-        <h3 class="text-xl text-gray-600 mt-4">No equipment available</h3>
+        <h3 class="text-xl text-gray-600 mt-4">No items available</h3>
         <p class="text-gray-500 mt-2">Please check back later or try different filters</p>
       </div>
     </div>

@@ -38,7 +38,7 @@ const fetchEquipment = async () => {
   const equipmentId = route.params.id; // Get the equipment ID from the route
   try {
     const response = await fetch(`${api_base_url}/api/equipments/${equipmentId}/`); // Adjust the URL based on your API
-    if (!response.ok) throw new Error('Failed to fetch equipment details');
+    if (!response.ok) throw new Error('Failed to fetch item details');
     equipment.value = await response.json();
   } catch (err) {
     error.value = err.message; // Capture the error message

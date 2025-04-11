@@ -1,6 +1,6 @@
 <template>
   <!-- Mobile Categories Section -->
-  <section class="mobile-categories py-3 block md:hidden" aria-label="Equipment categories">
+  <section class="mobile-categories py-3 block md:hidden" aria-label="Item categories">
     <div class="container mx-auto px-4">
       <div class="grid grid-cols-3 gap-4">
         <!-- Post Ad Button (CTA) -->
@@ -8,10 +8,10 @@
           <RouterLink
             to="/list-item"
             class="flex flex-col items-center justify-center h-28 bg-[#1c1c1c] text-white rounded-lg shadow-lg hover:text-[#ffc107] transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-[#ffc107]"
-            aria-label="Post new equipment"
+            aria-label="Post new item"
           >
             <i class="pi pi-plus text-3xl mb-2" aria-hidden="true"></i>
-            <span class="text-sm font-semibold text-center">Post Equipment</span>
+            <span class="text-sm font-semibold text-center">Post Item</span>
           </RouterLink>
         </div>
 
@@ -21,7 +21,7 @@
             <RouterLink 
               :to="{ name: 'category-details', query: { cat: category.slug } }" 
               class="block h-full"
-              :aria-label="`Browse ${category.name} equipment`"
+              :aria-label="`Browse ${category.name} Items`"
             >
               <div class="h-12 bg-gray-100 flex items-center justify-center">
                 <img 

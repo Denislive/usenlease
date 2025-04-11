@@ -131,16 +131,16 @@ export default {
         const equipmentId = route.params.id;
 
         if (!equipmentId) {
-          throw new Error('Invalid equipment ID.');
+          throw new Error('Invalid item ID.');
         }
 
         const equipment = equipmentsStore.getEquipmentById(equipmentId);
 
         if (!equipment) {
-          throw new Error('Equipment not found.');
+          throw new Error('Item not found.');
         }
       } catch (error) {
-        showNotification('Error', 'Failed to load equipment details. Please try again.', 'error');
+        showNotification('Error', 'Failed to load item details. Please try again.', 'error');
       }
     });
 
@@ -151,7 +151,7 @@ export default {
       }
 
       if (!selectedEquipment.value || !selectedEquipment.value.id) {
-        showNotification('Error', 'Equipment data is unavailable. Please try again later.', 'error');
+        showNotification('Error', 'Item data is unavailable. Please try again later.', 'error');
         return;
       }
 

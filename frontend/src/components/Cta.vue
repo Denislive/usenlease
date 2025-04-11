@@ -4,7 +4,7 @@
         <div class="icon-container mb-2">
             <i class="pi pi-plus-circle text-4xl"></i>
         </div>
-        <span class="main-text text-lg font-semibold">Equipment</span>
+        <span class="main-text text-lg font-semibold">Item</span>
     </RouterLink> </template>
 
 <script>

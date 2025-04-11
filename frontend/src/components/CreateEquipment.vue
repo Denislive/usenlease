@@ -118,7 +118,7 @@
         </div>
 
         <div>
-          <h5 class="text-xl font-semibold text-center text-1c1c1c mb-4">Equipment Specifications</h5>
+          <h5 class="text-xl font-semibold text-center text-1c1c1c mb-4">Item Specifications</h5>
 
           <div v-for="(spec, index) in specifications" :key="index" class="mb-4">
             <div class="flex space-x-4">

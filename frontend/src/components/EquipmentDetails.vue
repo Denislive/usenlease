@@ -1,5 +1,5 @@
 <template>
-  <div v-if="loading" class="loading text-center p-4">Loading equipment details...</div>
+  <div v-if="loading" class="loading text-center p-4">Loading Item details...</div>
   <div v-else-if="error" class="error text-red-500 text-center p-4">{{ error }}</div>
   <div v-else-if="equipment && Object.keys(equipment).length" class="p-6 border rounded-lg shadow-lg bg-white">
 
@@ -97,7 +97,7 @@
         </div>
 
         <div class="mb-4">
-          <label for="quantity" class="block text-sm font-medium">Number of Equipments:</label>
+          <label for="quantity" class="block text-sm font-medium">Number of Items:</label>
           <input type="number" id="quantity" v-model="quantity" min="1" :disabled="isFullyBooked"
             :max="equipment.available_quantity" @input="validateQuantity" required class="p-2 border rounded w-full" />
           <p v-if="quantityError" class="error-message">{{ quantityError }}</p>

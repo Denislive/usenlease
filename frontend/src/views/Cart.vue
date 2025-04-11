@@ -277,7 +277,7 @@ const cartStore = useCartStore();
   if (equipmentId) {
     router.push({ name: 'equipment-details', params: { id: equipmentId } });
   } else {
-    showNotification('Item Error', 'Equipment ID is missing!', 'error');
+    showNotification('Item Error', 'Item ID is missing!', 'error');
   }
 };
 </script>
