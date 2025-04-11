@@ -1,139 +1,161 @@
 <script setup>
-defineProps({
-  equipments: {
-    type: Array,
-    required: true
-  }
-});
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useEquipmentsStore } from '@/store/equipments';
 
+// Router and store
 const router = useRouter();
 const store = useEquipmentsStore();
-const currentPage = ref(1);
-const pageSize = ref(store.pageSize || 10); // Default page size
-const isLoading = ref(false);
 
-// Fetch data on mount with error handling
+// Local state
+const isLoading = ref(false); // Unified loading state for all fetch operations
+const hasFetchedInitial = ref(false); // Track if initial fetch has occurred
+
+// Fetch data on mount
 onMounted(async () => {
+  isLoading.value = true;
   try {
-    isLoading.value = true;
     await Promise.all([
-      store.fetchEquipments(currentPage.value, pageSize.value),
-      store.fetchCategories()
+      store.fetchEquipments(), // Uses store.pageSize, fetches first page
+      store.fetchCategories(),
     ]);
+    hasFetchedInitial.value = true;
   } catch (error) {
-    // Consider adding user notification here
+    // Store handles notifications via showNotification
   } finally {
     isLoading.value = false;
   }
 });
 
-// Watch page size and update data with debounce
-let debounceTimer;
-watch(pageSize, async (newSize) => {
-  clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(async () => {
-    if (newSize !== store.pageSize) {
-      try {
-        isLoading.value = true;
-        currentPage.value = 1;
-        store.setPageSize(newSize);
-        await store.fetchEquipments(currentPage.value, newSize);
-      } catch (error) {
-      } finally {
-        isLoading.value = false;
-      }
-    }
-  }, 300); // 300ms debounce
+// Sync page size with store
+const pageSize = computed({
+  get: () => store.pageSize,
+  set: (value) => {
+    store.setPageSize(value);
+  },
 });
 
-// Computed properties
+// Watch pageSize changes
+watch(
+  () => store.pageSize,
+  async () => {
+    isLoading.value = true;
+    try {
+      await store.fetchEquipments(); // Refetch with new page size
+    } catch (error) {
+      // Store handles notifications
+    } finally {
+      isLoading.value = false;
+    }
+  },
+  { immediate: false }
+);
+
+// Computed properties from store
 const equipments = computed(() => store.equipments);
 const totalPages = computed(() => store.totalPages);
 const pageLinks = computed(() => store.pageLinks);
 const previousPageUrl = computed(() => store.previousPageUrl);
 const nextPageUrl = computed(() => store.nextPageUrl);
+const currentPage = computed(() => store.currentPage);
 
-// Navigation functions with validation
-const goToPage = async (page) => {
-  if (page >= 1 && page <= totalPages.value) {
+// Navigation functions
+const fetchPage = async (pageUrl) => {
+  if (pageUrl) {
+    isLoading.value = true;
     try {
-      isLoading.value = true;
-      currentPage.value = page;
-      await store.fetchEquipments(page, pageSize.value);
+      await store.fetchPage(pageUrl);
     } catch (error) {
+      // Store handles notifications
     } finally {
       isLoading.value = false;
     }
   }
 };
 
-const fetchPage = async (pageUrl) => {
-  if (pageUrl) {
-    try {
-      isLoading.value = true;
-      await store.fetchPage(pageUrl);
-    } catch (error) {
-    } finally {
-      isLoading.value = false;
-    }
+const fetchNextPage = async () => {
+  isLoading.value = true;
+  try {
+    await store.fetchNextPage();
+  } catch (error) {
+    // Store handles notifications
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const fetchPreviousPage = async () => {
+  isLoading.value = true;
+  try {
+    await store.fetchPreviousPage();
+  } catch (error) {
+    // Store handles notifications
+  } finally {
+    isLoading.value = false;
   }
 };
 
 const goToDetail = (equipmentId) => {
-  if (equipmentId && typeof equipmentId === 'string') {
-    router.push({ 
-      name: 'equipment-details', 
-      params: { 
-        id: encodeURIComponent(equipmentId) // Security: encode URI component
-      } 
+  if (equipmentId) {
+    router.push({
+      name: 'equipment-details',
+      params: {
+        id: encodeURIComponent(equipmentId), // Security
+      },
     });
   }
 };
 
+// Utility to render star ratings
 const renderStars = (rating) => {
   const fullStars = Math.floor(rating);
   const halfStar = rating % 1 >= 0.5 ? 1 : 0;
   return '★'.repeat(fullStars) + (halfStar ? '☆' : '') + '☆'.repeat(5 - fullStars - halfStar);
 };
+
+// Watch equipments to reset loading if data arrives
+watch(
+  () => store.equipments.length,
+  (newLength) => {
+    if (newLength > 0 && isLoading.value) {
+      isLoading.value = false;
+    }
+  }
+);
 </script>
 
 <template>
   <div class="container mx-auto p-4">
- <!-- Enhanced Loading State -->
-<div 
-  v-if="isLoading"
-  class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100] transition-opacity duration-300"
-  role="status"
-  aria-live="polite"
-  aria-label="Loading equipment"
->
-  <div 
-    class="bg-white p-10 rounded-2xl shadow-xl flex flex-col items-center max-w-md mx-4 transform transition-all duration-300 animate-fade-in border border-gray-200"
-  >
-    <!-- Animated Dots Loader -->
-    <div class="flex space-x-2 mb-4">
-      <span class="w-3 h-3 bg-[#ff6f00] rounded-full animate-bounce"></span>
-      <span class="w-3 h-3 bg-[#ff9e00] rounded-full animate-bounce animation-delay-150"></span>
-      <span class="w-3 h-3 bg-[#ffc400] rounded-full animate-bounce animation-delay-300"></span>
+    <!-- Enhanced Loading State -->
+    <div
+      v-if="isLoading"
+      class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100] transition-opacity duration-300"
+      role="status"
+      aria-live="polite"
+      aria-label="Loading equipment"
+    >
+      <div
+        class="bg-white p-10 rounded-2xl shadow-xl flex flex-col items-center max-w-md mx-4 transform transition-all duration-300 animate-fade-in border border-gray-200"
+      >
+        <!-- Animated Dots Loader -->
+        <div class="flex space-x-2 mb-4">
+          <span class="w-3 h-3 bg-[#ff6f00] rounded-full animate-bounce"></span>
+          <span class="w-3 h-3 bg-[#ff9e00] rounded-full animate-bounce animation-delay-150"></span>
+          <span class="w-3 h-3 bg-[#ffc400] rounded-full animate-bounce animation-delay-300"></span>
+        </div>
+        <!-- Loading text -->
+        <p class="text-sm text-gray-600 tracking-wide font-medium">
+          Rent or Lease Anything You Need...
+        </p>
+      </div>
     </div>
 
-    <!-- Loading text with a subtle animation -->
-    <p class="text-sm text-gray-600 tracking-wide font-medium">
-      Rent or Lease Anything You Need...
-    </p>
-  </div>
-</div>
-
-
     <!-- Page Size Selection -->
-    <div class="mb-4 flex justify-end items-center">
+    <div v-if="!isLoading || equipments.length > 0" class="mb-4 flex justify-end items-center">
       <label for="pageSizeSelect" class="mr-2 text-sm font-semibold text-gray-700">Items per page:</label>
-      <select 
+      <select
         id="pageSizeSelect"
-        v-model="pageSize" 
+        v-model="pageSize"
         class="border rounded p-1 text-sm bg-white focus:ring-2 focus:ring-[#ff6f00] focus:border-[#ff6f00] transition"
         aria-label="Select number of items per page"
       >
@@ -145,7 +167,7 @@ const renderStars = (rating) => {
 
     <!-- Equipment Grid -->
     <div class="scrollable-container">
-      <div 
+      <div
         v-if="equipments.length > 0"
         class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-4"
         role="list"
@@ -161,48 +183,53 @@ const renderStars = (rating) => {
         >
           <div class="relative aspect-square">
             <span
-      v-if="equipment.is_available"
-      class="absolute top-0 left-0 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded z-10"
-      aria-label="Available"
-    >
-      {{ equipment.available_quantity }} Available
-    </span>
-    <span
-      v-else
-      class="absolute top-0 left-0 bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded z-10"
-      aria-label="Check details"
-    >
-      View Details
-    </span>
-    <img
-                v-if="equipment.images && equipment.images.length > 0"
-                :src="equipment.images[0].image_url"
-                :alt="equipment.name"
-                class="w-full h-full object-cover"
-                loading="lazy"
-              />
-              <div
-                v-else
-                class="w-full h-full bg-gray-100 flex items-center justify-center"
-              >
-                <i class="pi pi-image text-4xl text-gray-400"></i>
-              </div>
+              v-if="equipment.is_available"
+              class="absolute top-0 left-0 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded z-10"
+              aria-label="Available"
+            >
+              {{ equipment.available_quantity }} Available
+            </span>
+            <span
+              v-else
+              class="absolute top-0 left-0 bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded z-10"
+              aria-label="Check details"
+            >
+              View Details
+            </span>
+            <img
+              v-if="equipment.images && equipment.images.length > 0"
+              :src="equipment.images[0].image_url"
+              :alt="equipment.name"
+              class="w-full h-full object-cover"
+              loading="lazy"
+            />
+            <div
+              v-else
+              class="w-full h-full bg-gray-100 flex items-center justify-center"
+            >
+              <i class="pi pi-image text-4xl text-gray-400"></i>
+            </div>
           </div>
 
           <div class="p-3">
-            <h3 class="text-sm font-semibold mb-1 text-gray-900 line-clamp-2" :title="equipment.name">
+            <h3
+              class="text-sm font-semibold mb-1 text-gray-900 line-clamp-2"
+              :title="equipment.name"
+            >
               {{ store.truncateText(equipment.name, 20) }}
             </h3>
             <p class="text-gray-600 text-xs mb-2">
               <span class="font-medium">${{ equipment.hourly_rate }}</span> / day
             </p>
             <div class="flex items-center mb-2">
-              <span class="rating text-yellow-500 mr-1 text-xs sm:text-sm">{{ renderStars(equipment.rating) }}</span>
+              <span class="rating text-yellow-500 mr-1 text-xs sm:text-sm">{{
+                renderStars(equipment.rating)
+              }}</span>
               <span class="reviews text-gray-600 text-[10px] sm:text-xs">
                 ({{ equipment.equipment_reviews?.length || 0 }})
               </span>
             </div>
-            <button 
+            <button
               @click.stop="goToDetail(equipment.id)"
               class="w-full bg-[#ff6f00] rounded text-white text-xs px-3 py-2 mt-2 transition-colors duration-200 hover:bg-[#ff9e00] focus:outline-none focus:ring-2 focus:ring-[#ff6f00] focus:ring-opacity-50"
               aria-label="Rent this equipment"
@@ -214,8 +241,8 @@ const renderStars = (rating) => {
       </div>
 
       <!-- Empty State -->
-      <div 
-        v-else-if="!isLoading"
+      <div
+        v-else-if="hasFetchedInitial && !isLoading && equipments.length === 0"
         class="text-center py-16 bg-gray-50 rounded-lg"
         aria-live="polite"
       >
@@ -226,22 +253,23 @@ const renderStars = (rating) => {
     </div>
 
     <!-- Pagination Controls -->
-    <div 
-      v-if="totalPages > 1 && !isLoading"
+    <div
+      v-if="totalPages > 1 && !isLoading && equipments.length > 0"
       class="pagination flex justify-center mt-8"
       aria-label="Pagination"
     >
-      <button 
-        :disabled="!previousPageUrl" 
-        @click="fetchPage(previousPageUrl)"
+      <button
+        :disabled="!previousPageUrl"
+        @click="fetchPreviousPage"
         class="px-4 py-2 mx-1 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm transition-colors"
         aria-label="Previous page"
+        :aria-disabled="!previousPageUrl"
       >
         Previous
       </button>
 
       <template v-for="page in pageLinks" :key="page.url">
-        <button 
+        <button
           @click="fetchPage(page.url)"
           class="px-4 py-2 mx-1 rounded-lg text-sm min-w-[40px] transition-colors"
           :class="page.page === currentPage ? 'bg-black text-white' : 'bg-yellow-500 hover:bg-gray-300'"
@@ -250,18 +278,18 @@ const renderStars = (rating) => {
         >
           {{ page.page }}
         </button>
-      
       </template>
 
-      <button 
-        :disabled="!nextPageUrl" 
-        @click="fetchPage(nextPageUrl)"
+      <button
+        :disabled="!nextPageUrl"
+        @click="fetchNextPage"
         class="px-4 py-2 mx-1 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm transition-colors"
         aria-label="Next page"
+        :aria-disabled="!nextPageUrl"
       >
         Next
       </button>
-    </div>  
+    </div>
   </div>
 </template>
 
@@ -288,7 +316,8 @@ const renderStars = (rating) => {
 }
 
 /* Focus styles for accessibility */
-button:focus, select:focus {
+button:focus,
+select:focus {
   outline: 2px solid #ff9e00;
   outline-offset: 2px;
 }
@@ -298,22 +327,43 @@ button:focus, select:focus {
   transition: all 0.2s ease;
 }
 
-
 /* Fade-in animation */
 @keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
-.animate-fade-in { animation: fadeIn 0.3s ease-out; }
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
 
 /* Animated dots bouncing */
 @keyframes bounce {
-  0%, 80%, 100% { transform: scale(0); opacity: 0.3; }
-  40% { transform: scale(1); opacity: 1; }
+  0%,
+  80%,
+  100% {
+    transform: scale(0);
+    opacity: 0.3;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
-.animate-bounce { animation: bounce 1.2s infinite ease-in-out; }
+.animate-bounce {
+  animation: bounce 1.2s infinite ease-in-out;
+}
 
 /* Delay animations for a cascading effect */
-.animation-delay-150 { animation-delay: 0.15s; }
-.animation-delay-300 { animation-delay: 0.3s; }
+.animation-delay-150 {
+  animation-delay: 0.15s;
+}
+.animation-delay-300 {
+  animation-delay: 0.3s;
+}
 </style>
