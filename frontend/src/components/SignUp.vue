@@ -373,8 +373,8 @@ const validatePassword = () => {
   }
 
   // Check password length
-  if (password.value.length < 12) {
-    errors.value.password = 'Password must be at least 12 characters long.';
+  if (password.value.length < 8) {
+    errors.value.password = 'Password must be at least 8 characters long.';
     return;
   }
 

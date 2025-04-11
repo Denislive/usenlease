@@ -138,7 +138,7 @@ import { useCartStore } from '@/store/cart';
 import useNotifications from '@/store/notification';
 
 // Constants
-const MIN_PASSWORD_LENGTH = 12;
+const MIN_PASSWORD_LENGTH = 8;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // Stores and Services
