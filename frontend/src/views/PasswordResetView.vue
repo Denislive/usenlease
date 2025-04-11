@@ -35,7 +35,7 @@
         </div>
         <button
           type="submit"
-          :disabled="loading || passwordError"
+          :disabled="loading"
           class="w-full bg-[#1c1c1c] text-[#ffc107] font-medium py-2 rounded-md disabled:opacity-50"
         >
           {{ loading ? "Resetting..." : "Reset Password" }}
