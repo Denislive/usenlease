@@ -179,7 +179,7 @@ export const useAuthStore = defineStore('auth', () => {
     
         // Fetch updated user data and navigate
         await getUserData();
-        router.push('/profile');
+        router.push('/new-profile');
         navigateToRoleSection(roleSection.value);
     
         // Fetch user equipment data after the role change
