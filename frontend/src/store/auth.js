@@ -414,7 +414,7 @@ export const useAuthStore = defineStore('auth', () => {
   
     // Update UI
     loginError.value = errorMessage;
-    showNotification(`Login ${notificationType} `, errorMessage, notificationType);
+    showNotification(`Login ${notificationType}`, errorMessage, notificationType);
   };
   
 

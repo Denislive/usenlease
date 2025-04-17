@@ -209,14 +209,8 @@ const handleLogin = async () => {
       cartStore.loadCart(),
       authStore.login(email.value, password.value, cartStore.cart)
     ]);
-    
-    showNotification({
-      title: 'Login Successful',
-      message: 'Welcome back!',
-      type: 'success'
-    });
-    
-    router.push({ name: 'dashboard' });
+      
+    router.push({ name: 'home' });
   } catch (error) {
     console.error('Login error:', error);
     localLoginError.value = error.message || 'Login failed. Please try again.';
