@@ -596,14 +596,19 @@ class Order(models.Model):
     """
     STATUS_CHOICES = [
         ('pending', 'Pending'),
+        ('partially_approved', 'Partially Approved'),
         ('approved', 'Approved'),
         ('pickup', 'Pickup Initiated'),
-        ('return', 'Return Initiated'),
+        ('partial_pickup', 'Partial Pickup'),
+        ('partially_rented', 'Partially Rented'),
         ('rented', 'Rented'),
-        ('rejected', 'Rejected'),
+        ('partially_returned', 'Partially Returned'),
         ('returned', 'Returned'),
+        ('return', 'Return Initiated'),
+        ('disputed', 'Disputed'),
         ('completed', 'Completed'),
         ('canceled', 'Canceled'),
+        ('rejected', 'Rejected'),
     ]
 
     PAYMENT_STATUS_CHOICES = [
@@ -675,49 +680,73 @@ class Order(models.Model):
             str: A formatted string indicating the order ID and user.
         """
         return f"Order {self.id} for {self.user.username}"
+    
+    def update_status(self):
+        # Get all order items
+        order_items = self.orderitem_set.all()
+        if not order_items:
+            self.status = 'pending'
+            self.save()
+            return
+
+        # Collect all item statuses
+        item_statuses = set(item.status for item in order_items)
+
+        # Priority for disputed
+        if 'disputed' in item_statuses:
+            self.status = 'disputed'
+        # All items have the same status
+        elif len(item_statuses) == 1:
+            status = item_statuses.pop()
+            if status == 'pickup':
+                self.status = 'pickup_initiated'
+            elif status == 'return':
+                self.status = 'return_initiated'
+            else:
+                self.status = status
+        # Mixed statuses
+        else:
+            # Check for partially approved
+            if 'approved' in item_statuses and ('pending' in item_statuses or 'rejected' in item_statuses):
+                self.status = 'partially_approved'
+            # Check for partially rented
+            elif 'rented' in item_statuses and any(s in ['pending', 'approved', 'pickup'] for s in item_statuses):
+                self.status = 'partially_rented'
+            # Check for partially returned
+            elif 'return' in item_statuses and any(s in ['pending', 'approved', 'pickup', 'rented'] for s in item_statuses):
+                self.status = 'partially_returned'
+            # Fallback: use the "earliest" status to avoid progressing too far
+            else:
+                status_priority = ['pending', 'approved', 'pickup', 'rented', 'return', 'completed', 'canceled', 'rejected']
+                earliest_status = min(item_statuses, key=lambda x: status_priority.index(x))
+                if earliest_status == 'pickup':
+                    self.status = 'pickup_initiated'
+                elif earliest_status == 'return':
+                    self.status = 'return_initiated'
+                else:
+                    self.status = earliest_status
+
+        self.save()
 
     def terminate_rental(self) -> None:
         """
-        Terminates the rental by setting the order status to 'canceled'.
+        Terminates the rental by setting the order status to 'canceled' and updates all associated order items to 'canceled'.
 
         Raises:
             ValueError: If the order status is not 'pending' or 'rented'.
         """
-        if self.status in ['pending', 'rented']:
+        if self.status in ['approved', 'pending', 'rented']:
             self.status = 'canceled'
             self.save()
-        else:
-            raise ValueError("Rental cannot be terminated in the current status.")
-
-    def reorder(self) -> 'Order':
-        """
-        Reorders a completed, returned, or canceled order.
-
-        Returns:
-            Order: The newly created order.
-
-        Raises:
-            ValueError: If the order status is not 'completed', 'returned', or 'canceled'.
-        """
-        if self.status in ['completed', 'returned', 'canceled']:
-            new_order = Order.objects.create(
-                user=self.user,
-                cart=self.cart,
-                shipping_address=self.shipping_address,
-                billing_address=self.billing_address,
-            )
+            
+            # Update all associated order items to 'canceled'
             for item in self.order_items.all():
-                OrderItem.objects.create(
-                    order=new_order,
-                    item=item.item,
-                    quantity=item.quantity,
-                    start_date=item.start_date,
-                    end_date=item.end_date,
-                )
-            return new_order
+                item.status = 'canceled'
+                item.save()
         else:
-            raise ValueError("Reorder can only be performed on completed, returned, or canceled orders.")
+            raise ValueError("Renting cannot be terminated in the current status.")
 
+   
     @property
     def get_order_total(self) -> Decimal:
         """
