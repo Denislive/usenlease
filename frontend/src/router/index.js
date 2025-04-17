@@ -51,6 +51,8 @@ const router = createRouter({
         { path: 'settings', name: 'Settings', component: Settings },
         { path: '', redirect: 'new-profile/account' }, // Default to account
       ],
+      meta: { requiresAuth: true }, // Protecting this route
+
     },
     {
       path: '/about',
