@@ -25,7 +25,7 @@
                 class="bg-white rounded-lg shadow-lg overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-2xl cursor-pointer">
                 <div class="relative h-48">
                   <!-- Image -->
-                  <img v-if="equipment.images?.length > 0" :src="`${api_base_url}/${equipment.images[0].image_url}`"
+                  <img v-if="equipment.images?.length > 0" :src="`${equipment.images[0].image_url}`"
                     :alt="equipment.name || 'Equipment'" class="w-full h-full object-cover" />
                   <img v-else src="../assets/images/placeholder.png" alt="No image"
                     class="w-full h-full object-cover opacity-70" />

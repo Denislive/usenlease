@@ -59,7 +59,7 @@
               <div v-for="item in order.order_items" :key="item.id"
                 class="flex items-center justify-between py-2 border-b last:border-b-0">
                 <div class="flex items-center">
-                  <img v-if="item.item.images?.length" :src="apiBaseUrl + item.item.images[0].image_url"
+                  <img v-if="item.item.images?.length" :src="item.item.images[0].image_url"
                     alt="Item image" class="w-12 h-12 rounded-full object-cover mr-2" />
                   <span v-else class="text-gray-500 mr-2">No image</span>
                   <div class="text-left">
