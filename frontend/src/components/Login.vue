@@ -209,7 +209,7 @@ const handleLogin = async () => {
       cartStore.loadCart(),
       authStore.login(email.value, password.value, cartStore.cart)
     ]);
-      
+        
     router.push({ name: 'home' });
   } catch (error) {
     console.error('Login error:', error);
