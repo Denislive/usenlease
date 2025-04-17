@@ -414,7 +414,7 @@ export const useAuthStore = defineStore('auth', () => {
   
     // Update UI
     loginError.value = errorMessage;
-    showNotification(`Login ${notificationType}`, errorMessage, notificationType);
+    showNotification(`Login ${notificationType}`, errorMessage, notificationType, 0);
   };
   
 
@@ -486,7 +486,7 @@ export const useAuthStore = defineStore('auth', () => {
         user.value = null; // Reactive state for the user
         Cookies.remove('user'); // Remove user cookie
         // Notify user of success
-        showNotification('Logout Successful', 'You have been logged out.', 'success');
+        showNotification('Logout Successful', 'You have been logged out.', 'success', 0);
         // Redirect to home page
         router.push('/');
 
