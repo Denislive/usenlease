@@ -40,6 +40,7 @@ const router = createRouter({
     },
     {
       path: '/new-profile',
+      name: 'new-profile',
       component: NewProfile,
       children: [
         { path: 'account', name: 'Account', component: Account },
