@@ -2,6 +2,7 @@
 import json
 from datetime import datetime, timedelta
 
+
 # Django imports
 from django.conf import settings
 from django.db.models import Sum
@@ -679,6 +680,7 @@ class EquipmentViewSet(viewsets.ModelViewSet):
         Update an existing equipment item.
         Handles images and category updates.
         """
+        self.check_permissions(request)
 
         # Retrieve the existing equipment instance or raise 404 error
         equipment = get_object_or_404(Equipment, pk=pk)
@@ -957,12 +959,12 @@ class ReviewViewSet(viewsets.ViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Check if the user has a completed order containing the specified equipment
-        has_completed_order = OrderItem.objects.filter(
-            order__user=user, order__status="completed", item_id=equipment_id
+        # Check if the user has a completed order item for the specified equipment
+        has_completed_order_item = OrderItem.objects.filter(
+            order__user=user, status="completed", item_id=equipment_id
         ).exists()
 
-        if not has_completed_order:
+        if not has_completed_order_item:
             return Response(
                 {"error": "You can only leave a review for equipment you have ordered and completed."},
                 status=status.HTTP_403_FORBIDDEN
@@ -1208,6 +1210,7 @@ class CartItemViewSet(viewsets.ModelViewSet):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+
     def update(self, request, *args, **kwargs):
         """
         Update an existing cart item by checking the available quantity and date availability.
@@ -1280,14 +1283,6 @@ class OrderActionView(APIView):
                 # Handle the corresponding action
                 if action == 'terminate':
                     order.terminate_rental()
-                elif action == 'delete':
-                    order.delete()
-                elif action == 'reorder':
-                    new_order = order.reorder()
-                    return Response(
-                        {'message': 'Order reordered successfully', 'new_order_id': new_order.id},
-                        status=status.HTTP_200_OK
-                    )
                 else:
                     return Response(
                         {'error': 'Invalid action'},
@@ -1446,6 +1441,10 @@ class OrderItemViewSet(viewsets.ViewSet):
                 order.status = 'approved'
                 order.save()
 
+            else:
+                order.status = 'partially_approved'
+                order.save()
+
             return Response({"message": "Order item approved successfully"}, status=status.HTTP_200_OK)
 
 
@@ -1471,48 +1470,81 @@ class OrderItemViewSet(viewsets.ViewSet):
 
             # Save images linked to this order item
             for image in pickup_images:
-                Image.objects.create(order_item=order_item, image=image, is_pickup=True)
+                Image.objects.create(order_item=order_item.order, equipment_id=order_item.item.id, image=image, is_pickup=True)
 
             order_item.identity_document_type = identity_document_type
             order_item.status = 'pickup'
             order_item.save()
 
             return Response({"message": "Pickup initiated successfully"}, status=status.HTTP_200_OK)
+        
+    @action(detail=True, methods=['post'])
+    def initiate_return(self, request, pk=None):
+        """
+        Lessee initiates return by providing identity document type.
+        """
+        with transaction.atomic():  # Ensures atomicity
+            order_item = get_object_or_404(OrderItem, id=pk)
 
+            if order_item.status != 'rented':
+                return Response({"error": "Order item must be rented to initiate return"}, status=status.HTTP_400_BAD_REQUEST)
 
+            order_item.status = 'return'
+            order_item.save()
+
+            return Response({"message": "Return initiated successfully"}, status=status.HTTP_200_OK)
+        
     @action(detail=True, methods=['post'])
     def confirm_pickup(self, request, pk=None):
         """
-        Lessor confirms pickup for a specific OrderItem and stores the captured ID document.
+        Lessor confirms pickup for all order items in the same order that are in the 'pickup_initiated' stage.
+        Stores the captured ID document for each order item.
         """
         with transaction.atomic():  # Ensures atomicity
+            # Get the specific order item to identify the parent order
             order_item = self.get_order_item(pk, request.user)
-
-            if order_item.status != 'pickup':
-                return Response({"error": "Pickup must be initiated first"}, status=status.HTTP_400_BAD_REQUEST)
+            order = order_item.order  # Assuming order_item has a ForeignKey to Order
 
             # Check if an ID document image was uploaded
             id_image = request.FILES.get("id_image")
             if not id_image:
                 return Response({"error": "ID document image is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Save the image to the order item
-            order_item.identity_document_image.save(id_image.name, id_image, save=True)
+            # Get all order items in the same order that are in 'pickup_initiated' status
+            order_items = order.order_items.filter(status='pickup')  # Assuming order_items is the related name
 
-            # Confirm the image is set
-            if not order_item.identity_document_image:
-                return Response({"error": "Failed to save ID document image"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            if not order_items.exists():
+                return Response({"error": "No order items are in the pickup initiated stage"}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Update order item status
-            order_item.status = 'rented'
-            order_item.save()
+            # Process each order item
+            updated_items = []
+            for item in order_items:
+                # Save the ID document image for each order item
+                item.identity_document_image.save(id_image.name, id_image, save=False)
+                if not item.identity_document_image:
+                    return Response({"error": f"Failed to save ID document image for order item {item.id}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                
+                # Update status to 'rented'
+                item.status = 'rented'
+                item.save()
+                updated_items.append({
+                    "order_item_id": item.id,
+                    "image_url": item.identity_document_image.url
+                })
+
+            # Check if all items in the order are now 'rented' to update the order status
+            all_rented = order.order_items.all().count() == order.order_items.filter(status='rented').count()
+            if all_rented:
+                order.status = 'rented'
+            else:
+                order.status = 'partially_rented'
+            order.save()
 
             return Response({
-                "message": "Pickup confirmed successfully",
-                "image_url": order_item.identity_document_image.url
+                "message": "Pickup confirmed successfully for all eligible order items",
+                "updated_items": updated_items
             }, status=status.HTTP_200_OK)
-
-
+        
     @action(detail=True, methods=['post'])
     def confirm_return(self, request, pk=None):
         """
@@ -1521,8 +1553,8 @@ class OrderItemViewSet(viewsets.ViewSet):
         with transaction.atomic():  # Ensures atomicity
             order_item = self.get_order_item(pk, request.user)
 
-            if order_item.status != 'rented':
-                return Response({"error": "Item must be rented first"}, status=status.HTTP_400_BAD_REQUEST)
+            if order_item.status not in ['return']:
+                return Response({"error": "Item return must be initiated first"}, status=status.HTTP_400_BAD_REQUEST)
 
             # Get return condition and complaint details from request with safe default values
             return_condition = request.data.get("returnCondition", "").strip().lower() if request.data.get("returnCondition") else "good"
@@ -1550,6 +1582,15 @@ class OrderItemViewSet(viewsets.ViewSet):
                 order_item.return_item_condition_custom = complaint_text
                 order_item.status = "disputed"
                 order_item.save()
+                
+                # Update order status based on all items
+                order = order_item.order
+                all_items_status = order.order_items.values_list('status', flat=True)
+                if all(status in ['completed', 'disputed'] for status in all_items_status):
+                    order.status = 'returned'
+                else:
+                    order.status = 'partially_returned'
+                order.save()
 
                 return Response({
                     "message": "Item return recorded as damaged. Complaint noted.",
@@ -1557,10 +1598,19 @@ class OrderItemViewSet(viewsets.ViewSet):
                     "complaint": complaint_text,
                     "status": "disputed",
                 }, status=status.HTTP_200_OK)
-
-            # If condition is good, complete the order
+            
+            # If return condition is good, mark as completed
             order_item.status = "completed"
             order_item.save()
+
+            # Update order status based on all items
+            order = order_item.order
+            all_items_status = order.order_items.values_list('status', flat=True)
+            if all(status in ['completed', 'disputed'] for status in all_items_status):
+                order.status = 'returned'
+            else:
+                order.status = 'partially_returned'
+            order.save()
 
             return Response({
                 "message": "Item return confirmed successfully.",

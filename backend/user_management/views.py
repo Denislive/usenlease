@@ -23,6 +23,9 @@ from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.utils.encoding import force_str
 from django.contrib.auth.tokens import default_token_generator
 
+from django.db.models.functions import TruncMonth
+
+
 # Third-Party Imports
 from rest_framework import status, serializers, permissions, viewsets, response
 from rest_framework.decorators import action
@@ -280,9 +283,6 @@ class ContactViewSet(viewsets.ViewSet):
 class ReportViewSet(viewsets.ViewSet):
     """
     A ViewSet that generates reports for lessor and lessee users.
-
-    Methods:
-        list: Generates a report based on the user's role (lessor or lessee).
     """
     authentication_classes = [JWTAuthenticationFromCookie]
     permission_classes = [IsAuthenticated]
@@ -290,12 +290,6 @@ class ReportViewSet(viewsets.ViewSet):
     def list(self, request):
         """
         Generates a report based on the user's role (lessor or lessee).
-
-        Args:
-            request (HttpRequest): The request object.
-
-        Returns:
-            Response: A JSON response containing the report data.
         """
         user = request.user
 
@@ -304,8 +298,12 @@ class ReportViewSet(viewsets.ViewSet):
 
         report_data = {}
 
+        # Get the last 6 months for monthly trends
+        end_date = timezone.now()
+        start_date = end_date - timedelta(days=180)
+
         if user.role == 'lessor':
-            # Collect data for lessor
+            # Existing lessor data
             total_equipments = Equipment.objects.filter(owner=user).count()
             total_orders = Order.objects.filter(cart__user=user).count()
             total_rented_items = Order.objects.filter(cart__user=user, status='rented').count()
@@ -318,6 +316,22 @@ class ReportViewSet(viewsets.ViewSet):
             average_rating = Review.objects.filter(equipment__owner=user).aggregate(Avg('rating'))['rating__avg'] or 0.0
             total_equipment_types = Equipment.objects.filter(owner=user).values('category').distinct().count()
 
+            # Monthly trends for orders and revenue
+            monthly_orders = Order.objects.filter(
+                cart__user=user,
+                date_created__range=[start_date, end_date]
+            ).annotate(
+                month=TruncMonth('date_created')
+            ).values('month').annotate(
+                count=Count('id'),
+                revenue=Sum('order_total_price')
+            ).order_by('month')
+
+            # Top 5 equipment by rental count
+            top_equipments = Equipment.objects.filter(owner=user).annotate(
+                rental_count=Count('orderitem')
+            ).order_by('-rental_count')[:5].values('name', 'rental_count', 'category')
+
             report_data = {
                 'total_equipments': total_equipments,
                 'total_orders': total_orders,
@@ -326,14 +340,22 @@ class ReportViewSet(viewsets.ViewSet):
                 'total_reviews': total_reviews,
                 'total_available_equipment': total_available_equipment,
                 'total_rented_equipment': total_rented_equipment,
-                'average_rating': average_rating,
+                'average_rating': round(average_rating, 2),
                 'total_canceled_orders': total_canceled_orders,
                 'total_completed_orders': total_completed_orders,
                 'total_equipment_types': total_equipment_types,
+                'monthly_trends': [
+                    {
+                        'month': item['month'].strftime('%b %Y') if item['month'] else 'Unknown',
+                        'orders': item['count'],
+                        'revenue': float(item['revenue'] or 0.0)
+                    } for item in monthly_orders
+                ],
+                'top_equipments': list(top_equipments),
             }
 
         elif user.role == 'lessee':
-            # Collect data for lessee
+            # Existing lessee data
             total_orders = Order.objects.filter(user=user).count()
             total_rented_items = Order.objects.filter(user=user, status='rented').count()
             total_cart_items = CartItem.objects.filter(cart__user=user).count()
@@ -344,16 +366,47 @@ class ReportViewSet(viewsets.ViewSet):
             total_spending = Order.objects.filter(user=user).aggregate(Sum('order_total_price'))['order_total_price__sum'] or 0.0
             total_equipment_types_rented = OrderItem.objects.filter(order__user=user).values('item__category').distinct().count()
 
+            # Monthly trends for orders and spending
+            monthly_orders = Order.objects.filter(
+                user=user,
+                date_created__range=[start_date, end_date]
+            ).annotate(
+                month=TruncMonth('date_created')
+            ).values('month').annotate(
+                count=Count('id'),
+                spending=Sum('order_total_price')
+            ).order_by('month')
+
+            # Top 5 rented equipment categories
+            top_categories = OrderItem.objects.filter(order__user=user).values(
+                'item__category'
+            ).annotate(
+                rental_count=Count('item__category')
+            ).order_by('-rental_count')[:5]
+
             report_data = {
                 'total_orders': total_orders,
                 'total_rented_items': total_rented_items,
                 'total_cart_items': total_cart_items,
                 'total_reviews': total_reviews,
-                'average_rating_given': average_rating_given,
+                'average_rating_given': round(average_rating_given, 2),
                 'total_canceled_orders': total_canceled_orders,
                 'total_completed_orders': total_completed_orders,
                 'total_spending': total_spending,
                 'total_equipment_types_rented': total_equipment_types_rented,
+                'monthly_trends': [
+                    {
+                        'month': item['month'].strftime('%b %Y') if item['month'] else 'Unknown',
+                        'orders': item['count'],
+                        'spending': float(item['spending'] or 0.0)
+                    } for item in monthly_orders
+                ],
+                'top_categories': [
+                    {
+                        'category': item['item__category'],
+                        'rental_count': item['rental_count']
+                    } for item in top_categories
+                ],
             }
 
         return Response(report_data)
