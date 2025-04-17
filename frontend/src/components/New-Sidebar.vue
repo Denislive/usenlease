@@ -30,18 +30,30 @@
   </template>
   
   <script setup>
-  import { ref, onMounted, onUnmounted } from 'vue';
+  import { ref, computed, onMounted, onUnmounted } from 'vue';
+  import { useAuthStore } from '@/store/auth'; // Adjust path based on your setup
   
   const isOpen = ref(false);
+  const userStore = useAuthStore(); // Assuming you're using Pinia
+  const user = computed(() => userStore.user); // or however you access user data
   
-  const menuItems = [
-    { name: 'My Account', path: '/new-profile/account', icon: 'pi-user' },
-    { name: 'Orders', path: '/new-profile/orders', icon: 'pi-shopping-cart' },
-    { name: 'Items', path: '/new-profile/items', icon: 'pi-box' },
-    { name: 'Chats', path: '/new-profile/chats', icon: 'pi-comments' },
-    { name: 'Statistics', path: '/new-profile/statistics', icon: 'pi-chart-bar' },
-    { name: 'Settings', path: '/new-profile/settings', icon: 'pi-cog' },
-  ];
+  const menuItems = computed(() => {
+    const baseItems = [
+      { name: 'My Account', path: '/new-profile/account', icon: 'pi-user' },
+      { name: 'Chats', path: '/new-profile/chats', icon: 'pi-comments' },
+      { name: 'Statistics', path: '/new-profile/statistics', icon: 'pi-chart-bar' },
+      { name: 'Settings', path: '/new-profile/settings', icon: 'pi-cog' },
+    ];
+  
+    const roleItem =
+      user.value?.role === 'lessee'
+        ? { name: 'Orders', path: '/new-profile/orders', icon: 'pi-shopping-cart' }
+        : user.value?.role === 'lessor'
+        ? { name: 'Items', path: '/new-profile/items', icon: 'pi-box' }
+        : null;
+  
+    return roleItem ? [baseItems[0], roleItem, ...baseItems.slice(1)] : baseItems;
+  });
   
   const toggleSidebar = () => {
     isOpen.value = !isOpen.value;
