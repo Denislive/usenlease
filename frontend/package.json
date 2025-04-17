@@ -13,8 +13,6 @@
     "node": "18.x"
   },
   "dependencies": {
-    "express": "^4.17.1",
-    "chart.js": "^4.x.x",
     "@stripe/react-stripe-js": "^3.0.0",
     "@stripe/stripe-js": "^5.2.0",
     "@vue-stripe/vue-stripe": "^4.5.0",
@@ -22,6 +20,7 @@
     "crypto-js": "^4.2.0",
     "date-fns": "^4.1.0",
     "dotenv": "^16.4.7",
+    "express": "^4.17.1",
     "js-cookie": "^3.0.5",
     "jwt-decode": "^4.0.0",
     "lodash": "^4.17.21",
@@ -38,6 +37,6 @@
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.13",
-    "vite": "^5.4.8"
+    "vite": "^6.2.4"
   }
 }
