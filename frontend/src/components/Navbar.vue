@@ -126,7 +126,7 @@
               :aria-expanded="showDropdown"
             >
             <img 
-  :src="`http://127.0.0.1:800/${authStore.user?.image}`" 
+  :src="`${authStore.user?.image}`" 
   :alt="authStore.user?.first_name ? authStore.user?.first_name.substring(0, 2).toUpperCase() : 'User'" 
   class="w-10 h-10 rounded-full border-2 border-gray-300 object-cover user-avatar"
   width="40"

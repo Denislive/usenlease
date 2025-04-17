@@ -11,8 +11,8 @@
         <div class="bg-white rounded-2xl shadow-lg p-6 flex flex-col sm:flex-row items-center gap-6">
           <div class="relative">
             <img
-              :src="`${api_base_url}/${authStore.user?.image || 'default-profile.png'}`"
-              alt="Profile"
+              :src="`${authStore.user?.image || './assets/images/default-profile.jpg'}`"
+              :alt="authStore.user?.first_name ? authStore.user?.first_name.substring(0, 2).toUpperCase() : 'User'" 
               class="w-20 h-20 rounded-full border-4 border-amber-200 object-cover"
             />
             <button
