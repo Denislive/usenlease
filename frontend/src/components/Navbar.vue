@@ -95,7 +95,7 @@
               <div v-show="showDropdown"
                 class="absolute right-0 mt-2 w-48 bg-[#1c1c1c] rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 py-1 z-10"
                 role="menu" aria-orientation="vertical" aria-labelledby="user-menu">
-                <RouterLink to="/profile"
+                <RouterLink to="/new-profile"
                   class="block px-4 py-2 text-white hover:bg-gray-800 focus:bg-gray-800 focus:outline-none"
                   role="menuitem" @click="showDropdown = false">
                   Profile
@@ -256,7 +256,6 @@ const showDropdownWithDelay = (show) => {
 const handleLogout = async () => {
   try {
     await authStore.logout();
-    router.push('/');
   } catch (error) {
     console.error('Logout failed:', error);
     showNotification({

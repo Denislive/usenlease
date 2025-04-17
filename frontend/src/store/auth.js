@@ -485,17 +485,13 @@ export const useAuthStore = defineStore('auth', () => {
         // Clear user data
         user.value = null; // Reactive state for the user
         Cookies.remove('user'); // Remove user cookie
+        // Notify user of success
+        showNotification('Logout Successful', 'You have been logged out.', 'success');
         // Redirect to home page
         router.push('/');
 
         // Clear cart data
         cartStore.clearCart();
-
-        // Notify user of success
-        showNotification('Logout Successful', 'You have been logged out.', 'success');
-
-        // Redirect to home page
-        router.push('/');
       } else {
       }
     } catch (error) {
