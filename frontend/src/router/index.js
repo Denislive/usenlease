@@ -22,6 +22,13 @@ import PasswordResetRequest from '@/views/PasswordResetRequest.vue';
 import PasswordResetView from '@/views/PasswordResetView.vue';
 import PrivacyCookieView from '@/views/PrivacyCookieView.vue';
 import TermsConditionsView from '@/views/TermsConditionsView.vue';
+import NewProfile from '@/views/NewProfile.vue';
+import Account from '@/views/Account.vue';
+import Orders from '@/views/Orders.vue';
+import Items from '@/views/Items.vue';
+import Chats from '@/views/Chats.vue';
+import Statistics from '@/views/Statistics.vue';
+import Settings from '@/views/Settings.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -30,6 +37,19 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: HomeView,
+    },
+    {
+      path: '/new-profile',
+      component: NewProfile,
+      children: [
+        { path: 'account', name: 'Account', component: Account },
+        { path: 'orders', name: 'Orders', component: Orders },
+        { path: 'items', name: 'Items', component: Items },
+        { path: 'chats', name: 'Chats', component: Chats },
+        { path: 'statistics', name: 'Statistics', component: Statistics },
+        { path: 'settings', name: 'Settings', component: Settings },
+        { path: '', redirect: 'new-profile/account' }, // Default to account
+      ],
     },
     {
       path: '/about',
