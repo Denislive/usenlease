@@ -45,10 +45,13 @@ export const useEquipmentsStore = defineStore('equipmentStore', () => {
   const CACHE_TTL = 5 * 60 * 1000;
 
   // Utility Functions
-  const isCacheValid = (key) => {
+  const isCacheValid = (key, maxAge = 1000 * 60 * 5) => { // 5 minutes default
     const timestamp = cache.value.timestamp[key];
-    return timestamp && Date.now() - timestamp < CACHE_TTL;
+    const valid = timestamp && (Date.now() - timestamp < maxAge);
+  
+    return valid;
   };
+  
 
   const truncateText = (text, length) =>
     text.length > length ? `${text.slice(0, length)}...` : text;
@@ -300,32 +303,38 @@ export const useEquipmentsStore = defineStore('equipmentStore', () => {
     });
   };
 
+
   const fetchCategories = async () => {
     const cacheKey = 'categories';
+ 
     if (categories.value.length > 0 || (cache.value.categories && isCacheValid(cacheKey))) {
       if (cache.value.categories) {
         categories.value = cache.value.categories;
       }
       return;
     }
-
+  
+  
     return withSingleRequest(cacheKey, async () => {
       isLoading.value = true;
       error.value = null;
-
+  
       try {
         const response = await axios.get(`${api_base_url}/api/categories/`, { withCredentials: true });
+  
         categories.value = response.data || [];
         cache.value.categories = response.data || [];
         cache.value.timestamp[cacheKey] = Date.now();
+  
       } catch (err) {
+        console.error('[fetchCategories] Error fetching categories:', err);
         showNotification('Error', `Fetching categories failed: ${err.response?.data || err.message}`, 'error');
       } finally {
         isLoading.value = false;
       }
     });
   };
-
+  
   // Pagination Actions
   const fetchNextPage = () => {
     if (nextPageUrl.value) {
