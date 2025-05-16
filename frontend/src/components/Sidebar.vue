@@ -9,12 +9,17 @@ const error = ref(null);
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
 const fetchCategories = async () => {
+  // Avoid fetching if categories are already loaded
+  if (categories.value.length > 0) {
+    return;
+  }
+
   try {
     loading.value = true;
     error.value = null;
 
     const response = await axios.get(`${apiBaseUrl}/api/root-categories/`, {
-      withCredentials: true // Include credentials if needed
+      withCredentials: true
     });
 
     if (response.status !== 200) {
@@ -23,9 +28,9 @@ const fetchCategories = async () => {
 
     categories.value = response.data.map(category => ({
       ...category,
-      // Ensure subcategories is always an array
       subcategories: Array.isArray(category.subcategories) ? category.subcategories : []
     }));
+
 
   } catch (err) {
     console.error('Error fetching categories:', err);
