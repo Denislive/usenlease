@@ -2,8 +2,10 @@
 import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
 import { RouterLink } from 'vue-router';
-
-const categories = ref([]);
+import { useEquipmentsStore } from '@/store/equipments';
+import { eq } from 'lodash';
+const equipmentsStore = useEquipmentsStore();
+const categories = equipmentsStore.categories;
 const loading = ref(true);
 const error = ref(null);
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
