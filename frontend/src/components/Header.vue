@@ -1,5 +1,5 @@
 <template>
-    <header class="sticky top-0 z-50 bg-white shadow-sm p-3 sm:p-4 flex justify-between items-center border-b border-gray-100">
+    <header class="sticky top-0 z-50 bg-white shadow-sm p-3 sm:p-4 flex justify-between items-center border-b border-gray-100 z-0">
       <div class="flex items-center space-x-4">
         <!-- Mobile menu button -->
         <button @click="toggleSidebar" class="md:hidden text-gray-600 hover:text-gray-900">
