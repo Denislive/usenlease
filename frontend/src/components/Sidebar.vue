@@ -4,40 +4,12 @@ import axios from 'axios';
 import { RouterLink } from 'vue-router';
 import { useEquipmentsStore } from '@/store/equipments';
 const store = useEquipmentsStore();
-const categories = store.categories;
 const loading = ref(true);
 const error = ref(null);
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
-// const fetchCategories = async () => {
-//   try {
-//     loading.value = true;
-//     error.value = null;
-
-//     const response = await axios.get(`${apiBaseUrl}/api/root-categories/`, {
-//       withCredentials: true // Include credentials if needed
-//     });
-
-//     if (response.status !== 200) {
-//       throw new Error('Failed to fetch categories');
-//     }
-
-//     categories.value = response.data.map(category => ({
-//       ...category,
-//       // Ensure subcategories is always an array
-//       subcategories: Array.isArray(category.subcategories) ? category.subcategories : []
-//     }));
-
-//   } catch (err) {
-//     console.error('Error fetching categories:', err);
-//     error.value = err.response?.data?.message || 'Failed to fetch categories. Please try again later.';
-//   } finally {
-//     loading.value = false;
-//   }
-// };
-
 // Computed property for total categories count
-const totalCategories = computed(() => categories.value.length);
+const totalCategories = computed(() => store.categories.length);
 
 // Calculate ad count with proper fallbacks
 const getAdCount = (category) => {
@@ -57,9 +29,14 @@ const getAdCount = (category) => {
 // Fetch categories on mount with error handling
 onMounted(async () => {
   try {
+    loading.value = true;
+    error.value = null;
     await store.fetchCategories();
   } catch (err) {
     console.error('Component mount error:', err);
+    error.value = err.response?.data?.message || 'Failed to fetch categories. Please try again later.';
+  } finally {
+    loading.value = false;
   }
 });
 </script>
@@ -84,7 +61,7 @@ onMounted(async () => {
         </svg>
         {{ error }}
       </p>
-      <button @click="fetchCategories" class="mt-2 text-xs text-blue-600 hover:text-blue-800 focus:outline-none">
+      <button @click="store.fetchCategories" class="mt-2 text-xs text-blue-600 hover:text-blue-800 focus:outline-none">
         Retry
       </button>
     </div>
@@ -94,7 +71,7 @@ onMounted(async () => {
       <div v-if="totalCategories > 0" class="categories-container">
         <h2 class="sr-only">Categories</h2>
         <ul class="categories-list space-y-2">
-          <li v-for="category in categories" :key="`category-${category.id}`" class="category-item group">
+          <li v-for="category in store.categories" :key="`category-${category.id}`" class="category-item group">
             <RouterLink :to="{ name: 'category-details', query: { cat: category.slug } }" class="category-link"
               :aria-label="`Browse ${category.name} category (${getAdCount(category)} items)`">
               <div class="flex items-center">
