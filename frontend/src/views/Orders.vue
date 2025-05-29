@@ -3,7 +3,7 @@
     <!-- Header Section -->
     <div
       class="max-w-4xl mx-auto bg-gradient-to-r from-amber-400 to-amber-600 text-[#1c1c1c] rounded-2xl shadow-xl p-4 sm:p-6 lg:p-8 text-center">
-      <h2 class="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold tracking-wide">Item Manager</h2>
+      <h2 class="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold tracking-wide">Orders Manager</h2>
       <p class="mt-2 text-xs sm:text-sm md:text-base text-[#1c1c1c]/80">Effortlessly manage your items and track rentals.</p>
     </div>
 
@@ -66,7 +66,7 @@
               <div v-for="item in order.order_items" :key="item.id"
                 class="flex flex-col sm:flex-row items-center justify-between py-2 border-b last:border-b-0">
                 <div class="flex items-center flex-col sm:flex-row text-center sm:text-left">
-                  <img v-if="item.item.images?.length" :src="apiBaseUrl + item.item.images[0].image_url"
+                  <img v-if="item.item.images?.length" :src="item.item.images[0].image_url"
                     alt="Item image" class="w-8 h-8 sm:w-10 lg:w-12 sm:h-10 lg:h-12 rounded-full object-cover mb-2 sm:mb-0 sm:mr-2" />
                   <span v-else class="text-gray-500 mb-2 sm:mb-0 sm:mr-2 text-xs sm:text-sm">No image</span>
                   <div>
