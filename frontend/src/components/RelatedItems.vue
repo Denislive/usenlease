@@ -23,7 +23,7 @@
           <!-- Image or Placeholder -->
           <img
             v-if="equipment.images && equipment.images.length > 0"
-            :src="`http://127.0.0.1:8000/${equipment.images[0].image_url}`"
+            :src="equipment.images[0].image_url"
             :alt="`Image of ${equipment.name}`"
             class="w-full h-32 object-cover rounded-t-md"
             loading="lazy"
@@ -70,7 +70,7 @@
             <!-- Image or Placeholder -->
             <img
               v-if="equipment.images && equipment.images.length > 0"
-              :src="`http://127.0.0.1:8000/${equipment.images[0].image_url}`"
+              :src="equipment.images[0].image_url"
               :alt="equipment.name"
               class="w-full h-32 lg:h-48 object-cover rounded-t-md"
               loading="lazy"
