@@ -7,7 +7,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
-        
+  
         <!-- Page title -->
         <h1 class="text-lg sm:text-xl font-semibold text-gray-800 capitalize">
           {{ formattedRouteName }}
@@ -34,7 +34,7 @@
   </template>
   
   <script setup>
-  import { computed } from 'vue';
+  import { computed, watch } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
   import { useAuthStore } from '../store/auth';
   
@@ -42,19 +42,26 @@
   const router = useRouter();
   const authStore = useAuthStore();
   
+  // Ensure header updates correctly when navigating
   const formattedRouteName = computed(() => {
-    const name = route.matched.find((r) => r.name)?.name || 'Dashboard';
-    // Convert camelCase to space-separated words
-    return name.replace(/([A-Z])/g, ' $1').trim();
+    return route.name ? route.name.replace(/([A-Z])/g, ' $1').trim() : 'Dashboard';
   });
   
+  // Watch for route changes and log them (for debugging)
+  watch(() => route.name, (newName) => {
+    console.log('Route changed to:', newName);
+  });
+  
+  // Sidebar toggle event
   const toggleSidebar = () => {
     const event = new CustomEvent('toggle-sidebar');
     window.dispatchEvent(event);
   };
   
+  // Logout functionality
   const logout = () => {
     authStore.logout();
     router.push('/login');
   };
   </script>
+  
