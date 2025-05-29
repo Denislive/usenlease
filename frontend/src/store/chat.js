@@ -205,9 +205,18 @@ const sendMessageAndReset = async () => {
       } catch (error) {
         showNotification(
           "Chat Found!",
-          `Info: ${error.response?.data || error.message}`,
+          `Info: ${
+            error?.response?.data?.message || 
+            error?.response?.data?.error || 
+            error?.response?.data || 
+            error?.message || 
+            error?.statusText || 
+            error?.toString?.() || 
+            "An unknown error occurred."
+          }`,
           "Info"
         );
+        
       }
     } else {
       showNotification(

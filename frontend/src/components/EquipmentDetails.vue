@@ -37,7 +37,7 @@
         <p class="text-blue-500">{{ `${equipment.available_quantity} Available from
           ${formatDate(nextAvailableDate)}` }}</p>
       </div>
-      
+
 
       <p class="availability mt-2 text-lg flex items-center">
         <span v-if="equipment.is_available" class="relative  text-green px-6 py-3 
@@ -113,18 +113,20 @@
 
     <!-- Talk to Owner -->
     <RouterLink v-if="authStore.isAuthenticated && props.equipment.owner !== authStore.user.id"
-      :to="{ path: '/profile', query: { section: 'chats' } }" @click="createChat"
-      class="block mt-4 text-center text-blue-500 font-medium">
+      :to="{ path: '/new-profile/chats' }" @click="createChat"
+      class="flex items-center justify-center gap-2 mt-4 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors duration-200 font-medium">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+      </svg>
       Talk to Owner
     </RouterLink>
+    
   </div>
 </template>
 
 
 <style>
-
-
-
 /* 🌟 Glowing Gold Borders */
 .border-gold-premium {
   border: 2px solid green;
@@ -145,6 +147,7 @@
   border-radius: 8px;
   box-shadow: 0 4px 16px rgba(255, 215, 0, 0.1);
 }
+
 .btn-noir-gold:hover {
   background: linear-gradient(90deg, #E6C200, #FFD700);
   box-shadow: 0 6px 24px rgba(255, 215, 0, 0.7);
@@ -248,7 +251,7 @@ const bookedDates = computed(() => {
 
 const nextAvailableDate = computed(() => {
   if (!props.equipment.booked_dates?.length) return today;
-  
+
   const lastBookedDate = props.equipment.booked_dates.reduce((latest, range) => {
     const endDate = new Date(range.end_date);
     return endDate > latest ? endDate : latest;
@@ -259,7 +262,7 @@ const nextAvailableDate = computed(() => {
 
 const availableForPartialBooking = computed(() => {
   if (!props.equipment.booked_dates?.length) return props.equipment.available_quantity;
-  
+
   let totalBookedCount = totalBooked.value;
   props.equipment.booked_dates.forEach((range) => {
     const bookedStart = new Date(range.start_date);
@@ -275,7 +278,7 @@ const availableForPartialBooking = computed(() => {
 
 const partialAvailabilityMessage = computed(() => {
   if (!props.equipment.booked_dates?.length || props.equipment.booked_dates.length < 2) return '';
-  
+
   const availablePeriods = [];
   for (let i = 0; i < props.equipment.booked_dates.length - 1; i++) {
     const currentEnd = new Date(props.equipment.booked_dates[i].end_date);
@@ -299,10 +302,10 @@ const createChat = async () => {
 
 const formatDate = (date) => {
   if (!date) return "Unavailable";
-  return new Date(date).toLocaleDateString(undefined, { 
-    year: "numeric", 
-    month: "short", 
-    day: "numeric" 
+  return new Date(date).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric"
   });
 };
 
@@ -316,8 +319,8 @@ const fetchTotalBookedItems = async () => {
     items_data.value = response.data.booked_dates;
   } catch (error) {
     showNotification(
-      'Failed to fetch booked items', 
-      `Error: ${error.response?.data.error || error.response?.data.detail || error.message}`, 
+      'Failed to fetch booked items',
+      `Error: ${error.response?.data.error || error.response?.data.detail || error.message}`,
       'error'
     );
   }
@@ -368,8 +371,8 @@ const submitBooking = async () => {
       showNotification('Add to Cart', 'Item added to cart!', 'success');
     } catch (error) {
       showNotification(
-        'Failed adding to Cart', 
-        `Error: ${error.response?.data.error || error.response?.data.detail || 'Unknown error'}`, 
+        'Failed adding to Cart',
+        `Error: ${error.response?.data.error || error.response?.data.detail || 'Unknown error'}`,
         'error'
       );
     }
