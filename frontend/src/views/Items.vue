@@ -1,356 +1,357 @@
-  <template>
-    <div class="min-h-screen bg-gray-100 py-12 font-sans">
-      <div class="max-w-4xl mx-auto space-y-6">
-        <!-- Header Section -->
-        <div class="bg-gradient-to-r from-amber-400 to-amber-600 text-[#1c1c1c] rounded-2xl shadow-xl p-8 text-center">
-          <h2 class="text-4xl font-extrabold tracking-wide">Item Manager</h2>
-          <p class="mt-2 text-[#1c1c1c]/80">Effortlessly manage your items and track rentals.</p>
-        </div>
+Sure, here's the updated template with improved responsiveness for small devices:
 
-        <!-- Loading State -->
-        <div v-if="loading" class="text-center py-8">
-          <i class="pi pi-spin pi-spinner text-4xl text-[#ffc107]"></i>
-          <p class="mt-2 text-[#1c1c1c]">Loading items and rentals...</p>
-        </div>
+```vue
+<template>
+  <div class="min-h-screen bg-gray-100 py-12 font-sans">
+    <div class="max-w-4xl mx-auto space-y-6">
+      <!-- Header Section -->
+      <div class="bg-gradient-to-r from-amber-400 to-amber-600 text-[#1c1c1c] rounded-2xl shadow-xl p-8 text-center">
+        <h2 class="text-3xl md:text-4xl font-extrabold tracking-wide">Item Manager</h2>
+        <p class="mt-2 text-[#1c1c1c]/80">Effortlessly manage your items and track rentals.</p>
+      </div>
 
-        <!-- Main Content -->
-        <div v-else class="space-y-16">
-          <!-- Equipment Gallery -->
-          <section>
-            <h2 class="text-3xl font-bold text-[#1c1c1c] mb-6 flex items-center">
-              <i class="pi pi-box mr-2 text-[#ffc107]"></i> Your Items
-            </h2>
-            <div v-if="store.userEquipments.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div v-for="equipment in store.userEquipments" :key="equipment.id" @click="goToDetail(equipment.id)"
-                class="bg-white rounded-lg shadow-lg overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-2xl cursor-pointer">
-                <div class="relative h-48">
-                  <!-- Image -->
-                  <img v-if="equipment.images?.length > 0" :src="`${equipment.images[0].image_url}`"
-                    :alt="equipment.name || 'Equipment'" class="w-full h-full object-cover" />
-                  <img v-else src="../assets/images/placeholder.png" alt="No image"
-                    class="w-full h-full object-cover opacity-70" />
-                  <!-- Status Badge -->
-                  <span :class="equipment.is_available ? 'bg-[#ffc107]' : 'bg-gray-500'"
-                    class="absolute top-0 left-0 px-2 py-1 rounded-md text-xs font-bold text-[#1c1c1c] flex items-center">
-                    <i :class="equipment.is_available ? 'pi pi-check' : 'pi pi-times'" class="mr-1"></i>
-                    {{ equipment.is_available ? 'Available' : 'Unavailable' }}
-                  </span>
-                  <!-- Edit Button -->
-                  <button v-if="!isRented(equipment.id)"
-                    @click.stop="openEditModal(equipment)"
-                    class="absolute bottom-3 right-3 bg-[#1c1c1c] text-[#ffc107] rounded-full h-9 w-9 flex items-center justify-center hover:bg-[#ffc107] hover:text-[#1c1c1c] transition">
-                    <i class="pi pi-pencil"></i>
-                  </button>
-                </div>
-                <div class="p-4">
-                  <h3 class="text-lg font-semibold text-[#1c1c1c] truncate">{{ equipment.name || 'Unnamed' }}</h3>
-                  <p class="text-[#ffc107] text-sm">${{ equipment.hourly_rate || 0 }}/day</p>
-                </div>
+      <!-- Loading State -->
+      <div v-if="loading" class="text-center py-8">
+        <i class="pi pi-spin pi-spinner text-4xl text-[#ffc107]"></i>
+        <p class="mt-2 text-[#1c1c1c]">Loading items and rentals...</p>
+      </div>
+
+      <!-- Main Content -->
+      <div v-else class="space-y-16">
+        <!-- Equipment Gallery -->
+        <section>
+          <h2 class="text-2xl md:text-3xl font-bold text-[#1c1c1c] mb-6 flex items-center">
+            <i class="pi pi-box mr-2 text-[#ffc107]"></i> Your Items
+          </h2>
+          <div v-if="store.userEquipments.length > 0" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div v-for="equipment in store.userEquipments" :key="equipment.id" @click="goToDetail(equipment.id)"
+              class="bg-white rounded-lg shadow-lg overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-2xl cursor-pointer">
+              <div class="relative h-48">
+                <!-- Image -->
+                <img v-if="equipment.images?.length > 0" :src="`${equipment.images[0].image_url}`"
+                  :alt="equipment.name || 'Equipment'" class="w-full h-full object-cover" />
+                <img v-else src="../assets/images/placeholder.png" alt="No image"
+                  class="w-full h-full object-cover opacity-70" />
+                <!-- Status Badge -->
+                <span :class="equipment.is_available ? 'bg-[#ffc107]' : 'bg-gray-500'"
+                  class="absolute top-0 left-0 px-2 py-1 rounded-md text-xs font-bold text-[#1c1c1c] flex items-center">
+                  <i :class="equipment.is_available ? 'pi pi-check' : 'pi pi-times'" class="mr-1"></i>
+                  {{ equipment.is_available ? 'Available' : 'Unavailable' }}
+                </span>
+                <!-- Edit Button -->
+                <button v-if="!isRented(equipment.id)"
+                  @click.stop="openEditModal(equipment)"
+                  class="absolute bottom-3 right-3 bg-[#1c1c1c] text-[#ffc107] rounded-full h-9 w-9 flex items-center justify-center hover:bg-[#ffc107] hover:text-[#1c1c1c] transition">
+                  <i class="pi pi-pencil"></i>
+                </button>
               </div>
-            </div>
-            <div v-else class="bg-white rounded-lg shadow-lg p-8 text-center">
-              <i class="pi pi-box text-5xl text-[#ffc107] mb-4"></i>
-              <p class="text-lg text-[#1c1c1c]">No Item listed yet.</p>
-              <RouterLink :to="{ name: 'list-item' }"
-                class="inline-block mt-4 px-6 py-2 bg-[#ffc107] text-[#1c1c1c] rounded-md font-semibold hover:bg-[#e0a800] transition">
-                List Item
-              </RouterLink>
-            </div>
-          </section>
-
-          <!-- Rental Overview -->
-          <section>
-            <h2 class="text-3xl font-bold text-[#1c1c1c] mb-6 flex items-center">
-              <i class="pi pi-calendar mr-2 text-[#ffc107]"></i> Rental Overview
-            </h2>
-            <div class="space-y-12">
-              <!-- Currently Rented -->
-              <div class="bg-white rounded-lg shadow-md p-6">
-                <h3 class="text-xl font-semibold text-[#1c1c1c] mb-4">Currently Rented</h3>
-                <div class="overflow-x-auto">
-                  <table class="w-full text-left">
-                    <thead>
-                      <tr class="bg-[#1c1c1c] text-[#ffc107] text-sm uppercase">
-                        <th class="py-3 px-4">Item</th>
-                        <th class="py-3 px-4 text-center">Duration</th>
-                        <th class="py-3 px-4 text-center">Total</th>
-                        <th class="py-3 px-4 text-center">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody class="text-gray-700">
-                      <tr v-if="rentedItems.length === 0">
-                        <td colspan="4" class="py-4 text-center text-gray-500">No rented items.</td>
-                      </tr>
-                      <tr v-for="rental in rentedItems" :key="rental.id"
-                        class="border-b border-gray-200 hover:bg-gray-50">
-                        <td class="py-3 px-4">({{ rental.quantity || 1 }}) {{ rental.item?.name || 'N/A' }}</td>
-                        <td class="py-3 px-4 text-center">
-                          {{ rental.booked_dates?.start_date || 'N/A' }} - {{ rental.booked_dates?.end_date || 'N/A' }}
-                        </td>
-                        <td class="py-3 px-4 text-center">
-                          {{ rental.quantity && rental.item?.hourly_rate ? `$${rental.quantity * rental.item.hourly_rate}`
-                          : '$0' }}
-                        </td>
-                        <td class="py-3 px-4 text-center">
-                          <button v-if="rental.status === 'return'" @click="openReturnModal(rental.id)"
-                            class="px-4 py-2 bg-[#ffc107] text-[#1c1c1c] rounded-md hover:bg-[#e0a800] transition"
-                            :disabled="isUpdating">
-                            Confirm Return
-                          </button>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
+              <div class="p-4">
+                <h3 class="text-lg md:text-xl font-semibold text-[#1c1c1c] truncate">{{ equipment.name || 'Unnamed' }}</h3>
+                <p class="text-[#ffc107] text-sm md:text-base">${{ equipment.hourly_rate || 0 }}/day</p>
               </div>
-
-              <NewReturnConfirmationModal :showReturnModal="showReturnModal" :orderItemId="selectedOrderItem"
-                @close="closeReturnModal" @confirm="handleReturnConfirmation" />
-
-              <!-- Awaiting Approval -->
-              <div class="bg-white rounded-lg shadow-md p-6">
-                <h3 class="text-xl font-semibold text-[#1c1c1c] mb-4">Awaiting Approval</h3>
-                <div class="overflow-x-auto">
-                  <table class="w-full text-left">
-                    <thead>
-                      <tr class="bg-[#1c1c1c] text-[#ffc107] text-sm uppercase">
-                        <th class="py-3 px-4">Item</th>
-                        <th class="py-3 px-4 text-center">Duration</th>
-                        <th class="py-3 px-4 text-center">Total</th>
-                        <th class="py-3 px-4 text-center">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody class="text-gray-700">
-                      <tr v-if="awaitingApprovalItems.length === 0">
-                        <td colspan="4" class="py-4 text-center text-gray-500">No items awaiting approval.</td>
-                      </tr>
-                      <tr v-for="item in awaitingApprovalItems" :key="item.id"
-                        class="border-b border-gray-200 hover:bg-gray-50">
-                        <td class="py-3 px-4">({{ item.quantity || 1 }}) {{ item.item?.name || 'N/A' }}</td>
-                        <td class="py-3 px-4 text-center">
-                          {{ item.booked_dates?.start_date || 'N/A' }} - {{ item.booked_dates?.end_date || 'N/A' }}
-                        </td>
-                        <td class="py-3 px-4 text-center">
-                          {{ item.quantity && item.item?.hourly_rate ? `$${item.quantity * item.item.hourly_rate}` : '$0'
-                          }}
-                        </td>
-                        <td class="py-3 px-4 text-center">
-                          <button @click="openApprovalModal(item)"
-                            class="px-4 py-2 bg-[#ffc107] text-[#1c1c1c] rounded-md hover:bg-[#e0a800] transition"
-                            :disabled="isUpdating">
-                            Approve
-                          </button>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <!-- Awaiting Pickup -->
-              <div class="bg-white rounded-lg shadow-md p-6">
-                <h3 class="text-xl font-semibold text-[#1c1c1c] mb-4">Awaiting Pickup</h3>
-                <div class="overflow-x-auto">
-                  <table class="w-full text-left">
-                    <thead>
-                      <tr class="bg-[#1c1c1c] text-[#ffc107] text-sm uppercase">
-                        <th class="py-3 px-4">Item</th>
-                        <th class="py-3 px-4 text-center">Duration</th>
-                        <th class="py-3 px-4 text-center">Total</th>
-                        <th class="py-3 px-4 text-center">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody class="text-gray-700">
-                      <tr v-if="awaitingPickups.length === 0">
-                        <td colspan="4" class="py-4 text-center text-gray-500">No items awaiting pickup.</td>
-                      </tr>
-                      <tr v-for="rental in awaitingPickups" :key="rental.id"
-                        class="border-b border-gray-200 hover:bg-gray-50">
-                        <td class="py-3 px-4">({{ rental.quantity || 1 }}) {{ rental.item?.name || 'N/A' }}</td>
-                        <td class="py-3 px-4 text-center">
-                          {{ rental.booked_dates?.start_date || 'N/A' }} - {{ rental.booked_dates?.end_date || 'N/A' }}
-                        </td>
-                        <td class="py-3 px-4 text-center">
-                          {{ rental.quantity && rental.item?.hourly_rate ? `$${rental.quantity * rental.item.hourly_rate}`
-                          : '$0' }}
-                        </td>
-                        <td class="py-3 px-4 text-center">
-                          <button @click="openPickupConfirmationModal(rental.id)"
-                            class="px-4 py-2 bg-[#ffc107] text-[#1c1c1c] rounded-md hover:bg-[#e0a800] transition"
-                            :disabled="isUpdating">
-                            Confirm Pickup
-                          </button>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <!-- Pickup Confirmation Modal Component -->
-              <NewPickupConfirmationModal :showPickupModal="showNewPickupConfirmationModal" :orderItem="selectedOrderItem"
-                @close="showNewPickupConfirmationModal = false" @confirm="handlePickupConfirmation" />
-
-              <!-- Returned -->
-              <div class="bg-white rounded-lg shadow-md p-6">
-                <h3 class="text-xl font-semibold text-[#1c1c1c] mb-4">Returned</h3>
-                <div class="overflow-x-auto">
-                  <table class="w-full text-left">
-                    <thead>
-                      <tr class="bg-[#1c1c1c] text-[#ffc107] text-sm uppercase">
-                        <th class="py-3 px-4">Item</th>
-                        <th class="py-3 px-4 text-center">Duration</th>
-                        <th class="py-3 px-4 text-center">Total</th>
-                        <th class="py-3 px-4 text-center">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody class="text-gray-700">
-                      <tr v-if="returnedItems.length === 0">
-                        <td colspan="4" class="py-4 text-center text-gray-500">No returned items.</td>
-                      </tr>
-                      <tr v-for="rental in returnedItems" :key="rental.id"
-                        class="border-b border-gray-200 hover:bg-gray-50">
-                        <td class="py-3 px-4">({{ rental.quantity || 1 }}) {{ rental.item?.name || 'N/A' }}</td>
-                        <td class="py-3 px-4 text-center">
-                          {{ rental.booked_dates?.start_date || 'N/A' }} - {{ rental.booked_dates?.end_date || 'N/A' }}
-                        </td>
-                        <td class="py-3 px-4 text-center">
-                          {{ rental.quantity && rental.item?.hourly_rate ? `$${rental.quantity * rental.item.hourly_rate}`
-                          : '$0' }}
-                        </td>
-                        <td class="py-3 px-4 text-center">{{ rental.status || 'N/A' }}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <!-- In Items.vue <template>, inside the Rental Overview section -->
-              <div class="bg-white rounded-lg shadow-md p-6">
-                <h3 class="text-xl font-semibold text-[#1c1c1c] mb-4">Disputed Items</h3>
-                <div class="overflow-x-auto">
-                  <table class="w-full text-left">
-                    <thead>
-                      <tr class="bg-[#1c1c1c] text-[#ffc107] text-sm uppercase">
-                        <th class="py-3 px-4">Item</th>
-                        <th class="py-3 px-4 text-center">Duration</th>
-                        <th class="py-3 px-4 text-center">Total</th>
-                        <th class="py-3 px-4 text-center">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody class="text-gray-700">
-                      <tr v-if="disputedItems.length === 0">
-                        <td colspan="4" class="py-4 text-center text-gray-500">No disputed items.</td>
-                      </tr>
-                      <tr v-for="rental in disputedItems" :key="rental.id"
-                        class="border-b border-gray-200 hover:bg-gray-50 bg-red-50">
-                        <td class="py-3 px-4">({{ rental.quantity || 1 }}) {{ rental.item?.name || 'N/A' }}</td>
-                        <td class="py-3 px-4 text-center">
-                          {{ rental.booked_dates?.start_date || 'N/A' }} - {{ rental.booked_dates?.end_date || 'N/A' }}
-                        </td>
-                        <td class="py-3 px-4 text-center">
-                          {{ rental.quantity && rental.item?.hourly_rate ? `$${rental.quantity * rental.item.hourly_rate}`
-                          : '$0' }}
-                        </td>
-                        <td class="py-3 px-4 text-center text-red-600">{{ rental.status || 'N/A' }}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </section>
-        </div>
-
-        <!-- Edit Modal -->
-        <transition name="modal">
-          <div v-if="editModalVisible" class="fixed inset-0 bg-[#1c1c1c]/80 flex items-center justify-center z-50"
-            @click.self="closeEditModal">
-            <div class="bg-white rounded-lg p-8 w-full max-w-lg animate-pop">
-              <h3 class="text-2xl font-bold text-[#1c1c1c] mb-6">Edit Equipment</h3>
-              <form @submit.prevent="updateEquipment" class="space-y-4">
-                <div>
-                  <label for="name" class="block text-sm font-medium text-[#1c1c1c]">Name</label>
-                  <input v-model="editedEquipment.name" type="text" id="name"
-                    class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ffc107]" required />
-                </div>
-                <div>
-                  <label for="hourly_rate" class="block text-sm font-medium text-[#1c1c1c]">Daily Rate ($)</label>
-                  <input v-model.number="editedEquipment.hourly_rate" type="number" step="0.01" id="hourly_rate"
-                    class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ffc107]" required />
-                </div>
-                <div>
-                  <label for="availableItems" class="block text-sm font-medium text-[#1c1c1c]">Available Quantity</label>
-                  <input v-model.number="editedEquipment.available_quantity" type="number" min="1" id="availableItems"
-                    class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ffc107]" required />
-                </div>
-                <div>
-                  <label for="description" class="block text-sm font-medium text-[#1c1c1c]">Description</label>
-                  <textarea v-model="editedEquipment.description" id="description"
-                    class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ffc107]"
-                    rows="4"></textarea>
-                </div>
-                <div>
-                  <label for="category" class="block text-sm font-medium text-[#1c1c1c]">Category</label>
-                  <select v-model="editedEquipment.category" id="category"
-                    class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ffc107]" required>
-                    <option v-for="category in store.categories" :key="category.id" :value="category.id">
-                      {{ category.name }}
-                    </option>
-                  </select>
-                </div>
-                <div>
-                  <label for="is_available" class="block text-sm font-medium text-[#1c1c1c]">Availability</label>
-                  <select v-model="editedEquipment.is_available" id="is_available"
-                    class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ffc107]" required>
-                    <option :value="true">Available</option>
-                    <option :value="false">Unavailable</option>
-                  </select>
-                </div>
-                <div>
-                  <label for="images" class="block text-sm font-medium text-[#1c1c1c]">Upload Images</label>
-                  <input type="file" id="images" @change="handleImageUpload"
-                    class="w-full p-3 border border-gray-300 rounded-md" multiple accept="image/*" />
-                </div>
-                <div class="flex justify-end space-x-3">
-                  <button type="button" @click="closeEditModal"
-                    class="px-6 py-2 bg-gray-400 text-white rounded-md hover:bg-gray-500" :disabled="isUpdating">
-                    Cancel
-                  </button>
-                  <button type="submit" class="px-6 py-2 bg-[#ffc107] text-[#1c1c1c] rounded-md hover:bg-[#e0a800]"
-                    :disabled="isUpdating">
-                    {{ isUpdating ? 'Saving...' : 'Save' }}
-                  </button>
-                </div>
-              </form>
             </div>
           </div>
-        </transition>
+          <div v-else class="bg-white rounded-lg shadow-lg p-8 text-center">
+            <i class="pi pi-box text-5xl text-[#ffc107] mb-4"></i>
+            <p class="text-lg md:text-xl text-[#1c1c1c]">No Item listed yet.</p>
+            <RouterLink :to="{ name: 'list-item' }"
+              class="inline-block mt-4 px-6 py-2 bg-[#ffc107] text-[#1c1c1c] rounded-md font-semibold hover:bg-[#e0a800] transition">
+              List Item
+            </RouterLink>
+          </div>
+        </section>
 
+        <!-- Rental Overview -->
+        <section>
+          <h2 class="text-2xl md:text-3xl font-bold text-[#1c1c1c] mb-6 flex items-center">
+            <i class="pi pi-calendar mr-2 text-[#ffc107]"></i> Rental Overview
+          </h2>
+          <div class="space-y-12">
+            <!-- Currently Rented -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+              <h3 class="text-xl md:text-2xl font-semibold text-[#1c1c1c] mb-4">Currently Rented</h3>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                  <thead>
+                    <tr class="bg-[#1c1c1c] text-[#ffc107] text-sm md:text-base uppercase">
+                      <th class="py-3 px-4">Item</th>
+                      <th class="py-3 px-4 text-center">Duration</th>
+                      <th class="py-3 px-4 text-center">Total</th>
+                      <th class="py-3 px-4 text-center">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody class="text-gray-700">
+                    <tr v-if="rentedItems.length === 0">
+                      <td colspan="4" class="py-4 text-center text-gray-500">No rented items.</td>
+                    </tr>
+                    <tr v-for="rental in rentedItems" :key="rental.id"
+                      class="border-b border-gray-200 hover:bg-gray-50">
+                      <td class="py-3 px-4">({{ rental.quantity || 1 }}) {{ rental.item?.name || 'N/A' }}</td>
+                      <td class="py-3 px-4 text-center">
+                        {{ rental.booked_dates?.start_date || 'N/A' }} - {{ rental.booked_dates?.end_date || 'N/A' }}
+                      </td>
+                      <td class="py-3 px-4 text-center">
+                        {{ rental.quantity && rental.item?.hourly_rate ? `$${rental.quantity * rental.item.hourly_rate}`
+                        : '$0' }}
+                      </td>
+                      <td class="py-3 px-4 text-center">
+                        <button v-if="rental.status === 'return'" @click="openReturnModal(rental.id)"
+                          class="px-4 py-2 bg-[#ffc107] text-[#1c1c1c] rounded-md hover:bg-[#e0a800] transition"
+                          :disabled="isUpdating">
+                          Confirm Return
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
 
-        <!-- Approval Modal -->
-        <transition name="modal">
-          <div v-if="isApprovalModalOpen" class="fixed inset-0 bg-[#1c1c1c]/80 flex items-center justify-center z-50"
-            @click.self="isApprovalModalOpen = false">
-            <div class="bg-white rounded-lg p-6 w-full max-w-md animate-pop">
-              <h3 class="text-xl font-semibold text-[#1c1c1c] mb-4">Approve Rental</h3>
-              <p class="text-gray-600 mb-6">Do you want to approve this rental request?</p>
+            <NewReturnConfirmationModal :showReturnModal="showReturnModal" :orderItemId="selectedOrderItem"
+              @close="closeReturnModal" @confirm="handleReturnConfirmation" />
+
+            <!-- Awaiting Approval -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+              <h3 class="text-xl md:text-2xl font-semibold text-[#1c1c1c] mb-4">Awaiting Approval</h3>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                  <thead>
+                    <tr class="bg-[#1c1c1c] text-[#ffc107] text-sm md:text-base uppercase">
+                      <th class="py-3 px-4">Item</th>
+                      <th class="py-3 px-4 text-center">Duration</th>
+                      <th class="py-3 px-4 text-center">Total</th>
+                      <th class="py-3 px-4 text-center">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody class="text-gray-700">
+                    <tr v-if="awaitingApprovalItems.length === 0">
+                      <td colspan="4" class="py-4 text-center text-gray-500">No items awaiting approval.</td>
+                    </tr>
+                    <tr v-for="item in awaitingApprovalItems" :key="item.id"
+                      class="border-b border-gray-200 hover:bg-gray-50">
+                      <td class="py-3 px-4">({{ item.quantity || 1 }}) {{ item.item?.name || 'N/A' }}</td>
+                      <td class="py-3 px-4 text-center">
+                        {{ item.booked_dates?.start_date || 'N/A' }} - {{ item.booked_dates?.end_date || 'N/A' }}
+                      </td>
+                      <td class="py-3 px-4 text-center">
+                        {{ item.quantity && item.item?.hourly_rate ? `$${item.quantity * item.item.hourly_rate}` : '$0'
+                        }}
+                      </td>
+                      <td class="py-3 px-4 text-center">
+                        <button @click="openApprovalModal(item)"
+                          class="px-4 py-2 bg-[#ffc107] text-[#1c1c1c] rounded-md hover:bg-[#e0a800] transition"
+                          :disabled="isUpdating">
+                          Approve
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Awaiting Pickup -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+              <h3 class="text-xl md:text-2xl font-semibold text-[#1c1c1c] mb-4">Awaiting Pickup</h3>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                  <thead>
+                    <tr class="bg-[#1c1c1c] text-[#ffc107] text-sm md:text-base uppercase">
+                      <th class="py-3 px-4">Item</th>
+                      <th class="py-3 px-4 text-center">Duration</th>
+                      <th class="py-3 px-4 text-center">Total</th>
+                      <th class="py-3 px-4 text-center">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody class="text-gray-700">
+                    <tr v-if="awaitingPickups.length === 0">
+                      <td colspan="4" class="py-4 text-center text-gray-500">No items awaiting pickup.</td>
+                    </tr>
+                    <tr v-for="rental in awaitingPickups" :key="rental.id"
+                      class="border-b border-gray-200 hover:bg-gray-50">
+                      <td class="py-3 px-4">({{ rental.quantity || 1 }}) {{ rental.item?.name || 'N/A' }}</td>
+                      <td class="py-3 px-4 text-center">
+                        {{ rental.booked_dates?.start_date || 'N/A' }} - {{ rental.booked_dates?.end_date || 'N/A' }}
+                      </td>
+                      <td class="py-3 px-4 text-center">
+                        {{ rental.quantity && rental.item?.hourly_rate ? `$${rental.quantity * rental.item.hourly_rate}`
+                        : '$0' }}
+                      </td>
+                      <td class="py-3 px-4 text-center">
+                        <button @click="openPickupConfirmationModal(rental.id)"
+                          class="px-4 py-2 bg-[#ffc107] text-[#1c1c1c] rounded-md hover:bg-[#e0a800] transition"
+                          :disabled="isUpdating">
+                          Confirm Pickup
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Pickup Confirmation Modal Component -->
+            <NewPickupConfirmationModal :showPickupModal="showNewPickupConfirmationModal" :orderItem="selectedOrderItem"
+              @close="showNewPickupConfirmationModal = false" @confirm="handlePickupConfirmation" />
+
+            <!-- Returned -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+              <h3 class="text-xl md:text-2xl font-semibold text-[#1c1c1c] mb-4">Returned</h3>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                  <thead>
+                    <tr class="bg-[#1c1c1c] text-[#ffc107] text-sm md:text-base uppercase">
+                      <th class="py-3 px-4">Item</th>
+                      <th class="py-3 px-4 text-center">Duration</th>
+                      <th class="py-3 px-4 text-center">Total</th>
+                      <th class="py-3 px-4 text-center">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody class="text-gray-700">
+                    <tr v-if="returnedItems.length === 0">
+                      <td colspan="4" class="py-4 text-center text-gray-500">No returned items.</td>
+                    </tr>
+                    <tr v-for="rental in returnedItems" :key="rental.id"
+                      class="border-b border-gray-200 hover:bg-gray-50">
+                      <td class="py-3 px-4">({{ rental.quantity || 1 }}) {{ rental.item?.name || 'N/A' }}</td>
+                      <td class="py-3 px-4 text-center">
+                        {{ rental.booked_dates?.start_date || 'N/A' }} - {{ rental.booked_dates?.end_date || 'N/A' }}
+                      </td>
+                      <td class="py-3 px-4 text-center">
+                        {{ rental.quantity && rental.item?.hourly_rate ? `$${rental.quantity * rental.item.hourly_rate}`
+                        : '$0' }}
+                      </td>
+                      <td class="py-3 px-4 text-center">{{ rental.status || 'N/A' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Disputed Items -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+              <h3 class="text-xl md:text-2xl font-semibold text-[#1c1c1c] mb-4">Disputed Items</h3>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                  <thead>
+                    <tr class="bg-[#1c1c1c] text-[#ffc107] text-sm md:text-base uppercase">
+                      <th class="py-3 px-4">Item</th>
+                      <th class="py-3 px-4 text-center">Duration</th>
+                      <th class="py-3 px-4 text-center">Total</th>
+                      <th class="py-3 px-4 text-center">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody class="text-gray-700">
+                    <tr v-if="disputedItems.length === 0">
+                      <td colspan="4" class="py-4 text-center text-gray-500">No disputed items.</td>
+                    </tr>
+                    <tr v-for="rental in disputedItems" :key="rental.id"
+                      class="border-b border-gray-200 hover:bg-gray-50 bg-red-50">
+                      <td class="py-3 px-4">({{ rental.quantity || 1 }}) {{ rental.item?.name || 'N/A' }}</td>
+                      <td class="py-3 px-4 text-center">
+                        {{ rental.booked_dates?.start_date || 'N/A' }} - {{ rental.booked_dates?.end_date || 'N/A' }}
+                      </td>
+                      <td class="py-3 px-4 text-center">
+                        {{ rental.quantity && rental.item?.hourly_rate ? `$${rental.quantity * rental.item.hourly_rate}`
+                        : '$0' }}
+                      </td>
+                      <td class="py-3 px-4 text-center text-red-600">{{ rental.status || 'N/A' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Edit Modal -->
+      <transition name="modal">
+        <div v-if="editModalVisible" class="fixed inset-0 bg-[#1c1c1c]/80 flex items-center justify-center z-50"
+          @click.self="closeEditModal">
+          <div class="bg-white rounded-lg p-8 w-full max-w-lg animate-pop">
+            <h3 class="text-xl md:text-2xl font-bold text-[#1c1c1c] mb-6">Edit Equipment</h3>
+            <form @submit.prevent="updateEquipment" class="space-y-4">
+              <div>
+                <label for="name" class="block text-sm md:text-base font-medium text-[#1c1c1c]">Name</label>
+                <input v-model="editedEquipment.name" type="text" id="name"
+                  class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ffc107]" required />
+              </div>
+              <div>
+                <label for="hourly_rate" class="block text-sm md:text-base font-medium text-[#1c1c1c]">Daily Rate ($)</label>
+                <input v-model.number="editedEquipment.hourly_rate" type="number" step="0.01" id="hourly_rate"
+                  class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ffc107]" required />
+              </div>
+              <div>
+                <label for="availableItems" class="block text-sm md:text-base font-medium text-[#1c1c1c]">Available Quantity</label>
+                <input v-model.number="editedEquipment.available_quantity" type="number" min="1" id="availableItems" class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ffc107]" required />
+              </div>
+              <div>
+                <label for="description" class="block text-sm md:text-base font-medium text-[#1c1c1c]">Description</label>
+                <textarea v-model="editedEquipment.description" id="description"
+                  class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ffc107]"
+                  rows="4"></textarea>
+              </div>
+              <div>
+                <label for="category" class="block text-sm md:text-base font-medium text-[#1c1c1c]">Category</label>
+                <select v-model="editedEquipment.category" id="category"
+                  class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ffc107]" required>
+                  <option v-for="category in store.categories" :key="category.id" :value="category.id">
+                    {{ category.name }}
+                  </option>
+                </select>
+              </div>
+              <div>
+                <label for="is_available" class="block text-sm md:text-base font-medium text-[#1c1c1c]">Availability</label>
+                <select v-model="editedEquipment.is_available" id="is_available"
+                  class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#ffc107]" required>
+                  <option :value="true">Available</option>
+                  <option :value="false">Unavailable</option>
+                </select>
+              </div>
+              <div>
+                <label for="images" class="block text-sm md:text-base font-medium text-[#1c1c1c]">Upload Images</label>
+                <input type="file" id="images" @change="handleImageUpload"
+                  class="w-full p-3 border border-gray-300 rounded-md" multiple accept="image/*" />
+              </div>
               <div class="flex justify-end space-x-3">
-                <button @click="isApprovalModalOpen = false" class="px-6 py-2 bg-gray-400 text-white rounded-md"
-                  :disabled="isUpdating">
+                <button type="button" @click="closeEditModal"
+                  class="px-6 py-2 bg-gray-400 text-white rounded-md hover:bg-gray-500" :disabled="isUpdating">
                   Cancel
                 </button>
-                <button @click="approveRentalApproval(selectedRental?.id)"
-                  class="px-6 py-2 bg-[#ffc107] text-[#1c1c1c] rounded-md hover:bg-[#e0a800]" :disabled="isUpdating">
-                  Approve
+                <button type="submit" class="px-6 py-2 bg-[#ffc107] text-[#1c1c1c] rounded-md hover:bg-[#e0a800]"
+                  :disabled="isUpdating">
+                  {{ isUpdating ? 'Saving...' : 'Save' }}
                 </button>
               </div>
+            </form>
+          </div>
+        </div>
+      </transition>
+
+      <!-- Approval Modal -->
+      <transition name="modal">
+        <div v-if="isApprovalModalOpen" class="fixed inset-0 bg-[#1c1c1c]/80 flex items-center justify-center z-50"
+          @click.self="isApprovalModalOpen = false">
+          <div class="bg-white rounded-lg p-6 w-full max-w-md animate-pop">
+            <h3 class="text-xl md:text-2xl font-semibold text-[#1c1c1c] mb-4">Approve Rental</h3>
+            <p class="text-gray-600 mb-6">Do you want to approve this rental request?</p>
+            <div class="flex justify-end space-x-3">
+              <button @click="isApprovalModalOpen = false" class="px-6 py-2 bg-gray-400 text-white rounded-md"
+                :disabled="isUpdating">
+                Cancel
+              </button>
+              <button @click="approveRentalApproval(selectedRental?.id)"
+                class="px-6 py-2 bg-[#ffc107] text-[#1c1c1c] rounded-md hover:bg-[#e0a800]" :disabled="isUpdating">
+                Approve
+              </button>
             </div>
           </div>
-        </transition>
-      </div>
+        </div>
+      </transition>
     </div>
-  </template>
+  </div>
+</template>
 
 <script setup>
 import { ref, onMounted, computed } from 'vue';
