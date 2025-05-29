@@ -5,7 +5,7 @@
         <!-- Main Content -->
         <div class="flex-1 flex flex-col">
             <Header />
-            <main class="flex-1 p-6 overflow-y-auto">
+            <main class="flex-1 p-6 overflow-x-auto bg-white">
                 <router-view /> <!-- Renders Account, Orders, etc. -->
             </main>
         </div>
