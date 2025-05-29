@@ -210,7 +210,7 @@
 
       <!-- Profile Link -->
       <div class="text-center">
-        <RouterLink to="/profile" class="flex flex-col items-center p-2 focus:outline-none focus:text-[#ffc107]"
+        <RouterLink to="/new-profile" class="flex flex-col items-center p-2 focus:outline-none focus:text-[#ffc107]"
           aria-label="Profile">
           <i class="pi pi-user text-xl" aria-hidden="true"></i>
           <small class="text-xs">Profile</small>
