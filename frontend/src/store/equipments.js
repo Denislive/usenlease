@@ -260,11 +260,11 @@ export const useEquipmentsStore = defineStore('equipmentStore', () => {
   };
 
   const getEquipmentById = async (id) => {
-    if (!Number.isInteger(Number(id))) {
-      error.value = 'Invalid equipment ID.';
-      showNotification('Error', 'Invalid equipment ID.', 'error');
-      return;
-    }
+    // if (!Number.isInteger(Number(id))) {
+    //   error.value = 'Invalid equipment ID.';
+    //   showNotification('Error', 'Invalid equipment ID.', 'error');
+    //   return;
+    // }
 
     const cacheKey = `equipment_${id}`;
     if (cache.value.selectedEquipment[id] && isCacheValid(cacheKey)) {
