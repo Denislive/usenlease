@@ -2,38 +2,39 @@
 import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
 import { RouterLink } from 'vue-router';
-
-const categories = ref([]);
+import { useEquipmentsStore } from '@/store/equipments';
+const store = useEquipmentsStore();
+const categories = store.categories;
 const loading = ref(true);
 const error = ref(null);
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
-const fetchCategories = async () => {
-  try {
-    loading.value = true;
-    error.value = null;
+// const fetchCategories = async () => {
+//   try {
+//     loading.value = true;
+//     error.value = null;
 
-    const response = await axios.get(`${apiBaseUrl}/api/root-categories/`, {
-      withCredentials: true // Include credentials if needed
-    });
+//     const response = await axios.get(`${apiBaseUrl}/api/root-categories/`, {
+//       withCredentials: true // Include credentials if needed
+//     });
 
-    if (response.status !== 200) {
-      throw new Error('Failed to fetch categories');
-    }
+//     if (response.status !== 200) {
+//       throw new Error('Failed to fetch categories');
+//     }
 
-    categories.value = response.data.map(category => ({
-      ...category,
-      // Ensure subcategories is always an array
-      subcategories: Array.isArray(category.subcategories) ? category.subcategories : []
-    }));
+//     categories.value = response.data.map(category => ({
+//       ...category,
+//       // Ensure subcategories is always an array
+//       subcategories: Array.isArray(category.subcategories) ? category.subcategories : []
+//     }));
 
-  } catch (err) {
-    console.error('Error fetching categories:', err);
-    error.value = err.response?.data?.message || 'Failed to fetch categories. Please try again later.';
-  } finally {
-    loading.value = false;
-  }
-};
+//   } catch (err) {
+//     console.error('Error fetching categories:', err);
+//     error.value = err.response?.data?.message || 'Failed to fetch categories. Please try again later.';
+//   } finally {
+//     loading.value = false;
+//   }
+// };
 
 // Computed property for total categories count
 const totalCategories = computed(() => categories.value.length);
@@ -56,7 +57,7 @@ const getAdCount = (category) => {
 // Fetch categories on mount with error handling
 onMounted(async () => {
   try {
-    await fetchCategories();
+    await store.fetchCategories();
   } catch (err) {
     console.error('Component mount error:', err);
   }
