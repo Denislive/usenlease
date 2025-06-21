@@ -110,9 +110,6 @@ class Category(models.Model):
         super().save(*args, **kwargs)
 
 
-from django.db import models
-
-
 class Tag(models.Model):
     """
     Represents a tag in the system.
@@ -188,7 +185,7 @@ class Equipment(models.Model):
         decimal_places=2,
         validators=[MinValueValidator(Decimal('0.00'))]
     )
-    address = models.ForeignKey(Address, on_delete=models.CASCADE)
+    address = models.ForeignKey(Address, on_delete=models.PROTECT)
     available_quantity = models.PositiveIntegerField(default=0)
     is_available = models.BooleanField(default=True)
     date_created = models.DateTimeField(auto_now_add=True)
@@ -203,7 +200,7 @@ class Equipment(models.Model):
 
     class Meta:
         ordering = ('-date_created',)
-        verbose_name_plural = "equipment"
+        verbose_name_plural = "equipments"
 
     def __str__(self) -> str:
         """
@@ -238,6 +235,7 @@ class Equipment(models.Model):
             item=self,
             start_date__lt=end_date,
             end_date__gt=start_date,
+            # Todo: Consider adding a filter for ordered items if needed
             ordered=True
         )
 
@@ -560,7 +558,7 @@ class CartItem(models.Model):
 
         if self.quantity > self.item.available_quantity:
             raise ValidationError(
-                f"Cannot add more than {self.item.available_quantity} of {self.item.name} to the cart.")
+                f"You cannot add more than {self.item.available_quantity} of {self.item.name} to the cart.")
 
     def save(self, *args, **kwargs):
         """

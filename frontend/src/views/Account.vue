@@ -251,7 +251,7 @@
   </template>
   
   <script setup>
-  import { ref } from 'vue';
+  import { ref, onMounted } from 'vue';
   import  axios  from 'axios';
   import { useAuthStore } from '../store/auth';
   
@@ -264,6 +264,14 @@
   const isUploading = ref(false);
   const isUpdating = ref(false);
   
+
+
+onMounted(async () => {
+  // Fetch user data on mount
+  await authStore.getUserData();
+});
+
+
   // Form data
   const phoneForm = ref({
     phone_number: '',
