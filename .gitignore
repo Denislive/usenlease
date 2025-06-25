@@ -60,3 +60,5 @@ secrets.tfvars
 #ecrets and config files
 usenlease-secrets.yaml
 usenlease-config.yaml
+.env
+.env.prod
