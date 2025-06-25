@@ -55,3 +55,8 @@ Desktop.ini
 .terraform/
 frontend/node_modules/
 secrets.tfvars
+.terraform.tfstate
+
+#ecrets and config files
+usenlease-secrets.yaml
+usenlease-config.yaml

@@ -8,17 +8,6 @@ echo "Starting Backend Services..."
 echo "Starting Redis Server..."
 redis-server --daemonize yes || { echo "Failed to start Redis"; exit 1; }
 
-# Activate virtual environment or create it if it doesn't exist
-if [ ! -d "/app/backend/venv" ]; then
-    echo "Creating virtual environment..."
-    python3 -m venv /app/backend/venv
-fi
-source /app/backend/venv/bin/activate
-
-# Install dependencies inside the virtual environment
-pip install --no-cache-dir --break-system-packages -r /app/backend/requirements.txt || { echo "Failed to install dependencies"; exit 1; }
-#!/bin/bash
-
 echo "Removing old migrations..."
 find /app/backend -path "*/migrations/*.py" -not -name "__init__.py" -delete
 find /app/backend -path "*/migrations/*.pyc" -delete

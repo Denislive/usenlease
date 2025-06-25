@@ -2,7 +2,7 @@ name: Sync to GitLab
 on:
   push:
     branches:
-      - master  # Replace with your default branch name if it's not 'master'
+      - master
 
 jobs:
   sync:
@@ -11,7 +11,7 @@ jobs:
       - name: Checkout GitHub repository
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # Fetch the full history
+          fetch-depth: 0 
 
       - name: Configure Git
         run: |

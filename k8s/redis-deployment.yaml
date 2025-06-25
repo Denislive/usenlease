@@ -2,6 +2,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: redis
+  namespace: usenlease
+  labels:
+    app: redis
 spec:
   replicas: 1
   selector:
@@ -15,6 +18,8 @@ spec:
       containers:
         - name: redis
           image: redis:latest
+          ports:
+            - containerPort: 6379
           resources:
             limits:
               memory: "256Mi"
@@ -22,5 +27,13 @@ spec:
             requests:
               memory: "128Mi"
               cpu: "250m"
-          ports:
-            - containerPort: 6379
+          livenessProbe:
+            tcpSocket:
+              port: 6379
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 6379
+            initialDelaySeconds: 5
+            periodSeconds: 5
