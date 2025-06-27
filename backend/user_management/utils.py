@@ -8,7 +8,7 @@ from celery import shared_task
 from datetime import timedelta
 from google.cloud import storage
 
-#### Set up logging
+#Set up logging
 logger = logging.getLogger(__name__)
 
 @shared_task(bind=True, max_retries=5)
