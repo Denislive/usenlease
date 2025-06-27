@@ -3,10 +3,10 @@ from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.core.mail import send_mail, BadHeaderError, get_connection
+from smtplib import SMTPServerDisconnected, SMTPConnectError
 from celery import shared_task
-from celery.exceptions import Retry
-from google.cloud import storage
 from datetime import timedelta
+from google.cloud import storage
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -16,24 +16,22 @@ def send_custom_email(self, subject, template_name, context, recipient_list):
     """
     Celery task to send emails asynchronously with retries and connection pooling.
     """
-    connection = None
     try:
         # Render the HTML and plain text email content
         html_message = render_to_string(template_name, context)
         plain_message = strip_tags(html_message)
         from_email = settings.EMAIL_HOST_USER
 
-        # Use a persistent SMTP connection
+        # Use SMTP connection pooling
         connection = get_connection(fail_silently=False)
-        connection.open()  # Open the connection
 
         send_mail(
-            subject,
-            plain_message,
-            from_email,
-            recipient_list,
+            subject=subject,
+            message=plain_message,
+            from_email=from_email,
+            recipient_list=recipient_list,
             html_message=html_message,
-            connection=connection  # Reuse the same connection
+            connection=connection
         )
 
         logger.info(f"✅ Email sent to {', '.join(recipient_list)} with subject: '{subject}'")
@@ -42,18 +40,16 @@ def send_custom_email(self, subject, template_name, context, recipient_list):
     except BadHeaderError:
         logger.error(f"❌ Invalid header in subject '{subject}'")
         return False
-    except Exception as e:
-        logger.error(f"❌ Error sending email to {', '.join(recipient_list)}: {str(e)}")
 
-        # Exponential backoff before retrying (waits 5, 10, 20, 40, 80 seconds)
-        delay = 5 * (2 ** self.request.retries)
-        logger.warning(f"Retrying in {delay} seconds...")
-
-        # Retry with exponential backoff
+    except (SMTPServerDisconnected, SMTPConnectError) as e:
+        delay = 2 ** self.request.retries  # exponential backoff: 2, 4, 8, 16, 32...
+        logger.warning(f"⚠️ SMTP error: {str(e)} — retrying in {delay} seconds...")
         raise self.retry(exc=e, countdown=delay)
-    finally:
-        if connection:
-            connection.close()  # Close the connection after use
+
+    except Exception as e:
+        logger.exception(f"❌ Unexpected error sending email to {', '.join(recipient_list)}: {str(e)}")
+        raise self.retry(exc=e, countdown=10)
+
 
 def list_files(bucket_name, folder_name):
     """
@@ -68,6 +64,7 @@ def list_files(bucket_name, folder_name):
     except Exception as e:
         logger.error(f"❌ Error listing files in bucket '{bucket_name}': {str(e)}")
         return []
+
 
 def generate_signed_url(bucket_name, blob_name, expiration_minutes=10):
     """
