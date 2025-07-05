@@ -1,9 +1,9 @@
 #!/bin/sh
 
-# If running a Django management command, execute it and exit
+# Detect if command is a Django management command
 if [ "$1" = "python" ] && [ "$2" = "manage.py" ]; then
-  echo "Detected Django command: $@"
-  shift  # remove 'python'
+  echo "Detected Django management command: $@"
+  shift
   exec python "$@"
 fi
 
