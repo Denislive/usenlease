@@ -46,7 +46,7 @@ echo "Starting Gunicorn server on port 8000..."
 cd /app/backend
 gunicorn EquipRentHub.wsgi:application --bind 0.0.0.0:8000 --workers=2 --timeout 600 --graceful-timeout 600 &
 
-# Start Celery Worker
+###### Start Celery Worker
 #echo "Starting Celery Worker..."
 #celery -A EquipRentHub worker --loglevel=info &
 
