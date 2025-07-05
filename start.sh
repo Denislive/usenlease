@@ -1,10 +1,10 @@
 #!/bin/sh
-# If this is a manage.py or Python command, run it and exit
-if echo "$@" | grep -q "manage.py"; then
+
+# If this is a Django command (manage.py), run it and exit
+if echo "$1" | grep -q "python"; then
   echo "Detected Django command: $@"
   exec "$@"
 fi
-
 
 set -e  # Exit on any error
 
