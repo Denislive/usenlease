@@ -47,12 +47,12 @@ cd /app/backend
 gunicorn EquipRentHub.wsgi:application --bind 0.0.0.0:8000 --workers=2 --timeout 600 --graceful-timeout 600 &
 
 # Start Celery Worker
-echo "Starting Celery Worker..."
-celery -A EquipRentHub worker --loglevel=info &
+#echo "Starting Celery Worker..."
+#celery -A EquipRentHub worker --loglevel=info &
 
 # Start Celery Beat
-echo "Starting Celery Beat..."
-celery -A EquipRentHub beat --loglevel=info &
+#echo "Starting Celery Beat..."
+#celery -A EquipRentHub beat --loglevel=info &
 
 # Log all environment variables for troubleshooting
 echo "Environment Variables:"
