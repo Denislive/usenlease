@@ -3,7 +3,8 @@
 # ✅ Intercept Django management commands passed via ENTRYPOINT
 if echo "$@" | grep -q "manage.py"; then
   echo "⚙️ Detected Django management command: $@"
-  exec "$@"
+  cd /app/backend
+  exec python "$@"
 fi
 
 set -e  # Exit on any error
