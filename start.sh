@@ -1,9 +1,9 @@
 #!/bin/sh
 
-# If this is a Django command (manage.py), run it and exit
-if echo "$1" | grep -q "python"; then
+# If running a Django management command, execute it and exit
+if [ "$1" = "python" ] && [ "$2" = "manage.py" ]; then
   echo "Detected Django command: $@"
-  shift  # remove "python" from the command string
+  shift  # remove 'python'
   exec python "$@"
 fi
 
