@@ -3,7 +3,8 @@
 # If this is a Django command (manage.py), run it and exit
 if echo "$1" | grep -q "python"; then
   echo "Detected Django command: $@"
-  exec "$@"
+  shift  # remove "python" from the command string
+  exec python "$@"
 fi
 
 set -e  # Exit on any error
