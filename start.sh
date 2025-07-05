@@ -1,11 +1,11 @@
 #!/bin/sh
 
-# ✅ Intercept Django management commands passed via ENTRYPOINT
-if echo "$@" | grep -q "manage.py"; then
-  echo "⚙️ Detected Django management command: $@"
-  cd /app/backend
-  exec python manage.py "${@#*manage.py }"
-fi
+# ✅ Intercept Django management commands passed via ENTRYPOINT (commented out after admin creation)
+# if echo "$@" | grep -q "manage.py"; then
+#   echo "⚙️ Detected Django management command: $@"
+#   cd /app/backend
+#   exec python manage.py "${@#*manage.py }"
+# fi
 
 set -e  # Exit on any error
 
@@ -56,10 +56,10 @@ cd /app/backend
 gunicorn EquipRentHub.wsgi:application --bind 0.0.0.0:8000 --workers=2 --timeout 600 --graceful-timeout 600 &
 
 # (Optional) Celery Worker & Beat — currently disabled
-# echo "Starting Celery Worker..."
-# celery -A EquipRentHub worker --loglevel=info &
-# echo "Starting Celery Beat..."
-# celery -A EquipRentHub beat --loglevel=info &
+echo "Starting Celery Worker..."
+celery -A EquipRentHub worker --loglevel=info &
+echo "Starting Celery Beat..."
+celery -A EquipRentHub beat --loglevel=info &
 
 echo "🌍 Environment Variables:"
 env
