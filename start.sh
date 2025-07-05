@@ -4,7 +4,7 @@
 if echo "$@" | grep -q "manage.py"; then
   echo "⚙️ Detected Django management command: $@"
   cd /app/backend
-  exec python "$@"
+  exec "$@"
 fi
 
 set -e  # Exit on any error
