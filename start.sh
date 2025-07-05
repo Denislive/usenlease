@@ -1,88 +1,84 @@
 #!/bin/sh
 
-# Detect if command is a Django management command
-if [ "$1" = "python" ] && [ "$2" = "manage.py" ]; then
-  echo "Detected Django management command: $@"
-  shift
-  exec python "$@"
+# ✅ Intercept Django management commands passed via ENTRYPOINT
+if echo "$@" | grep -q "manage.py"; then
+  echo "⚙️ Detected Django management command: $@"
+  exec "$@"
 fi
 
 set -e  # Exit on any error
 
-echo "Starting Backend Services..."
+echo "🚀 Starting Backend Services..."
 
 # Start Redis server first (Celery depends on it)
-echo "Starting Redis Server..."
-redis-server --daemonize yes || { echo "Failed to start Redis"; exit 1; }
+echo "📦 Starting Redis Server..."
+redis-server --daemonize yes || { echo "❌ Failed to start Redis"; exit 1; }
 
-echo "Removing old migrations..."
+echo "🧹 Removing old migrations..."
 find /app/backend -path "*/migrations/*.py" -not -name "__init__.py" -delete
 find /app/backend -path "*/migrations/*.pyc" -delete
 
 # Make migrations
-echo "Creating new migrations..."
+echo "🛠️ Creating new migrations..."
 python /app/backend/manage.py makemigrations --noinput || {
-    echo "Makemigrations failed. Exiting."
+    echo "❌ Makemigrations failed. Exiting."
     exit 1
 }
 
 # Apply migrations
-echo "Applying migrations..."
+echo "📦 Applying migrations..."
 python /app/backend/manage.py migrate --noinput || {
-    echo "Migration failed, trying --fake..."
+    echo "⚠️ Migration failed, trying --fake..."
     python /app/backend/manage.py migrate --fake || {
-        echo "Fake migration also failed. Exiting."
+        echo "❌ Fake migration also failed. Exiting."
         exit 1
     }
 }
 
-# Ensure Celery Beat migrations are applied
-echo "Applying Celery Beat migrations..."
+# Celery Beat migrations
+echo "🔁 Applying Celery Beat migrations..."
 python /app/backend/manage.py migrate django_celery_beat --noinput || {
-    echo "Celery Beat migration failed, continuing..."
+    echo "⚠️ Celery Beat migration failed, continuing..."
 }
 
-echo "Migrations completed successfully!"
+echo "✅ Migrations completed successfully!"
 
 # Collect static files
-echo "Collecting static files..."
-python /app/backend/manage.py collectstatic --noinput || { echo "Static files collection failed"; exit 1; }
+echo "🎨 Collecting static files..."
+python /app/backend/manage.py collectstatic --noinput || {
+    echo "❌ Static files collection failed"; exit 1;
+}
 
-# Start Gunicorn for Django backend
-echo "Starting Gunicorn server on port 8000..."
+# Start Gunicorn
+echo "🔥 Starting Gunicorn on port 8000..."
 cd /app/backend
 gunicorn EquipRentHub.wsgi:application --bind 0.0.0.0:8000 --workers=2 --timeout 600 --graceful-timeout 600 &
 
-###### Start Celery Worker
-#echo "Starting Celery Worker..."
-#celery -A EquipRentHub worker --loglevel=info &
+# (Optional) Celery Worker & Beat — currently disabled
+# echo "Starting Celery Worker..."
+# celery -A EquipRentHub worker --loglevel=info &
+# echo "Starting Celery Beat..."
+# celery -A EquipRentHub beat --loglevel=info &
 
-# Start Celery Beat
-#echo "Starting Celery Beat..."
-#celery -A EquipRentHub beat --loglevel=info &
-
-# Log all environment variables for troubleshooting
-echo "Environment Variables:"
+echo "🌍 Environment Variables:"
 env
 
-# Export the PORT environment variable for Nginx if not set
+# Prepare Nginx config
 export PORT=${PORT:-8080}
 
-# Ensure PORT is substituted correctly in the nginx.conf.template
 if [ -n "$PORT" ]; then
-  echo "Generating Nginx config from nginx.conf.template..."
+  echo "🛠️ Generating Nginx config from template..."
   envsubst '${PORT}' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
 else
-  echo "PORT environment variable is not set. Exiting."
+  echo "❌ PORT environment variable is not set. Exiting."
   exit 1
 fi
 
-# Log the substituted config for troubleshooting
-echo "Substituted Nginx Config:"
+echo "🧾 Substituted Nginx Config:"
 cat /etc/nginx/nginx.conf
 
-# Create complete Nginx config with the correct port binding
-echo "Creating complete Nginx config..."
+# Final Nginx config
+echo "🧱 Creating final Nginx config..."
 cat <<EOF > /etc/nginx/nginx.conf
 worker_processes  auto;
 error_log  /var/log/nginx/error.log warn;
@@ -121,7 +117,7 @@ http {
 
         root /usr/share/nginx/html;
 
-        client_max_body_size 20M;  # Allow larger file uploads
+        client_max_body_size 20M;
         client_body_buffer_size 20M;
 
         proxy_read_timeout 600;
@@ -129,48 +125,41 @@ http {
         proxy_send_timeout 600;
         keepalive_timeout 600;
 
-        # Admin route (Backend)
         location /admin {
-            client_max_body_size 20M;  # Increase request size for API
-            proxy_pass http://127.0.0.1:8000;  # Ensure this is handled by the backend
+            client_max_body_size 20M;
+            proxy_pass http://127.0.0.1:8000;
             proxy_set_header Host \$host;
             proxy_set_header X-Real-IP \$remote_addr;
             proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto \$scheme;
 
-            # Add CORS headers
             add_header 'Access-Control-Allow-Origin' 'https://usenlease.com' always;
             add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
             add_header 'Access-Control-Allow-Headers' 'Origin, Content-Type, Accept, Authorization' always;
             add_header 'Access-Control-Allow-Credentials' 'true' always;
         }
 
-        # Frontend routes (Catch-all route for frontend)
         location / {
-            try_files \$uri \$uri/ /index.html;  # Fallback to index.html for frontend
+            try_files \$uri \$uri/ /index.html;
         }
 
-        # API routes (Backend API)
         location /api {
-            proxy_pass http://127.0.0.1:8000;  # Backend handling API routes
+            proxy_pass http://127.0.0.1:8000;
             proxy_set_header Host \$host;
             proxy_set_header X-Real-IP \$remote_addr;
             proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto \$scheme;
 
-            # Add CORS headers
             add_header 'Access-Control-Allow-Origin' 'https://usenlease.com' always;
             add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
             add_header 'Access-Control-Allow-Headers' 'Origin, Content-Type, Accept, Authorization' always;
             add_header 'Access-Control-Allow-Credentials' 'true' always;
         }
 
-        # Static files for Django (Backend)
         location /static/ {
             alias /app/backend/staticfiles/;
         }
 
-        # Media files for Django (Backend)
         location /media/ {
             alias /app/backend/media/;
         }
@@ -183,10 +172,5 @@ http {
 }
 EOF
 
-# Log the final configuration for verification
-echo "Final Nginx Config:"
-cat /etc/nginx/nginx.conf
-
-# Start Nginx with the updated config file
-echo "Starting Nginx..."
-nginx -g 'daemon off;' || { echo "Failed to start Nginx"; exit 1; }
+echo "🚦 Starting Nginx..."
+nginx -g 'daemon off;' || { echo "❌ Failed to start Nginx"; exit 1; }
