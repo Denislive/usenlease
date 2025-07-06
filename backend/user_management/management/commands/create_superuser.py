@@ -17,7 +17,12 @@ class UserManagementConfig(AppConfig):
         password = os.getenv("DJANGO_SUPERUSER_PASSWORD", "Lease@2025!")
 
         if not User.objects.filter(username=username).exists():
-            User.objects.create_superuser(username=username, email=email, password=password)
-            print(f"✅ Superuser {username} created successfully!")
+            User.objects.create_superuser(
+                username=username,
+                email=email,
+                password=password,
+                is_verified=True  # ✅ Set is_verified to True
+            )
+            print(f"✅ Superuser {username} created successfully with is_verified=True!")
         else:
             print(f"⚠️ Superuser {username} already exists.")
