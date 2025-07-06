@@ -7,7 +7,7 @@
 #   exec python manage.py "${@#*manage.py }"
 # fi
 
-set -e  # Exit on any error
+set -e  # Exit on any error found
 
 echo "🚀 Starting Backend Services..."
 
