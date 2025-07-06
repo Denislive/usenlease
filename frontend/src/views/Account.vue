@@ -204,7 +204,6 @@
                   v-model="addressForm.city"
                   type="text"
                   class="mt-1 block w-full border-[#1c1c1c]/20 rounded-lg shadow-sm focus:ring-amber-500 focus:border-amber-500"
-                  required
                 />
               </div>
               <div class="mb-4">
@@ -214,7 +213,6 @@
                   v-model="addressForm.zip_code"
                   type="text"
                   class="mt-1 block w-full border-[#1c1c1c]/20 rounded-lg shadow-sm focus:ring-amber-500 focus:border-amber-500"
-                  required
                 />
               </div>
               <div class="mb-4">

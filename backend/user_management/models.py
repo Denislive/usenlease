@@ -368,7 +368,7 @@ class PhysicalAddress(models.Model):
         on_delete=models.PROTECT,
         related_name='user_address'
     )
-    full_name = models.CharField(max_length=100)
+    full_name = models.CharField(max_length=100, blank=True, null=True)
     company_name = models.CharField(
         max_length=100,
         blank=True,
@@ -380,9 +380,9 @@ class PhysicalAddress(models.Model):
         blank=True,
         null=True
     )
-    city = models.CharField(max_length=100)
-    state = models.CharField(max_length=100)
-    zip_code = models.CharField(max_length=20)
+    city = models.CharField(max_length=100, blank=True, null=True)
+    state = models.CharField(max_length=100, blank=True, null=True)
+    zip_code = models.CharField(max_length=20, blank=True, null=True)
     country = models.CharField(max_length=100)
     is_default = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
