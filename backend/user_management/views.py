@@ -1119,8 +1119,29 @@ class UserViewSet(viewsets.ViewSet):
         serializer = UserSerializer(data=data)
 
         if serializer.is_valid():
-            serializer.save()
+            user = serializer.save()
+
+            # Get admin email from environment variable
+            admin_email = settings.DJANGO_SUPERUSER_EMAIL
+
+            if admin_email:
+                subject = "New User Account Created"
+                template_name = 'emails/new_user_notification.html'
+                context = {
+                    'full_name': user.username,
+                    'email': user.email,
+                }
+
+                try:
+                    send_custom_email.delay(subject, template_name, context, [admin_email])
+                except Exception as e:
+                    return Response({
+                        "message": "User created, but failed to notify admin.",
+                        "error": str(e)
+                    }, status=status.HTTP_201_CREATED)
+
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def update(self, request, pk=None):
