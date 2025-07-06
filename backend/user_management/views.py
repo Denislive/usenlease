@@ -1107,7 +1107,7 @@ class UserViewSet(viewsets.ViewSet):
         """UserView
         Allow anyone to create a new user account.
         """
-        data = request.data
+        data = request.data.copy()
         first_name = data.get('first_name')
         last_name = data.get('last_name')
 

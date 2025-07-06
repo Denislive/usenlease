@@ -177,7 +177,7 @@ class Equipment(models.Model):
         on_delete=models.PROTECT,
         related_name='equipments'
     )
-    tags = models.ManyToManyField(Tag, blank=True, null=True)
+    tags = models.ManyToManyField(Tag, blank=True)
     name = models.CharField(max_length=50)
     description = models.TextField()
     hourly_rate = models.DecimalField(

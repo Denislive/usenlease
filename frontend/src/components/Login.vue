@@ -155,20 +155,7 @@ const passwordError = ref('');
 const localLoginError = ref('');
 const loading = ref(false);
 
-// Watchers
-watch(
-  () => authStore.loginError,
-  (newError) => {
-    localLoginError.value = newError;
-    if (newError) {
-      showNotification({
-        title: 'Login Failed',
-        message: newError,
-        type: 'error'
-      });
-    }
-  }
-);
+
 
 // Validation Functions
 const validateEmail = () => {

@@ -157,10 +157,14 @@
         <!-- Street Address -->
         <div class="mb-4 relative">
           <label for="streetAddress" class="block text-sm font-medium text-gray-700">Street Address</label>
-          <input type="text" id="streetAddress" v-model="streetAddress" @input="validateStreetAddress" required :class="['mt-1 block w-full border rounded-md p-2 focus:outline-none',
-            streetAddressError ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-[#1c1c1c]']">
+          <input type="text" id="autocomplete" ref="autocompleteInput" v-model="streetAddress"
+            @input="validateStreetAddress" required :class="[
+              'mt-1 block w-full border rounded-md p-2 focus:outline-none',
+              streetAddressError ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-[#1c1c1c]'
+            ]" placeholder="Start typing your address" />
           <p v-if="streetAddressError" class="absolute text-red-500 text-sm mt-1">{{ streetAddressError }}</p>
         </div>
+
 
         <!-- City -->
         <div class="mb-4 relative">
@@ -190,17 +194,13 @@
         <!-- Country -->
         <div class="mb-4 relative">
           <label for="country" class="block text-sm font-medium text-gray-700">Country</label>
-          <select id="country" v-model="country" @change="validateCountry" required :class="[
+          <input type="text" id="country" v-model="country" @input="validateCountry" required :class="[
             'mt-1 block w-full border rounded-md p-2 focus:outline-none',
             countryError ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-[#1c1c1c]'
-          ]">
-            <option value="" disabled selected>Select a country</option>
-            <option v-for="(countryName, index) in countries" :key="index" :value="countryName">
-              {{ countryName }}
-            </option>
-          </select>
+          ]" />
           <p v-if="countryError" class="text-red-500 text-sm mt-1">{{ countryError }}</p>
         </div>
+
 
 
 
@@ -216,30 +216,28 @@
     </div>
   </div>
 </template>
-
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import { useAuthStore } from '@/store/auth';
 import useNotifications from '@/store/notification';
-import { openDB, saveFormData } from '@/db/db'; // Import the IndexedDB utility
+import { openDB, saveFormData } from '@/db/db';
 
-const loading = ref(false); // Loading state
-
+const loading = ref(false);
 const authStore = useAuthStore();
 const { showNotification } = useNotifications();
-
 const api_base_url = import.meta.env.VITE_API_BASE_URL;
 
 const itemName = ref('');
 const hourlyRate = ref(null);
 const selectedCategory = ref("");
-const tagsInput = ref(""); // Input field value
-const tags = ref([]); // Array of individual tags
+const tagsInput = ref("");
+const tags = ref([]);
 const description = ref('');
 const terms = ref('');
+const autocompleteInput = ref(null);
 const streetAddress = ref('');
 const city = ref('');
 const state = ref('');
@@ -251,33 +249,30 @@ const images = ref([]);
 const imagePreviews = ref([]);
 
 const addTags = () => {
-  const tag = tagsInput.value.trim(); // Trim any surrounding spaces
+  const tag = tagsInput.value.trim();
   validateTags();
 
-
   if (tag) {
-    tags.value.push(tag); // Add the tag to the tags array
-    tagsInput.value = ""; // Clear input after adding
-    tagsError.value = null; // Clear error
+    tags.value.push(tag);
+    tagsInput.value = "";
+    tagsError.value = null;
   } else {
-    tagsError.value = "Please enter a valid tag."; // Error if tag is empty
+    tagsError.value = "Please enter a valid tag.";
   }
 };
 
-
 const removeTag = (index) => {
-  tags.value.splice(index, 1); // Remove tag by index
+  tags.value.splice(index, 1);
 };
 
-
-const specifications = ref([{ key: '', value: '' }]);  // Initially, one specification
+const specifications = ref([{ key: '', value: '' }]);
 
 const addSpecification = () => {
-  specifications.value.push({ key: '', value: '' }); // Add a new specification
+  specifications.value.push({ key: '', value: '' });
 };
 
 const removeSpecification = (index) => {
-  specifications.value.splice(index, 1); // Remove the specification at the given index
+  specifications.value.splice(index, 1);
 };
 
 const itemNameError = ref('');
@@ -297,27 +292,133 @@ const countryError = ref('');
 const router = useRouter();
 const categories = ref([]);
 
+// Save form data to cookies
+const saveFormDataToCookies = () => {
+  const formData = {
+    itemName: itemName.value,
+    hourlyRate: hourlyRate.value,
+    selectedCategory: selectedCategory.value,
+    tags: tags.value,
+    description: description.value,
+    terms: terms.value,
+    streetAddress: streetAddress.value,
+    city: city.value,
+    state: state.value,
+    zipCode: zipCode.value,
+    country: country.value,
+    availableItems: availableItems.value,
+    specifications: specifications.value
+  };
+  Cookies.set('itemFormData', JSON.stringify(formData), { expires: 7 }); // Expires in 7 days
+};
+
+// Load form data from cookies
+const loadFormDataFromCookies = () => {
+  const savedData = Cookies.get('itemFormData');
+  if (savedData) {
+    try {
+      const formData = JSON.parse(savedData);
+      itemName.value = formData.itemName || '';
+      hourlyRate.value = formData.hourlyRate || null;
+      selectedCategory.value = formData.selectedCategory || '';
+      tags.value = formData.tags || [];
+      description.value = formData.description || '';
+      terms.value = formData.terms || '';
+      streetAddress.value = formData.streetAddress || '';
+      city.value = formData.city || '';
+      state.value = formData.state || '';
+      zipCode.value = formData.zipCode || '';
+      country.value = formData.country || '';
+      availableItems.value = formData.availableItems || null;
+      specifications.value = formData.specifications || [{ key: '', value: '' }];
+    } catch (error) {
+      console.error('Error parsing cookie data:', error);
+    }
+  }
+};
+
+// Clear cookies
+const clearFormCookies = () => {
+  Cookies.remove('itemFormData');
+};
+
+// Watch for changes in form fields and save to cookies
+watch([itemName, hourlyRate, selectedCategory, tags, description, terms, streetAddress, city, state, zipCode, country, availableItems, specifications], () => {
+  saveFormDataToCookies();
+}, { deep: true });
+
 const fetchCountries = async () => {
   try {
-    const response = await axios.get("https://restcountries.com/v3.1/all");
-    countries.value = response.data.map((c) => c.name.common).sort();
+    const response = await fetch("https://restcountries.com/v3.1/all");
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    const data = await response.json();
+    countries.value = data.map((c) => ({
+      name: c.name?.common || "Unknown",
+      flag: c.flags?.png || c.flags?.svg || "",
+      region: c.region || "N/A",
+      code: c.cca2 || "XX",
+    })).sort((a, b) => a.name.localeCompare(b.name));
   } catch (error) {
+    console.error("Failed to fetch countries:", error);
   }
 };
 
 onMounted(async () => {
+  // Load form data from cookies
+  loadFormDataFromCookies();
+
+  // Fetch categories
   try {
     const response = await axios.get(`${api_base_url}/api/categories/`);
     categories.value = response.data;
   } catch (error) {
+    console.error('Error fetching categories:', error);
   }
 
-  fetchCountries();
+  // Initialize Google Maps Autocomplete
+  const waitForGoogle = () =>
+    new Promise((resolve) => {
+      const check = () => {
+        if (window.google?.maps?.places) {
+          resolve();
+        } else {
+          setTimeout(check, 100);
+        }
+      };
+      check();
+    });
+
+  await waitForGoogle();
+
+  const autocomplete = new google.maps.places.Autocomplete(autocompleteInput.value, {
+    types: ['address']
+  });
+
+  autocomplete.setFields(['address_component', 'formatted_address']);
+
+  const getComponent = (components, type) =>
+    components.find((c) => c.types.includes(type))?.long_name || '';
+
+  const applyAddressComponents = (components) => {
+    streetAddress.value = `${getComponent(components, 'street_number')} ${getComponent(components, 'route')}`.trim();
+    city.value = getComponent(components, 'locality') || getComponent(components, 'administrative_area_level_2');
+    state.value = getComponent(components, 'administrative_area_level_1');
+    zipCode.value = getComponent(components, 'postal_code');
+    country.value = getComponent(components, 'country');
+  };
+
+  autocomplete.addListener('place_changed', () => {
+    const place = autocomplete.getPlace();
+    if (place.address_components) {
+      applyAddressComponents(place.address_components);
+    }
+  });
 });
 
 const getUserIdFromToken = () => {
   const storedUser = Cookies.get('user');
-
   if (storedUser) {
     const userData = authStore.decryptData(storedUser);
     authStore.user.value = userData;
@@ -343,7 +444,6 @@ const validateHourlyRate = () => {
 const validateCategory = () => {
   categoryError.value = !selectedCategory.value ? 'Please select a valid category.' : '';
 };
-
 
 const validateTags = () => {
   tagsError.value = tagsInput.value.length < 3
@@ -388,11 +488,7 @@ const validateState = () => {
 };
 
 const validateZipCode = () => {
-  zipCodeError.value = !zipCode.value
-    ? 'Zip code is required.'
-    : !/^\d{5}$/.test(zipCode.value)
-      ? 'Please enter a valid zip code (5 digits).'
-      : '';
+  zipCodeError.value = !zipCode.value ? 'Zip code is required.' : '';
 };
 
 const validateCountry = () => {
@@ -406,7 +502,6 @@ const validateImages = () => {
       ? 'You can only upload a maximum of four images.'
       : '';
 };
-
 
 const isFormInvalid = computed(() => {
   return (
@@ -446,7 +541,6 @@ const triggerFileSelect = () => {
 };
 
 const handleSubmit = async () => {
-  // Run all validation functions before submitting
   validateItemName();
   validateHourlyRate();
   validateCategory();
@@ -460,7 +554,6 @@ const handleSubmit = async () => {
   validateCountry();
   validateImages();
 
-  // Check if any validation errors exist
   const hasErrors =
     itemNameError.value ||
     hourlyRateError.value ||
@@ -477,7 +570,7 @@ const handleSubmit = async () => {
     imageError.value;
 
   if (hasErrors) {
-    return; // Exit early if there are errors
+    return;
   }
 
   const formData = new FormData();
@@ -498,15 +591,15 @@ const handleSubmit = async () => {
   formData.append('zip_code', zipCode.value);
   formData.append('country', country.value);
 
-  const tagsArray = tags.value; // Get the current tags array
-  formData.append("tags", JSON.stringify(tagsArray)); // Add tags as a JSON string
+  const tagsArray = tags.value;
+  formData.append("tags", JSON.stringify(tagsArray));
 
   images.value.forEach(image => {
     formData.append('images', image);
   });
 
   if (userId) {
-    loading.value = true; // Start loading
+    loading.value = true;
     try {
       const response = await axios.post(`${api_base_url}/api/equipments/`, formData, {
         withCredentials: true
@@ -516,14 +609,14 @@ const handleSubmit = async () => {
         router.push({ name: 'equipment-details', params: { id: newEquipmentId } });
         showNotification('Item Listing Successful', `${response.data.name} created successfully!`, 'success');
         resetFormFields();
+        clearFormCookies(); // Clear cookies after successful submission
       } else {
         showNotification('Error Listing Item', 'Unexpected response status!', 'error');
       }
     } catch (error) {
       handleError(error);
     } finally {
-      loading.value = false; // Start loading
-
+      loading.value = false;
     }
   } else {
     router.push('/login');
@@ -535,7 +628,7 @@ const resetFormFields = () => {
   itemName.value = '';
   hourlyRate.value = null;
   selectedCategory.value = null;
-  tags.value = '';
+  tags.value = [];
   description.value = '';
   terms.value = '';
   streetAddress.value = '';
@@ -550,33 +643,25 @@ const resetFormFields = () => {
 
 const handleError = (error) => {
   if (error.response) {
-    // Server responded but with an error status
     const { status, data } = error.response;
     const message =
-      data?.detail || // Django/DRF often uses "detail"
-      data?.details || // Some APIs return "details"
-      data?.message || // General message
-      data?.error || // Sometimes "error" is used
-      error.response.statusText || 
+      data?.detail ||
+      data?.details ||
+      data?.message ||
+      data?.error ||
+      error.response.statusText ||
       'An unknown error occurred.';
-
     showNotification('Error Listing Item', `Error ${message}`, 'error');
   } else if (error.request) {
-    // Request was made but no response was received
     showNotification('Error Listing Item', 'No response received. Check your network connection.', 'error');
   } else {
-    // Other errors (setup issues, cancellation, etc.)
     showNotification('Error Listing Item', `Unexpected error: ${error.message || error}`, 'error');
   }
-
-  // Optional: Log the full error for debugging
   console.error('Error details:', error);
 };
 
-
 async function saveFormDataToIndexedDB(formData) {
   const payload = {};
-
   for (const [key, value] of formData.entries()) {
     if (value instanceof File) {
       const base64String = await fileToBase64(value);
@@ -585,7 +670,6 @@ async function saveFormDataToIndexedDB(formData) {
       payload[key] = value;
     }
   }
-
   try {
     await openDB();
     await saveFormData(payload);
@@ -603,7 +687,6 @@ function fileToBase64(file) {
   });
 }
 </script>
-
 
 
 

@@ -234,11 +234,15 @@ class User(AbstractUser):
     )
     document_type = models.CharField(
         max_length=10,
-        choices=DOCUMENT_TYPE_CHOICES
+        choices=DOCUMENT_TYPE_CHOICES,
+        blank=True,
+        null=True
     )
     identity_document = models.FileField(
         upload_to='identity_documents/',
-        validators=[FileExtensionValidator(allowed_extensions=['pdf', 'jpg', 'jpeg', 'png'])]
+        validators=[FileExtensionValidator(allowed_extensions=['pdf', 'jpg', 'jpeg', 'png'])],
+        blank=True,
+        null=True
     )
     proof_of_address = models.FileField(
         upload_to='proof_of_address/',

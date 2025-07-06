@@ -124,8 +124,7 @@
                         <label for="identityDocument" class="block text-sm font-medium text-gray-700">Identity
                             Document</label>
                         <input type="file" id="identityDocument" class="mt-1 block w-full border border-gray-300 rounded-md p-2"
-                            @change="(e) => handleFileChange(e, 'identityDocument')" required
-                            >
+                            @change="(e) => handleFileChange(e, 'identityDocument')" >
 
                             <span v-if="errors.identityDocumentFile" class="absolute right-2 top-10 text-red-500">
                             <i class="pi pi-exclamation-triangle"></i>
@@ -351,15 +350,15 @@ const debounceValidateEmail = debounce(validateEmail);
 // Watch for changes in the email input
 watch(email, debounceValidateEmail);
 
-const validateDocumentType = () => {
-    errors.value.documentType = documentType.value ? '' : 'Document Type is required';
-};
+// const validateDocumentType = () => {
+//     errors.value.documentType = documentType.value ? '' : 'Document Type is required';
+// };
 
-const validateIdentityDocument = () => {
-    errors.value.identityDocumentFile = identityDocumentFile.value
-        ? ''
-        : 'Identity Document is required';
-};
+// const validateIdentityDocument = () => {
+//     errors.value.identityDocumentFile = identityDocumentFile.value
+//         ? ''
+//         : 'Identity Document is required';
+// };
 
 
 const validatePassword = () => {
@@ -454,8 +453,8 @@ const nextStep = () => {
             currentStep.value++;
         }
     } else if (currentStep.value === 2) {
-        validateDocumentType();
-        validateIdentityDocument();
+        // validateDocumentType();
+        // validateIdentityDocument();
         validatePassword();
         validateConfirmPassword();
 
@@ -541,7 +540,6 @@ const handleSignup = async () => {
             successMessage.value = '';
         }
     } catch (error) {
-        handleCreateError(error);
         errorMessage.value = 'An unexpected error occurred!';
         successMessage.value = '';
     } finally {
