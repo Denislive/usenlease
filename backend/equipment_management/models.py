@@ -2,6 +2,7 @@
 from datetime import datetime
 import uuid
 import base64
+import itertools
 from decimal import Decimal
 
 # Third-Party Library Imports
@@ -279,14 +280,36 @@ class Equipment(models.Model):
 
     def save(self, *args, **kwargs):
         """
-        Overrides the save method to automatically generate a slug if not provided.
-        Also sets the upload path for equipment images based on the category.
+        Overrides the save method to:
+        - Automatically generate a slug unique per user if not provided.
+        - Enforce that each user can only have one equipment with a given name.
+        - Dynamically set the upload path for equipment images based on the category.
         """
-        if not self.slug:
-            self.slug = slugify(self.name)
+        # Enforce unique equipment name per user with verification awareness
+        existing_equipment = Equipment.objects.filter(owner=self.owner, name=self.name).exclude(pk=self.pk).first()
 
+        if existing_equipment:
+            if existing_equipment.is_verified:
+                raise ValidationError("Item with this name already exists.")
+            else:
+                raise ValidationError("Item with this name already exists. Please wait for verification.")
+
+
+        # Generate a unique slug per user
+        if not self.slug:
+            base_slug = slugify(self.name)
+            slug = base_slug
+            for i in itertools.count(1):
+                if not Equipment.objects.filter(owner=self.owner, slug=slug).exclude(pk=self.pk).exists():
+                    break
+                slug = f"{base_slug}-{i}"
+            self.slug = slug
+
+        # Set upload path dynamically
         self.images.field.upload_to = f'equipments/{self.category.name}/'
+
         super().save(*args, **kwargs)
+
 
 
 

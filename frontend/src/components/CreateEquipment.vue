@@ -631,6 +631,7 @@ const resetFormFields = () => {
   tags.value = [];
   description.value = '';
   terms.value = '';
+  specifications.value = '';
   streetAddress.value = '';
   city.value = '';
   state.value = '';
@@ -642,23 +643,68 @@ const resetFormFields = () => {
 };
 
 const handleError = (error) => {
+  let title = 'Something went wrong';
+  let message = 'An unexpected error occurred.';
+  let type = 'error'; // default to error
+
   if (error.response) {
     const { status, data } = error.response;
-    const message =
+
+    // Extract message from known fields
+    message =
       data?.detail ||
       data?.details ||
       data?.message ||
       data?.error ||
       error.response.statusText ||
-      'An unknown error occurred.';
-    showNotification('Error Listing Item', `Error ${message}`, 'error');
-  } else if (error.request) {
-    showNotification('Error Listing Item', 'No response received. Check your network connection.', 'error');
-  } else {
-    showNotification('Error Listing Item', `Unexpected error: ${error.message || error}`, 'error');
+      message;
+
+    if (status === 400 && typeof data === 'object') {
+      const values = Object.values(data).flat();
+
+      if (values.some(msg => /please wait for verification/i.test(msg))) {
+        type = 'info';
+        title = 'Pending Verification';
+        message = 'You already submitted this item. Please wait for it to be verified.';
+      } else if (values.some(msg => /already exists/i.test(msg))) {
+        type = 'info';
+        title = 'Duplicate Item';
+        message = 'You already have an item with this name.';
+      } else {
+        // Generic field validation
+        const firstKey = Object.keys(data)[0];
+        const firstError = data[firstKey];
+        message = `${firstKey}: ${Array.isArray(firstError) ? firstError.join(', ') : firstError}`;
+      }
+    }
+
+    else if (status === 401 || status === 403) {
+      message = 'You are not authorized to perform this action.';
+    }
+
+    else if (status === 404) {
+      message = 'The requested resource was not found.';
+    }
+
+    else if (status >= 500) {
+      message = 'A server error occurred. Please try again later.';
+    }
+
+    showNotification(title, message, type);
   }
+
+  else if (error.request) {
+    showNotification('Network Error', 'No response received. Check your internet connection.', 'error');
+  }
+
+  else {
+    showNotification('Unexpected Error', `Unexpected error: ${error.message || error}`, 'error');
+  }
+
   console.error('Error details:', error);
 };
+
+
 
 async function saveFormDataToIndexedDB(formData) {
   const payload = {};
