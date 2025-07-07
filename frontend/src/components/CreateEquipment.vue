@@ -223,7 +223,6 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import { useAuthStore } from '@/store/auth';
 import useNotifications from '@/store/notification';
-import { openDB, saveFormData } from '@/db/db';
 
 const loading = ref(false);
 const authStore = useAuthStore();
@@ -347,23 +346,23 @@ watch([itemName, hourlyRate, selectedCategory, tags, description, terms, streetA
   saveFormDataToCookies();
 }, { deep: true });
 
-const fetchCountries = async () => {
-  try {
-    const response = await fetch("https://restcountries.com/v3.1/all");
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
-    }
-    const data = await response.json();
-    countries.value = data.map((c) => ({
-      name: c.name?.common || "Unknown",
-      flag: c.flags?.png || c.flags?.svg || "",
-      region: c.region || "N/A",
-      code: c.cca2 || "XX",
-    })).sort((a, b) => a.name.localeCompare(b.name));
-  } catch (error) {
-    console.error("Failed to fetch countries:", error);
-  }
-};
+// const fetchCountries = async () => {
+//   try {
+//     const response = await fetch("https://restcountries.com/v3.1/all");
+//     if (!response.ok) {
+//       throw new Error(`HTTP error! Status: ${response.status}`);
+//     }
+//     const data = await response.json();
+//     countries.value = data.map((c) => ({
+//       name: c.name?.common || "Unknown",
+//       flag: c.flags?.png || c.flags?.svg || "",
+//       region: c.region || "N/A",
+//       code: c.cca2 || "XX",
+//     })).sort((a, b) => a.name.localeCompare(b.name));
+//   } catch (error) {
+//     console.error("Failed to fetch countries:", error);
+//   }
+// };
 
 onMounted(async () => {
   // Load form data from cookies
@@ -619,8 +618,12 @@ const handleSubmit = async () => {
       loading.value = false;
     }
   } else {
-    router.push('/login');
-    await saveFormDataToIndexedDB(formData);
+    saveFormDataToCookies();
+    // Set the redirect path to the list item page
+    authStore.redirectTo = '/list-item' // or use a named route: { name: 'items' }
+
+    // Redirect to login
+    router.push({ name: 'login' })
   }
 };
 
@@ -630,8 +633,8 @@ const resetFormFields = () => {
   selectedCategory.value = null;
   tags.value = [];
   description.value = '';
-  terms.value = '';
   specifications.value = '';
+  terms.value = '';
   streetAddress.value = '';
   city.value = '';
   state.value = '';
@@ -704,34 +707,6 @@ const handleError = (error) => {
   console.error('Error details:', error);
 };
 
-
-
-async function saveFormDataToIndexedDB(formData) {
-  const payload = {};
-  for (const [key, value] of formData.entries()) {
-    if (value instanceof File) {
-      const base64String = await fileToBase64(value);
-      payload[key] = { base64: base64String, name: value.name, type: value.type };
-    } else {
-      payload[key] = value;
-    }
-  }
-  try {
-    await openDB();
-    await saveFormData(payload);
-  } catch (error) {
-    showNotification('Error Saving Data', error, 'error');
-  }
-}
-
-function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
 </script>
 
 

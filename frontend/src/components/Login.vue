@@ -2,24 +2,14 @@
   <div class="flex items-center justify-center min-h-screen bg-gray-100 p-4">
     <div class="bg-white shadow-md rounded-lg p-6 sm:p-8 w-full max-w-sm">
       <div class="flex justify-center items-center mb-6">
-        <img 
-          src="../assets/images/logo.jpeg" 
-          alt="Company Logo" 
-          class="h-30 w-40"
-          loading="lazy"
-          width="160"
-          height="120"
-        >
+        <img src="../assets/images/logo.jpeg" alt="Company Logo" class="h-30 w-40" loading="lazy" width="160"
+          height="120">
       </div>
       <h1 class="text-2xl font-bold text-center mb-6">Login to Your Account</h1>
 
       <!-- Error Message -->
-      <div 
-        v-if="localLoginError" 
-        class="bg-red-50 border-l-4 border-red-500 p-4 mb-4 flex items-start"
-        role="alert"
-        aria-live="assertive"
-      >
+      <div v-if="localLoginError" class="bg-red-50 border-l-4 border-red-500 p-4 mb-4 flex items-start" role="alert"
+        aria-live="assertive">
         <i class="pi pi-exclamation-triangle text-red-500 mr-2 mt-0.5"></i>
         <div>
           <p class="text-red-700 font-medium">Login Error</p>
@@ -34,26 +24,12 @@
             Email Address
             <span class="text-red-500">*</span>
           </label>
-          <input
-            type="email"
-            id="email"
-            v-model.trim="email"
-            @input="validateEmail"
-            @blur="validateEmail"
-            placeholder="user@example.com"
-            required
-            autocomplete="email"
-            :class="[
+          <input type="email" id="email" v-model.trim="email" @input="validateEmail" @blur="validateEmail"
+            placeholder="user@example.com" required autocomplete="email" :class="[
               'w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1',
               emailError ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-[#1c1c1c] focus:ring-[#1c1c1c]'
-            ]"
-            aria-describedby="email-error"
-          />
-          <p 
-            v-if="emailError" 
-            id="email-error" 
-            class="mt-1 text-sm text-red-600"
-          >
+            ]" aria-describedby="email-error" />
+          <p v-if="emailError" id="email-error" class="mt-1 text-sm text-red-600">
             {{ emailError }}
           </p>
         </div>
@@ -64,43 +40,24 @@
             Password
             <span class="text-red-500">*</span>
           </label>
-          <input
-            type="password"
-            id="password"
-            v-model.trim="password"
-            @input="validatePassword"
-            @blur="validatePassword"
-            placeholder="••••••••"
-            required
-            minlength="12"
-            autocomplete="current-password"
+          <input type="password" id="password" v-model.trim="password" @input="validatePassword"
+            @blur="validatePassword" placeholder="••••••••" required minlength="12" autocomplete="current-password"
             :class="[
               'w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1',
               passwordError ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-[#1c1c1c] focus:ring-[#1c1c1c]'
-            ]"
-            aria-describedby="password-error"
-          />
-          <p 
-            v-if="passwordError" 
-            id="password-error" 
-            class="mt-1 text-sm text-red-600"
-          >
+            ]" aria-describedby="password-error" />
+          <p v-if="passwordError" id="password-error" class="mt-1 text-sm text-red-600">
             {{ passwordError }}
           </p>
         </div>
 
         <!-- Submit Button -->
-        <button
-          type="submit"
-          :disabled="loading"
-          :class="[
-            'w-full py-2.5 px-4 rounded-md font-medium transition-colors duration-200 flex items-center justify-center',
-            loading || emailError || passwordError 
-              ? 'bg-gray-400 text-white cursor-not-allowed' 
-              : 'bg-[#1c1c1c] text-white hover:bg-gray-800 focus:ring-2 focus:ring-[#1c1c1c] focus:ring-offset-2'
-          ]"
-          aria-live="polite"
-        >
+        <button type="submit" :disabled="loading" :class="[
+          'w-full py-2.5 px-4 rounded-md font-medium transition-colors duration-200 flex items-center justify-center',
+          loading || emailError || passwordError
+            ? 'bg-gray-400 text-white cursor-not-allowed'
+            : 'bg-[#1c1c1c] text-white hover:bg-gray-800 focus:ring-2 focus:ring-[#1c1c1c] focus:ring-offset-2'
+        ]" aria-live="polite">
           <i v-if="loading" class="pi pi-spinner pi-spin mr-2"></i>
           <span>{{ loading ? 'Authenticating...' : 'Login' }}</span>
         </button>
@@ -109,19 +66,15 @@
       <!-- Links Section -->
       <div class="mt-6 space-y-3 text-center">
         <p class="text-sm">
-          <router-link 
-            to="/password-reset-request"
-            class="text-[#ffc107] font-semibold hover:underline focus:outline-none focus:underline"
-          >
+          <router-link to="/password-reset-request"
+            class="text-[#ffc107] font-semibold hover:underline focus:outline-none focus:underline">
             Forgot Password?
           </router-link>
         </p>
         <p class="text-sm font-semibold">
           Don't have an account?
-          <router-link 
-            :to="{ name: 'signup' }" 
-            class="text-[#ffc107] hover:underline focus:outline-none focus:underline"
-          >
+          <router-link :to="{ name: 'signup' }"
+            class="text-[#ffc107] hover:underline focus:outline-none focus:underline">
             Sign up
           </router-link>
         </p>
@@ -183,7 +136,7 @@ const handleLogin = async () => {
   // Validate before submission
   validateEmail();
   validatePassword();
-  
+
   if (emailError.value || passwordError.value) {
     return;
   }
@@ -196,12 +149,19 @@ const handleLogin = async () => {
       cartStore.loadCart(),
       authStore.login(email.value, password.value, cartStore.cart)
     ]);
-        
-    router.push({ name: 'home' });
+
+
+    // ✅ Redirect after login
+    const redirectPath = authStore.redirectTo && authStore.redirectTo !== ''
+      ? authStore.redirectTo
+      : { name: 'home' };
+
+    authStore.redirectTo = ''; // Clear it after use
+    router.push(redirectPath);
   } catch (error) {
     console.error('Login error:', error);
     localLoginError.value = error.message || 'Login failed. Please try again.';
-    
+
     // Clear sensitive data on error
     password.value = '';
     passwordError.value = '';

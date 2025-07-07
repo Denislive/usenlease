@@ -8,7 +8,6 @@ import useNotifications from '@/store/notification';
 import { useEquipmentsStore } from "@/store/equipments";
 
 import { useCartStore } from './cart';
-import { openDB, saveFormData, loadFormData, clearFormData } from '@/db/db'; // Import IndexedDB functions
 import Profile from '@/components/Profile.vue';
 import autoprefixer from 'autoprefixer';
 
@@ -43,9 +42,10 @@ export const useAuthStore = defineStore('auth', () => {
   const cartStore = useCartStore();
   const store = useEquipmentsStore();
 
+  const redirectTo = ref('');
+
   const user = ref(null);
   const isOn = ref(user?.role === 'lessor'); // Initialize based on user's current role
-  const redirectTo = ref('');
 
   const showSidebar = ref(true); // Sidebar visibility state
 
@@ -101,31 +101,7 @@ export const useAuthStore = defineStore('auth', () => {
           sameSite: 'None',
           secure: true,
         });
-        
-
-        // Load any form data from IndexedDB
-        const formDataArray = await loadFormData();
-
-        if (formDataArray.length > 0) {
-          for (const data of formDataArray) {
-            try {
-              const createResponse = await axios.post(
-                `${apiBaseUrl}/api/equipments/`,
-                data,
-                { withCredentials: true }
-              );
-              if (createResponse.status === 201) {
-                showNotification(
-                  'Item Listing Successful',
-                  `${createResponse.data.name} created successfully!`,
-                  'success'
-                );
-              }
-            } catch (error) {
-              console.error('Error listing item');
-            }
-          }
-        }
+              
       } else {
         console.error(`Request completed but not successful. Status: ${response.status}`);
       }
@@ -195,55 +171,6 @@ export const useAuthStore = defineStore('auth', () => {
     
         showNotification('Role Update Successful', `You are now a ${updatedRole}.`, 'success');
     
-        // After the role update is complete, check and process form data
-        const formDataArray = await loadFormData();
-        if (formDataArray.length > 0) {
-    
-          let redirectedToDetails = false; // Ensure this flag is reset to false
-    
-          for (const data of formDataArray) {
-            data.owner = user.value.id;
-    
-            // Equipment creation is triggered only if the role is "lessor"
-            if (updatedRole === 'lessor' && data.images?.base64) {
-              const file = base64ToFile(data.images.base64, data.images.name);
-              const formData = new FormData();
-              formData.append('image', file, data.images.name);
-    
-              for (const key in data) {
-                if (key !== 'images') formData.append(key, data[key]);
-              }
-    
-              // Wait for the equipment creation to finish before proceeding
-              try {
-                const createResponse = await axios.post(
-                  `${apiBaseUrl}/api/equipments/`,
-                  formData,
-                  { withCredentials: true, headers: { 'Content-Type': 'multipart/form-data' } }
-                );
-    
-                if (createResponse.status === 201) {
-                  router.push({
-                    name: 'equipment-details',
-                    params: { id: createResponse.data.id },
-                  });
-                  redirectedToDetails = true;
-                  showNotification(
-                    'Item Listing Successful',
-                    `${createResponse.data.name} created successfully!`,
-                    'success'
-                  );
-                  await clearFormData(); // Wait until form data is cleared before proceeding
-                  break; // Exit the loop once the first item is created and redirected
-                }
-              } catch (error) {
-                handleCreateError(error);
-                showNotification('Error', 'Failed to create item, please try again later.', 'error');
-                break; // Stop further processing if item creation fails
-              }
-            }
-          }
-        }
     
       } catch (error) {
         console.error('Error updating role:', error);
@@ -279,56 +206,7 @@ export const useAuthStore = defineStore('auth', () => {
         }, 86400000);
   
         showNotification('Login Successful', 'Welcome back!', 'success');
-  
-        const formDataArray = await loadFormData();
-        let redirectedToDetails = false;
-  
-        if (formDataArray.length > 0) {
-          for (const data of formDataArray) {
-            data.owner = user.value.id;
-  
-            if (data.images?.base64) {
-              const file = base64ToFile(data.images.base64, data.images.name);
-              const formData = new FormData();
-              formData.append('image', file, data.images.name);
-  
-              for (const key in data) {
-                if (key !== 'images') formData.append(key, data[key]);
-              }
-  
-              try {
-                const createResponse = await axios.post(
-                  `${apiBaseUrl}/api/equipments/`,
-                  formData,
-                  { withCredentials: true, headers: { 'Content-Type': 'multipart/form-data' } }
-                );
-  
-                if (createResponse.status === 201) {
-                  router.push({
-                    name: 'equipment-details',
-                    params: { id: createResponse.data.id },
-                  });
-                  redirectedToDetails = true;
-                  showNotification(
-                    'Item Listing Successful',
-                    `${createResponse.data.name} created successfully!`,
-                    'success'
-                  );
-                  await clearFormData();
-                }
-              } catch (error) {
-                handleCreateError(error);
-              }
-            }
-          }
-        }
-  
-        if (!redirectedToDetails) {
-          const redirectPath = redirectTo.value || '/';
-          redirectTo.value = '';
-          router.push(redirectPath);
-        }
-  
+
         loginError.value = '';
       } else {
         console.error('Login response not successful. Status:', response.status);
@@ -336,26 +214,11 @@ export const useAuthStore = defineStore('auth', () => {
     } catch (error) {
       handleLoginError(error);
     } finally {
+           
       isLoading.value = false;
     }
   };
   
-  
-
-  function base64ToFile(base64, filename) {
-    // Split the base64 string into parts
-    const arr = base64.split(',');
-    const mime = arr[0].match(/:(.*?);/)[1]; // Extract the MIME type
-    const bstr = atob(arr[1]); // Decode base64 string
-    let n = bstr.length;
-    const u8arr = new Uint8Array(n);
-  
-    while (n--) {
-      u8arr[n] = bstr.charCodeAt(n);
-    }
-  
-    return new File([u8arr], filename, { type: mime }); // Create a File object
-  }
 
   const handleCreateError = (error) => {
     if (error.response) {
@@ -500,19 +363,13 @@ export const useAuthStore = defineStore('auth', () => {
     }
   };
 
-  const saveFormDataToIndexedDB = async (formData) => {
-    try {
-      await saveFormData(formData); // Save form data to IndexedDB
-    } catch (error) {
-      console.error('Error saving form data to IndexedDB:', error);
-    }
-  };
-
+ 
  
 
   return {
     isOn,
     user,
+    redirectTo,
     loginError,
     isLoading,
     getCSRFToken,
@@ -520,15 +377,12 @@ export const useAuthStore = defineStore('auth', () => {
     showSidebar,
     login,
     logout,
-    base64ToFile,
     getUserData,
     encryptData,
     decryptData,
     refreshToken,
-    redirectTo,
     isAuthenticated,
     updateUserRole,
     navigateToRoleSection,
-    saveFormDataToIndexedDB, // Expose the function to save form data
   };
 });
