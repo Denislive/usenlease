@@ -1,15 +1,15 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: backend-hpa
+  name: usenlease-hpa
   namespace: usenlease
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: backend-deployment
+    name: usenlease-deployment
   minReplicas: 2
-  maxReplicas: 6
+  maxReplicas: 4
   metrics:
     - type: Resource
       resource:

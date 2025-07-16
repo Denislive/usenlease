@@ -1,23 +1,23 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: backend-deployment
+  name: usenlease-deployment
   namespace: usenlease
   labels:
-    app: backend
+    app: usenlease-app
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: backend
+      app: usenlease-app
   template:
     metadata:
       labels:
-        app: backend
+        app: usenlease-app
     spec:
       containers:
-        - name: combined-app
-          image: ngumonelson123/combined-image:v1.2.2
+        - name: combined-images
+          image: ngumonelson123/combined-image:latest
           ports:
             - containerPort: 8000
           resources:
