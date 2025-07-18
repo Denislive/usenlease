@@ -41,6 +41,23 @@ module "eks" {
         }
       }
     }
+    
+    root = {
+      principal_arn = "arn:aws:iam::472083777554:root"
+      type          = "STANDARD"
+      username      = "root-user"
+
+      policy_associations = {
+        admin = {
+          policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+
+          access_scope = {
+            type       = "cluster"
+            namespaces = []
+          }
+        }
+      }
+    }
   }
 
   tags = {
