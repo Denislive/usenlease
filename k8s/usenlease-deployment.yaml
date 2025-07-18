@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: combined-images
-          image: ngumonelson123/combined-image:latest
+          image: ngumonelson123/combined-image:v1.2.12
           ports:
             - containerPort: 8000
           resources:
