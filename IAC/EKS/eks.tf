@@ -28,6 +28,7 @@ module "eks" {
     kubestronaut = {
       principal_arn = "arn:aws:iam::472083777554:user/Kubestronaut"
       type          = "STANDARD"
+      username      = "Kubestronaut"
 
       policy_associations = {
         admin = {
