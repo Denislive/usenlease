@@ -5,12 +5,12 @@ on:
     branches:
       - master
 
-env:
-  IMAGE: ngumonelson123/combined-image
-
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    env:
+      IMAGE: ngumonelson123/combined-image
+      IMAGE_TAG: v1.2.${{ github.run_number }}
 
     steps:
     - name: Checkout source code
@@ -27,51 +27,40 @@ jobs:
 
     - name: Build and push Docker image
       run: |
-        IMAGE_TAG=v1.2.${{ github.run_number }}
-        echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
-        
         docker build --build-arg SECRET_KEY=django-insecure-xyz123 \
-        -t $IMAGE:$IMAGE_TAG \
-        -t $IMAGE:latest .
+          -t $IMAGE:$IMAGE_TAG \
+          -t $IMAGE:latest .
 
-       
         docker push $IMAGE:$IMAGE_TAG
         docker push $IMAGE:latest
 
     - name: Update Kubernetes Manifests
       run: |
-        IMAGE_TAG=v1.2.${{ github.run_number }}
-        echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
         git config --global user.email "ci@usenlease.dev"
         git config --global user.name "GitHub Actions"
-        sed -i "s|image: $IMAGE:.*|image: $IMAGE:${{ env.IMAGE_TAG }}|" k8s/usenlease-deployment.yaml
+
+        sed -i "s|image: $IMAGE:.*|image: $IMAGE:$IMAGE_TAG|" k8s/usenlease-deployment.yaml
         git add k8s/
         git commit -m "Update image to $IMAGE:$IMAGE_TAG [skip ci]" || echo "No changes to commit"
         git push https://x-access-token:${{ secrets.GH_PAT }}@github.com/Denislive/usenlease.git HEAD:master
-      env:
-        IMAGE: ngumonelson123/combined-image
 
-  
-
-   
     - name: Deploy to Heroku
       env:
         HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         HEROKU_APP_NAME: ${{ secrets.HEROKU_APP_NAME }}
       run: |
         echo "$HEROKU_API_KEY" | docker login --username=_ --password-stdin registry.heroku.com
-        docker tag $IMAGE:${{ env.IMAGE_TAG }} registry.heroku.com/$HEROKU_APP_NAME/web
+        docker tag $IMAGE:$IMAGE_TAG registry.heroku.com/$HEROKU_APP_NAME/web
         docker push registry.heroku.com/$HEROKU_APP_NAME/web
         heroku container:release web --app $HEROKU_APP_NAME
-
-    #HCP Terraform: Let Terraform Cloud handle plan/apply automatically
-    #Triggered by any `.tf` changes in `iac/` folder
 
     - name: Send Slack notification on success
       if: success()
       run: |
+        IMAGE=${{ env.IMAGE }}
+        IMAGE_TAG=${{ env.IMAGE_TAG }}
         curl -X POST -H 'Content-type: application/json' --data "{
-          \"text\": \"✅ CI/CD Success: Build #${{ github.run_number }} pushed Docker image and updated manifests to ArgoCD. Image: $IMAGE:${{ env.IMAGE_TAG }}\"
+          \"text\": \"✅ CI/CD Success: Build #${{ github.run_number }} pushed Docker image and updated manifests. Image: ${IMAGE}:${IMAGE_TAG}\"
         }" ${{ secrets.SLACK_WEBHOOK }}
 
     - name: Send Slack notification on failure
