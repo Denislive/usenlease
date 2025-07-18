@@ -39,17 +39,20 @@ jobs:
         docker push $IMAGE:latest
 
     - name: Update Kubernetes Manifests
-      env:
-        GH_PAT: ${{ secrets.GH_PAT }}
       run: |
-        
+        IMAGE_TAG=v1.2.${{ github.run_number }}
+        echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
         git config --global user.email "ci@usenlease.dev"
         git config --global user.name "GitHub Actions"
-        git remote set-url origin https://x-access-token:${GH_PAT}@github.com/Denislive/usenlease.git
         sed -i "s|image: $IMAGE:.*|image: $IMAGE:${{ env.IMAGE_TAG }}|" k8s/usenlease-deployment.yaml
         git add k8s/
-        git commit -m "Update image to $IMAGE:${{ env.IMAGE_TAG }} [skip ci]"
-        git push
+        git commit -m "Update image to $IMAGE:$IMAGE_TAG [skip ci]" || echo "No changes to commit"
+        git push https://x-access-token:${GH_PAT}@github.com/Denislive/usenlease.git HEAD:master
+      env:
+        GH_PAT: ${{ secrets.GITHUB_TOKEN }}
+        IMAGE: ngumonelson123/combined-image
+
+  
 
    
     - name: Deploy to Heroku
