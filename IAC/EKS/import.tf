@@ -1,0 +1,1 @@
+# Root user access entry is managed outside of Terraform
