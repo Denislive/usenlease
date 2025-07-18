@@ -1,7 +1,6 @@
 # !/bin/sh
 
 set -e
-
 echo "🚀 Starting Backend Services..."
 
 # Start Redis server first (Celery depends on it)
