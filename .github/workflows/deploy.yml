@@ -9,7 +9,7 @@ jobs:
   deploy-infra:
     name: Deploy Infrastructure with Terraform (HCP)
     runs-on: ubuntu-latest
-    if: contains(github.event.head_commit.message, 'iac/') || contains(join(github.event.commits.*.modified, ','), 'iac/')
+    if: github.event_name == 'push'
     steps:
       - name: Trigger Terraform Cloud Run
         run: |
