@@ -148,7 +148,7 @@ jobs:
       - name: Apply Kubernetes Manifests
         run: |
           echo "Applying Kubernetes manifests..."
-          kubectl apply -f k8s/ --validate=false
+          kubectl apply -f k8s/
 
       - name: Trigger ArgoCD Sync
         run: |
