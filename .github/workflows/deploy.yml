@@ -117,7 +117,7 @@ jobs:
           git commit -m "Update image to $IMAGE:$IMAGE_TAG [skip ci]" || echo "No changes to commit"
           git push https://x-access-token:${{ secrets.GH_PAT }}@github.com/Denislive/usenlease.git HEAD:master
 
-      - name: Deploy to EKS
+      - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -125,7 +125,11 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Update kubeconfig for EKS
-        run: aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name ${{ secrets.CLUSTER_NAME }}
+
+        run: |
+          aws eks update-kubeconfig 
+          region ${{ secrets.AWS_REGION }}
+          name ${{ secrets.CLUSTER_NAME }}
 
       - name: Apply Kubernetes Resources
         run: kubectl apply -f k8s/
