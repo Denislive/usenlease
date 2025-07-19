@@ -48,6 +48,30 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v3
 
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Update kubeconfig for EKS
+        run: |
+          echo "Updating kubeconfig for EKS..."
+          aws eks update-kubeconfig \
+            --region ${{ secrets.AWS_REGION }} \
+            --name ${{ secrets.CLUSTER_NAME }}
+
+      - name: Verify kubectl configuration
+        run: |
+          echo "Verifying kubectl configuration..."
+          kubectl config view
+          kubectl cluster-info
+          
+      - name: Create namespace
+        run: |
+          kubectl create namespace usenlease --dry-run=client -o yaml | kubectl apply -f - --validate=false
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
@@ -119,36 +143,15 @@ jobs:
             echo "k8s/usenlease-deployment.yaml not found, skipping image update."
           fi
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
       - name: Enable kubectl debug logging
         run: |
           export KUBECTL_LOG_LEVEL=9
           echo "enabling KUBECTL_LOG_LEVEL=9" >> $GITHUB_ENV
 
-      - name: Update kubeconfig for EKS (with debug logging)
-        run: |
-          echo "Updating kubeconfig for EKS..."
-          aws eks update-kubeconfig \
-            --region ${{ secrets.AWS_REGION }} \
-            --name ${{ secrets.CLUSTER_NAME }} \
-            --verbose
-
-      - name: Verify kubectl configuration
-        run: |
-          echo "Verifying kubectl configuration..."
-          kubectl cluster-info
-          kubectl get nodes -o wide --validate=false
-
       - name: Apply Kubernetes Manifests
         run: |
           echo "Applying Kubernetes manifests..."
-          kubectl apply -f k8s/ --validate=false
+          kubectl apply -f k8s/ --validate=false --server-side
 
       - name: Trigger ArgoCD Sync
         run: |
