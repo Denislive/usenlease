@@ -6,109 +6,160 @@ on:
       - master
 
 jobs:
-  build-and-deploy:
+  deploy-infra:
+    name: Deploy Infrastructure with Terraform (HCP)
     runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.message, 'iac/') || contains(join(github.event.commits.*.modified, ','), 'iac/')
+    steps:
+      - name: Trigger Terraform Cloud Run
+        run: |
+          echo "Triggering Terraform Cloud Run..."
+          curl -X POST https://app.terraform.io/api/v2/workspaces/${{ secrets.TF_WORKSPACE_ID }}/runs \
+          -H "Authorization: Bearer ${{ secrets.TF_API_TOKEN }}" \
+          -H "Content-Type: application/vnd.api+json" \
+          -d '{
+            "data": {
+              "attributes": {
+                "message": "Triggered from GitHub Actions CI/CD pipeline",
+                "trigger-reason": "CI/CD update from GitHub",
+                "is-destroy": false
+              },
+              "type":"runs",
+              "relationships": {
+                "workspace": {
+                  "data": {
+                    "type": "workspaces",
+                    "id": "'"${{ secrets.TF_WORKSPACE_ID }}"'"
+                  }
+                }
+              }
+            }
+          }'
+
+  build-and-deploy:
+    name: Build and Deploy App
+    runs-on: ubuntu-latest
+    needs: deploy-infra
     env:
       IMAGE: ngumonelson123/combined-image
       IMAGE_TAG: v1.2.${{ github.run_number }}
 
     steps:
-    - name: Checkout source code
-      uses: actions/checkout@v3
+      - name: Checkout source code
+        uses: actions/checkout@v3
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
-    - name: Log in to Docker Hub
-      uses: docker/login-action@v2
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Build and push Docker image
-      run: |
-        docker build --build-arg SECRET_KEY=django-insecure-xyz123 \
-          -t $IMAGE:$IMAGE_TAG \
-          -t $IMAGE:latest .
+      - name: Build and push Docker image
+        run: |
+          docker build --build-arg SECRET_KEY=django-insecure-xyz123 \
+            -t $IMAGE:$IMAGE_TAG \
+            -t $IMAGE:latest .
 
-        docker push $IMAGE:$IMAGE_TAG
-        docker push $IMAGE:latest
+          docker push $IMAGE:$IMAGE_TAG
+          docker push $IMAGE:latest
 
+      - name: Create ConfigMap
+        run: |
+          kubectl create configmap usenlease-config \
+           --from-literal=DJANGO_ENV=${{ secrets.DJANGO_ENV }} \
+           --from-literal=ALLOWED_HOSTS=${{ secrets.ALLOWED_HOSTS }} \
+           --from-literal=CORS_ALLOWED_ORIGINS=${{ secrets.CORS_ALLOWED_ORIGINS }} \
+           --from-literal=CSRF_TRUSTED_ORIGINS=${{ secrets.CSRF_TRUSTED_ORIGINS }} \
+           --from-literal=AUTH_COOKIE_DOMAIN=${{ secrets.AUTH_COOKIE_DOMAIN }} \
+           --from-literal=AUTH_COOKIE_HTTPONLY=${{ secrets.AUTH_COOKIE_HTTPONLY }} \
+           --from-literal=AUTH_COOKIE_NAME=${{ secrets.AUTH_COOKIE_NAME }} \
+           --from-literal=AUTH_COOKIE_PATH=${{ secrets.AUTH_COOKIE_PATH }} \
+           --from-literal=AUTH_COOKIE_REFRESH=${{ secrets.AUTH_COOKIE_REFRESH }} \
+           --from-literal=AUTH_COOKIE_SAMESITE=${{ secrets.AUTH_COOKIE_SAMESITE }} \
+           --from-literal=AUTH_COOKIE_SECURE=${{ secrets.AUTH_COOKIE_SECURE }} \
+           --from-literal=DOMAIN_URL=${{ secrets.DOMAIN_URL }} \
+           --from-literal=EMAIL_HOST=${{ secrets.EMAIL_HOST }} \
+           --from-literal=EMAIL_HOST_USER=${{ secrets.EMAIL_HOST_USER }} \
+           --from-literal=EMAIL_PORT=${{ secrets.EMAIL_PORT }} \
+           --from-literal=EMAIL_USE_SSL=${{ secrets.EMAIL_USE_SSL }} \
+           --from-literal=RECIPIENT_LIST=${{ secrets.RECIPIENT_LIST }} \
+           --from-literal=STRIPE_PUBLIC_KEY=${{ secrets.STRIPE_PUBLIC_KEY }} \
+           --from-literal=VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }} \
+           --from-literal=VITE_ENCRYPTION_KEY=${{ secrets.VITE_ENCRYPTION_KEY }} \
+           --from-literal=NODE_VERSION=${{ secrets.NODE_VERSION }} \
+           --from-literal=GS_BUCKET_NAME=${{ secrets.GS_BUCKET_NAME }} \
+           --from-literal=MALLOC_ARENA_MAX=${{ secrets.MALLOC_ARENA_MAX }} \
+           --namespace=usenlease \
+           --dry-run=client -o yaml | kubectl apply -f -
 
-    - name: Create ConfigMap
-      run: |
-        kubectl create configmap usenlease-config \
-         --from-literal=DJANGO_ENV=${{ secrets.DJANGO_ENV }} \
-         --from-literal=ALLOWED_HOSTS=${{ secrets.ALLOWED_HOSTS }} \
-         --from-literal=CORS_ALLOWED_ORIGINS=${{ secrets.CORS_ALLOWED_ORIGINS }} \
-         --from-literal=CSRF_TRUSTED_ORIGINS=${{ secrets.CSRF_TRUSTED_ORIGINS }} \
-         --from-literal=AUTH_COOKIE_DOMAIN=${{ secrets.AUTH_COOKIE_DOMAIN }} \
-         --from-literal=AUTH_COOKIE_HTTPONLY=${{ secrets.AUTH_COOKIE_HTTPONLY }} \
-         --from-literal=AUTH_COOKIE_NAME=${{ secrets.AUTH_COOKIE_NAME }} \
-         --from-literal=AUTH_COOKIE_PATH=${{ secrets.AUTH_COOKIE_PATH }} \
-         --from-literal=AUTH_COOKIE_REFRESH=${{ secrets.AUTH_COOKIE_REFRESH }} \
-         --from-literal=AUTH_COOKIE_SAMESITE=${{ secrets.AUTH_COOKIE_SAMESITE }} \
-         --from-literal=AUTH_COOKIE_SECURE=${{ secrets.AUTH_COOKIE_SECURE }} \
-         --from-literal=DOMAIN_URL=${{ secrets.DOMAIN_URL }} \
-         --from-literal=EMAIL_HOST=${{ secrets.EMAIL_HOST }} \
-         --from-literal=EMAIL_HOST_USER=${{ secrets.EMAIL_HOST_USER }} \
-         --from-literal=EMAIL_PORT=${{ secrets.EMAIL_PORT }} \
-         --from-literal=EMAIL_USE_SSL=${{ secrets.EMAIL_USE_SSL }} \
-         --from-literal=RECIPIENT_LIST=${{ secrets.RECIPIENT_LIST }} \
-         --from-literal=STRIPE_PUBLIC_KEY=${{ secrets.STRIPE_PUBLIC_KEY }} \
-         --from-literal=VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }} \
-         --from-literal=VITE_ENCRYPTION_KEY=${{ secrets.VITE_ENCRYPTION_KEY }} \
-         --from-literal=NODE_VERSION=${{ secrets.NODE_VERSION }} \
-         --from-literal=GS_BUCKET_NAME=${{ secrets.GS_BUCKET_NAME }} \
-         --from-literal=MALLOC_ARENA_MAX=${{ secrets.MALLOC_ARENA_MAX }} \
-         --namespace=usenlease \
-         --dry-run=client -o yaml | kubectl apply -f -
+      - name: Create Secret
+        run: |
+          kubectl create secret generic usenlease-secrets \
+           --from-literal=SECRET_KEY=${{ secrets.SECRET_KEY }} \
+           --from-literal=DATABASE_URL=${{ secrets.DATABASE_URL }} \
+           --from-literal=REDIS_URL=${{ secrets.REDIS_URL }} \
+           --from-literal=EMAIL_HOST_PASSWORD=${{ secrets.EMAIL_HOST_PASSWORD }} \
+           --from-literal=GOOGLE_APPLICATION_CREDENTIALS_CONTENT=${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_CONTENT }} \
+           --from-literal=STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY }} \
+           --namespace=usenlease \
+           --dry-run=client -o yaml | kubectl apply -f -
 
-    - name: Create Secret
-      run: |
-        kubectl create secret generic usenlease-secrets \
-         --from-literal=SECRET_KEY=${{ secrets.SECRET_KEY }} \
-         --from-literal=DATABASE_URL=${{ secrets.DATABASE_URL }} \
-         --from-literal=REDIS_URL=${{ secrets.REDIS_URL }} \
-         --from-literal=EMAIL_HOST_PASSWORD=${{ secrets.EMAIL_HOST_PASSWORD }} \
-         --from-literal=GOOGLE_APPLICATION_CREDENTIALS_CONTENT=${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_CONTENT }} \
-         --from-literal=STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY }} \
-         --namespace=usenlease \
-         --dry-run=client -o yaml | kubectl apply -f -
+      - name: Update Kubernetes Manifests
+        run: |
+          git config --global user.email "ci@usenlease.dev"
+          git config --global user.name "GitHub Actions"
 
-    - name: Update Kubernetes Manifests
-      run: |
-        git config --global user.email "ci@usenlease.dev"
-        git config --global user.name "GitHub Actions"
+          sed -i "s|image: $IMAGE:.*|image: $IMAGE:$IMAGE_TAG|" k8s/usenlease-deployment.yaml
+          git add k8s/
+          git commit -m "Update image to $IMAGE:$IMAGE_TAG [skip ci]" || echo "No changes to commit"
+          git push https://x-access-token:${{ secrets.GH_PAT }}@github.com/Denislive/usenlease.git HEAD:master
 
-        sed -i "s|image: $IMAGE:.*|image: $IMAGE:$IMAGE_TAG|" k8s/usenlease-deployment.yaml
-        git add k8s/
-        git commit -m "Update image to $IMAGE:$IMAGE_TAG [skip ci]" || echo "No changes to commit"
-        git push https://x-access-token:${{ secrets.GH_PAT }}@github.com/Denislive/usenlease.git HEAD:master
+      - name: Deploy to EKS
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
-    - name: Deploy to Heroku
-      env:
-        HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
-        HEROKU_APP_NAME: ${{ secrets.HEROKU_APP_NAME }}
-      run: |
-        echo "$HEROKU_API_KEY" | docker login --username=_ --password-stdin registry.heroku.com
-        docker tag $IMAGE:$IMAGE_TAG registry.heroku.com/$HEROKU_APP_NAME/web
-        docker push registry.heroku.com/$HEROKU_APP_NAME/web
-        heroku container:release web --app $HEROKU_APP_NAME
+      - name: Update kubeconfig for EKS
+        run: aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name ${{ secrets.CLUSTER_NAME }}
 
-    - name: Send Slack notification on success
-      if: success()
-      run: |
-        IMAGE=${{ env.IMAGE }}
-        IMAGE_TAG=${{ env.IMAGE_TAG }}
-        curl -X POST -H 'Content-type: application/json' --data "{
-          \"text\": \"✅ CI/CD Success: Build #${{ github.run_number }} pushed Docker image and updated manifests. Image: ${IMAGE}:${IMAGE_TAG}\"
-        }" ${{ secrets.SLACK_WEBHOOK }}
+      - name: Apply Kubernetes Resources
+        run: kubectl apply -f k8s/
 
-    - name: Send Slack notification on failure
-      if: failure()
-      run: |
-        curl -X POST -H 'Content-type: application/json' --data "{
-          \"text\": \"❌ CI/CD Failed: Build #${{ github.run_number }} failed. Check GitHub logs.\"
-        }" ${{ secrets.SLACK_WEBHOOK }}
-###########end of file#
+      - name: Trigger ArgoCD Sync
+        run: |
+          argocd login $ARGOCD_SERVER --username $ARGOCD_USERNAME --password $ARGOCD_PASSWORD --insecure
+          argocd app sync usenlease-app
+          argocd app wait usenlease-app
+        env:
+          ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
+          ARGOCD_USERNAME: ${{ secrets.ARGOCD_USERNAME }}
+          ARGOCD_PASSWORD: ${{ secrets.ARGOCD_PASSWORD }}
+
+      - name: Deploy to Heroku
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+          HEROKU_APP_NAME: ${{ secrets.HEROKU_APP_NAME }}
+        run: |
+          echo "$HEROKU_API_KEY" | docker login --username=_ --password-stdin registry.heroku.com
+          docker tag $IMAGE:$IMAGE_TAG registry.heroku.com/$HEROKU_APP_NAME/web
+          docker push registry.heroku.com/$HEROKU_APP_NAME/web
+          heroku container:release web --app $HEROKU_APP_NAME
+
+      - name: Slack Success Notification
+        if: success()
+        run: |
+          curl -X POST -H 'Content-type: application/json' --data "{
+            \"text\": \"✅ CI/CD Success: Docker image ${IMAGE}:${IMAGE_TAG} deployed to EKS + Heroku.\"
+          }" ${{ secrets.SLACK_WEBHOOK }}
+
+      - name: Slack Failure Notification
+        if: failure()
+        run: |
+          curl -X POST -H 'Content-type: application/json' --data "{
+            \"text\": \"❌ CI/CD Failed: Check logs for Build #${{ github.run_number }}.\"
+          }" ${{ secrets.SLACK_WEBHOOK }}
