@@ -6,7 +6,7 @@ metadata:
   labels:
     app: usenlease-app
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: usenlease-app
@@ -32,17 +32,20 @@ spec:
                 name: usenlease-config
             - secretRef:
                 name: usenlease-secrets
-          # livenessProbe:
-          #   httpGet:
-          #     path: /healthz/
-          #     port: 8000
-          #   initialDelaySeconds: 60
-          #   periodSeconds: 10
-          #   failureThreshold: 6
-          # readinessProbe:
-          #  httpGet:
-          #    path: /healthz/
-          #    port: 8000
-          #  initialDelaySeconds: 30
-          #  periodSeconds: 5
-          #  failureThreshold: 6
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 90
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
