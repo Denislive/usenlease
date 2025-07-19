@@ -157,7 +157,14 @@ jobs:
           kubectl apply -f k8s/ --validate=false
 
       - name: Trigger ArgoCD Sync
+        continue-on-error: true
         run: |
+          # Install ArgoCD CLI
+          curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+          chmod +x argocd-linux-amd64
+          sudo mv argocd-linux-amd64 /usr/local/bin/argocd
+          
+          # Sync ArgoCD application
           argocd login $ARGOCD_SERVER --username $ARGOCD_USERNAME --password $ARGOCD_PASSWORD --insecure
           argocd app sync usenlease-app
           argocd app wait usenlease-app
