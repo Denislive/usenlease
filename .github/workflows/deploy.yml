@@ -14,10 +14,11 @@ jobs:
       - name: Trigger Terraform Cloud Run
         run: |
           echo "Triggering Terraform Cloud Run..."
+          PAYLOAD='{"data":{"attributes":{"message":"CI/CD update","is-destroy":false},"type":"runs","relationships":{"workspace":{"data":{"type":"workspaces","id":"'"${{ secrets.TF_WORKSPACE_ID }}"'"}}}}}}'
           curl -X POST https://app.terraform.io/api/v2/workspaces/${{ secrets.TF_WORKSPACE_ID }}/runs \
-          -H "Authorization: Bearer ${{ secrets.TF_API_TOKEN }}" \
-          -H "Content-Type: application/vnd.api+json" \
-          -d '{"data":{"attributes":{"message":"Triggered from GitHub Actions CI/CD pipeline","trigger-reason":"CI/CD update from GitHub","is-destroy":false},"type":"runs","relationships":{"workspace":{"data":{"type":"workspaces","id":"'${{ secrets.TF_WORKSPACE_ID }}'"}}}}}'
+            -H "Authorization: Bearer ${{ secrets.TF_API_TOKEN }}" \
+            -H "Content-Type: application/vnd.api+json" \
+            -d "$PAYLOAD"
 
   build-and-deploy:
     name: Build and Deploy App
@@ -74,44 +75,63 @@ jobs:
 
       - name: Create ConfigMap
         run: |
-          kubectl create configmap usenlease-config \
-            --from-literal=DJANGO_ENV=${{ secrets.DJANGO_ENV }} \
-            --from-literal=ALLOWED_HOSTS=${{ secrets.ALLOWED_HOSTS }} \
-            --from-literal=CORS_ALLOWED_ORIGINS=${{ secrets.CORS_ALLOWED_ORIGINS }} \
-            --from-literal=CSRF_TRUSTED_ORIGINS=${{ secrets.CSRF_TRUSTED_ORIGINS }} \
-            --from-literal=AUTH_COOKIE_DOMAIN=${{ secrets.AUTH_COOKIE_DOMAIN }} \
-            --from-literal=AUTH_COOKIE_HTTPONLY=${{ secrets.AUTH_COOKIE_HTTPONLY }} \
-            --from-literal=AUTH_COOKIE_NAME=${{ secrets.AUTH_COOKIE_NAME }} \
-            --from-literal=AUTH_COOKIE_PATH=${{ secrets.AUTH_COOKIE_PATH }} \
-            --from-literal=AUTH_COOKIE_REFRESH=${{ secrets.AUTH_COOKIE_REFRESH }} \
-            --from-literal=AUTH_COOKIE_SAMESITE=${{ secrets.AUTH_COOKIE_SAMESITE }} \
-            --from-literal=AUTH_COOKIE_SECURE=${{ secrets.AUTH_COOKIE_SECURE }} \
-            --from-literal=DOMAIN_URL=${{ secrets.DOMAIN_URL }} \
-            --from-literal=EMAIL_HOST=${{ secrets.EMAIL_HOST }} \
-            --from-literal=EMAIL_HOST_USER=${{ secrets.EMAIL_HOST_USER }} \
-            --from-literal=EMAIL_PORT=${{ secrets.EMAIL_PORT }} \
-            --from-literal=EMAIL_USE_SSL=${{ secrets.EMAIL_USE_SSL }} \
-            --from-literal=RECIPIENT_LIST=${{ secrets.RECIPIENT_LIST }} \
-            --from-literal=STRIPE_PUBLIC_KEY=${{ secrets.STRIPE_PUBLIC_KEY }} \
-            --from-literal=VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }} \
-            --from-literal=VITE_ENCRYPTION_KEY=${{ secrets.VITE_ENCRYPTION_KEY }} \
-            --from-literal=NODE_VERSION=${{ secrets.NODE_VERSION }} \
-            --from-literal=GS_BUCKET_NAME=${{ secrets.GS_BUCKET_NAME }} \
-            --from-literal=MALLOC_ARENA_MAX=${{ secrets.MALLOC_ARENA_MAX }} \
-            --namespace=usenlease \
-            --dry-run=client -o yaml | kubectl apply -f - --validate=false
+          # Create a temporary file for the ConfigMap
+          cat > configmap.yaml << EOF
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: usenlease-config
+            namespace: usenlease
+          data:
+            DJANGO_ENV: "${{ secrets.DJANGO_ENV }}"
+            ALLOWED_HOSTS: "${{ secrets.ALLOWED_HOSTS }}"
+            CORS_ALLOWED_ORIGINS: "${{ secrets.CORS_ALLOWED_ORIGINS }}"
+            CSRF_TRUSTED_ORIGINS: "${{ secrets.CSRF_TRUSTED_ORIGINS }}"
+            AUTH_COOKIE_DOMAIN: "${{ secrets.AUTH_COOKIE_DOMAIN }}"
+            AUTH_COOKIE_HTTPONLY: "${{ secrets.AUTH_COOKIE_HTTPONLY }}"
+            AUTH_COOKIE_NAME: "${{ secrets.AUTH_COOKIE_NAME }}"
+            AUTH_COOKIE_PATH: "${{ secrets.AUTH_COOKIE_PATH }}"
+            AUTH_COOKIE_REFRESH: "${{ secrets.AUTH_COOKIE_REFRESH }}"
+            AUTH_COOKIE_SAMESITE: "${{ secrets.AUTH_COOKIE_SAMESITE }}"
+            AUTH_COOKIE_SECURE: "${{ secrets.AUTH_COOKIE_SECURE }}"
+            DOMAIN_URL: "${{ secrets.DOMAIN_URL }}"
+            EMAIL_HOST: "${{ secrets.EMAIL_HOST }}"
+            EMAIL_HOST_USER: "${{ secrets.EMAIL_HOST_USER }}"
+            EMAIL_PORT: "${{ secrets.EMAIL_PORT }}"
+            EMAIL_USE_SSL: "${{ secrets.EMAIL_USE_SSL }}"
+            RECIPIENT_LIST: "${{ secrets.RECIPIENT_LIST }}"
+            STRIPE_PUBLIC_KEY: "${{ secrets.STRIPE_PUBLIC_KEY }}"
+            VITE_API_BASE_URL: "${{ secrets.VITE_API_BASE_URL }}"
+            VITE_ENCRYPTION_KEY: "${{ secrets.VITE_ENCRYPTION_KEY }}"
+            NODE_VERSION: "${{ secrets.NODE_VERSION }}"
+            GS_BUCKET_NAME: "${{ secrets.GS_BUCKET_NAME }}"
+            MALLOC_ARENA_MAX: "${{ secrets.MALLOC_ARENA_MAX }}"
+          EOF
+          
+          # Apply the ConfigMap
+          kubectl apply -f configmap.yaml --validate=false
 
       - name: Create Secret
         run: |
-          kubectl create secret generic usenlease-secrets \
-            --from-literal=SECRET_KEY=${{ secrets.SECRET_KEY }} \
-            --from-literal=DATABASE_URL=${{ secrets.DATABASE_URL }} \
-            --from-literal=REDIS_URL=${{ secrets.REDIS_URL }} \
-            --from-literal=EMAIL_HOST_PASSWORD=${{ secrets.EMAIL_HOST_PASSWORD }} \
-            --from-literal=GOOGLE_APPLICATION_CREDENTIALS_CONTENT=${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_CONTENT }} \
-            --from-literal=STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY }} \
-            --namespace=usenlease \
-            --dry-run=client -o yaml | kubectl apply -f - --validate=false
+          # Create a temporary file for the Secret
+          cat > secret.yaml << EOF
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: usenlease-secrets
+            namespace: usenlease
+          type: Opaque
+          stringData:
+            SECRET_KEY: "${{ secrets.SECRET_KEY }}"
+            DATABASE_URL: "${{ secrets.DATABASE_URL }}"
+            REDIS_URL: "${{ secrets.REDIS_URL }}"
+            EMAIL_HOST_PASSWORD: "${{ secrets.EMAIL_HOST_PASSWORD }}"
+            GOOGLE_APPLICATION_CREDENTIALS_CONTENT: "${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_CONTENT }}"
+            STRIPE_SECRET_KEY: "${{ secrets.STRIPE_SECRET_KEY }}"
+          EOF
+          
+          # Apply the Secret
+          kubectl apply -f secret.yaml --validate=false
 
       - name: Update Kubernetes Manifests
         run: |
