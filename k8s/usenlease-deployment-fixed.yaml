@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: combined-images
-          image: ngumonelson123/combined-image:v1.2.36
+          image: ngumonelson123/combined-image:v1.2.37
           ports:
             - containerPort: 8000
           resources:
@@ -32,18 +32,25 @@ spec:
                 name: usenlease-config
             - secretRef:
                 name: usenlease-secrets
+          startupProbe:
+            tcpSocket:
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 30
           readinessProbe:
             tcpSocket:
               port: 8000
-            initialDelaySeconds: 30
+            initialDelaySeconds: 5
             periodSeconds: 10
-            timeoutSeconds: 5
+            timeoutSeconds: 2
             successThreshold: 1
             failureThreshold: 3
           livenessProbe:
             tcpSocket:
               port: 8000
-            initialDelaySeconds: 60
-            periodSeconds: 15
-            timeoutSeconds: 5
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 2
             failureThreshold: 3
