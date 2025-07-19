@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: usenlease-deployment
+  name: usenlease-app
   namespace: usenlease
   labels:
     app: usenlease-app
