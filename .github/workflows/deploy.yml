@@ -17,24 +17,7 @@ jobs:
           curl -X POST https://app.terraform.io/api/v2/workspaces/${{ secrets.TF_WORKSPACE_ID }}/runs \
           -H "Authorization: Bearer ${{ secrets.TF_API_TOKEN }}" \
           -H "Content-Type: application/vnd.api+json" \
-          -d '{
-            "data": {
-              "attributes": {
-                "message": "Triggered from GitHub Actions CI/CD pipeline",
-                "trigger-reason": "CI/CD update from GitHub",
-                "is-destroy": false
-              },
-              "type":"runs",
-              "relationships": {
-                "workspace": {
-                  "data": {
-                    "type": "workspaces",
-                    "id": "'"${{ secrets.TF_WORKSPACE_ID }}"'"
-                  }
-                }
-              }
-            }
-          }'
+          -d '{"data":{"attributes":{"message":"Triggered from GitHub Actions CI/CD pipeline","trigger-reason":"CI/CD update from GitHub","is-destroy":false},"type":"runs","relationships":{"workspace":{"data":{"type":"workspaces","id":"'${{ secrets.TF_WORKSPACE_ID }}'"}}}}}'
 
   build-and-deploy:
     name: Build and Deploy App
@@ -151,7 +134,7 @@ jobs:
       - name: Apply Kubernetes Manifests
         run: |
           echo "Applying Kubernetes manifests..."
-          kubectl apply -f k8s/ --validate=false --server-side
+          kubectl apply -f k8s/ --validate=false
 
       - name: Trigger ArgoCD Sync
         run: |
